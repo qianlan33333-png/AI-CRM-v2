@@ -5,82 +5,53 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 var _ ExternalShareStore = (*Repository)(nil)
-
-const currentExternalShareSQL = `SELECT
-  s.service_product_id,
-  COALESCE(s.share_id, ''),
-  s.enabled,
-  s.version
-FROM public.service_period_member_grid_external_shares AS s
-WHERE s.service_product_id = $1`
-
-// setExternalShareSQL is one PostgreSQL CAS statement. It creates version one
-// for a disabled, absent row and otherwise advances the current version only
-// when the caller's ExpectedVersion still matches. A disabled state stores no
-// share ID, so an old public token cannot resolve after the transaction.
-const setExternalShareSQL = `INSERT INTO public.service_period_member_grid_external_shares AS s (
-  service_product_id,
-  share_id,
-  enabled,
-  version,
-  updated_by,
-  created_at,
-  updated_at
-) VALUES ($1, NULLIF($2, ''), $3, 1, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (service_product_id) DO UPDATE
-SET share_id = EXCLUDED.share_id,
-    enabled = EXCLUDED.enabled,
-    version = s.version + 1,
-    updated_by = EXCLUDED.updated_by,
-    updated_at = CURRENT_TIMESTAMP
-WHERE s.version = $5
-RETURNING service_product_id, COALESCE(share_id, ''), enabled, version`
-
-const lookupEnabledExternalShareSQL = `SELECT
-  s.service_product_id,
-  COALESCE(s.share_id, ''),
-  s.enabled,
-  s.version
-FROM public.service_period_member_grid_external_shares AS s
-WHERE s.share_id = $1
-  AND s.enabled = TRUE`
 
 // CurrentExternalShare returns the explicit disabled/version-zero baseline for
 // products that have not yet had public sharing configured. The caller's
 // management path remains responsible for proving the product exists.
 func (repository *Repository) CurrentExternalShare(ctx context.Context, serviceProductID int64) (ExternalShare, error) {
-	if repository == nil || repository.executor == nil || ctx == nil || serviceProductID < 1 {
+	if repository == nil || repository.shareQueries == nil || ctx == nil || serviceProductID < 1 {
 		return ExternalShare{}, ErrUnavailable
 	}
-	executor, err := repository.executor(ctx)
+	queries, err := repository.shareQueries(ctx)
 	if err != nil {
 		return ExternalShare{}, errors.Join(ErrUnavailable, err)
 	}
-	share, err := scanExternalShare(executor.QueryRow(ctx, currentExternalShareSQL, serviceProductID))
+	row, err := queries.CurrentMemberGridExternalShare(ctx, serviceProductID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ExternalShare{ServiceProductID: serviceProductID, Version: 0}, nil
 	}
 	if err != nil {
 		return ExternalShare{}, externalShareRepositoryError(err, false)
 	}
-	return share, nil
+	return mapExternalShare(row.ServiceProductID, row.ShareID, row.Enabled, row.Version)
 }
 
 func (repository *Repository) SetExternalShare(ctx context.Context, record SetExternalShareRecord) (ExternalShare, error) {
-	if repository == nil || repository.executor == nil || ctx == nil || !validSetExternalShareRecord(record) {
+	if repository == nil || repository.shareQueries == nil || ctx == nil || !validSetExternalShareRecord(record) {
 		return ExternalShare{}, ErrUnavailable
 	}
-	executor, err := repository.executor(ctx)
+	queries, err := repository.shareQueries(ctx)
 	if err != nil {
 		return ExternalShare{}, errors.Join(ErrUnavailable, err)
 	}
-	share, err := scanExternalShare(executor.QueryRow(ctx, setExternalShareSQL,
-		record.ServiceProductID, record.ShareID, record.Enabled, record.ActorID, record.ExpectedVersion))
+	row, err := queries.SetMemberGridExternalShare(ctx, productdb.SetMemberGridExternalShareParams{
+		ServiceProductID: record.ServiceProductID,
+		ShareID:          record.ShareID,
+		Enabled:          record.Enabled,
+		UpdatedBy:        record.ActorID,
+		ExpectedVersion:  record.ExpectedVersion,
+	})
 	if err != nil {
 		return ExternalShare{}, externalShareRepositoryError(err, false)
+	}
+	share, err := mapExternalShare(row.ServiceProductID, row.ShareID, row.Enabled, row.Version)
+	if err != nil {
+		return ExternalShare{}, err
 	}
 	if share.ServiceProductID != record.ServiceProductID || share.Enabled != record.Enabled || share.ShareID != record.ShareID || share.Version != record.ExpectedVersion+1 {
 		return ExternalShare{}, ErrUnavailable
@@ -89,16 +60,20 @@ func (repository *Repository) SetExternalShare(ctx context.Context, record SetEx
 }
 
 func (repository *Repository) LookupEnabledExternalShare(ctx context.Context, shareID string) (ExternalShare, error) {
-	if repository == nil || repository.executor == nil || ctx == nil || !validExternalShareID(shareID) {
+	if repository == nil || repository.shareQueries == nil || ctx == nil || !validExternalShareID(shareID) {
 		return ExternalShare{}, ErrUnavailable
 	}
-	executor, err := repository.executor(ctx)
+	queries, err := repository.shareQueries(ctx)
 	if err != nil {
 		return ExternalShare{}, errors.Join(ErrUnavailable, err)
 	}
-	share, err := scanExternalShare(executor.QueryRow(ctx, lookupEnabledExternalShareSQL, shareID))
+	row, err := queries.LookupEnabledMemberGridExternalShare(ctx, shareID)
 	if err != nil {
 		return ExternalShare{}, externalShareRepositoryError(err, true)
+	}
+	share, err := mapExternalShare(row.ServiceProductID, row.ShareID, row.Enabled, row.Version)
+	if err != nil {
+		return ExternalShare{}, err
 	}
 	if !share.Enabled || share.ShareID != shareID {
 		return ExternalShare{}, ErrUnavailable
@@ -106,11 +81,8 @@ func (repository *Repository) LookupEnabledExternalShare(ctx context.Context, sh
 	return share, nil
 }
 
-func scanExternalShare(row sqlRow) (ExternalShare, error) {
-	var share ExternalShare
-	if err := row.Scan(&share.ServiceProductID, &share.ShareID, &share.Enabled, &share.Version); err != nil {
-		return ExternalShare{}, err
-	}
+func mapExternalShare(serviceProductID int64, shareID string, enabled bool, version int64) (ExternalShare, error) {
+	share := ExternalShare{ServiceProductID: serviceProductID, ShareID: shareID, Enabled: enabled, Version: version}
 	if !validExternalShare(share) {
 		return ExternalShare{}, ErrUnavailable
 	}

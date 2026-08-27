@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 type fakeSQLRow struct {
@@ -65,6 +67,61 @@ func (executor *fakeSQLExecutor) Query(_ context.Context, sql string, arguments 
 }
 func repositoryForExecutor(executor sqlExecutor) *Repository {
 	return &Repository{executor: func(context.Context) (sqlExecutor, error) { return executor, nil }}
+}
+
+type fakeShareQueries struct {
+	currentRow productdb.CurrentMemberGridExternalShareRow
+	currentErr error
+	currentID  int64
+	setRow     productdb.SetMemberGridExternalShareRow
+	setErr     error
+	setParams  productdb.SetMemberGridExternalShareParams
+	lookupRow  productdb.LookupEnabledMemberGridExternalShareRow
+	lookupErr  error
+	lookupID   string
+	summary    []productdb.SummarizePublicServicePeriodMembersRow
+	summaryErr error
+	summaryID  int64
+	first      []productdb.ListPublicServicePeriodMembersFirstPageRow
+	firstErr   error
+	firstArgs  productdb.ListPublicServicePeriodMembersFirstPageParams
+	after      []productdb.ListPublicServicePeriodMembersAfterRow
+	afterErr   error
+	afterArgs  productdb.ListPublicServicePeriodMembersAfterParams
+}
+
+func (queries *fakeShareQueries) CurrentMemberGridExternalShare(_ context.Context, id int64) (productdb.CurrentMemberGridExternalShareRow, error) {
+	queries.currentID = id
+	return queries.currentRow, queries.currentErr
+}
+
+func (queries *fakeShareQueries) SetMemberGridExternalShare(_ context.Context, params productdb.SetMemberGridExternalShareParams) (productdb.SetMemberGridExternalShareRow, error) {
+	queries.setParams = params
+	return queries.setRow, queries.setErr
+}
+
+func (queries *fakeShareQueries) LookupEnabledMemberGridExternalShare(_ context.Context, id string) (productdb.LookupEnabledMemberGridExternalShareRow, error) {
+	queries.lookupID = id
+	return queries.lookupRow, queries.lookupErr
+}
+
+func (queries *fakeShareQueries) SummarizePublicServicePeriodMembers(_ context.Context, id int64) ([]productdb.SummarizePublicServicePeriodMembersRow, error) {
+	queries.summaryID = id
+	return queries.summary, queries.summaryErr
+}
+
+func (queries *fakeShareQueries) ListPublicServicePeriodMembersFirstPage(_ context.Context, params productdb.ListPublicServicePeriodMembersFirstPageParams) ([]productdb.ListPublicServicePeriodMembersFirstPageRow, error) {
+	queries.firstArgs = params
+	return queries.first, queries.firstErr
+}
+
+func (queries *fakeShareQueries) ListPublicServicePeriodMembersAfter(_ context.Context, params productdb.ListPublicServicePeriodMembersAfterParams) ([]productdb.ListPublicServicePeriodMembersAfterRow, error) {
+	queries.afterArgs = params
+	return queries.after, queries.afterErr
+}
+
+func repositoryForShareQueries(queries shareQueries) *Repository {
+	return &Repository{shareQueries: func(context.Context) (shareQueries, error) { return queries, nil }}
 }
 
 func canonicalScanRow(memberRef string, productID, customerID int64, state, source string, stamp time.Time, name string) []any {

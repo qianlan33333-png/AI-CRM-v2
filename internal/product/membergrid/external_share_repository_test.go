@@ -4,65 +4,39 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
-
-func TestExternalShareRepositoryUsesOneScopedCASRow(t *testing.T) {
-	for name, query := range map[string]string{
-		"current": currentExternalShareSQL,
-		"set":     setExternalShareSQL,
-		"lookup":  lookupEnabledExternalShareSQL,
-	} {
-		t.Run(name, func(t *testing.T) {
-			lower := strings.ToLower(query)
-			if !strings.Contains(lower, "public.service_period_member_grid_external_shares") || strings.Contains(lower, "tenant") ||
-				strings.Contains(lower, "customer_id") || strings.Contains(lower, "unionid") || strings.Contains(lower, "external_userid") ||
-				strings.Contains(lower, "mobile") || strings.Contains(lower, "provider") || strings.Contains(lower, "json") {
-				t.Fatalf("unsafe external share SQL: %s", query)
-			}
-		})
-	}
-	set := strings.ToLower(setExternalShareSQL)
-	if !strings.Contains(set, "on conflict (service_product_id)") || !strings.Contains(set, "where s.version = $5") ||
-		!strings.Contains(set, "nullif($2, '')") || !strings.Contains(set, "version = s.version + 1") {
-		t.Fatalf("set external share is not CAS/clear-id bound: %s", setExternalShareSQL)
-	}
-	lookup := strings.ToLower(lookupEnabledExternalShareSQL)
-	if !strings.Contains(lookup, "s.share_id = $1") || !strings.Contains(lookup, "s.enabled = true") {
-		t.Fatalf("public lookup is not live-enabled scoped: %s", lookupEnabledExternalShareSQL)
-	}
-}
 
 func TestExternalShareRepositoryReadsWritesAndFailsClosed(t *testing.T) {
 	shareID := "share_abcdefghijklmnopqrstuv"
-	executor := &fakeSQLExecutor{row: fakeSQLRow{err: pgx.ErrNoRows}}
-	repository := repositoryForExecutor(executor)
+	queries := &fakeShareQueries{currentErr: pgx.ErrNoRows}
+	repository := repositoryForShareQueries(queries)
 	current, err := repository.CurrentExternalShare(context.Background(), 8)
-	if err != nil || current != (ExternalShare{ServiceProductID: 8, Version: 0}) || executor.queryRowSQL != currentExternalShareSQL || !reflect.DeepEqual(executor.queryRowArgs, []any{int64(8)}) {
-		t.Fatalf("current/err/sql/args=%+v/%v/%q/%v", current, err, executor.queryRowSQL, executor.queryRowArgs)
+	if err != nil || current != (ExternalShare{ServiceProductID: 8, Version: 0}) || queries.currentID != 8 {
+		t.Fatalf("current/err/id=%+v/%v/%d", current, err, queries.currentID)
 	}
 
-	executor = &fakeSQLExecutor{row: fakeSQLRow{values: []any{int64(8), shareID, true, int64(1)}}}
-	repository = repositoryForExecutor(executor)
+	queries = &fakeShareQueries{setRow: productdb.SetMemberGridExternalShareRow{ServiceProductID: 8, ShareID: shareID, Enabled: true, Version: 1}}
+	repository = repositoryForShareQueries(queries)
 	updated, err := repository.SetExternalShare(context.Background(), SetExternalShareRecord{
 		ServiceProductID: 8, Enabled: true, ShareID: shareID, ExpectedVersion: 0, ActorID: 3, IdempotencyKey: "external-share-enable-0001",
 	})
 	if err != nil || updated != (ExternalShare{ServiceProductID: 8, ShareID: shareID, Enabled: true, Version: 1}) {
 		t.Fatalf("updated/err=%+v/%v", updated, err)
 	}
-	wantSetArgs := []any{int64(8), shareID, true, int64(3), int64(0)}
-	if executor.queryRowSQL != setExternalShareSQL || !reflect.DeepEqual(executor.queryRowArgs, wantSetArgs) {
-		t.Fatalf("set sql/args=%q/%#v want=%q/%#v", executor.queryRowSQL, executor.queryRowArgs, setExternalShareSQL, wantSetArgs)
+	wantSetArgs := productdb.SetMemberGridExternalShareParams{ServiceProductID: 8, ShareID: shareID, Enabled: true, UpdatedBy: 3, ExpectedVersion: 0}
+	if !reflect.DeepEqual(queries.setParams, wantSetArgs) {
+		t.Fatalf("set args=%#v want=%#v", queries.setParams, wantSetArgs)
 	}
 
-	executor = &fakeSQLExecutor{row: fakeSQLRow{values: []any{int64(8), shareID, true, int64(1)}}}
-	repository = repositoryForExecutor(executor)
+	queries = &fakeShareQueries{lookupRow: productdb.LookupEnabledMemberGridExternalShareRow{ServiceProductID: 8, ShareID: shareID, Enabled: true, Version: 1}}
+	repository = repositoryForShareQueries(queries)
 	resolved, err := repository.LookupEnabledExternalShare(context.Background(), shareID)
-	if err != nil || resolved != updated || executor.queryRowSQL != lookupEnabledExternalShareSQL || !reflect.DeepEqual(executor.queryRowArgs, []any{shareID}) {
-		t.Fatalf("resolved/err/sql/args=%+v/%v/%q/%v", resolved, err, executor.queryRowSQL, executor.queryRowArgs)
+	if err != nil || resolved != updated || queries.lookupID != shareID {
+		t.Fatalf("resolved/err/id=%+v/%v/%q", resolved, err, queries.lookupID)
 	}
 
 	for name, record := range map[string]SetExternalShareRecord{
@@ -80,7 +54,7 @@ func TestExternalShareRepositoryReadsWritesAndFailsClosed(t *testing.T) {
 
 func TestExternalShareRepositoryMapsCASLookupAndMalformedRows(t *testing.T) {
 	shareID := "share_abcdefghijklmnopqrstuv"
-	repository := repositoryForExecutor(&fakeSQLExecutor{row: fakeSQLRow{err: pgx.ErrNoRows}})
+	repository := repositoryForShareQueries(&fakeShareQueries{setErr: pgx.ErrNoRows, lookupErr: pgx.ErrNoRows})
 	if _, err := repository.SetExternalShare(context.Background(), SetExternalShareRecord{
 		ServiceProductID: 8, Enabled: false, ExpectedVersion: 1, ActorID: 3, IdempotencyKey: "external-share-disable-001",
 	}); !errors.Is(err, ErrConflict) {
@@ -90,11 +64,11 @@ func TestExternalShareRepositoryMapsCASLookupAndMalformedRows(t *testing.T) {
 		t.Fatalf("lookup err=%v", err)
 	}
 
-	repository = repositoryForExecutor(&fakeSQLExecutor{row: fakeSQLRow{values: []any{int64(8), shareID, false, int64(2)}}})
+	repository = repositoryForShareQueries(&fakeShareQueries{lookupRow: productdb.LookupEnabledMemberGridExternalShareRow{ServiceProductID: 8, ShareID: shareID, Enabled: false, Version: 2}})
 	if _, err := repository.LookupEnabledExternalShare(context.Background(), shareID); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("disabled row leaked through public lookup: %v", err)
 	}
-	repository = repositoryForExecutor(&fakeSQLExecutor{row: fakeSQLRow{values: []any{int64(8), "", true, int64(2)}}})
+	repository = repositoryForShareQueries(&fakeShareQueries{currentRow: productdb.CurrentMemberGridExternalShareRow{ServiceProductID: 8, ShareID: "", Enabled: true, Version: 2}})
 	if _, err := repository.CurrentExternalShare(context.Background(), 8); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("malformed row err=%v", err)
 	}

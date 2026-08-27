@@ -5,9 +5,11 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 type publicShareStore struct {
@@ -133,41 +135,29 @@ func TestPublicShareSummaryFailsClosed(t *testing.T) {
 	}
 }
 
-func TestPublicShareSummarySQLIsAggregateOnly(t *testing.T) {
-	lower := strings.ToLower(summarizePublicMembersSQL)
-	for _, forbidden := range []string{"customers", "customer_id", "member_ref", "display_name", "mobile", "unionid", "external_userid", "remark", "alliance", "source", "starts_at", "expires_at", "updated_at"} {
-		if strings.Contains(lower, forbidden) {
-			t.Fatalf("public summary SQL exposes %s: %s", forbidden, summarizePublicMembersSQL)
-		}
-	}
-	if !strings.Contains(lower, "count(*)") || !strings.Contains(lower, "group by m.state") {
-		t.Fatalf("public summary is not aggregate-only: %s", summarizePublicMembersSQL)
-	}
-	executor := &fakeSQLExecutor{rows: &fakeSQLRows{rows: [][]any{{"active", int64(4)}, {"removed", int64(1)}}}}
-	repository := repositoryForExecutor(executor)
+func TestPublicShareRepositoryMapsGeneratedAggregate(t *testing.T) {
+	queries := &fakeShareQueries{summary: []productdb.SummarizePublicServicePeriodMembersRow{{State: "active", MemberCount: 4}, {State: "removed", MemberCount: 1}}}
+	repository := repositoryForShareQueries(queries)
 	buckets, err := repository.SummarizePublicMembers(context.Background(), 9)
-	if err != nil || !reflect.DeepEqual(buckets, []PublicShareBucket{{State: "active", Count: 4}, {State: "removed", Count: 1}}) || !reflect.DeepEqual(executor.queryArgs, []any{int64(9)}) || !executor.rows.closed {
-		t.Fatalf("buckets=%+v err=%v args=%v closed=%v", buckets, err, executor.queryArgs, executor.rows.closed)
+	if err != nil || !reflect.DeepEqual(buckets, []PublicShareBucket{{State: "active", Count: 4}, {State: "removed", Count: 1}}) || queries.summaryID != 9 {
+		t.Fatalf("buckets=%+v err=%v id=%d", buckets, err, queries.summaryID)
 	}
 }
 
-func TestPublicShareMemberSQLAndDTOUseExplicitAllowlist(t *testing.T) {
-	lower := strings.ToLower(publicMemberProjection)
-	for _, forbidden := range []string{"\n  m.customer_id,", "mobile", "unionid", "external_userid", "remark", "alliance", "version"} {
-		if strings.Contains(lower, forbidden) {
-			t.Fatalf("public member projection exposes %s: %s", forbidden, publicMemberProjection)
-		}
-	}
+func TestPublicShareRepositoryMapsExplicitGeneratedProjection(t *testing.T) {
 	stamp := time.Date(2026, 8, 27, 4, 0, 0, 0, time.UTC)
-	executor := &fakeSQLExecutor{rows: &fakeSQLRows{rows: [][]any{{
-		"spm_abcdefghijklmnopqrstuv", "active", "paid_order", stamp.Add(-time.Hour), time.Unix(0, 0).UTC(), false, stamp, "李同学",
-	}}}}
-	repository := repositoryForExecutor(executor)
+	queries := &fakeShareQueries{first: []productdb.ListPublicServicePeriodMembersFirstPageRow{{
+		MemberRef: "spm_abcdefghijklmnopqrstuv", State: "active", Source: "paid_order",
+		StartsAt:  pgtype.Timestamptz{Time: stamp.Add(-time.Hour), Valid: true},
+		UpdatedAt: pgtype.Timestamptz{Time: stamp, Valid: true}, DisplayName: "李同学",
+	}}}
+	repository := repositoryForShareQueries(queries)
 	records, err := repository.QueryPublicMembers(context.Background(), StoreQuery{ProductID: 9, State: StateAll, Source: SourceAny, Limit: MaximumLimit + 1})
 	if err != nil || len(records) != 1 || records[0].DisplayName != "李同学" || records[0].State != StateActive || records[0].Source != SourcePaidOrder || records[0].ExpiresAt != nil {
 		t.Fatalf("records=%+v err=%v", records, err)
 	}
-	if executor.querySQL != firstPublicMembersPageSQL || !reflect.DeepEqual(executor.queryArgs, []any{int64(9), MaximumLimit + 1}) || !executor.rows.closed {
-		t.Fatalf("sql/args/closed=%q/%v/%v", executor.querySQL, executor.queryArgs, executor.rows.closed)
+	want := productdb.ListPublicServicePeriodMembersFirstPageParams{ServiceProductID: 9, RowLimit: MaximumLimit + 1}
+	if !reflect.DeepEqual(queries.firstArgs, want) {
+		t.Fatalf("args=%+v want=%+v", queries.firstArgs, want)
 	}
 }

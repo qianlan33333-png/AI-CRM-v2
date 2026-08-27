@@ -3,110 +3,90 @@ package membergrid
 import (
 	"context"
 	"errors"
-	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
-
-const summarizePublicMembersSQL = `SELECT m.state, COUNT(*)::bigint
-FROM public.service_period_members AS m
-WHERE m.service_product_id = $1
-  AND m.state IN ('active', 'expired', 'removed')
-GROUP BY m.state
-ORDER BY m.state ASC`
-
-const publicMemberProjection = `SELECT
-  m.member_ref,
-  m.state,
-  m.source,
-  m.starts_at,
-  COALESCE(m.expires_at, TIMESTAMPTZ 'epoch') AS expires_at_value,
-  (m.expires_at IS NOT NULL) AS has_expires_at,
-  m.updated_at,
-  c.name AS display_name
-FROM public.service_period_members AS m
-JOIN public.customers AS c ON c.id = m.customer_id`
-
-const firstPublicMembersPageSQL = publicMemberProjection + `
-WHERE m.service_product_id = $1
-ORDER BY m.updated_at DESC, m.member_ref DESC
-LIMIT $2`
-
-const afterPublicMembersPageSQL = publicMemberProjection + `
-WHERE m.service_product_id = $1
-  AND (m.updated_at, m.member_ref) < ($2::timestamptz, $3::text)
-ORDER BY m.updated_at DESC, m.member_ref DESC
-LIMIT $4`
 
 var _ PublicShareSummaryStore = (*Repository)(nil)
 var _ PublicShareMemberStore = (*Repository)(nil)
 
 func (repository *Repository) SummarizePublicMembers(ctx context.Context, serviceProductID int64) ([]PublicShareBucket, error) {
-	if repository == nil || repository.executor == nil || ctx == nil || serviceProductID < 1 {
+	if repository == nil || repository.shareQueries == nil || ctx == nil || serviceProductID < 1 {
 		return nil, ErrUnavailable
 	}
-	executor, err := repository.executor(ctx)
+	queries, err := repository.shareQueries(ctx)
 	if err != nil {
 		return nil, errors.Join(ErrUnavailable, err)
 	}
-	rows, err := executor.Query(ctx, summarizePublicMembersSQL, serviceProductID)
+	rows, err := queries.SummarizePublicServicePeriodMembers(ctx, serviceProductID)
 	if err != nil {
 		return nil, errors.Join(ErrUnavailable, err)
 	}
-	defer rows.Close()
-	buckets := make([]PublicShareBucket, 0, 3)
-	for rows.Next() {
-		var bucket PublicShareBucket
-		if err = rows.Scan(&bucket.State, &bucket.Count); err != nil {
-			return nil, errors.Join(ErrUnavailable, err)
-		}
-		buckets = append(buckets, bucket)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, errors.Join(ErrUnavailable, err)
+	buckets := make([]PublicShareBucket, len(rows))
+	for index, row := range rows {
+		buckets[index] = PublicShareBucket{State: row.State, Count: row.MemberCount}
 	}
 	return buckets, nil
 }
 
 func (repository *Repository) QueryPublicMembers(ctx context.Context, query StoreQuery) ([]PublicShareMemberRecord, error) {
-	if repository == nil || repository.executor == nil || ctx == nil || query.ProductID < 1 || query.State != StateAll || query.Source != SourceAny ||
+	if repository == nil || repository.shareQueries == nil || ctx == nil || query.ProductID < 1 || query.State != StateAll || query.Source != SourceAny ||
 		query.Limit < 1 || query.Limit > MaximumLimit+1 || (query.After != nil && (!validMemberRef(query.After.MemberRef) || query.After.UpdatedAt.IsZero())) {
 		return nil, ErrUnavailable
 	}
-	executor, err := repository.executor(ctx)
+	queries, err := repository.shareQueries(ctx)
 	if err != nil {
 		return nil, errors.Join(ErrUnavailable, err)
 	}
-	var rows sqlRows
-	if query.After == nil {
-		rows, err = executor.Query(ctx, firstPublicMembersPageSQL, query.ProductID, query.Limit)
-	} else {
-		rows, err = executor.Query(ctx, afterPublicMembersPageSQL, query.ProductID, query.After.UpdatedAt.UTC(), query.After.MemberRef, query.Limit)
-	}
-	if err != nil {
-		return nil, errors.Join(ErrUnavailable, err)
-	}
-	defer rows.Close()
-
 	records := make([]PublicShareMemberRecord, 0, query.Limit)
-	for rows.Next() {
-		var record PublicShareMemberRecord
-		var state, source string
-		var expiresValue time.Time
-		var hasExpires bool
-		if err = rows.Scan(&record.MemberRef, &state, &source, &record.StartsAt, &expiresValue, &hasExpires, &record.UpdatedAt, &record.DisplayName); err != nil {
-			return nil, errors.Join(ErrUnavailable, err)
+	if query.After == nil {
+		rows, queryErr := queries.ListPublicServicePeriodMembersFirstPage(ctx, productdb.ListPublicServicePeriodMembersFirstPageParams{
+			ServiceProductID: query.ProductID,
+			RowLimit:         int32(query.Limit),
+		})
+		if queryErr != nil {
+			return nil, errors.Join(ErrUnavailable, queryErr)
 		}
-		record.State = StateFilter(state)
-		record.Source = SourceFilter(source)
-		record.StartsAt = record.StartsAt.UTC()
-		record.UpdatedAt = record.UpdatedAt.UTC()
-		if hasExpires {
-			value := expiresValue.UTC()
-			record.ExpiresAt = &value
+		for _, row := range rows {
+			record, mapErr := mapPublicMember(row.MemberRef, row.State, row.Source, row.StartsAt, row.ExpiresAt, row.UpdatedAt, row.DisplayName)
+			if mapErr != nil {
+				return nil, mapErr
+			}
+			records = append(records, record)
 		}
-		records = append(records, record)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, errors.Join(ErrUnavailable, err)
+	} else {
+		rows, queryErr := queries.ListPublicServicePeriodMembersAfter(ctx, productdb.ListPublicServicePeriodMembersAfterParams{
+			ServiceProductID: query.ProductID,
+			AfterUpdatedAt:   pgtype.Timestamptz{Time: query.After.UpdatedAt.UTC(), Valid: true},
+			AfterMemberRef:   query.After.MemberRef,
+			RowLimit:         int32(query.Limit),
+		})
+		if queryErr != nil {
+			return nil, errors.Join(ErrUnavailable, queryErr)
+		}
+		for _, row := range rows {
+			record, mapErr := mapPublicMember(row.MemberRef, row.State, row.Source, row.StartsAt, row.ExpiresAt, row.UpdatedAt, row.DisplayName)
+			if mapErr != nil {
+				return nil, mapErr
+			}
+			records = append(records, record)
+		}
 	}
 	return records, nil
+}
+
+func mapPublicMember(memberRef, state, source string, startsAt, expiresAt, updatedAt pgtype.Timestamptz, displayName string) (PublicShareMemberRecord, error) {
+	if !startsAt.Valid || !updatedAt.Valid {
+		return PublicShareMemberRecord{}, ErrUnavailable
+	}
+	record := PublicShareMemberRecord{
+		MemberRef: memberRef, State: StateFilter(state), Source: SourceFilter(source),
+		StartsAt: startsAt.Time.UTC(), UpdatedAt: updatedAt.Time.UTC(), DisplayName: displayName,
+	}
+	if expiresAt.Valid {
+		value := expiresAt.Time.UTC()
+		record.ExpiresAt = &value
+	}
+	return record, nil
 }

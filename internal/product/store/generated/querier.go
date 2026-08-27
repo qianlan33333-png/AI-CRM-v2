@@ -24,6 +24,7 @@ type Querier interface {
 	CreateProductExternalPushTestBinding(ctx context.Context, arg CreateProductExternalPushTestBindingParams) (CreateProductExternalPushTestBindingRow, error)
 	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
 	CreateServicePeriodMember(ctx context.Context, arg CreateServicePeriodMemberParams) (CreateServicePeriodMemberRow, error)
+	CurrentMemberGridExternalShare(ctx context.Context, serviceProductID int64) (CurrentMemberGridExternalShareRow, error)
 	// Only a draft with no local entitlement, order projection, or other Product
 	// fact may be physically deleted. Product images may cascade with the draft;
 	// financial/order/entitlement facts never do.
@@ -43,6 +44,8 @@ type Querier interface {
 	ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsOffset(ctx context.Context, arg ListProductsOffsetParams) ([]ListProductsOffsetRow, error)
+	ListPublicServicePeriodMembersAfter(ctx context.Context, arg ListPublicServicePeriodMembersAfterParams) ([]ListPublicServicePeriodMembersAfterRow, error)
+	ListPublicServicePeriodMembersFirstPage(ctx context.Context, arg ListPublicServicePeriodMembersFirstPageParams) ([]ListPublicServicePeriodMembersFirstPageRow, error)
 	ListServicePeriodMembers(ctx context.Context, arg ListServicePeriodMembersParams) ([]ListServicePeriodMembersRow, error)
 	ListServicePeriodMembersByCustomer(ctx context.Context, arg ListServicePeriodMembersByCustomerParams) ([]ListServicePeriodMembersByCustomerRow, error)
 	ListServicePeriodProductRows(ctx context.Context, arg ListServicePeriodProductRowsParams) ([]ListServicePeriodProductRowsRow, error)
@@ -56,6 +59,7 @@ type Querier interface {
 	LockProductForPaidSettlement(ctx context.Context, arg LockProductForPaidSettlementParams) (LockProductForPaidSettlementRow, error)
 	LockServicePeriodMember(ctx context.Context, arg LockServicePeriodMemberParams) (LockServicePeriodMemberRow, error)
 	LockServiceProductForMemberAdd(ctx context.Context, productID int64) (bool, error)
+	LookupEnabledMemberGridExternalShare(ctx context.Context, shareID string) (LookupEnabledMemberGridExternalShareRow, error)
 	ProductExternalPushTestExists(ctx context.Context, arg ProductExternalPushTestExistsParams) (bool, error)
 	ReadCommerceExternalPushAcceptanceFacts(ctx context.Context, productID int64) (ReadCommerceExternalPushAcceptanceFactsRow, error)
 	ReadProductExternalPushConfiguration(ctx context.Context, arg ReadProductExternalPushConfigurationParams) (ReadProductExternalPushConfigurationRow, error)
@@ -68,6 +72,8 @@ type Querier interface {
 	SaveProductExternalPushConfiguration(ctx context.Context, arg SaveProductExternalPushConfigurationParams) (ProductExternalPushConfiguration, error)
 	ServicePeriodMemberCustomerExists(ctx context.Context, customerID int64) (bool, error)
 	ServicePeriodProductExists(ctx context.Context, productID int64) (bool, error)
+	SetMemberGridExternalShare(ctx context.Context, arg SetMemberGridExternalShareParams) (SetMemberGridExternalShareRow, error)
+	SummarizePublicServicePeriodMembers(ctx context.Context, serviceProductID int64) ([]SummarizePublicServicePeriodMembersRow, error)
 	TransitionServicePeriodMember(ctx context.Context, arg TransitionServicePeriodMemberParams) (TransitionServicePeriodMemberRow, error)
 	// Product-local WeChat-pay lifecycle queries. The command payload is a
 	// closed JSON object produced by the Product app port; it is not a browser
