@@ -462,8 +462,8 @@ export async function runAdminAdapterTests(): Promise<void> {
     try { await getServicePeriodMemberDto(8, 'not-a-member-ref'); assert(false, 'Member Grid member ref must be validated before fetch'); }
     catch (error) { assert(error instanceof Error && error.message.includes('member_ref'), 'Member Grid rejects invalid member ref before fetch'); }
     assert(memberCalls.length === 0, 'Member Grid invalid member ref does not issue a request');
-    const firstPage = await queryServicePeriodMemberGridDto(8, { state: 'all', sort: 'starts_at_desc', groupBy: 'state', limit: 50 });
-    const secondPage = await queryServicePeriodMemberGridDto(8, { state: 'all', sort: 'starts_at_desc', groupBy: 'state', limit: 50, cursor: firstPage.nextCursor });
+    const firstPage = await queryServicePeriodMemberGridDto(8, { state: 'active', source: 'manual', limit: 50 });
+    const secondPage = await queryServicePeriodMemberGridDto(8, { state: 'active', source: 'manual', limit: 50, cursor: firstPage.nextCursor });
     assert(firstPage.rows[0].memberRef === memberRef && firstPage.rows[0].displayName === '本地客户' && firstPage.hasMore && firstPage.nextCursor === 'opaque-next' && !secondPage.hasMore, 'Member Grid query maps safe rows and opaque cursor');
     const detail = await getServicePeriodMemberDto(8, memberRef);
     const savedMember = await updateServicePeriodMemberFieldsDto(8, memberRef, { expectedVersion: detail.version, remark: '新备注', alliance: '新联盟' });
@@ -472,7 +472,7 @@ export async function runAdminAdapterTests(): Promise<void> {
     const updatedCollaborator = await updateServicePeriodMemberGridCollaboratorDto(8, 6, { expectedVersion: createdCollaborator.version, permission: 'view' });
     const deletedCollaborator = await deleteServicePeriodMemberGridCollaboratorDto(8, 6, updatedCollaborator.version);
     assert(createdCollaborator.staffId === 5 && updatedCollaborator.collaboratorId === 6 && deletedCollaborator.collaboratorId === 6, 'Member Grid collaborator local CRUD maps real response');
-    assert(memberCalls.some((call) => { const body = JSON.parse(String(call.init?.body)); return call.input.endsWith('/member-grid/query') && body.cursor === '' && body.sort === 'starts_at_desc' && body.group_by === 'state'; }), 'Member Grid query sends the restricted sort/group selection and explicit empty cursor');
+    assert(memberCalls.some((call) => call.input.endsWith('/member-grid/query') && JSON.parse(String(call.init?.body)).cursor === ''), 'Member Grid first query sends explicit empty cursor');
     assert(memberCalls.some((call) => call.input.endsWith('/fields') && new Headers(call.init?.headers).get('Idempotency-Key')), 'Member Grid local field update carries idempotency key');
     assert(memberCalls.filter((call) => new Headers(call.init?.headers).get('Idempotency-Key')).length === 4, 'Member Grid mutations carry idempotency keys');
   } finally { globalThis.fetch = savedFetch; }

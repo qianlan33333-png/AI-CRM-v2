@@ -104,9 +104,6 @@ type QueryInput struct {
 	Source    SourceFilter
 	Limit     int
 	Cursor    string
-	Sort      string
-	GroupBy   string
-	ViewID    string
 }
 
 type QueryResponse struct {

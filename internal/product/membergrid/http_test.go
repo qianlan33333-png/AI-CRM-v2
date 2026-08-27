@@ -288,9 +288,7 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 	}{
 		{name: "empty", body: "", wantStatus: http.StatusBadRequest},
 		{name: "array", body: `[]`, wantStatus: http.StatusBadRequest},
-		{name: "invalid sort", body: `{"sort":"id"}`, wantStatus: http.StatusUnprocessableEntity},
-		{name: "invalid group", body: `{"group_by":"source"}`, wantStatus: http.StatusUnprocessableEntity},
-		{name: "legacy view", body: `{"view_id":"9"}`, wantStatus: http.StatusUnprocessableEntity},
+		{name: "unknown", body: `{"sort":"id"}`, wantStatus: http.StatusBadRequest},
 		{name: "columns", body: `{"columns":["customer_id"]}`, wantStatus: http.StatusBadRequest},
 		{name: "raw filter", body: `{"raw_filter":{"sql":"1=1"}}`, wantStatus: http.StatusBadRequest},
 		{name: "duplicate", body: `{"limit":1,"limit":2}`, wantStatus: http.StatusBadRequest},
@@ -336,12 +334,6 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 		if recorder.Code != http.StatusOK || application.lastQuery.State != StateAll || application.lastQuery.Limit != DefaultLimit || application.lastQuery.Cursor != "" {
 			t.Fatalf("empty cursor/default query body/status/input/response=%s/%d/%+v/%s", body, recorder.Code, application.lastQuery, recorder.Body.String())
 		}
-	}
-
-	recorder = httptest.NewRecorder()
-	fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/1/member-grid/query", `{"sort":"starts_at_desc","group_by":"state"}`, authport.RoleAdmin, authport.CapabilityEntitlementsRead))
-	if recorder.Code != http.StatusOK || application.lastQuery.Sort != "starts_at_desc" || application.lastQuery.GroupBy != "state" {
-		t.Fatalf("selected query status/input/body=%d/%+v/%s", recorder.Code, application.lastQuery, recorder.Body.String())
 	}
 }
 

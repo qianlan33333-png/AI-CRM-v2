@@ -15504,9 +15504,6 @@ components:
       properties:
         state: { type: string, enum: [active, expired, removed, all], default: all }
         source: { $ref: "#/components/schemas/ServicePeriodMemberSource" }
-        sort: { type: string, enum: [updated_at_desc, starts_at_desc] }
-        group_by: { type: string, enum: [state] }
-        view_id: { type: string, enum: [default] }
         limit: { type: integer, minimum: 1, maximum: 50, default: 50 }
         cursor: { type: string, nullable: true, maxLength: 256 }
     ServicePeriodMemberGridMember:
