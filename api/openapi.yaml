@@ -2791,6 +2791,51 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { description: CAS or idempotency conflict., content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardError" } } } }
         "503": { description: Local configuration owner unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SetupWizardError" } } } }
+  /api/admin/admin-access:
+    get:
+      tags: [p4-setup-wizard]
+      operationId: listAdminAccessMembers
+      summary: List existing local admin accounts and their current login access
+      x-p4-decision-evidence: P4-ADMIN-ACCESS-LOCAL-2026-08-27
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: admin_users.staff_local_projection
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Existing local admin accounts and current local login flags only., content: { application/json: { schema: { $ref: "#/components/schemas/AdminAccessReadResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-setup-wizard]
+      operationId: saveAdminAccessMembers
+      summary: Save local login access for existing admin accounts
+      x-p4-decision-evidence: P4-ADMIN-ACCESS-LOCAL-2026-08-27
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: admin_users.login_enabled.local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/AdminAccessIdempotencyKey" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminAccessSaveRequest" }
+      responses:
+        "200": { description: Local login flags persisted; existing sessions for changed accounts are invalidated locally., content: { application/json: { schema: { $ref: "#/components/schemas/AdminAccessSaveResponse" } } } }
+        "400": { description: Invalid or inactive local admin member., content: { application/json: { schema: { $ref: "#/components/schemas/AdminAccessError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local admin account store unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/AdminAccessError" } } } }
   /api/admin/automation-conversion/agent-runs:
     get:
       tags: [p4-automation-compat]
@@ -12584,6 +12629,12 @@ components:
       required: true
       description: Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
       schema: { type: string, minLength: 1, maxLength: 200 }
+    AdminAccessIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable local admin-access request key. Repeating the same desired flags does not create another session-version change.
+      schema: { type: string, minLength: 1, maxLength: 200 }
     QuestionnaireID:
       name: questionnaire_id
       in: path
@@ -20416,6 +20467,58 @@ components:
       properties:
         ok: { type: boolean, enum: [false] }
         error: { type: string, enum: [invalid_request, invalid_action_token, invalid_idempotency_key, secret_input_forbidden, invalid_setting, setup_wizard_conflict, setup_wizard_unavailable] }
+    AdminAccessMember:
+      type: object
+      additionalProperties: false
+      required: [admin_user_id, display_name, role, staff_id, staff_wecom_userid, staff_name, is_active, login_enabled]
+      properties:
+        admin_user_id: { type: integer, format: int64, minimum: 1 }
+        display_name: { type: string, minLength: 1, maxLength: 200 }
+        role: { type: string }
+        staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        staff_wecom_userid: { type: string, maxLength: 128 }
+        staff_name: { type: string, maxLength: 200 }
+        is_active: { type: boolean }
+        login_enabled: { type: boolean }
+    AdminAccessSaveMember:
+      type: object
+      additionalProperties: false
+      required: [admin_user_id, login_enabled]
+      properties:
+        admin_user_id: { type: integer, format: int64, minimum: 1 }
+        login_enabled: { type: boolean }
+    AdminAccessSaveRequest:
+      type: object
+      additionalProperties: false
+      required: [members]
+      properties:
+        members: { type: array, minItems: 1, maxItems: 200, items: { $ref: "#/components/schemas/AdminAccessSaveMember" } }
+    AdminAccessReadResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, members, local_only, external]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        members: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/AdminAccessMember" } }
+        local_only: { type: boolean, enum: [true] }
+        external: { type: boolean, enum: [false] }
+    AdminAccessSaveResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, members, idempotency_key, local_only, external]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        members: { type: array, minItems: 1, maxItems: 200, items: { $ref: "#/components/schemas/AdminAccessMember" } }
+        idempotency_key: { type: string, minLength: 1, maxLength: 200 }
+        local_only: { type: boolean, enum: [true] }
+        external: { type: boolean, enum: [false] }
+    AdminAccessError:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [invalid_request, invalid_member, admin_access_unavailable] }
     LegacyPushCenterSection:
       type: object
       additionalProperties: false

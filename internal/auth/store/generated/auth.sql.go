@@ -162,6 +162,55 @@ func (q *Queries) InsertAdminSession(ctx context.Context, arg InsertAdminSession
 	return err
 }
 
+const listAdminAccessMembers = `-- name: ListAdminAccessMembers :many
+SELECT u.id, u.display_name, u.role, u.staff_id, u.is_active, u.login_enabled,
+       COALESCE(s.wecom_userid, '') AS staff_wecom_userid,
+       COALESCE(s.name, '') AS staff_name
+FROM admin_users AS u
+LEFT JOIN staff AS s ON s.id = u.staff_id
+ORDER BY lower(u.display_name), u.id
+`
+
+type ListAdminAccessMembersRow struct {
+	ID               int64       `json:"id"`
+	DisplayName      string      `json:"display_name"`
+	Role             string      `json:"role"`
+	StaffID          pgtype.Int8 `json:"staff_id"`
+	IsActive         bool        `json:"is_active"`
+	LoginEnabled     bool        `json:"login_enabled"`
+	StaffWecomUserid string      `json:"staff_wecom_userid"`
+	StaffName        string      `json:"staff_name"`
+}
+
+func (q *Queries) ListAdminAccessMembers(ctx context.Context) ([]ListAdminAccessMembersRow, error) {
+	rows, err := q.db.Query(ctx, listAdminAccessMembers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAdminAccessMembersRow{}
+	for rows.Next() {
+		var i ListAdminAccessMembersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.Role,
+			&i.StaffID,
+			&i.IsActive,
+			&i.LoginEnabled,
+			&i.StaffWecomUserid,
+			&i.StaffName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const revokeSession = `-- name: RevokeSession :one
 UPDATE admin_sessions
 SET revoked_at = $1, revoked_reason = 'logout'
@@ -183,6 +232,43 @@ func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) (i
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const saveAdminAccessMember = `-- name: SaveAdminAccessMember :one
+WITH updated AS (
+  UPDATE admin_users
+  SET login_enabled = $1,
+      session_version = CASE
+        WHEN login_enabled IS DISTINCT FROM $1 THEN session_version + 1
+        ELSE session_version
+      END,
+      updated_at = CASE
+        WHEN login_enabled IS DISTINCT FROM $1 THEN $2
+        ELSE updated_at
+      END
+  WHERE id = $3
+    AND is_active
+  RETURNING id, login_enabled
+)
+SELECT id, login_enabled FROM updated
+`
+
+type SaveAdminAccessMemberParams struct {
+	LoginEnabled bool               `json:"login_enabled"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID           int64              `json:"id"`
+}
+
+type SaveAdminAccessMemberRow struct {
+	ID           int64 `json:"id"`
+	LoginEnabled bool  `json:"login_enabled"`
+}
+
+func (q *Queries) SaveAdminAccessMember(ctx context.Context, arg SaveAdminAccessMemberParams) (SaveAdminAccessMemberRow, error) {
+	row := q.db.QueryRow(ctx, saveAdminAccessMember, arg.LoginEnabled, arg.UpdatedAt, arg.ID)
+	var i SaveAdminAccessMemberRow
+	err := row.Scan(&i.ID, &i.LoginEnabled)
+	return i, err
 }
 
 const validateSessionCSRF = `-- name: ValidateSessionCSRF :one

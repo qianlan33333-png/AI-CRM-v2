@@ -14,7 +14,9 @@ type Querier interface {
 	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
 	InsertAdminOAuthState(ctx context.Context, arg InsertAdminOAuthStateParams) error
 	InsertAdminSession(ctx context.Context, arg InsertAdminSessionParams) error
+	ListAdminAccessMembers(ctx context.Context) ([]ListAdminAccessMembersRow, error)
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) (int64, error)
+	SaveAdminAccessMember(ctx context.Context, arg SaveAdminAccessMemberParams) (SaveAdminAccessMemberRow, error)
 	ValidateSessionCSRF(ctx context.Context, arg ValidateSessionCSRFParams) (bool, error)
 }
 

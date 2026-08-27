@@ -8,6 +8,7 @@ import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
+import { mountFunnelGrid } from '../admin/sections/funnelGrid';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
 import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
 import { getCreateServicePeriodMemberGridCollaboratorUrl, getDeleteServicePeriodMemberGridCollaboratorUrl, getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getGetServicePeriodMemberUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl, getQueryServicePeriodMemberGridUrl, getUpdateServicePeriodMemberFieldsUrl, getUpdateServicePeriodMemberGridCollaboratorUrl } from './generated/health';
@@ -621,6 +622,7 @@ export async function runAdminAdapterTests(): Promise<void> {
     const preview = await createOwnerReassignmentPreviewDto('customer_id,expected_owner_staff_id,expected_updated_at,target_owner_staff_id\n7,3,2026-08-25T00:00:00Z,9\n');
     assert(preview.id === ownerPreviewApi.id && ownerCreate?.input === '/api/v1/contact-owner-reassignments/previews', 'owner reassignment preview mapping/URL');
     assert(ownerCreate.init?.method === 'POST' && new Headers(ownerCreate.init.headers).get('Content-Type') === 'text/csv', 'owner reassignment preview method/content type');
+    assert(Boolean(new Headers(ownerCreate.init?.headers).get('Idempotency-Key')), 'owner reassignment preview idempotency header');
     assert(String(ownerCreate.init?.body).startsWith('customer_id,'), 'owner reassignment CSV body must not be JSON quoted');
   } finally { globalThis.fetch = savedFetch; }
 
@@ -786,6 +788,14 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(false, 'non-equivalent AI DTO was accepted');
   } catch (error) {
     assert(error instanceof Error && error.message.includes('后端能力未就绪') && !called, 'blocked AI action must not send request');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let funnelCalled = false;
+  globalThis.fetch = async () => { funnelCalled = true; return new Response('{}', { status: 200 }); };
+  try {
+    const funnelRoot = { className: '', innerHTML: '' } as unknown as HTMLElement;
+    await mountFunnelGrid(funnelRoot, new HttpApi({ baseUrl: '' }));
+    assert(funnelRoot.innerHTML.includes('后端能力未就绪') && !funnelCalled, 'HXC funnel prototype must fail closed without a request in HTTP mode');
   } finally { globalThis.fetch = savedFetch; }
 
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'conflict' }), { status: 409 });

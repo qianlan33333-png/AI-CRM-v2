@@ -120,6 +120,79 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         window.URL.revokeObjectURL = () => {};
         window.HTMLAnchorElement.prototype.click = function () { window.__orderDownload = { href: this.href, download: this.download }; };
       }
+      if (rel === 'admin/config.html') {
+        const digest = 'a'.repeat(64);
+        const token = 'b'.repeat(43);
+        const state = { corpId: 'ww-existing', agentId: 1001 };
+        const accessMembers = [
+          { admin_user_id: 7, display_name: '管理员甲', role: 'admin', staff_id: 7, staff_wecom_userid: 'staff-7', staff_name: '管理员甲', is_active: true, login_enabled: true },
+          { admin_user_id: 8, display_name: '运营乙', role: 'ops', staff_id: 8, staff_wecom_userid: 'staff-8', staff_name: '运营乙', is_active: true, login_enabled: false },
+          { admin_user_id: 9, display_name: '停用成员', role: 'sales', staff_id: 9, staff_wecom_userid: 'staff-9', staff_name: '停用成员', is_active: false, login_enabled: false },
+        ];
+        window.document.cookie = 'aicrm_csrf=' + 'c'.repeat(43);
+        const snapshot = () => ({
+          ok: true,
+          expected_digest: digest,
+          editable: { 'wecom.corp_id': state.corpId, 'wecom.agent_id': state.agentId },
+          editable_configured: { 'wecom.corp_id': true, 'wecom.agent_id': true },
+          masked: {
+            'wecom.secret': { configured: true, masked: true },
+            'wecom.callback_token': { configured: true, masked: true },
+            'wecom.callback_aes_key': { configured: false, masked: true },
+            'ai.api_key': { configured: false, masked: true },
+          },
+          admin_action_token: token,
+          external: false,
+          local_only: true,
+          runtime_applied: false,
+        });
+        const json = (data, status = 200) => ({
+          ok: status >= 200 && status < 300,
+          status,
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+          text: async () => JSON.stringify(data),
+        });
+        window.__setupWizardTest = { posts: [] };
+        window.__adminAccessTest = { puts: [] };
+        window.fetch = async (input, init = {}) => {
+          const url = String(input);
+          if (url.includes('/api/admin/admin-access')) {
+            if ((init.method || 'GET') === 'PUT') {
+              const body = JSON.parse(init.body || '{}');
+              const headers = new Headers(init.headers);
+              window.__adminAccessTest.puts.push({ body, key: headers.get('Idempotency-Key'), csrf: headers.get('X-CSRF-Token') });
+              for (const update of body.members || []) {
+                const member = accessMembers.find((item) => item.admin_user_id === update.admin_user_id && item.is_active);
+                if (member) member.login_enabled = update.login_enabled;
+              }
+              return json({ ok: true, members: accessMembers, idempotency_key: window.__adminAccessTest.puts.at(-1).key, local_only: true, external: false });
+            }
+            return json({ ok: true, members: accessMembers, local_only: true, external: false });
+          }
+          if (!url.includes('/api/admin/setup-wizard')) return json({ error: 'unexpected_request' }, 500);
+          if ((init.method || 'GET') === 'POST') {
+            const body = JSON.parse(init.body || '{}');
+            window.__setupWizardTest.posts.push({ body, key: new Headers(init.headers).get('Idempotency-Key') });
+            state.corpId = body['wecom.corp_id'];
+            state.agentId = body['wecom.agent_id'];
+            return json({
+              ok: true,
+              config: snapshot(),
+              receipt: {
+                idempotency_key: window.__setupWizardTest.posts.at(-1).key,
+                replayed: false,
+                audits: [{ key: 'wecom.corp_id', id: 1 }, { key: 'wecom.agent_id', id: 2 }],
+                events: [{ key: 'wecom.corp_id', type: 'setting.updated' }, { key: 'wecom.agent_id', type: 'setting.updated' }],
+              },
+              external: false,
+              local_only: true,
+              runtime_applied: false,
+            });
+          }
+          return json(snapshot());
+        };
+        return;
+      }
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
@@ -778,6 +851,35 @@ console.log('admin/configDetail.html?cat=wechat_pay（类目配置点渲染）')
   dom.window.close();
 }
 
+console.log('admin/config.html（本地 setup wizard 最小闭环）');
+{
+  const dom = await loadPage('admin/config.html');
+  const d = dom.window.document;
+  ok('只展示密钥配置状态且不渲染密钥输入框', d.body.textContent.includes('已配置（值不展示）') && !d.querySelector('input[type="password"]') && !d.body.textContent.includes('secret-value'));
+  input(dom, d.querySelector('#setup-corp-id'), '');
+  input(dom, d.querySelector('#setup-agent-id'), '0');
+  d.querySelector('#setup-wizard-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await sleep(30);
+  ok('无效输入在请求前失败', d.querySelector('#setup-wizard-result')?.textContent === 'validation_error' && dom.window.__setupWizardTest.posts.length === 0);
+
+  input(dom, d.querySelector('#setup-corp-id'), 'ww-updated');
+  input(dom, d.querySelector('#setup-agent-id'), '2002');
+  d.querySelector('#setup-wizard-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await sleep(80);
+  const post = dom.window.__setupWizardTest.posts[0];
+  ok('保存只写两个本地字段且密钥字段固定为空', post?.body['wecom.corp_id'] === 'ww-updated' && post?.body['wecom.agent_id'] === 2002 && ['wecom.secret', 'wecom.callback_token', 'wecom.callback_aes_key', 'ai.api_key'].every((key) => post.body[key] === ''));
+  ok('保存携带幂等键并以本地回执成功，不跳转', typeof post?.key === 'string' && post.key.length > 0 && d.querySelector('#setup-wizard-result')?.textContent === 'save_success' && dom.window.location.pathname.endsWith('/admin/config.html'));
+  ok('后台访问成员读取且明确仅限本地登录', d.querySelectorAll('[data-admin-access-id]').length === 3 && d.body.textContent.includes('不创建账号、角色或企微身份，不同步企微'));
+  const access = d.querySelector('[data-admin-access-id="7"]');
+  access.checked = false;
+  access.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  d.querySelector('#admin-access-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await sleep(80);
+  const accessPut = dom.window.__adminAccessTest.puts[0];
+  ok('后台登录权限保存带 CSRF、幂等且不提交停用成员', accessPut?.body.members?.length === 2 && accessPut.body.members.find((member) => member.admin_user_id === 7)?.login_enabled === false && typeof accessPut.key === 'string' && accessPut.key.length > 0 && accessPut.csrf === 'c'.repeat(43) && d.querySelector('#admin-access-result')?.textContent === 'save_success');
+  dom.window.close();
+}
+
 console.log('admin/channelForm.html（完整 OpenAPI 渠道 DTO）');
 {
   const dom = await loadPage('admin/channelForm.html');
@@ -800,6 +902,25 @@ console.log('admin/ownerMig.html（本地安全 CSV 迁移边界）');
   const csv = d.querySelector('#ownerMigCsv');
   ok('仅接受 CSV 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
   ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
+
+  dom.window.__aicrmDownload = null;
+  dom.window.URL.createObjectURL = () => 'blob:owner-migration';
+  dom.window.URL.revokeObjectURL = () => {};
+  dom.window.HTMLAnchorElement.prototype.click = function () {
+    dom.window.__aicrmDownload = { filename: this.download, href: this.href };
+  };
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('下载安全 CSV 模板')));
+  await sleep(250);
+  ok('下载负责人迁移模板触发本地 CSV 下载', dom.window.__aicrmDownload?.filename === '负责人迁移模板.csv');
+
+  Object.defineProperty(csv, 'files', {
+    configurable: true,
+    value: [new dom.window.File(['customer_id,expected_owner_staff_id,expected_updated_at,target_owner_staff_id\n7,3,2026-08-25T00:00:00Z,9\n'], 'owners.csv', { type: 'text/csv' })],
+  });
+  const parseButton = [...d.querySelectorAll('button')].find((b) => b.textContent.includes('上传并生成预览'));
+  click(dom, parseButton);
+  await sleep(250);
+  ok('上传 CSV 生成服务端持久预览投影', d.body.textContent.includes('服务端持久预览') && d.body.textContent.includes('preview_id: cor_0123456789012345678901') && d.body.textContent.includes('预览已生成'));
   dom.window.close();
 }
 
