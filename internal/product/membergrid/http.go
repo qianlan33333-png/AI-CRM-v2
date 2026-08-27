@@ -199,7 +199,7 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 		return QueryInput{}, malformed("body", "object_required", errors.New("query body must be an object"))
 	}
 
-	seen := make(map[string]struct{}, 4)
+	seen := make(map[string]struct{}, 7)
 	for decoder.More() {
 		keyToken, tokenErr := decoder.Token()
 		key, ok := keyToken.(string)
@@ -253,6 +253,18 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 					code: platformhttp.CodeCursorInvalid, cause: ErrInvalidCursor,
 					field: "cursor", reason: "invalid",
 				}
+			}
+		case "sort":
+			if err = json.Unmarshal(raw, &input.Sort); err != nil || (input.Sort != string(querySortUpdatedAtDesc) && input.Sort != string(querySortStartsAtDesc)) {
+				return QueryInput{}, validation("sort", "unsupported", ErrInvalidQuery)
+			}
+		case "group_by":
+			if err = json.Unmarshal(raw, &input.GroupBy); err != nil || input.GroupBy != string(queryGroupState) {
+				return QueryInput{}, validation("group_by", "unsupported", ErrInvalidQuery)
+			}
+		case "view_id":
+			if err = json.Unmarshal(raw, &input.ViewID); err != nil || input.ViewID != "default" {
+				return QueryInput{}, validation("view_id", "unsupported", ErrInvalidQuery)
 			}
 		default:
 			return QueryInput{}, malformed("body", "unknown_field", errors.New("unknown query field"))

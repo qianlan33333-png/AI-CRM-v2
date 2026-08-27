@@ -167,9 +167,18 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         window.open = (...args) => { window.__serviceProductHttpTest.opened.push(args); return null; };
         window.fetch = async (input, init = {}) => {
           const url = new URL(String(input), window.location.origin);
-          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? JSON.parse(String(init.body)) : null });
           if (url.pathname === '/api/admin/service-period-products') return json({ items: [product] });
           if (url.pathname === '/api/admin/service-period-products/8/share') return json({ ok: true, service_product_id: 8, public_path: '/p/service_period/8', local_only: true, real_external_call_executed: false });
+          if (url.pathname === '/api/admin/service-period-products/8') return json({ ok: true, product });
+          if (url.pathname.endsWith('/member-grid/access')) return json({ product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false });
+          if (url.pathname.endsWith('/member-grid/schema')) return json({ service_product_id: 8, columns: Array.from({ length: 12 }, (_, index) => ({ key: index === 0 ? 'display_name' : `field_${index}`, label: `列${index + 1}`, type: 'string', nullable: false })) });
+          if (url.pathname.endsWith('/member-views')) return json({ product_id: 8, views: [{ id: 'default', name: '默认视图', source: 'built_in', read_only: true }] });
+          if (url.pathname.endsWith('/member-grid/share-settings')) return json({ service_product_id: 8, saved_views: [], collaborators: [], external_share_supported: true, external_share_enabled: false, external_share_version: 0, real_external_call_executed: false, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false });
+          if (url.pathname.endsWith('/member-grid/query')) return json({ rows: [
+            { member_ref: 'spm_0000000000000000000001', service_product_id: 8, customer_id: 21, display_name: '有效成员', state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, expired_at: null, removed_at: null, version: 3, updated_at: '2026-08-26T08:00:00Z' },
+            { member_ref: 'spm_0000000000000000000002', service_product_id: 8, customer_id: 22, display_name: '过期成员', state: 'expired', source: 'paid_order', starts_at: '2026-07-01T00:00:00Z', expires_at: '2026-08-01T00:00:00Z', expired_at: '2026-08-01T00:00:00Z', removed_at: null, version: 2, updated_at: '2026-08-01T08:00:00Z' },
+          ], limit: 50, next_cursor: '', has_more: false });
           return json({ code: 'unexpected_service_product_request' }, 500);
         };
         return;
@@ -1023,6 +1032,24 @@ console.log('admin/spProducts.html（真实周期商品分享）');
   click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存二维码'));
   await sleep(30);
   ok('预览与二维码下载均沿用同一真实链接', test.opened[0]?.[0] === expected && test.downloads[0]?.download === 'SP-8-qr.svg');
+  dom.window.close();
+}
+
+console.log('admin/spProductData.html（受限 Member Grid 视图/排序/分组）');
+{
+  const dom = await loadPage('admin/spProductData.html', { id: 8, serviceProductHttp: true });
+  const d = dom.window.document;
+  const test = dom.window.__serviceProductHttpTest;
+  const initialQuery = test.calls.find((call) => call.path.endsWith('/member-grid/query'));
+  ok('默认视图使用真实受限查询契约', initialQuery?.body?.view_id === 'default' && initialQuery.body.sort === 'updated_at_desc');
+  d.querySelector('#member-grid-view').value = '';
+  d.querySelector('#member-grid-sort').value = 'starts_at_desc';
+  d.querySelector('#member-grid-group').value = 'state';
+  click(dom, d.querySelector('#member-grid-apply'));
+  await sleep(40);
+  const selectedQuery = test.calls.filter((call) => call.path.endsWith('/member-grid/query')).at(-1);
+  ok('自定义查询只发送白名单排序与状态分组', selectedQuery?.body?.sort === 'starts_at_desc' && selectedQuery.body.group_by === 'state' && !selectedQuery.body.view_id);
+  ok('页面按服务端返回的 canonical state 渲染连续分组', d.querySelectorAll('[data-member-group]').length === 2 && d.body.textContent.includes('遗留任意视图'));
   dom.window.close();
 }
 

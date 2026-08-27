@@ -179,6 +179,10 @@ func TestSelectedQuerySupportsOnlyCanonicalSortGroupDefaultViewAndBoundCursor(t 
 	if err != nil || !byStarts.HasMore || len(byStarts.Rows) != 2 || byStarts.Rows[0].MemberRef != expired.MemberRef || byStarts.Rows[1].MemberRef != removed.MemberRef || !strings.HasPrefix(byStarts.NextCursor, selectedCursorPrefix) {
 		t.Fatalf("start sort response=%+v error=%v", byStarts, err)
 	}
+	viaPublicQuery, err := service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 2, Sort: "starts_at_desc"})
+	if err != nil || len(viaPublicQuery.Rows) != 2 || viaPublicQuery.Rows[0].MemberRef != expired.MemberRef || !strings.HasPrefix(viaPublicQuery.NextCursor, selectedCursorPrefix) {
+		t.Fatalf("public selected query response=%+v error=%v", viaPublicQuery, err)
+	}
 	secondByStarts, err := service.querySelected(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 2, Cursor: byStarts.NextCursor}, querySelection{Sort: querySortStartsAtDesc})
 	if err != nil || secondByStarts.HasMore || len(secondByStarts.Rows) != 1 || secondByStarts.Rows[0].MemberRef != active.MemberRef {
 		t.Fatalf("start sort continuation=%+v error=%v", secondByStarts, err)

@@ -715,6 +715,9 @@ export type CouponClaimPage = { items: Array<{ claimRef: string; status: string;
 export type MemberGridState = 'active' | 'expired' | 'removed' | 'all';
 export type MemberGridSource = 'manual' | 'paid_order';
 export type MemberGridSourceFilter = MemberGridSource | '';
+export type MemberGridSort = 'updated_at_desc' | 'starts_at_desc';
+export type MemberGridGroupBy = '' | 'state';
+export type MemberGridViewID = '' | 'default';
 export type ServicePeriodMemberGridRow = { memberRef: string; serviceProductId: number; customerId: number; state: MemberGridState; source: MemberGridSource; startsAt: string; expiresAt: string | null; expiredAt: string | null; removedAt: string | null; version: number; updatedAt: string; displayName: string };
 export type ServicePeriodMemberGridPage = { rows: ServicePeriodMemberGridRow[]; limit: number; nextCursor: string; hasMore: boolean };
 export type ServicePeriodMemberDetail = ServicePeriodMemberGridRow & { remark: string | null; alliance: string | null; createdAt: string };
@@ -774,11 +777,11 @@ export async function getServicePeriodMemberGridMetaDto(productId: number): Prom
   const collaboratorRows = list(share, 'collaborators').map((item) => collaboratorDto(item, productId));
   return { product: serviceProductPageDto(productSource.product || productSource), columns, views: builtInViews, collaborators: collaboratorRows.length, collaboratorRows, externalShareEnabled: share.external_share_enabled, externalShareVersion };
 }
-export async function queryServicePeriodMemberGridDto(productId: number, input: { state?: MemberGridState; source?: MemberGridSourceFilter; limit?: number; cursor?: string } = {}): Promise<ServicePeriodMemberGridPage> {
+export async function queryServicePeriodMemberGridDto(productId: number, input: { state?: MemberGridState; source?: MemberGridSourceFilter; sort?: MemberGridSort; groupBy?: MemberGridGroupBy; viewId?: MemberGridViewID; limit?: number; cursor?: string } = {}): Promise<ServicePeriodMemberGridPage> {
   if (!Number.isSafeInteger(productId) || productId < 1) throw new Error('Member Grid 商品 ID 无效');
-  const state = input.state || 'all'; const source = input.source || ''; const limit = input.limit ?? 50;
-  if (!['active', 'expired', 'removed', 'all'].includes(state) || !['', 'manual', 'paid_order'].includes(source) || !Number.isSafeInteger(limit) || limit < 1 || limit > 50) throw new Error('Member Grid 查询条件无效');
-  const page = obj(await call(queryServicePeriodMemberGrid(productId, { state, source: source || undefined, limit, cursor: input.cursor || '' }, apiRequestOptions())));
+  const state = input.state || 'all'; const source = input.source || ''; const sort = input.sort; const groupBy = input.groupBy || ''; const viewId = input.viewId || ''; const limit = input.limit ?? 50;
+  if (!['active', 'expired', 'removed', 'all'].includes(state) || !['', 'manual', 'paid_order'].includes(source) || (sort != null && !['updated_at_desc', 'starts_at_desc'].includes(sort)) || !['', 'state'].includes(groupBy) || !['', 'default'].includes(viewId) || (viewId === 'default' && (state !== 'all' || source !== '' || (sort != null && sort !== 'updated_at_desc') || groupBy !== '')) || !Number.isSafeInteger(limit) || limit < 1 || limit > 50) throw new Error('Member Grid 查询条件无效');
+  const page = obj(await call(queryServicePeriodMemberGrid(productId, { state, source: source || undefined, sort, group_by: groupBy || undefined, view_id: viewId || undefined, limit, cursor: input.cursor || '' }, apiRequestOptions())));
   if (!Array.isArray(page.rows) || typeof page.next_cursor !== 'string' || (page.has_more !== true && page.has_more !== false)) throw new Error('Member Grid 查询响应不完整');
   const rows = page.rows.map((item) => memberRowDto(item, productId));
   const pageLimit = requiredPositiveValue(page.limit, 'limit'); if (pageLimit > 50 || pageLimit !== limit) throw new Error('Member Grid 查询页大小不匹配');

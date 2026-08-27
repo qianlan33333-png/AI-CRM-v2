@@ -35,7 +35,7 @@ export const CAPABILITIES: readonly Capability[] = [
   { surface: 'admin', screen: 'spProductData', action: '成员网格公开只读分享、撤销与一次性链接', state: 'real', operation: 'setServicePeriodMemberGridExternalShare/queryPublicServicePeriodMemberGridSummary' },
   { surface: 'admin', screen: 'spProducts/spProductForm/spProductData', action: '周期商品 CRUD、启停、复制与归档', state: 'real', operation: 'createServicePeriodProduct/updateServicePeriodProduct/enableServicePeriodProduct/disableServicePeriodProduct/copyServicePeriodProduct/archiveServicePeriodProduct' },
   { surface: 'admin', screen: 'spProducts/spProductForm', action: '周期商品公开购买与页面动作配置', state: 'backend_blocked', reason: '当前 OpenAPI 明确不提供周期商品公开购买能力，核心 DTO 也不包含页面素材和 URL 外推字段' },
-  { surface: 'admin', screen: 'spProductData', action: '周期商品分享读取、二维码与链接预览', state: 'backend_blocked', reason: '当前仅在开启或同一幂等重试时返回一次 fragment 链接；不提供链接重读、二维码或预览契约' },
+  { surface: 'admin', screen: 'spProducts/spProductData', action: '周期商品分享读取、二维码与链接预览', state: 'real', operation: 'getServicePeriodProductShare' },
   { surface: 'admin', screen: 'coupons/couponForm/couponData', action: '优惠券、分享、领取和商品选项读取', state: 'real', operation: 'listLegacyCoupons/getLegacyCoupon/getLegacyCouponShare/listLegacyCouponClaims/listLegacyCouponProductOptions' },
   { surface: 'admin', screen: 'coupons/couponForm/couponData', action: '优惠券创建、更新、发布、停用、复制、归档与草稿删除', state: 'real', operation: 'createLegacyCoupon/updateLegacyCoupon/publishLegacyCoupon/stopLegacyCoupon/copyLegacyCoupon/archiveLegacyCoupon/deleteLegacyCoupon' },
   { surface: 'admin', screen: 'images/attach/mpLib', action: '三素材库、facets 与详情读取', state: 'real', operation: 'getLegacyImageList/getLegacyImageFacets/getLegacyImage/listLegacyAttachments/getLegacyAttachment/listLegacyMiniPrograms/getLegacyMiniProgram' },

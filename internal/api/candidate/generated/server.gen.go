@@ -6511,6 +6511,39 @@ func (e ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted)
 	}
 }
 
+// Defines values for ServicePeriodMemberGridQueryRequestGroupBy.
+const (
+	ServicePeriodMemberGridQueryRequestGroupByState ServicePeriodMemberGridQueryRequestGroupBy = "state"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridQueryRequestGroupBy enum.
+func (e ServicePeriodMemberGridQueryRequestGroupBy) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridQueryRequestGroupByState:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridQueryRequestSort.
+const (
+	StartsAtDesc  ServicePeriodMemberGridQueryRequestSort = "starts_at_desc"
+	UpdatedAtDesc ServicePeriodMemberGridQueryRequestSort = "updated_at_desc"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridQueryRequestSort enum.
+func (e ServicePeriodMemberGridQueryRequestSort) Valid() bool {
+	switch e {
+	case StartsAtDesc:
+		return true
+	case UpdatedAtDesc:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServicePeriodMemberGridQueryRequestState.
 const (
 	ServicePeriodMemberGridQueryRequestStateActive  ServicePeriodMemberGridQueryRequestState = "active"
@@ -6529,6 +6562,21 @@ func (e ServicePeriodMemberGridQueryRequestState) Valid() bool {
 	case ServicePeriodMemberGridQueryRequestStateExpired:
 		return true
 	case ServicePeriodMemberGridQueryRequestStateRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridQueryRequestViewId.
+const (
+	Default ServicePeriodMemberGridQueryRequestViewId = "default"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridQueryRequestViewId enum.
+func (e ServicePeriodMemberGridQueryRequestViewId) Valid() bool {
+	switch e {
+	case Default:
 		return true
 	default:
 		return false
@@ -6885,34 +6933,34 @@ func (e ServicePeriodMemberViewResponseOk) Valid() bool {
 
 // Defines values for ServicePeriodMemberViewUpdateRequestColumns.
 const (
-	ServicePeriodMemberViewUpdateRequestColumnsDisplayName   ServicePeriodMemberViewUpdateRequestColumns = "display_name"
-	ServicePeriodMemberViewUpdateRequestColumnsEntitlementId ServicePeriodMemberViewUpdateRequestColumns = "entitlement_id"
-	ServicePeriodMemberViewUpdateRequestColumnsGrantedAt     ServicePeriodMemberViewUpdateRequestColumns = "granted_at"
-	ServicePeriodMemberViewUpdateRequestColumnsMaskedMobile  ServicePeriodMemberViewUpdateRequestColumns = "masked_mobile"
-	ServicePeriodMemberViewUpdateRequestColumnsProductId     ServicePeriodMemberViewUpdateRequestColumns = "product_id"
-	ServicePeriodMemberViewUpdateRequestColumnsRevokedAt     ServicePeriodMemberViewUpdateRequestColumns = "revoked_at"
-	ServicePeriodMemberViewUpdateRequestColumnsState         ServicePeriodMemberViewUpdateRequestColumns = "state"
-	ServicePeriodMemberViewUpdateRequestColumnsVersion       ServicePeriodMemberViewUpdateRequestColumns = "version"
+	DisplayName   ServicePeriodMemberViewUpdateRequestColumns = "display_name"
+	EntitlementId ServicePeriodMemberViewUpdateRequestColumns = "entitlement_id"
+	GrantedAt     ServicePeriodMemberViewUpdateRequestColumns = "granted_at"
+	MaskedMobile  ServicePeriodMemberViewUpdateRequestColumns = "masked_mobile"
+	ProductId     ServicePeriodMemberViewUpdateRequestColumns = "product_id"
+	RevokedAt     ServicePeriodMemberViewUpdateRequestColumns = "revoked_at"
+	State         ServicePeriodMemberViewUpdateRequestColumns = "state"
+	Version       ServicePeriodMemberViewUpdateRequestColumns = "version"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberViewUpdateRequestColumns enum.
 func (e ServicePeriodMemberViewUpdateRequestColumns) Valid() bool {
 	switch e {
-	case ServicePeriodMemberViewUpdateRequestColumnsDisplayName:
+	case DisplayName:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsEntitlementId:
+	case EntitlementId:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsGrantedAt:
+	case GrantedAt:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsMaskedMobile:
+	case MaskedMobile:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsProductId:
+	case ProductId:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsRevokedAt:
+	case RevokedAt:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsState:
+	case State:
 		return true
-	case ServicePeriodMemberViewUpdateRequestColumnsVersion:
+	case Version:
 		return true
 	default:
 		return false
@@ -11905,16 +11953,28 @@ type ServicePeriodMemberGridMember struct {
 
 // ServicePeriodMemberGridQueryRequest defines model for ServicePeriodMemberGridQueryRequest.
 type ServicePeriodMemberGridQueryRequest struct {
-	Cursor *string `json:"cursor,omitempty"`
-	Limit  *int    `json:"limit,omitempty"`
+	Cursor  *string                                     `json:"cursor,omitempty"`
+	GroupBy *ServicePeriodMemberGridQueryRequestGroupBy `json:"group_by,omitempty"`
+	Limit   *int                                        `json:"limit,omitempty"`
+	Sort    *ServicePeriodMemberGridQueryRequestSort    `json:"sort,omitempty"`
 
 	// Source paid_order is output-compatible only until an authoritative internal order owner is established; the manual add API cannot accept it.
-	Source *ServicePeriodMemberSource                `json:"source,omitempty"`
-	State  *ServicePeriodMemberGridQueryRequestState `json:"state,omitempty"`
+	Source *ServicePeriodMemberSource                 `json:"source,omitempty"`
+	State  *ServicePeriodMemberGridQueryRequestState  `json:"state,omitempty"`
+	ViewId *ServicePeriodMemberGridQueryRequestViewId `json:"view_id,omitempty"`
 }
+
+// ServicePeriodMemberGridQueryRequestGroupBy defines model for ServicePeriodMemberGridQueryRequest.GroupBy.
+type ServicePeriodMemberGridQueryRequestGroupBy string
+
+// ServicePeriodMemberGridQueryRequestSort defines model for ServicePeriodMemberGridQueryRequest.Sort.
+type ServicePeriodMemberGridQueryRequestSort string
 
 // ServicePeriodMemberGridQueryRequestState defines model for ServicePeriodMemberGridQueryRequest.State.
 type ServicePeriodMemberGridQueryRequestState string
+
+// ServicePeriodMemberGridQueryRequestViewId defines model for ServicePeriodMemberGridQueryRequest.ViewId.
+type ServicePeriodMemberGridQueryRequestViewId string
 
 // ServicePeriodMemberGridQueryResponse defines model for ServicePeriodMemberGridQueryResponse.
 type ServicePeriodMemberGridQueryResponse struct {

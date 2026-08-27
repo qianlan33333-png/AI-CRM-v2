@@ -4637,9 +4637,37 @@ export const ServicePeriodMemberGridQueryRequestState = {
   all: "all",
 } as const;
 
+export type ServicePeriodMemberGridQueryRequestSort =
+  (typeof ServicePeriodMemberGridQueryRequestSort)[keyof typeof ServicePeriodMemberGridQueryRequestSort];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestSort = {
+  updated_at_desc: "updated_at_desc",
+  starts_at_desc: "starts_at_desc",
+} as const;
+
+export type ServicePeriodMemberGridQueryRequestGroupBy =
+  (typeof ServicePeriodMemberGridQueryRequestGroupBy)[keyof typeof ServicePeriodMemberGridQueryRequestGroupBy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestGroupBy = {
+  state: "state",
+} as const;
+
+export type ServicePeriodMemberGridQueryRequestViewId =
+  (typeof ServicePeriodMemberGridQueryRequestViewId)[keyof typeof ServicePeriodMemberGridQueryRequestViewId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestViewId = {
+  default: "default",
+} as const;
+
 export interface ServicePeriodMemberGridQueryRequest {
   state?: ServicePeriodMemberGridQueryRequestState;
   source?: ServicePeriodMemberSource;
+  sort?: ServicePeriodMemberGridQueryRequestSort;
+  group_by?: ServicePeriodMemberGridQueryRequestGroupBy;
+  view_id?: ServicePeriodMemberGridQueryRequestViewId;
   /**
    * @minimum 1
    * @maximum 50

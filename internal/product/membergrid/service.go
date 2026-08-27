@@ -49,6 +49,11 @@ func (service *Service) MemberViews(ctx context.Context, productID int64) (Membe
 }
 
 func (service *Service) Query(ctx context.Context, input QueryInput) (QueryResponse, error) {
+	if input.Sort != "" || input.GroupBy != "" || input.ViewID != "" {
+		return service.querySelected(ctx, input, querySelection{
+			Sort: querySort(input.Sort), GroupBy: queryGroupBy(input.GroupBy), ViewID: input.ViewID,
+		})
+	}
 	if service == nil || nilDependency(service.uow) || nilDependency(service.store) || service.codec == nil {
 		return QueryResponse{}, ErrUnavailable
 	}
