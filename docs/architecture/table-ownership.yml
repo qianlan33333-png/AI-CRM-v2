@@ -228,7 +228,7 @@ owners:
 
   migration:
     package: internal/migration
-    tables: [data_migration_runs, data_migration_run_tables, data_migration_run_leases, data_migration_row_receipts, data_migration_result_receipts, data_migration_quarantines, data_migration_archives, data_migration_reconciliation_receipts, v1_archive_runs, v1_archive_tables, v1_archive_records, v1_archive_mappings, v1_archive_reconciliation_receipts]
+    tables: [data_migration_runs, data_migration_run_tables, data_migration_run_leases, data_migration_row_receipts, data_migration_result_receipts, data_migration_quarantines, data_migration_archives, data_migration_reconciliation_receipts, v1_archive_runs, v1_archive_tables, v1_archive_records, v1_archive_mappings, v1_archive_reconciliation_receipts, v1_domain_import_receipts, v1_domain_import_reconciliation_receipts]
     constraints:
       data_migration_runs: immutable_source_identity_schema_and_manifest_fence_with_closed_phase_transitions
       data_migration_run_tables: fixed_upper_bound_cursor_checkpoint_with_active_lease_fence
@@ -243,6 +243,8 @@ owners:
       v1_archive_records: immutable_AES_GCM_encrypted_redacted_V1_rows_with_HMAC_lineage
       v1_archive_mappings: immutable_source_to_canonical_V2_lineage_without_runtime_activation
       v1_archive_reconciliation_receipts: immutable_full_table_row_and_target_verification_counts
+      v1_domain_import_receipts: immutable_archive_linked_terminal_domain_import_decisions
+      v1_domain_import_reconciliation_receipts: immutable_all_selected_domain_source_receipt_and_target_verification
 
   auth:
     package: internal/auth
