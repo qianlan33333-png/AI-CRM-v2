@@ -54,10 +54,22 @@ get() {
   printf 'staging-smoke: %s passed\n' "$label"
 }
 
+get_contains() {
+  local label="$1"
+  local path="$2"
+  local marker="$3"
+  local body
+  if ! body="$(curl --fail --silent --show-error --max-time "$timeout_seconds" "$base_url$path")"; then
+    fail "$label failed: $path"
+  fi
+  [[ "$body" == *"$marker"* ]] || fail "$label response marker missing: $path"
+  printf 'staging-smoke: %s passed\n' "$label"
+}
+
 # /readyz is the public worker/queue signal: the API only returns 200 when
 # the readiness evaluator reports queues healthy (or an explicitly allowed
 # warning state). No queue-specific endpoint exists in the current contract.
-get 'login entry' '/login'
+get_contains 'login entry' '/login' '登录运营工作台'
 get 'API health' '/healthz'
 get 'readiness and worker queue health' '/readyz'
 

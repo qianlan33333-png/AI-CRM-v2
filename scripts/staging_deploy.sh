@@ -83,13 +83,13 @@ fi
 [[ -n "${AICRM_POSTGRES_PASSWORD:-}" ]] || fail 'AICRM_POSTGRES_PASSWORD is required for --apply'
 [[ -n "${AICRM_IDENTITY_HMAC_KEY:-}" ]] || fail 'AICRM_IDENTITY_HMAC_KEY must be injected by the process environment for --apply'
 [[ "${AICRM_RELEASE_SHA:-}" =~ ^[a-f0-9]{40}$ ]] || fail 'AICRM_RELEASE_SHA must be a 40-character lowercase commit SHA for --apply'
+[[ "$(git -C "$repository_root" rev-parse HEAD)" = "$AICRM_RELEASE_SHA" ]] || fail 'AICRM_RELEASE_SHA must equal the current checkout HEAD for --apply'
+[[ -z "$(git -C "$repository_root" status --porcelain --untracked-files=normal)" ]] || fail 'the release checkout must be clean for --apply'
 [[ "${AICRM_ENV:-}" = 'staging' ]] || fail 'AICRM_ENV=staging is required for --apply'
 [[ -n "${AICRM_STAGING_SESSION_COOKIE:-}" ]] || fail 'AICRM_STAGING_SESSION_COOKIE is required for authenticated staging smoke'
 [[ "$edge_base_url_seen" -eq 1 && -n "$edge_base_url" ]] || fail '--edge-base-url is required for --apply'
-case "${AICRM_STAGING_PROVIDER_MODE:-}" in
-  disabled|fake) ;;
-  *) fail 'AICRM_STAGING_PROVIDER_MODE must be disabled or fake for --apply' ;;
-esac
+[[ "${AICRM_STAGING_PROVIDER_MODE:-}" = 'disabled' ]] ||
+  fail 'AICRM_STAGING_PROVIDER_MODE=disabled is required until a real fake Provider runtime exists'
 for provider_flag in AICRM_WECOM_OUTBOUND_ENABLED AICRM_WECOM_CUSTOMER_ACQUISITION_ENABLED AICRM_WECHAT_PAY_ENABLED AICRM_WECHAT_SHOP_ORDER_SYNC_ENABLED AICRM_WECHAT_SHOP_REFUND_ENABLED; do
   [[ "${!provider_flag:-false}" != 'true' ]] || fail "$provider_flag=true is forbidden by the staging provider mode"
 done
@@ -97,6 +97,9 @@ command -v docker >/dev/null 2>&1 || fail 'docker with Compose v2 is required fo
 docker compose version >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
 command -v pg_dump >/dev/null 2>&1 || fail 'pg_dump is required for the pre-migration snapshot'
 command -v curl >/dev/null 2>&1 || fail 'curl is required for the staging smoke test'
+docker pull "$AICRM_IMAGE" >/dev/null
+image_release_sha="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$AICRM_IMAGE")"
+[[ "$image_release_sha" = "$AICRM_RELEASE_SHA" ]] || fail 'AICRM_IMAGE revision label must equal AICRM_RELEASE_SHA for --apply'
 
 swap_target_mib="$(awk -F= '$1 == "AICRM_SWAP_TARGET_MIB" { print $2 }' "$environment_file")"
 swap_policy="$(awk -F= '$1 == "AICRM_SWAP_POLICY" { print $2 }' "$environment_file")"

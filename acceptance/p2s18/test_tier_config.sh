@@ -8,6 +8,8 @@ fail() {
 
 script_directory="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 repository_root="$(CDPATH= cd -- "$script_directory/../.." && pwd -P)"
+release_sha="$(git -C "$repository_root" rev-parse HEAD)"
+rollback_release_sha='fedcba9876543210fedcba9876543210fedcba98'
 test_directory="$(mktemp -d -t aicrm-v2-p2s18.XXXXXX)"
 trap 'rm -rf "$test_directory"' EXIT HUP INT TERM
 
@@ -146,10 +148,10 @@ grep -Fq 'deployment NOT EXECUTED' "$render_output" || fail 'render-only did not
 fake_binary_directory="$test_directory/fake-bin"
 mkdir -p "$fake_binary_directory"
 docker_log="$test_directory/docker.log"
-printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\n" "$*" >>"$AICRM_DOCKER_LOG"' >"$fake_binary_directory/docker"
+printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\n" "$*" >>"$AICRM_DOCKER_LOG"' 'if [[ "$1" = "image" && "$2" = "inspect" ]]; then printf "%s\n" "${AICRM_FAKE_IMAGE_REVISION:-$AICRM_RELEASE_SHA}"; fi' >"$fake_binary_directory/docker"
 chmod 755 "$fake_binary_directory/docker"
 printf '%s\n' '#!/usr/bin/env bash' 'for argument in "$@"; do case "$argument" in --file=*) snapshot_file="${argument#--file=}" ;; esac; done' ': >"$snapshot_file"' >"$fake_binary_directory/pg_dump"
-printf '%s\n' '#!/usr/bin/env bash' 'if [[ -n "${AICRM_CURL_LOG:-}" ]]; then printf "%s\\n" "$*" >>"$AICRM_CURL_LOG"; fi' 'exit 0' >"$fake_binary_directory/curl"
+printf '%s\n' '#!/usr/bin/env bash' 'if [[ -n "${AICRM_CURL_LOG:-}" ]]; then printf "%s\\n" "$*" >>"$AICRM_CURL_LOG"; fi' 'if [[ "$*" = *"/login"* ]]; then printf "<h1>登录运营工作台</h1>\\n"; fi' 'exit 0' >"$fake_binary_directory/curl"
 restore_log="$test_directory/restore.log"
 printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\\n" "$*" >>"$AICRM_PG_RESTORE_LOG"' >"$fake_binary_directory/pg_restore"
 real_go="$(command -v go)"
@@ -178,19 +180,47 @@ restore_plan="$test_directory/restore-plan.log"
 grep -Fq 'NOT EXECUTED' "$restore_plan" || fail 'restore drill render-only did not preserve the external gate'
 [[ ! -e "$restore_log" ]] || fail 'restore drill render-only invoked pg_restore'
 
-restore_apply="$test_directory/restore-apply.log"
-(
+if (
   cd "$repository_root"
   AICRM_ALLOW_STAGING_RESTORE=1 \
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
+  AICRM_PG_RESTORE_LOG="$restore_log" \
+  PATH="$fake_binary_directory:$PATH" \
+    scripts/staging_restore_drill.sh --snapshot="$restore_snapshot" --edge-base-url='https://staging.invalid' --apply >/dev/null 2>&1
+); then
+  fail 'restore drill without AICRM_ENV=staging was accepted'
+fi
+[[ ! -e "$restore_log" ]] || fail 'restore drill without staging environment invoked pg_restore'
+
+restore_apply="$test_directory/restore-apply.log"
+restore_docker_log="$test_directory/restore-docker.log"
+(
+  cd "$repository_root"
+  AICRM_ALLOW_STAGING_RESTORE=1 \
+  AICRM_ENV='staging' \
+  AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
+  AICRM_RELEASE_SHA="$release_sha" \
+  AICRM_ROLLBACK_RELEASE_SHA="$rollback_release_sha" \
+  AICRM_ROLLBACK_IMAGE='registry.invalid/aicrm-rollback@sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789' \
+  AICRM_GENERATED_ENV_FILE="$test_directory/m-first/aicrm.env" \
+  AICRM_POSTGRESQL_CONF_FILE="$test_directory/m-first/postgresql.conf" \
+  AICRM_POSTGRES_PASSWORD='test-only' \
+  AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
+  AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
+  AICRM_DOCKER_LOG="$restore_docker_log" \
+  AICRM_FAKE_IMAGE_REVISION="$rollback_release_sha" \
   AICRM_CURL_LOG="$test_directory/restore-curl.log" \
   AICRM_PG_RESTORE_LOG="$restore_log" \
   PATH="$fake_binary_directory:$PATH" \
     scripts/staging_restore_drill.sh --snapshot="$restore_snapshot" --edge-base-url='https://staging.invalid' --apply >"$restore_apply"
 )
 grep -Fq -- '--exit-on-error --clean --if-exists --no-owner' "$restore_log" || fail 'restore drill apply did not execute pg_restore'
-grep -Fq 'post-restore authenticated smoke completed' "$restore_apply" || fail 'restore drill apply did not report completion'
+grep -Fq 'rollback image, pg_restore and post-restore authenticated smoke completed' "$restore_apply" || fail 'restore drill apply did not report completion'
+grep -Fq 'pull registry.invalid/aicrm-rollback@sha256:' "$restore_docker_log" || fail 'restore drill did not pull the rollback image'
+grep -Fq 'image inspect --format' "$restore_docker_log" || fail 'restore drill did not verify the rollback image revision'
+grep -Fq 'stop app api worker' "$restore_docker_log" || fail 'restore drill did not stop the current runtime before restore'
+grep -Fq 'up -d --wait' "$restore_docker_log" || fail 'restore drill did not start the rollback runtime after restore'
 grep -Fq '/readyz' "$test_directory/restore-curl.log" || fail 'restore drill did not run readiness smoke'
 grep -Fq '/api/v1/products' "$test_directory/restore-curl.log" || fail 'restore drill did not run authenticated core read smoke'
 
@@ -210,7 +240,7 @@ if (
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_POSTGRES_PASSWORD='test-only' \
   AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
-  AICRM_RELEASE_SHA='0123456789abcdef0123456789abcdef01234567' \
+  AICRM_RELEASE_SHA="$release_sha" \
   AICRM_ENV='staging' \
   AICRM_STAGING_PROVIDER_MODE='disabled' \
   AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
@@ -227,7 +257,7 @@ if (
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_POSTGRES_PASSWORD='test-only' \
   AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
-  AICRM_RELEASE_SHA='0123456789abcdef0123456789abcdef01234567' \
+  AICRM_RELEASE_SHA="$release_sha" \
   AICRM_ENV='staging' \
   AICRM_STAGING_PROVIDER_MODE='disabled' \
   PATH="$fake_binary_directory:$PATH" \
@@ -243,7 +273,7 @@ fi
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_POSTGRES_PASSWORD='test-only' \
   AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
-  AICRM_RELEASE_SHA='0123456789abcdef0123456789abcdef01234567' \
+  AICRM_RELEASE_SHA="$release_sha" \
   AICRM_ENV='staging' \
   AICRM_STAGING_PROVIDER_MODE='disabled' \
   AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
@@ -254,8 +284,10 @@ fi
   PATH="$fake_binary_directory:$PATH" \
     scripts/staging_deploy.sh --tier=m --output-dir="$test_directory/authorized" --edge-base-url='https://staging.invalid' --apply >/dev/null
 )
-[[ "$(wc -l <"$docker_log" | tr -d ' ')" = '4' ]] || fail 'authorized staging apply did not execute four Compose checks/actions'
+[[ "$(wc -l <"$docker_log" | tr -d ' ')" = '6' ]] || fail 'authorized staging apply did not execute image binding and four Compose checks/actions'
 grep -Fq 'compose version' "$docker_log" || fail 'Compose version check was not executed'
+grep -Fq 'pull registry.invalid/aicrm@sha256:' "$docker_log" || fail 'pinned runtime image was not pulled before deployment'
+grep -Fq 'image inspect --format' "$docker_log" || fail 'runtime image revision label was not inspected'
 grep -Fq 'config --quiet' "$docker_log" || fail 'Compose config check was not executed'
 grep -Fq 'up -d --wait postgres' "$docker_log" || fail 'PostgreSQL was not started before migrations'
 [[ "$(grep -Fc 'up -d --wait' "$docker_log")" = '2' ]] || fail 'Compose application did not resume after migrations'
