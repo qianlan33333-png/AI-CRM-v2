@@ -158,21 +158,28 @@ func (importer *SurveyImporter) Import(ctx context.Context, archiveRunID string)
 	for _, questionnaire := range questionnaires {
 		aggregate, rows := buildSurveyAggregate(questionnaire, questionsByParent, optionsByParent, submissionsByParent, answersByParent,
 			consumedQuestions, consumedOptions, consumedSubmissions, consumedAnswers)
-		imported, importErr := importer.service.Import(ctx, surveyport.ImportRequest{
-			MigrationActor: importer.actorID, RunID: surveyImportRunID,
-			IdempotencyKey: SourceIdentifier(questionnaire.archive.SourceKeyHMAC), Aggregate: aggregate,
-		})
-		if errors.Is(importErr, surveyapp.ErrInvalidImport) {
-			if err := importer.recordSurveyQuarantine(ctx, rows, "invalid_survey_aggregate"); err != nil {
+		partition := partitionSurveyAggregate(aggregate, rows)
+		if len(partition.QuarantinedRows) > 0 {
+			if err := importer.recordSurveyQuarantine(ctx, partition.QuarantinedRows, "survey_definition_history_unresolved"); err != nil {
 				return SurveyImportResult{}, err
 			}
-			result.QuarantinedRows += len(rows)
+			result.QuarantinedRows += len(partition.QuarantinedRows)
+		}
+		imported, importErr := importer.service.Import(ctx, surveyport.ImportRequest{
+			MigrationActor: importer.actorID, RunID: surveyImportRunID,
+			IdempotencyKey: SourceIdentifier(questionnaire.archive.SourceKeyHMAC), Aggregate: partition.Importable,
+		})
+		if errors.Is(importErr, surveyapp.ErrInvalidImport) {
+			if err := importer.recordSurveyQuarantine(ctx, partition.ImportRows, "invalid_survey_aggregate"); err != nil {
+				return SurveyImportResult{}, err
+			}
+			result.QuarantinedRows += len(partition.ImportRows)
 			continue
 		}
 		if importErr != nil {
 			return SurveyImportResult{}, importErr
 		}
-		if err := importer.recordSurveyImports(ctx, rows, imported); err != nil {
+		if err := importer.recordSurveyImports(ctx, partition.ImportRows, imported); err != nil {
 			return SurveyImportResult{}, err
 		}
 		result.ImportedQuestionnaires++
@@ -198,6 +205,15 @@ type surveyArchiveRef struct {
 	table   string
 	archive v1archive.ArchivedRow
 	source  int64
+}
+
+// surveyAggregatePartition isolates only submissions whose answer snapshot
+// cannot be related to the current V1 definition. The owner importer remains
+// responsible for every other domain validation.
+type surveyAggregatePartition struct {
+	Importable      surveyport.ValidatedImportAggregate
+	ImportRows      []surveyArchiveRef
+	QuarantinedRows []surveyArchiveRef
 }
 
 func buildSurveyAggregate(questionnaire archivedValue[surveyQuestionnaireJSON], questions map[int64][]archivedValue[surveyQuestionJSON], options map[int64][]archivedValue[surveyOptionJSON], submissions map[int64][]archivedValue[surveySubmissionJSON], answers map[int64][]archivedValue[surveyAnswerJSON], consumedQuestions, consumedOptions, consumedSubmissions, consumedAnswers map[int64]bool) (surveyport.ValidatedImportAggregate, []surveyArchiveRef) {
@@ -275,6 +291,61 @@ func buildSurveyAggregate(questionnaire archivedValue[surveyQuestionnaireJSON], 
 		}
 	}
 	return aggregate, rows
+}
+
+func partitionSurveyAggregate(aggregate surveyport.ValidatedImportAggregate, rows []surveyArchiveRef) surveyAggregatePartition {
+	questions := make(map[int64]surveyport.ImportQuestion, len(aggregate.Questions))
+	for _, question := range aggregate.Questions {
+		questions[question.SourceID] = question
+	}
+	options := make(map[int64]surveyport.ImportOption, len(aggregate.Options))
+	for _, option := range aggregate.Options {
+		options[option.SourceID] = option
+	}
+
+	quarantinedSubmissions := make(map[int64]bool)
+	answerSubmission := make(map[int64]int64, len(aggregate.Answers))
+	for _, answer := range aggregate.Answers {
+		answerSubmission[answer.SourceID] = answer.SourceSubmissionID
+		question, questionOK := questions[answer.SourceQuestionID]
+		if !questionOK || question.Type != answer.QuestionType {
+			quarantinedSubmissions[answer.SourceSubmissionID] = true
+			continue
+		}
+		for _, selected := range answer.SelectedOptions {
+			option, optionOK := options[selected.SourceOptionID]
+			if !optionOK || option.SourceQuestionID != answer.SourceQuestionID {
+				quarantinedSubmissions[answer.SourceSubmissionID] = true
+				break
+			}
+		}
+	}
+
+	result := surveyAggregatePartition{Importable: aggregate}
+	result.Importable.Submissions = make([]surveyport.ImportSubmission, 0, len(aggregate.Submissions))
+	for _, submission := range aggregate.Submissions {
+		if !quarantinedSubmissions[submission.SourceID] {
+			result.Importable.Submissions = append(result.Importable.Submissions, submission)
+		}
+	}
+	result.Importable.Answers = make([]surveyport.ImportAnswer, 0, len(aggregate.Answers))
+	for _, answer := range aggregate.Answers {
+		if !quarantinedSubmissions[answer.SourceSubmissionID] {
+			result.Importable.Answers = append(result.Importable.Answers, answer)
+		}
+	}
+	for _, row := range rows {
+		quarantine := row.table == "public/questionnaire_submissions" && quarantinedSubmissions[row.source]
+		if row.table == "public/questionnaire_submission_answers" && quarantinedSubmissions[answerSubmission[row.source]] {
+			quarantine = true
+		}
+		if quarantine {
+			result.QuarantinedRows = append(result.QuarantinedRows, row)
+			continue
+		}
+		result.ImportRows = append(result.ImportRows, row)
+	}
+	return result
 }
 
 func (importer *SurveyImporter) recordSurveyQuarantine(ctx context.Context, rows []surveyArchiveRef, reason string) error {
