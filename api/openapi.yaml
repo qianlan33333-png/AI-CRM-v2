@@ -4975,6 +4975,74 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupon-history:
+    get:
+      tags: [p4-coupon-history]
+      operationId: listCouponHistoryDefinitions
+      summary: Read frozen V1 coupon definitions without current claim or payment authority
+      x-p4-decision-evidence: P4-V1-COUPON-HISTORY-2026-08-28
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: coupon.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical source facts, content: { application/json: { schema: { $ref: "#/components/schemas/CouponHistoryDefinitionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupon-history/{coupon_id}/claims:
+    get:
+      tags: [p4-coupon-history]
+      operationId: listCouponHistoryClaims
+      summary: Read frozen V1 coupon claims without current claim or payment authority
+      x-p4-decision-evidence: P4-V1-COUPON-HISTORY-2026-08-28
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: coupon.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical source facts, content: { application/json: { schema: { $ref: "#/components/schemas/CouponHistoryClaimPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/coupon-history/{coupon_id}/redemptions:
+    get:
+      tags: [p4-coupon-history]
+      operationId: listCouponHistoryRedemptions
+      summary: Read frozen V1 coupon redemptions without current claim or payment authority
+      x-p4-decision-evidence: P4-V1-COUPON-HISTORY-2026-08-28
+      x-aicrm-capability: coupons.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: coupon.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: coupon_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical source facts, content: { application/json: { schema: { $ref: "#/components/schemas/CouponHistoryRedemptionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/coupons:
     get:
       tags: [p4-coupon-compat]
@@ -17681,6 +17749,121 @@ components:
           maxItems: 100
           uniqueItems: true
           items: { type: string, pattern: '^standard_product:[1-9][0-9]*$' }
+    CouponHistoryDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, source_coupon_id, name, discount_amount_total, currency, status, availability_status, history_only, original_status, total_issue_limit, per_user_issue_limit, issued_count, claim_starts_at, claim_ends_at, validity_mode, use_starts_at, use_ends_at, relative_validity_days, instructions, target_refs, first_claim_at, created_by, updated_by, version, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64 }
+        source_coupon_id: { type: integer, format: int64 }
+        name: { type: string }
+        discount_amount_total: { type: integer, format: int64 }
+        currency: { type: string, enum: [CNY] }
+        status: { type: string, enum: [archived] }
+        availability_status: { type: string, enum: [archived] }
+        history_only: { type: boolean, enum: [true] }
+        original_status: { type: string }
+        total_issue_limit: { type: integer, format: int64 }
+        per_user_issue_limit: { type: integer, format: int64 }
+        issued_count: { type: integer, format: int64 }
+        claim_starts_at: { type: string, format: date-time }
+        claim_ends_at: { type: string, format: date-time }
+        validity_mode: { type: string }
+        use_starts_at: { type: string, format: date-time, nullable: true }
+        use_ends_at: { type: string, format: date-time, nullable: true }
+        relative_validity_days: { type: integer, format: int32, nullable: true }
+        instructions: { type: string }
+        target_refs: { type: array, items: { type: string } }
+        first_claim_at: { type: string, format: date-time, nullable: true }
+        created_by: { type: integer, format: int64 }
+        updated_by: { type: integer, format: int64 }
+        version: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CouponHistoryDefinitionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/CouponHistoryDefinition" } }
+        total: { type: integer, format: int64 }
+        limit: { type: integer, format: int32 }
+        offset: { type: integer, format: int32 }
+    CouponHistoryClaim:
+      type: object
+      additionalProperties: false
+      required: [id, source_claim_id, source_coupon_id, coupon_id, customer_id, claim_no, status, discount_amount_total, currency, valid_from, valid_until, claimed_at, reserved_at, consumed_at, expired_at, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64 }
+        source_claim_id: { type: integer, format: int64 }
+        source_coupon_id: { type: integer, format: int64 }
+        coupon_id: { type: integer, format: int64 }
+        customer_id: { type: integer, format: int64, nullable: true }
+        claim_no: { type: string }
+        status: { type: string }
+        discount_amount_total: { type: integer, format: int64 }
+        currency: { type: string, enum: [CNY] }
+        valid_from: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time }
+        claimed_at: { type: string, format: date-time }
+        reserved_at: { type: string, format: date-time, nullable: true }
+        consumed_at: { type: string, format: date-time, nullable: true }
+        expired_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CouponHistoryClaimPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, coupon_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        coupon_id: { type: integer, format: int64 }
+        items: { type: array, items: { $ref: "#/components/schemas/CouponHistoryClaim" } }
+        total: { type: integer, format: int64 }
+        limit: { type: integer, format: int32 }
+        offset: { type: integer, format: int32 }
+    CouponHistoryRedemption:
+      type: object
+      additionalProperties: false
+      required: [id, source_redemption_id, source_claim_id, source_order_id, claim_history_id, order_id, out_trade_no, status, original_amount_total, discount_amount_total, payable_amount_total, currency, reserved_until, release_reason, reserved_at, consumed_at, released_at, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64 }
+        source_redemption_id: { type: integer, format: int64 }
+        source_claim_id: { type: integer, format: int64 }
+        source_order_id: { type: integer, format: int64 }
+        claim_history_id: { type: integer, format: int64 }
+        order_id: { type: integer, format: int64, nullable: true }
+        out_trade_no: { type: string }
+        status: { type: string }
+        original_amount_total: { type: integer, format: int64 }
+        discount_amount_total: { type: integer, format: int64 }
+        payable_amount_total: { type: integer, format: int64 }
+        currency: { type: string, enum: [CNY] }
+        reserved_until: { type: string, format: date-time }
+        release_reason: { type: string }
+        reserved_at: { type: string, format: date-time }
+        consumed_at: { type: string, format: date-time, nullable: true }
+        released_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CouponHistoryRedemptionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, coupon_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        coupon_id: { type: integer, format: int64 }
+        items: { type: array, items: { $ref: "#/components/schemas/CouponHistoryRedemption" } }
+        total: { type: integer, format: int64 }
+        limit: { type: integer, format: int32 }
+        offset: { type: integer, format: int32 }
     Coupon:
       allOf:
         - $ref: "#/components/schemas/CouponUpsertRequest"
@@ -17688,6 +17871,7 @@ components:
           additionalProperties: false
           required: [id, currency, status, availability_status, issued_count, created_by, updated_by, version, created_at, updated_at]
           properties:
+            history_only: { type: boolean, description: True only for read-only imported historical coupons. }
             id: { type: integer, format: int64, minimum: 1 }
             currency: { type: string, enum: [CNY] }
             status: { type: string, enum: [draft, published, stopped, archived, deleted] }

@@ -2150,6 +2150,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	)
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
+	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
