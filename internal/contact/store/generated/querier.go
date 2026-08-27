@@ -43,6 +43,9 @@ type Querier interface {
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
 	CreateDM01AcceptanceExpiredImportingRun(ctx context.Context, arg CreateDM01AcceptanceExpiredImportingRunParams) (int64, error)
 	CreateDM01AcceptanceStaleRun(ctx context.Context, arg CreateDM01AcceptanceStaleRunParams) (int64, error)
+	// Contact-only, non-executing V1 channel definitions. No operation receipt,
+	// asset binding, event or current customer attribution is created.
+	CreateHistoricalChannel(ctx context.Context, arg CreateHistoricalChannelParams) (CreateHistoricalChannelRow, error)
 	CreateHistoricalImportCustomer(ctx context.Context, arg CreateHistoricalImportCustomerParams) (int64, error)
 	CreateHistoricalTagImport(ctx context.Context, arg CreateHistoricalTagImportParams) (CreateHistoricalTagImportRow, error)
 	CreateHistoricalTagImportGroup(ctx context.Context, arg CreateHistoricalTagImportGroupParams) (TagGroup, error)
@@ -72,6 +75,7 @@ type Querier interface {
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
 	GetDM01TargetDatabaseIdentity(ctx context.Context) (GetDM01TargetDatabaseIdentityRow, error)
 	GetExternalEventIdempotency(ctx context.Context, idempotencyKey string) (GetExternalEventIdempotencyRow, error)
+	GetHistoricalChannel(ctx context.Context, channelID int64) (GetHistoricalChannelRow, error)
 	GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error)
 	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
 	GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error)
