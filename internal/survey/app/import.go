@@ -525,7 +525,7 @@ func validImportSubmission(submission surveyport.ImportSubmission) bool {
 		validImportText(submission.StaffID, 200, false) && validImportText(submission.ResultToken, 200, false) &&
 		utf8.ValidString(submission.RedirectURLSnapshot) && utf8.RuneCountInString(submission.RedirectURLSnapshot) <= 2000 &&
 		!math.IsNaN(submission.TotalScore) && !math.IsInf(submission.TotalScore, 0) && validImportTags(submission.FinalTags) &&
-		!submission.SubmittedAt.IsZero() && !submission.CreatedAt.IsZero() && !submission.CreatedAt.After(submission.SubmittedAt)
+		!submission.SubmittedAt.IsZero() && !submission.CreatedAt.IsZero()
 }
 
 func validImportAnswer(answer surveyport.ImportAnswer) bool {

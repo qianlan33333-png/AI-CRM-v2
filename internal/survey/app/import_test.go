@@ -207,6 +207,39 @@ func TestImportWritesOneAggregateInOneUnitOfWork(t *testing.T) {
 	}
 }
 
+func TestImportPreservesLateCreatedHistoricalSubmission(t *testing.T) {
+	uow, store := &importTestUOW{}, &importTestStore{nextID: 100}
+	request := importTestRequest()
+	submittedAt := request.Aggregate.Submissions[0].SubmittedAt
+	createdAt := submittedAt.Add(89*24*time.Hour + 21*time.Hour)
+	request.Aggregate.Submissions[0].CreatedAt = createdAt
+	if _, err := newImportTestService(uow, store).Import(context.Background(), request); err != nil {
+		t.Fatalf("Import() late-created history error = %v", err)
+	}
+	stored := store.submissions[0]
+	if !stored.SubmittedAt.Equal(submittedAt) || !stored.CreatedAt.Equal(createdAt) || !stored.CreatedAt.After(stored.SubmittedAt) {
+		t.Fatalf("historical submission timestamps changed: %#v", stored)
+	}
+}
+
+func TestImportRejectsZeroHistoricalSubmissionTimestamp(t *testing.T) {
+	for _, zero := range []string{"submitted", "created"} {
+		t.Run(zero, func(t *testing.T) {
+			uow, store := &importTestUOW{}, &importTestStore{nextID: 100}
+			request := importTestRequest()
+			if zero == "submitted" {
+				request.Aggregate.Submissions[0].SubmittedAt = time.Time{}
+			} else {
+				request.Aggregate.Submissions[0].CreatedAt = time.Time{}
+			}
+			_, err := newImportTestService(uow, store).Import(context.Background(), request)
+			if !errors.Is(err, ErrInvalidImport) || uow.calls != 0 || store.writeCalls != 0 {
+				t.Fatalf("zero %s timestamp error=%v uow=%d writes=%d", zero, err, uow.calls, store.writeCalls)
+			}
+		})
+	}
+}
+
 func TestImportReplaysSameDigestWithoutWrites(t *testing.T) {
 	uow, store := &importTestUOW{}, &importTestStore{nextID: 100}
 	service := newImportTestService(uow, store)
