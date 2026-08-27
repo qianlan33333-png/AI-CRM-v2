@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http } = {}) {
+async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '' } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http);
+      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp);
       if (h5Http) {
         const calls = [];
         let submissionAttempt = 0;
@@ -87,6 +87,32 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
           }
           if (url.pathname === '/api/public/survey-submission-results/query') return json(h5Http.result, h5Http.resultStatus || 200);
           return json({ code: 'unexpected_h5_request' }, 500);
+        };
+        return;
+      }
+      if (serviceHistoryHttp) {
+        const test = { calls: [], failure: serviceHistoryFailure };
+        window.__serviceHistoryHttpTest = test;
+        const at = '2026-08-27T10:11:12.123456Z';
+        const json = (data, status = 200) => ({ status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          const definition = url.pathname === '/api/admin/service-period-history';
+          const entitlement = url.pathname === '/api/admin/service-period-history/17/entitlements';
+          const event = url.pathname === '/api/admin/service-period-history/17/events';
+          if (!definition && !entitlement && !event) return json({ code: 'unexpected_history_request' }, 500);
+          if (test.failure === 'all' || (test.failure === 'events' && event)) return json({ code: 'history_unavailable' }, 503);
+          const offset = Number(url.searchParams.get('offset'));
+          const limit = Number(url.searchParams.get('limit'));
+          const total = serviceHistoryEmpty ? 0 : 21;
+          const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, index) => {
+            const rowID = offset + index + 17;
+            if (definition) return { id: rowID, source_definition_id: rowID + 100, product_id: 91, product_code: 'P-91', product_name: '历史周期商品 <原名>', price_minor: 9900, currency: 'CNY', membership_config_id: '', membership_config_name: '历史配置', duration_days: -3, deleted: true, created_at: at, updated_at: at };
+            if (entitlement) return { id: rowID, source_entitlement_id: rowID + 200, definition_id: 17, customer_id: index ? 7 : null, membership_config_id: '', status: index ? 'active' : 'expired', start_at: at, end_at: '2025-01-01T00:00:00Z', last_order_id: null, last_out_trade_no: '', renewal_count: -2, created_at: at, updated_at: at };
+            return { id: rowID, source_event_id: rowID + 300, definition_id: 17, entitlement_id: null, customer_id: null, order_id: null, event_id: 'event-' + rowID, event_type: index ? 'admin_adjusted' : 'grant_failed_missing_unionid', duration_days: -7, out_trade_no: '', before_start_at: null, before_end_at: null, after_start_at: null, after_end_at: null, created_at: at };
+          });
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, definition_id: 17, items, total, limit, offset });
         };
         return;
       }
@@ -1095,6 +1121,53 @@ console.log('admin/groupopsDetail.html（typed 素材节点）');
   dom.window.close();
 }
 
+console.log('admin/spProducts/spProductData（V1 历史只读 GET）');
+{
+  const dom = await loadPage('admin/spProducts.html', { q: 'history=1', serviceHistoryHttp: true });
+  const d = dom.window.document;
+  const test = dom.window.__serviceHistoryHttpTest;
+  ok('历史定义显示真实商品、负时长、删除标记与只读链接', d.querySelector('#history-definitions')?.textContent.includes('历史周期商品 <原名>') && d.querySelector('#history-definitions')?.textContent.includes('-3 天') && d.querySelector('[data-history-definition="17"]')?.getAttribute('href') === 'spProductData.html?id=91&history=17' && !d.querySelector('原名'));
+  ok('历史模式不显示创建/启用/分享等当前商品写按钮', ![...d.querySelectorAll('#stage button')].some((button) => /创建|启用|分享|购买|续费|授权/.test(button.textContent)));
+  click(dom, d.querySelector('#history-definitions [data-history-next]'));
+  await sleep(30);
+  ok('定义下一页真实发送 limit/offset，渲染服务端第二页', test.calls.some((call) => call.path === '/api/admin/service-period-history' && call.query === '?limit=20&offset=20') && d.querySelectorAll('#history-definitions tbody tr').length === 1);
+  click(dom, d.querySelector('#history-definitions [data-history-previous]'));
+  await sleep(30);
+  ok('定义上一页回到 offset=0，无 canonical 商品读取', test.calls.length === 3 && test.calls.every((call) => call.path === '/api/admin/service-period-history' && call.method === 'GET') && d.querySelectorAll('#history-definitions tbody tr').length === 20);
+  test.failure = 'all';
+  click(dom, d.querySelector('#history-definitions [data-history-next]'));
+  await sleep(30);
+  ok('翻页失败清除旧历史行并显示错误，不回退 Mock', !!d.querySelector('#history-definitions [role="alert"]') && d.querySelectorAll('#history-definitions tbody tr').length === 0);
+  test.failure = '';
+  click(dom, d.querySelector('#history-definitions [data-history-retry]'));
+  await sleep(30);
+  ok('读取重试仍为 GET 并保留失败页 offset', test.calls.at(-1)?.query === '?limit=20&offset=20' && test.calls.at(-1)?.method === 'GET' && d.querySelectorAll('#history-definitions tbody tr').length === 1);
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'id=91&history=17', serviceHistoryHttp: true });
+  const d = dom.window.document;
+  const test = dom.window.__serviceHistoryHttpTest;
+  ok('历史权益保留原状态、负续期、未关联客户，不造当前会员', d.querySelector('#history-entitlements')?.textContent.includes('V1 快照状态：expired') && d.querySelector('#history-entitlements')?.textContent.includes('续期计数：-2') && d.querySelector('#history-entitlements')?.textContent.includes('未关联客户') && !!d.querySelector('a[href="customerDetail.html?id=7"]'));
+  ok('失败历史事件保留 NULL 和负调整，无执行按钮', d.querySelector('#history-events')?.textContent.includes('grant_failed_missing_unionid') && d.querySelector('#history-events')?.textContent.includes('调整天数：-7') && d.querySelector('#history-events')?.textContent.includes('未关联权益') && d.querySelector('#history-events')?.textContent.includes('未记录') && ![...d.querySelectorAll('#stage button')].some((button) => /执行|删除|编辑|授权|退款/.test(button.textContent)));
+  click(dom, d.querySelector('#history-entitlements [data-history-next]'));
+  click(dom, d.querySelector('#history-events [data-history-next]'));
+  await sleep(30);
+  ok('权益和事件分别按 definition_id 过滤并发送分页 GET', ['entitlements', 'events'].every((kind) => test.calls.some((call) => call.path === '/api/admin/service-period-history/17/' + kind && call.query === '?limit=20&offset=20')) && test.calls.length === 4 && test.calls.every((call) => call.method === 'GET' && call.path.startsWith('/api/admin/service-period-history/17/')));
+  dom.window.close();
+}
+for (const fixture of [{ serviceHistoryEmpty: true }, { serviceHistoryFailure: 'events' }]) {
+  const dom = await loadPage('admin/spProductData.html', { q: 'history=17', serviceHistoryHttp: true, ...fixture });
+  const d = dom.window.document;
+  ok(fixture.serviceHistoryEmpty ? '真实历史空页显示空态，分页关闭' : '事件读取失败只显示错误，权益区仍显示真实数据', fixture.serviceHistoryEmpty ? d.querySelector('#history-events')?.textContent.includes('暂无 V1 历史记录') && d.querySelector('#history-events [data-history-next]')?.disabled : !!d.querySelector('#history-events [role="alert"]') && d.querySelectorAll('#history-events tbody tr').length === 0 && d.querySelectorAll('#history-entitlements tbody tr').length === 20);
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'history=0', serviceHistoryHttp: true });
+  ok('无效历史定义 ID 在发请求前失败关闭', dom.window.document.querySelector('#stage')?.textContent.includes('定义 ID 无效') && dom.window.__serviceHistoryHttpTest.calls.length === 0);
+  dom.window.close();
+}
+
 console.log('admin/spProducts.html（真实周期商品分享）');
 {
   const dom = await loadPage('admin/spProducts.html', { serviceProductHttp: true });
@@ -1102,6 +1175,7 @@ console.log('admin/spProducts.html（真实周期商品分享）');
   click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '分享'));
   await sleep(40);
   const test = dom.window.__serviceProductHttpTest;
+  ok('当前周期商品列表提供独立 V1 历史只读入口', !!d.querySelector('a[href="spProducts.html?history=1"]'));
   const expected = 'http://localhost/p/service_period/8';
   const svg = d.querySelector('#shareQrBox svg');
   ok('周期商品分享只读取真实 OpenAPI 投影', test.calls.some((call) => call.path === '/api/admin/service-period-products/8/share' && call.method === 'GET'));
