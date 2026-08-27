@@ -15,6 +15,7 @@ import (
 
 const (
 	systemHealthPath              = "/api/system/health"
+	systemReadinessPath           = "/readyz"
 	systemHealthObservationBudget = 750 * time.Millisecond
 )
 

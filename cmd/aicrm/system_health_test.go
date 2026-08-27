@@ -131,13 +131,15 @@ func TestFinalRouterKeepsSystemHealthPublic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, systemHealthPath, nil))
-	if response.Code != http.StatusOK || len(service.capabilities()) != 0 {
-		t.Fatalf("GET %s status/capabilities = %d/%v, want 200/none", systemHealthPath, response.Code, service.capabilities())
+	for _, path := range []string{systemHealthPath, systemReadinessPath} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusOK || len(service.capabilities()) != 0 {
+			t.Fatalf("GET %s status/capabilities = %d/%v, want 200/none", path, response.Code, service.capabilities())
+		}
 	}
 
-	response = httptest.NewRecorder()
+	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, systemHealthPath, nil))
 	if response.Code != http.StatusBadRequest || len(service.capabilities()) != 0 {
 		t.Fatalf("POST %s status/capabilities = %d/%v, want 400/none", systemHealthPath, response.Code, service.capabilities())

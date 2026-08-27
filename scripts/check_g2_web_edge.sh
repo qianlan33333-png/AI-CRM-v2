@@ -48,7 +48,7 @@ grep -Eq '^CapabilityBoundingSet=.*CAP_(SYS_ADMIN|DAC_OVERRIDE|NET_ADMIN)' "$ser
 
 require_caddy $'\tadmin off'
 require_caddy 'aa.youcangogogo.com {'
-require_caddy $'\t@backend path /api/* /healthz'
+require_caddy $'\t@backend path /api/* /auth/* /wecom/* /login /logout /healthz /readyz'
 require_caddy $'\t\treverse_proxy 127.0.0.1:8080'
 require_caddy $'\t\ttry_files {path} /index.html'
 require_caddy $'\t\tfile_server'

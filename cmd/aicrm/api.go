@@ -2273,20 +2273,22 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		}))
 	}
 	if legacy != nil && legacy.systemHealth != nil {
-		systemHealth := legacy.systemHealth
-		systemHealth, err = recovery(systemHealth)
-		if err != nil {
-			return nil, err
+		for _, pattern := range []string{systemHealthPath, systemReadinessPath} {
+			systemHealth := http.Handler(legacy.systemHealth)
+			systemHealth, err = recovery(systemHealth)
+			if err != nil {
+				return nil, err
+			}
+			systemHealth, err = gateway.TimeoutMiddleware(systemHealth)
+			if err != nil {
+				return nil, err
+			}
+			systemHealth, err = gateway.RoutePatternMiddleware(pattern, systemHealth)
+			if err != nil {
+				return nil, err
+			}
+			router.Method(http.MethodGet, pattern, systemHealth)
 		}
-		systemHealth, err = gateway.TimeoutMiddleware(systemHealth)
-		if err != nil {
-			return nil, err
-		}
-		systemHealth, err = gateway.RoutePatternMiddleware(systemHealthPath, systemHealth)
-		if err != nil {
-			return nil, err
-		}
-		router.Method(http.MethodGet, systemHealthPath, systemHealth)
 	}
 	registerCallback := func(method, pattern string) error {
 		tail, wrapErr := recovery(callbackHandler)
