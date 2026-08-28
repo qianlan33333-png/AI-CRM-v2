@@ -6,12 +6,24 @@ package campaigndb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CompleteCampaignTouchPlanReceipt(ctx context.Context, arg CompleteCampaignTouchPlanReceiptParams) (CompleteCampaignTouchPlanReceiptRow, error)
 	CompleteCampaignTouchPlanRecipientReviewReceipt(ctx context.Context, arg CompleteCampaignTouchPlanRecipientReviewReceiptParams) (CompleteCampaignTouchPlanRecipientReviewReceiptRow, error)
 	CompleteCampaignTouchPlanReviewReceipt(ctx context.Context, arg CompleteCampaignTouchPlanReviewReceiptParams) (CompleteCampaignTouchPlanReviewReceiptRow, error)
+	CountHistoricalBroadcastMessages(ctx context.Context, recipientHistoryID int64) (int64, error)
+	CountHistoricalBroadcastPlans(ctx context.Context) (int64, error)
+	CountHistoricalBroadcastRecipients(ctx context.Context, planHistoryID int64) (int64, error)
+	CountHistoricalCampaignMembers(ctx context.Context, arg CountHistoricalCampaignMembersParams) (int64, error)
+	CountHistoricalCampaignSegments(ctx context.Context, campaignSourceID pgtype.Int8) (int64, error)
+	CreateHistoricalBroadcastMessage(ctx context.Context, arg CreateHistoricalBroadcastMessageParams) (CampaignV1HistoryBroadcastMessage, error)
+	CreateHistoricalBroadcastPlan(ctx context.Context, arg CreateHistoricalBroadcastPlanParams) (CampaignV1HistoryBroadcastPlan, error)
+	CreateHistoricalBroadcastRecipient(ctx context.Context, arg CreateHistoricalBroadcastRecipientParams) (CampaignV1HistoryBroadcastRecipient, error)
+	CreateHistoricalCampaignMember(ctx context.Context, arg CreateHistoricalCampaignMemberParams) (CampaignV1HistoryMember, error)
+	CreateHistoricalCampaignSegment(ctx context.Context, arg CreateHistoricalCampaignSegmentParams) (CampaignV1HistorySegment, error)
 	GetCampaignTouchPlan(ctx context.Context, arg GetCampaignTouchPlanParams) (GetCampaignTouchPlanRow, error)
 	GetCampaignTouchPlanHandoff(ctx context.Context, arg GetCampaignTouchPlanHandoffParams) (CloudCampaignTouchPlanHandoff, error)
 	GetCampaignTouchPlanReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReceiptForUpdateParams) (GetCampaignTouchPlanReceiptForUpdateRow, error)
@@ -20,6 +32,11 @@ type Querier interface {
 	GetCampaignTouchPlanReview(ctx context.Context, arg GetCampaignTouchPlanReviewParams) (CloudCampaignTouchPlanReview, error)
 	GetCampaignTouchPlanReviewReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReviewReceiptForUpdateParams) (GetCampaignTouchPlanReviewReceiptForUpdateRow, error)
 	GetCampaignTouchPlanReviewRecipient(ctx context.Context, arg GetCampaignTouchPlanReviewRecipientParams) (CloudCampaignTouchPlanTarget, error)
+	GetHistoricalBroadcastMessage(ctx context.Context, id int64) (CampaignV1HistoryBroadcastMessage, error)
+	GetHistoricalBroadcastPlan(ctx context.Context, id int64) (CampaignV1HistoryBroadcastPlan, error)
+	GetHistoricalBroadcastRecipient(ctx context.Context, id int64) (CampaignV1HistoryBroadcastRecipient, error)
+	GetHistoricalCampaignMember(ctx context.Context, id int64) (CampaignV1HistoryMember, error)
+	GetHistoricalCampaignSegment(ctx context.Context, id int64) (CampaignV1HistorySegment, error)
 	InsertCampaignTouchPlan(ctx context.Context, arg InsertCampaignTouchPlanParams) error
 	InsertCampaignTouchPlanHandoff(ctx context.Context, arg InsertCampaignTouchPlanHandoffParams) error
 	InsertCampaignTouchPlanStep(ctx context.Context, arg InsertCampaignTouchPlanStepParams) error
@@ -34,6 +51,11 @@ type Querier interface {
 	ListCampaignTouchPlanSteps(ctx context.Context, planID string) ([]ListCampaignTouchPlanStepsRow, error)
 	ListCampaignTouchPlanSummaries(ctx context.Context, arg ListCampaignTouchPlanSummariesParams) ([]ListCampaignTouchPlanSummariesRow, error)
 	ListCampaignTouchPlanTargets(ctx context.Context, planID string) ([]int64, error)
+	ListHistoricalBroadcastMessages(ctx context.Context, arg ListHistoricalBroadcastMessagesParams) ([]CampaignV1HistoryBroadcastMessage, error)
+	ListHistoricalBroadcastPlans(ctx context.Context, arg ListHistoricalBroadcastPlansParams) ([]CampaignV1HistoryBroadcastPlan, error)
+	ListHistoricalBroadcastRecipients(ctx context.Context, arg ListHistoricalBroadcastRecipientsParams) ([]CampaignV1HistoryBroadcastRecipient, error)
+	ListHistoricalCampaignMembers(ctx context.Context, arg ListHistoricalCampaignMembersParams) ([]CampaignV1HistoryMember, error)
+	ListHistoricalCampaignSegments(ctx context.Context, arg ListHistoricalCampaignSegmentsParams) ([]CampaignV1HistorySegment, error)
 	LockApprovedCampaignTouchPlanHandoff(ctx context.Context, arg LockApprovedCampaignTouchPlanHandoffParams) (LockApprovedCampaignTouchPlanHandoffRow, error)
 	LockCampaignDraftForTouchPlan(ctx context.Context, campaignCode string) (LockCampaignDraftForTouchPlanRow, error)
 	LockCampaignTouchPlanRecipientReview(ctx context.Context, arg LockCampaignTouchPlanRecipientReviewParams) (LockCampaignTouchPlanRecipientReviewRow, error)

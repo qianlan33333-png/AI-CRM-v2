@@ -54,6 +54,8 @@ owners:
       - channel_acquisition_entrant_receipts
       - channel_historical_contacts
       - channel_historical_assignees
+      - contact_v1_sidebar_profile_history
+      - contact_v1_owner_migration_result_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -265,7 +267,7 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings, product_service_period_history, product_service_period_entitlement_history, product_service_period_event_history]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings, product_service_period_history, product_service_period_entitlement_history, product_service_period_event_history, product_v1_member_view_history, product_v1_member_usage_history]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
@@ -279,6 +281,8 @@ owners:
       product_service_period_history: read_only_legacy_definition_extension_of_verified_existing_product
       product_service_period_entitlement_history: source_snapshot_facts_not_current_members_or_grants
       product_service_period_event_history: historical_events_not_replayed_to_runtime_or_provider
+      product_v1_member_view_history: immutable_source_view_metadata_not_executable_saved_views_or_grants
+      product_v1_member_usage_history: immutable_usage_snapshot_not_current_login_entitlement_or_refresh
       entitlement_operation_receipts: actor_scoped_transactional_entitlement_mutation_idempotency_receipts
       service_period_member_views: local_saved_member_grid_views_without_arbitrary_SQL_or_member_mutation
       service_period_member_grid_collaborators: local_staff_metadata_without_invitation_or_permission_escalation
@@ -417,6 +421,11 @@ owners:
   campaign:
     package: internal/campaign
     tables:
+      - campaign_v1_history_segments
+      - campaign_v1_history_members
+      - campaign_v1_history_broadcast_plans
+      - campaign_v1_history_broadcast_recipients
+      - campaign_v1_history_broadcast_messages
       - cloud_campaigns
       - cloud_campaign_steps
       - cloud_campaign_local_plans
@@ -462,9 +471,10 @@ owners:
 
   wecom:
     package: internal/wecom
-    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts, wecom_contact_inbox, wecom_tag_effects, wecom_tag_catalog_snapshots, wecom_tag_catalog_groups, wecom_tag_catalog_tags, wecom_contact_profile_effects]
+    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts, wecom_v1_message_history, wecom_contact_inbox, wecom_tag_effects, wecom_tag_catalog_snapshots, wecom_tag_catalog_groups, wecom_tag_catalog_tags, wecom_contact_profile_effects]
     constraints:
       wecom_message_archive_records: local_redacted_message_projection_with_logical_OneID_customer_attribution_and_no_cross_domain_foreign_key
+      wecom_v1_message_history: immutable_masked_V1_history_with_nullable_DM01_customer_and_unzoned_source_clock_without_current_sync_or_dispatch
       wecom_message_archive_sync_receipts: actor_scoped_accepted_only_sync_command_idempotency_without_provider_or_worker_execution
       wecom_contact_inbox: verified_local_inbound_fact_lease_and_handoff_state_without_provider_effect
       wecom_tag_effects: typed_provider_effect_projection_with_eer_receipts_and_manual_reconciliation

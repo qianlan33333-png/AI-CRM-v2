@@ -7,6 +7,7 @@ generate:
 output-options:
   include-tags:
     - p4-audience-history
+    - p4-campaign-history
     - p1-core-candidate
     - p2-stages
     - p3-contact
@@ -19,6 +20,9 @@ output-options:
     - p4-service-period-products
     - p4-coupon-history
     - p4-automation-history
+    - p4-member-grid-history
+    - p4-contact-history
+    - p4-message-history
     - p4-service-period-member-grid
     - p4-classification
     - p4-customer-360

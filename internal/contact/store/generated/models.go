@@ -88,6 +88,38 @@ type ChannelHistoricalContact struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ContactV1OwnerMigrationResultHistory struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	ScopeType              string             `json:"scope_type"`
+	FileHash               string             `json:"file_hash"`
+	PreviewHash            string             `json:"preview_hash"`
+	TotalRows              int64              `json:"total_rows"`
+	EligibleCount          int64              `json:"eligible_count"`
+	WecomSuccess           int64              `json:"wecom_success"`
+	WecomFailed            int64              `json:"wecom_failed"`
+	CrmUpdated             int64              `json:"crm_updated"`
+	IncludeWecomTransfer   bool               `json:"include_wecom_transfer"`
+	TransferWelcomeMessage string             `json:"transfer_welcome_message"`
+	SessionRelation        string             `json:"session_relation"`
+	PreviewRelation        string             `json:"preview_relation"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	ExecutedAt             pgtype.Timestamptz `json:"executed_at"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+}
+
+type ContactV1SidebarProfileHistory struct {
+	ID                    int64              `json:"id"`
+	SourceKeyDigest       []byte             `json:"source_key_digest"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	Source                string             `json:"source"`
+	Industry              string             `json:"industry"`
+	IndustryDescription   string             `json:"industry_description"`
+	NeedsBlockersFollowup string             `json:"needs_blockers_followup"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
+}
+
 type Customer struct {
 	ID             int64              `json:"id"`
 	Name           string             `json:"name"`

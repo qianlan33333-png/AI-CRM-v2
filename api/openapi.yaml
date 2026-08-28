@@ -178,6 +178,170 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/segments:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistorySegments
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: campaign_source_id, in: query, required: false, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalCampaignSegmentPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/segments/{segment_history_id}:
+    get:
+      tags: [p4-campaign-history]
+      operationId: getCampaignHistorySegment
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: segment_history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalCampaignSegmentDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/members:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistoryMembers
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: segment_history_id, in: query, required: false, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: customer_id, in: query, required: false, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalCampaignMemberPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/broadcast-plans:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistoryBroadcastPlans
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalBroadcastPlanPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/broadcast-plans/{plan_history_id}:
+    get:
+      tags: [p4-campaign-history]
+      operationId: getCampaignHistoryBroadcastPlan
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: plan_history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalBroadcastPlanDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistoryBroadcastRecipients
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: plan_history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalBroadcastRecipientPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistoryBroadcastMessages
+      summary: Read immutable V1 Campaign history without dispatch or Provider effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: recipient_history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; source states never authorize current execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalBroadcastMessagePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /oauth/token:
     post:
       tags: [p4-api-client-oauth]
@@ -13015,6 +13179,52 @@ paths:
       parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
       responses: {'200': {description: CAS-updated local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/message-history:
+    get:
+      tags: [p4-message-history]
+      operationId: listMessageHistory
+      summary: Read masked historical messages without current sync or dispatch
+      x-p4-decision-evidence: P4-V1-MESSAGE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: wecom.read_only_v1_message_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: chat_type, in: query, schema: { type: string, enum: [private, group] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Masked immutable history, content: { application/json: { schema: { $ref: "#/components/schemas/MessageHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/message-history/{history_id}:
+    get:
+      tags: [p4-message-history]
+      operationId: getMessageHistory
+      summary: Read one masked historical message by actual V2 history ID
+      x-p4-decision-evidence: P4-V1-MESSAGE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: wecom.read_only_v1_message_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Masked immutable history, content: { application/json: { schema: { $ref: "#/components/schemas/MessageHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
   /api/admin/audience-history/groups:
     get:
       tags: [p4-audience-history]
@@ -13243,6 +13453,181 @@ paths:
         - { name: definition_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
       responses:
         "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryDefinitionDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/sidebar-profiles:
+    get:
+      tags: [p4-contact-history]
+      operationId: listSidebarProfileHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/SidebarProfileHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/sidebar-profiles/{history_id}:
+    get:
+      tags: [p4-contact-history]
+      operationId: getSidebarProfileHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/SidebarProfileHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/owner-migration-results:
+    get:
+      tags: [p4-contact-history]
+      operationId: listOwnerMigrationResultHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMigrationResultHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/owner-migration-results/{history_id}:
+    get:
+      tags: [p4-contact-history]
+      operationId: getOwnerMigrationResultHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMigrationResultHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/views:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: listMemberViewHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: product_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberViewHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/views/{history_id}:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: getMemberViewHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberViewHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/usage:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: listMemberUsageHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberUsageHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/usage/{history_id}:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: getMemberUsageHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberUsageHistoryDetail" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -13815,6 +14200,270 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/AutomationHistoryAgent" }
+    HistoricalCampaignSegment:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, campaign_source_id, segment_source_id, source_parent_state, code, priority, label, created_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        campaign_source_id: { type: integer, format: int64 }
+        segment_source_id: { type: integer, format: int64 }
+        source_parent_state: { type: string, enum: [observed, missing_campaign] }
+        code: { type: string }
+        priority: { type: integer, format: int32 }
+        label: { type: string }
+        created_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    HistoricalCampaignSegmentPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalCampaignSegment" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    HistoricalCampaignSegmentDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HistoricalCampaignSegment" }
+    HistoricalCampaignMember:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, campaign_source_id, campaign_segment_source_id, segment_source_id, member_source_id, segment_history_id, customer_id, joined_at, anchor_date, current_step_index, next_due_at, original_status, stop_reason, last_step_sent_at, retry_count, created_at, updated_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        campaign_source_id: { type: integer, format: int64 }
+        campaign_segment_source_id: { type: integer, format: int64 }
+        segment_source_id: { type: integer, format: int64 }
+        member_source_id: { type: integer, format: int64 }
+        segment_history_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        joined_at: { type: string, format: date-time }
+        anchor_date: { type: string }
+        current_step_index: { type: integer, format: int32 }
+        next_due_at: { type: string, format: date-time, nullable: true }
+        original_status: { type: string }
+        stop_reason: { type: string }
+        last_step_sent_at: { type: string, format: date-time, nullable: true }
+        retry_count: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    HistoricalCampaignMemberPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalCampaignMember" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    HistoricalBroadcastPlan:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_plan_id, campaign_source_id, segment_source_id, display_name, intent, content_strategy, content_template_masked, max_recipients, candidate_count, skipped_count, requires_manual_copy, original_status, original_review_status, original_run_status, committed_at, expires_at, created_at, updated_at, runtime_digest, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        source_plan_id: { type: string }
+        campaign_source_id: { type: integer, format: int64, nullable: true }
+        segment_source_id: { type: integer, format: int64, nullable: true }
+        display_name: { type: string }
+        intent: { type: string }
+        content_strategy: { type: string }
+        content_template_masked: { type: string }
+        max_recipients: { type: integer, format: int64 }
+        candidate_count: { type: integer, format: int64 }
+        skipped_count: { type: integer, format: int64 }
+        requires_manual_copy: { type: boolean }
+        original_status: { type: string }
+        original_review_status: { type: string }
+        original_run_status: { type: string }
+        committed_at: { type: string, format: date-time, nullable: true }
+        expires_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        runtime_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    HistoricalBroadcastPlanPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalBroadcastPlan" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    HistoricalBroadcastPlanDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HistoricalBroadcastPlan" }
+    HistoricalBroadcastRecipient:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, plan_history_id, customer_id, display_name, planned_message_count, original_approval_status, original_send_status, approved_at, rejected_at, created_at, updated_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        plan_history_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        display_name: { type: string }
+        planned_message_count: { type: integer, format: int64 }
+        original_approval_status: { type: string }
+        original_send_status: { type: string }
+        approved_at: { type: string, format: date-time, nullable: true }
+        rejected_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    HistoricalBroadcastRecipientPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset, plan_history_id]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalBroadcastRecipient" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+        plan_history_id: { type: integer, format: int64, minimum: 1 }
+    HistoricalBroadcastMessage:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, plan_history_id, recipient_history_id, customer_id, sequence_index, day_offset, original_send_time, content_masked, original_status, sent_at, created_at, updated_at, content_payload_digest, attachments_digest, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        plan_history_id: { type: integer, format: int64, minimum: 1 }
+        recipient_history_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        sequence_index: { type: integer, format: int64 }
+        day_offset: { type: integer, format: int64 }
+        original_send_time: { type: string }
+        content_masked: { type: string }
+        original_status: { type: string }
+        sent_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        content_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        attachments_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    HistoricalBroadcastMessagePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset, recipient_history_id]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalBroadcastMessage" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+        recipient_history_id: { type: integer, format: int64, minimum: 1 }
+    MemberViewHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, source_view_id, source_service_product_id, product_id, name, position, is_default, schema_version, config_digest, version, created_at, updated_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_view_id: { type: integer, format: int64, minimum: 1 }
+        source_service_product_id: { type: integer, format: int64, minimum: 1 }
+        product_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        name: { type: string }
+        position: { type: integer, format: int64 }
+        is_default: { type: boolean }
+        schema_version: { type: integer, format: int32, minimum: -32768, maximum: 32767 }
+        config_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        version: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    MemberViewHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MemberViewHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    MemberViewHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MemberViewHistoryItem" }
+    MemberUsageHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, customer_id, formally_logged_in, has_token_usage, learning_plan_id, learning_plan_current, learning_plan_total, open_count_7d, last_open_at, refreshed_at, source_payload_digest, recovery_entry_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        formally_logged_in: { type: boolean }
+        has_token_usage: { type: boolean }
+        learning_plan_id: { type: string }
+        learning_plan_current: { type: integer, format: int64, minimum: 0, nullable: true }
+        learning_plan_total: { type: integer, format: int64, minimum: 0, nullable: true }
+        open_count_7d: { type: integer, format: int64, minimum: 0 }
+        last_open_at: { type: string, format: date-time, nullable: true }
+        refreshed_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        recovery_entry_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    MemberUsageHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MemberUsageHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    MemberUsageHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MemberUsageHistoryItem" }
     CI01Customer:
       type: object
       additionalProperties: false
@@ -22193,6 +22842,44 @@ components:
         page: { type: integer, format: int32, minimum: 1 }
         page_size: { type: integer, format: int32, minimum: 1, maximum: 100 }
         visibility: { type: string, enum: [masked] }
+    MessageHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, sequence, customer_id, chat_type, message_type, content_masked, original_send_time, send_time_basis, sent_at, created_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        sequence: { type: integer, format: int64, nullable: true }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        chat_type: { type: string }
+        message_type: { type: string }
+        content_masked: { type: string, nullable: true }
+        original_send_time: { type: string }
+        send_time_basis: { type: string, enum: [civil_unzoned, explicit_offset] }
+        sent_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    MessageHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MessageHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    MessageHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MessageHistoryItem" }
     AudienceHistoryGroup:
       type: object
       additionalProperties: false
@@ -22450,3 +23137,81 @@ components:
         total: { type: integer, format: int64, minimum: 0 }
         limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
         offset: { type: integer, format: int32, minimum: 0 }
+    SidebarProfileHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, customer_id, source, industry, industry_description, needs_blockers_followup, updated_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        source: { type: string }
+        industry: { type: string }
+        industry_description: { type: string }
+        needs_blockers_followup: { type: string }
+        updated_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    SidebarProfileHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/SidebarProfileHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    SidebarProfileHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/SidebarProfileHistoryItem" }
+    OwnerMigrationResultHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, scope_type, file_hash, preview_hash, transfer_welcome_message, total_rows, eligible_count, wecom_success, wecom_failed, crm_updated, include_wecom_transfer, session_relation, preview_relation, created_at, executed_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        scope_type: { type: string }
+        file_hash: { type: string }
+        preview_hash: { type: string }
+        transfer_welcome_message: { type: string }
+        total_rows: { type: integer, format: int64, minimum: 0 }
+        eligible_count: { type: integer, format: int64, minimum: 0 }
+        wecom_success: { type: integer, format: int64, minimum: 0 }
+        wecom_failed: { type: integer, format: int64, minimum: 0 }
+        crm_updated: { type: integer, format: int64, minimum: 0 }
+        include_wecom_transfer: { type: boolean }
+        session_relation: { type: string, enum: [resolved, unresolved] }
+        preview_relation: { type: string, enum: [resolved, unresolved] }
+        created_at: { type: string, format: date-time }
+        executed_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    OwnerMigrationResultHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/OwnerMigrationResultHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    OwnerMigrationResultHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/OwnerMigrationResultHistoryItem" }

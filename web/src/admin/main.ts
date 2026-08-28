@@ -12,6 +12,7 @@ import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
 import { mountCampaignWorkspace } from './sections/campaigns';
+import { mountCampaignHistory } from './sections/campaignHistory';
 import { mountAdminAccess } from './sections/adminAccess';
 import { mountSetupWizard } from './sections/setupWizard';
 import { mountGroupOpsHistory } from './sections/groupOpsHistory';
@@ -19,8 +20,11 @@ import { esc } from './sections/util';
 import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from './sections/commerce';
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
+import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
+import { mountMemberGridHistory } from './sections/memberGridHistory';
+import { mountContactHistory } from './sections/contactHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -42,6 +46,40 @@ function boot(): void {
 
   const rawId = Number(new URLSearchParams(location.search).get('id') || '');
   const id = rawId || undefined;
+
+  const historyParams = new URLSearchParams(location.search);
+  if (page === 'ownerMig' && historyParams.get('contact_history') === '1') {
+    void mountContactHistory(stage, {
+      kind: historyParams.get('history_kind') ?? undefined,
+      historyID: historyParams.get('history_id') ?? undefined,
+      customerID: historyParams.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+
+  if (page === 'spProductData' && historyParams.get('member_grid_history') === '1') {
+    void mountMemberGridHistory(stage, {
+      kind: historyParams.get('history_kind') ?? undefined,
+      historyID: historyParams.get('history_id') ?? undefined,
+      productID: historyParams.get('product_id') ?? undefined,
+      customerID: historyParams.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+
+  const qs = new URLSearchParams(location.search);
+  if (page === 'customers' && qs.get('message_history') === '1') {
+    void mountMessageHistory(stage, {
+      historyID: qs.get('history_message_id') ?? undefined,
+      customerID: qs.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+
+  if (page === 'campaigns' && new URLSearchParams(location.search).get('history') === '1') {
+    void mountCampaignHistory(stage).catch((error) => showLoadError(stage, error));
+    return;
+  }
 
   if (['coupons', 'couponData'].includes(page) && new URLSearchParams(location.search).get('history') === '1') {
     const historyID = page === 'couponData' ? new URLSearchParams(location.search).get('id') || '' : undefined;

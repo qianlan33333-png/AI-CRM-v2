@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, automationHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,96 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || automationHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      if (contactHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__contactHistoryHttpTest = { calls: [], fail: contactHistoryHttp.fail || false };
+        const at = '2026-08-27T10:11:12.123456Z';
+        const digest = (seed) => Array.from({ length: 32 }, (_, index) => (seed + index) % 256);
+        const sidebars = Array.from({ length: 21 }, (_, i) => ({ id: 31 + i, source_key_digest: digest(i + 1), customer_id: i ? 7 : null, source: i ? '历史来源' : '', industry: '行业 <历史>', industry_description: '<img src=x onerror=alert(1)>', needs_blockers_followup: '', updated_at: at, source_payload_digest: digest(i + 2) }));
+        const owners = Array.from({ length: 21 }, (_, i) => ({ id: 61 + i, source_key_digest: digest(i + 20), scope_type: '', file_hash: `file-${i + 1}`, preview_hash: '', transfer_welcome_message: '<b>原欢迎语</b>', total_rows: 4, eligible_count: 3, wecom_success: 2, wecom_failed: 1, crm_updated: 2, include_wecom_transfer: true, session_relation: 'unresolved', preview_relation: 'resolved', created_at: at, executed_at: at, source_payload_digest: digest(i + 21) }));
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const sidebar = url.pathname === '/api/admin/contact-history/sidebar-profiles';
+          const owner = url.pathname === '/api/admin/contact-history/owner-migration-results';
+          const sidebarDetail = /^\/api\/admin\/contact-history\/sidebar-profiles\/[1-9]\d*$/.test(url.pathname);
+          const ownerDetail = /^\/api\/admin\/contact-history\/owner-migration-results\/[1-9]\d*$/.test(url.pathname);
+          if (!sidebar && !owner && !sidebarDetail && !ownerDetail) return json({ code: 'unexpected_contact_history_request' }, 500);
+          const rows = sidebar || sidebarDetail ? sidebars : owners;
+          if (sidebarDetail || ownerDetail) {
+            const item = rows.find((entry) => entry.id === Number(url.pathname.split('/').at(-1)));
+            if (!item) return json({ code: 'not_found' }, 404);
+            const result = contactHistoryHttp.wrongID ? { ...item, id: item.id + 1 } : contactHistoryHttp.wrongCustomer && sidebarDetail ? { ...item, customer_id: null } : item;
+            return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, item: contactHistoryHttp.raw ? { ...result, raw_identity: 'must-not-render' } : result });
+          }
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          const customer = url.searchParams.get('customer_id');
+          if (owner && customer !== null) return json({ code: 'unexpected_owner_customer_filter' }, 400);
+          const filtered = sidebar && customer !== null ? rows.filter((entry) => entry.customer_id === Number(customer)) : rows;
+          const body = { source: 'v1_history', read_only: true, real_external_call_executed: false, items: filtered.slice(offset, offset + limit), total: filtered.length, limit, offset };
+          return json(contactHistoryHttp.raw ? { ...body, raw_identity: 'must-not-render' } : body);
+        };
+        return;
+      }
+      if (memberGridHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__memberGridHistoryHttpTest = { calls: [], fail: memberGridHistoryHttp.fail || false };
+        const at = '2026-08-28T00:00:00.000000Z';
+        const digest = Array.from({ length: 32 }, (_, index) => index);
+        const views = Array.from({ length: 21 }, (_, index) => ({ id: 31 + index, source_key_digest: digest, source_view_id: 8 + index, source_service_product_id: 91, product_id: 91, name: index ? `旧视图 ${index + 1}` : '<img src=x onerror=alert(1)>', position: -index, is_default: false, schema_version: -1, config_digest: digest, version: -2, created_at: at, updated_at: at, source_payload_digest: digest }));
+        const usage = Array.from({ length: 21 }, (_, index) => ({ id: 61 + index, source_key_digest: digest, customer_id: 7, formally_logged_in: false, has_token_usage: false, learning_plan_id: index ? `plan-${index + 1}` : '', learning_plan_current: null, learning_plan_total: 0, open_count_7d: 0, last_open_at: null, refreshed_at: at, source_payload_digest: digest, recovery_entry_digest: digest }));
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const viewList = url.pathname === '/api/admin/member-grid-history/views';
+          const usageList = url.pathname === '/api/admin/member-grid-history/usage';
+          const viewDetail = /^\/api\/admin\/member-grid-history\/views\/\d+$/.test(url.pathname);
+          const usageDetail = /^\/api\/admin\/member-grid-history\/usage\/\d+$/.test(url.pathname);
+          if (!viewList && !usageList && !viewDetail && !usageDetail) return json({ code: 'unexpected_member_grid_history_request' }, 500);
+          const rows = viewList || viewDetail ? views : usage;
+          if (viewDetail || usageDetail) {
+            const item = rows.find((row) => row.id === Number(url.pathname.split('/').at(-1)));
+            return item ? json({ source: 'v1_history', read_only: true, real_external_call_executed: false, item }) : json({ code: 'not_found' }, 404);
+          }
+          const filter = Number(url.searchParams.get(viewList ? 'product_id' : 'customer_id'));
+          if (filter && filter !== (viewList ? 91 : 7)) return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: [], total: 0, limit: Number(url.searchParams.get('limit')), offset: Number(url.searchParams.get('offset')) });
+          const limit = Number(url.searchParams.get('limit')); const offset = Number(url.searchParams.get('offset'));
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+        };
+        return;
+      }
+      if (campaignHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__campaignHistoryHttpTest = { calls: [], fail: campaignHistoryHttp.fail || false };
+        const date = '2026-08-28T01:02:03.123456Z', digest = Array.from({ length: 32 }, (_, i) => i);
+        const segment = { id: 11, source_id: 101, campaign_source_id: 1001, segment_source_id: -9, source_parent_state: 'missing_campaign', code: ' code ', priority: -3, label: '<legacy>', created_at: date, source_payload_digest: digest };
+        const member = { id: 21, source_id: 102, campaign_source_id: -1, campaign_segment_source_id: -2, segment_source_id: -3, member_source_id: -4, segment_history_id: 11, customer_id: null, joined_at: date, anchor_date: '', current_step_index: -5, next_due_at: null, original_status: '', stop_reason: '', last_step_sent_at: date, retry_count: -6, created_at: date, updated_at: date, source_payload_digest: digest };
+        const plan = { id: 31, source_id: 103, source_plan_id: ' plan ', campaign_source_id: -1, segment_source_id: null, display_name: '<plan>', intent: '', content_strategy: 'legacy', content_template_masked: 'masked', max_recipients: -1, candidate_count: -2, skipped_count: -3, requires_manual_copy: true, original_status: '', original_review_status: '', original_run_status: '', committed_at: null, expires_at: date, created_at: date, updated_at: date, runtime_digest: digest, source_payload_digest: digest };
+        const recipient = { id: 41, source_id: 104, plan_history_id: 31, customer_id: 7, display_name: '', planned_message_count: -1, original_approval_status: '', original_send_status: '', approved_at: null, rejected_at: date, created_at: date, updated_at: date, source_payload_digest: digest };
+        const message = { id: 51, source_id: 105, plan_history_id: campaignHistoryHttp.wrongPlan ? 99 : 31, recipient_history_id: 41, customer_id: null, sequence_index: -1, day_offset: -2, original_send_time: 'old civil', content_masked: '<old>', original_status: '', sent_at: null, created_at: date, updated_at: date, content_payload_digest: digest, attachments_digest: digest, source_payload_digest: digest };
+        const prefix = '/api/admin/campaign-history';
+        const json = (body, status = 200) => ({ status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(body) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials, body: init.body });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+          if (url.pathname === `${prefix}/segments/11`) return json({ ...safety, item: segment });
+          if (url.pathname === `${prefix}/broadcast-plans/31`) return json({ ...safety, item: plan });
+          const kind = url.pathname === `${prefix}/segments` ? segment : url.pathname === `${prefix}/members` ? member : url.pathname === `${prefix}/broadcast-plans` ? plan : url.pathname === `${prefix}/broadcast-plans/31/recipients` ? recipient : url.pathname === `${prefix}/broadcast-recipients/41/messages` ? message : undefined;
+          if (!kind) return json({ code: 'unexpected_history_request' }, 500);
+          const limit = Number(url.searchParams.get('limit')), offset = Number(url.searchParams.get('offset')), total = campaignHistoryHttp.empty ? 0 : 21;
+          const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, i) => ({ ...kind, id: kind.id + offset + i, source_id: kind.source_id + offset + i }));
+          return json({ ...safety, items, total, limit, offset, ...(kind === recipient ? { plan_history_id: 31 } : kind === message ? { recipient_history_id: 41 } : {}) });
+        };
+        return;
+      }
       if (groupDirectoryHttp) {
         window.Headers = Headers;
         window.document.cookie = 'aicrm_csrf=group-directory-csrf';
@@ -109,6 +198,27 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = 
           }
           if (url.pathname.endsWith('/plans/10')) return json(detail);
           return json({ code: 'unexpected_test_route' }, 404);
+        };
+      } else if (messageHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__messageHistoryTest = { calls: [], fail: false, empty: false, unsafe: false };
+        const rows = Array.from({ length: 21 }, (_, i) => ({ id: 71 + i, source_id: i + 1, sequence: i === 0 ? null : -i, customer_id: i === 0 ? null : 9, chat_type: i % 2 ? 'group' : 'private', message_type: 'text', content_masked: i === 0 ? null : i === 1 ? '' : '<img src=x onerror=alert(1)> 脱敏正文\n第二行', original_send_time: i === 1 ? '2024-01-02T03:04:05+08:00' : '2024-01-02 03:04:05', send_time_basis: i === 1 ? 'explicit_offset' : 'civil_unzoned', sent_at: i === 1 ? '2024-01-01T19:04:05Z' : null, created_at: '2026-08-28T00:00:00.123456Z', source_payload_digest: Array(32).fill(i) }));
+        const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+        const json = (body, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(body) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials, body: init.body });
+          if (test.fail) return json({ code: 'unavailable' }, 503);
+          if (url.pathname === '/api/admin/message-history') {
+            const limit = Number(url.searchParams.get('limit')), offset = Number(url.searchParams.get('offset'));
+            const filtered = test.empty ? [] : rows.filter((row) => (!url.searchParams.has('customer_id') || row.customer_id === Number(url.searchParams.get('customer_id'))) && (!url.searchParams.has('chat_type') || row.chat_type === url.searchParams.get('chat_type')));
+            return json({ ...safety, items: filtered.slice(offset, offset + limit).map((row) => test.unsafe ? { ...row, sender: 'forbidden-identity' } : row), total: filtered.length, limit, offset });
+          }
+          if (url.pathname.startsWith('/api/admin/message-history/')) {
+            const item = rows.find((row) => row.id === Number(url.pathname.split('/').pop()));
+            return item ? json({ ...safety, item }) : json({ code: 'unavailable' }, 503);
+          }
+          return json({ code: 'unexpected_current_or_provider_route' }, 404);
         };
       } else if (couponHistoryHttp) {
         window.Headers = Headers;
@@ -1042,6 +1152,55 @@ console.log('admin/questionnaireDetail.html（新建/编辑路由）');
   editDom.window.close();
 }
 
+console.log('admin/customers.html（独立 V1 聊天历史）');
+{
+  const dom = await loadPage('admin/customers.html', { q: 'message_history=1', messageHistoryHttp: true });
+  const d = dom.window.document, test = dom.window.__messageHistoryTest;
+  const submit = () => d.querySelector('[data-message-filter]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  ok('聊天历史提前挂载且首屏仅请求真实20条GET', d.body.textContent.includes('V1 聊天历史（只读）') && d.querySelectorAll('[data-message-id]').length === 20 && test.calls.length === 1 && test.calls[0].query === '?limit=20&offset=0' && !d.querySelector('#fCustomerKeyword'));
+  ok('历史正文 NULL 与空字符串明确区分', d.querySelector('[data-message-id="71"] [data-message-body]').textContent === '未记录（NULL）' && d.querySelector('[data-message-id="72"] [data-message-body]').textContent === '（空字符串）');
+  const body = d.querySelector('[data-message-id="73"] [data-message-body]');
+  ok('脱敏正文转义且保留换行，不执行 HTML', body.textContent.includes('<img src=x onerror=alert(1)>') && body.textContent.includes('\n第二行') && body.style.whiteSpace === 'pre-wrap' && !body.querySelector('img'));
+  ok('civil 时刻保留原文且不造 UTC，NULL 客户不猜归因', d.querySelector('[data-message-id="71"]').textContent.includes('客户关联：未解析') && d.querySelector('[data-message-id="71"] [data-message-time]').textContent.includes('2024-01-02 03:04:05 · 未定时区') && !d.querySelector('[data-message-id="71"] [data-message-time]').textContent.includes('2024-01-02T'));
+  ok('已关联客户仅标 DM01 历史映射，单条链接用真实历史 ID', d.querySelector('[data-message-id="72"]').textContent.includes('DM01 历史映射 · customer_id=9') && d.querySelector('[data-message-id="72"] a').getAttribute('href') === 'customers.html?message_history=1&history_message_id=72');
+  test.fail = true; click(dom, d.querySelector('[data-message-next]')); await sleep(30);
+  ok('翻页失败清旧数据且无 Mock 回退', !d.querySelector('[data-message-id]') && d.querySelector('[role="alert"]').textContent.includes('HTTP 503'));
+  test.fail = false; click(dom, d.querySelector('[data-message-retry]')); await sleep(30);
+  ok('失败重试保留 offset20，只显示真实最后一条', test.calls.at(-1).query === '?limit=20&offset=20' && d.querySelectorAll('[data-message-id]').length === 1 && !!d.querySelector('[data-message-id="91"]'));
+  click(dom, d.querySelector('[data-message-prev]')); await sleep(30);
+  d.querySelector('[data-message-customer]').value = '9'; d.querySelector('[data-message-chat]').value = 'group'; submit(); await sleep(30);
+  ok('客户与群聊筛选仅发送 canonical customer_id，分页归零', test.calls.at(-1).query === '?customer_id=9&chat_type=group&limit=20&offset=0' && d.querySelectorAll('[data-message-id]').length === 10);
+  const count = test.calls.length;
+  d.querySelector('[data-message-customer]').value = 'unionid-not-a-customer'; submit(); await sleep(20);
+  ok('外部身份不能充当 customer_id，非法筛选无请求', test.calls.length === count && !d.querySelector('[data-message-id]') && d.querySelector('[role="alert"]').textContent.includes('canonical'));
+  d.querySelector('[data-message-customer]').value = ''; d.querySelector('[data-message-chat]').value = 'private'; submit(); await sleep(30);
+  ok('私聊筛选保留未解析客户记录，不强行归因', test.calls.at(-1).query === '?chat_type=private&limit=20&offset=0' && !!d.querySelector('[data-message-id="71"]'));
+  test.empty = true; submit(); await sleep(30);
+  ok('历史合法空页明确为空且不能翻页', d.body.textContent.includes('暂无符合筛选的聊天历史记录') && d.querySelector('[data-message-next]').disabled && d.querySelector('[data-message-prev]').disabled);
+  test.empty = false; test.unsafe = true; submit(); await sleep(30);
+  ok('契约外身份字段被拒绝，不渲染身份或旧正文', !d.querySelector('[data-message-id]') && !d.body.textContent.includes('forbidden-identity') && !!d.querySelector('[role="alert"]'));
+  ok('历史模式只有历史GET，没有当前客户/同步/发送', test.calls.every((call) => call.path === '/api/admin/message-history' && call.method === 'GET' && call.credentials === 'include' && call.body === undefined) && ![...d.querySelectorAll('button')].some((button) => /发送|同步/.test(button.textContent)));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/customers.html', { q: 'message_history=1&history_message_id=72&customer_id=9', messageHistoryHttp: true });
+  const d = dom.window.document, test = dom.window.__messageHistoryTest;
+  ok('单条历史仅GET所选V2历史ID，不加载当前客户或列表', test.calls.length === 1 && test.calls[0].path === '/api/admin/message-history/72' && !d.querySelector('[data-message-filter]') && d.querySelectorAll('[data-message-id]').length === 1);
+  ok('明确时区时刻按真实响应原样显示', d.querySelector('[data-message-time]').textContent.includes('2024-01-02T03:04:05+08:00') && d.querySelector('[data-message-time]').textContent.includes('2024-01-01T19:04:05Z'));
+  ok('单条返回历史链接保留客户筛选', !!d.querySelector('a[href="customers.html?message_history=1&customer_id=9"]'));
+  dom.window.close();
+}
+for (const query of ['message_history=1&history_message_id=bad', 'message_history=1&customer_id=unionid-test']) {
+  const dom = await loadPage('admin/customers.html', { q: query, messageHistoryHttp: true });
+  ok('无效历史入口保持只读壳且不读取任何数据', dom.window.document.querySelector('[data-message-history]') && dom.window.__messageHistoryTest.calls.length === 0 && !!dom.window.document.querySelector('[role="alert"]'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/customers.html', { q: 'message_history=1&history_message_id=72&customer_id=8', messageHistoryHttp: true });
+  ok('单条历史与显式客户筛选不符时失败关闭', !dom.window.document.querySelector('[data-message-id]') && !!dom.window.document.querySelector('[role="alert"]') && dom.window.__messageHistoryTest.calls.length === 1);
+  dom.window.close();
+}
+
 console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航）');
 {
   const dom = await loadPage('admin/customers.html');
@@ -1537,6 +1696,57 @@ for (const fixture of [{ serviceHistoryEmpty: true }, { serviceHistoryFailure: '
   dom.window.close();
 }
 
+console.log('admin/spProductData.html（V1 Member Grid 历史只读 GET）');
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view&product_id=91', memberGridHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__memberGridHistoryHttpTest;
+  ok('旧保存视图只读页保留 false、负值和危险文本转义', d.querySelector('#stage')?.textContent.includes('默认：false') && d.querySelector('#stage')?.textContent.includes('位置：0') && d.querySelector('#stage')?.textContent.includes('<img src=x onerror=alert(1)>') && !d.querySelector('#stage img') && d.querySelector('#stage')?.textContent.includes('不表示当前登录、权益或权限'));
+  ok('旧保存视图只调用真实生成 GET 且使用 Product 筛选', test.calls.length === 1 && test.calls[0].path === '/api/admin/member-grid-history/views' && test.calls[0].query === '?offset=0&limit=20&product_id=91' && test.calls[0].method === 'GET' && test.calls[0].credentials === 'include' && dom.window.__AICRM_TEST_MOCK__ === false);
+  ok('切换类型会清空详情和异类型筛选', d.querySelector('a[href="spProductData.html?member_grid_history=1&history_kind=usage"]') !== null);
+  const filter = d.querySelector('#member-grid-history-filter input');
+  filter.value = '-1';
+  d.querySelector('#member-grid-history-filter').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  ok('非法历史筛选留在当前列表并明确失败，不发 GET', d.querySelector('#member-grid-history-filter-error')?.textContent.includes('Product ID 必须') && test.calls.length === 1 && d.querySelector('#stage')?.textContent.includes('默认：false'));
+  click(dom, d.querySelector('#member-grid-history-next'));
+  await sleep(30);
+  ok('旧保存视图以 20 条分页真实 GET', test.calls.at(-1)?.path === '/api/admin/member-grid-history/views' && test.calls.at(-1)?.query === '?offset=20&limit=20&product_id=91' && d.querySelector('#stage')?.textContent.includes('旧视图 21'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view&history_id=31&product_id=91', memberGridHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__memberGridHistoryHttpTest;
+  ok('旧保存视图详情只使用详情 GET，且不泄露 ConfigJSON 或摘要', test.calls.length === 1 && test.calls[0].path === '/api/admin/member-grid-history/views/31' && test.calls[0].method === 'GET' && d.querySelector('#stage')?.textContent.includes('旧视图 ID') && !d.querySelector('#stage')?.textContent.includes('config_digest') && !d.querySelector('#stage')?.textContent.includes('source_key_digest'));
+  test.fail = '/api/admin/member-grid-history/views/31';
+  const retry = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view&history_id=31&product_id=91', memberGridHistoryHttp: { fail: '/api/admin/member-grid-history/views/31' } });
+  ok('详情失败明确显示并允许 GET 重试，不回退 Mock', retry.window.document.querySelector('#stage')?.textContent.includes('HTTP 503') && !!retry.window.document.querySelector('#member-grid-history-detail-retry') && retry.window.__AICRM_TEST_MOCK__ === false);
+  click(retry, retry.window.document.querySelector('#member-grid-history-detail-retry'));
+  await sleep(30);
+  ok('详情重试仍为同一路由 GET', retry.window.__memberGridHistoryHttpTest.calls.length === 2 && retry.window.__memberGridHistoryHttpTest.calls.every((call) => call.path === '/api/admin/member-grid-history/views/31' && call.method === 'GET'));
+  retry.window.close();
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=usage&customer_id=7', memberGridHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__memberGridHistoryHttpTest;
+  ok('旧使用快照保留 false、NULL 和空学习计划', d.querySelector('#stage')?.textContent.includes('正式登录：false') && d.querySelector('#stage')?.textContent.includes('Token 使用：false') && d.querySelector('#stage')?.textContent.includes('（空）'));
+  ok('旧使用快照只发送 Customer 筛选 GET', test.calls.length === 1 && test.calls[0].path === '/api/admin/member-grid-history/usage' && test.calls[0].query === '?offset=0&limit=20&customer_id=7' && test.calls[0].method === 'GET');
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=usage&product_id=91', memberGridHistoryHttp: {} });
+  ok('跨类型筛选请求前 fail closed', dom.window.document.querySelector('#stage')?.textContent.includes('不接受 Product ID 筛选') && dom.window.__memberGridHistoryHttpTest.calls.length === 0);
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view', memberGridHistoryHttp: { fail: true } });
+  const text = dom.window.document.querySelector('#stage')?.textContent || '';
+  ok('历史列表失败不伪装为空集或零计数，并保留 GET 重试', text.includes('HTTP 503') && text.includes('数量未获取') && text.includes('读取失败，未显示历史数据') && !text.includes('当前筛选没有 V1 历史记录') && !!dom.window.document.querySelector('#member-grid-history-retry'));
+  dom.window.close();
+}
+
 console.log('admin/spProducts.html（真实周期商品分享）');
 {
   const dom = await loadPage('admin/spProducts.html', { serviceProductHttp: true });
@@ -1789,6 +1999,7 @@ console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
   const dom = await loadPage('admin/ownerMig.html');
   const d = dom.window.document;
   const csv = d.querySelector('#ownerMigCsv');
+  ok('当前负责人迁移页提供独立 V1 历史只读入口', d.querySelector('a[href="ownerMig.html?contact_history=1"]')?.textContent.includes('历史'));
   ok('接受 CSV/XLSX 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && csv?.getAttribute('accept')?.includes('.xlsx') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
   ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
 
@@ -1815,6 +2026,66 @@ console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
   click(dom, parseButton);
   await sleep(500);
   ok('上传真实 XLSX 第一张表后生成服务端持久预览投影', d.body.textContent.includes('服务端持久预览') && d.body.textContent.includes('preview_id: cor_0123456789012345678901') && d.body.textContent.includes('预览已生成'));
+  dom.window.close();
+}
+
+console.log('admin/ownerMig.html?contact_history=1（V1 联系人历史只读）');
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1', contactHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__contactHistoryHttpTest;
+  const section = d.querySelector('#contact-history-content');
+  ok('默认负责人旧结果只读取真实20行，明确不是 V2/Provider 成功', section.querySelectorAll('tbody tr').length === 20 && section.textContent.includes('V1 企微成功记录 2') && d.body.textContent.includes('不是 V2 迁移执行，也不是 Provider 成功证据') && test.calls.length === 1 && test.calls[0].path === '/api/admin/contact-history/owner-migration-results' && test.calls[0].query === '?limit=20&offset=0' && test.calls[0].method === 'GET');
+  ok('历史结果不提供执行按钮', [...section.querySelectorAll('button')].every((button) => ['上一页', '下一页'].includes(button.textContent.trim())));
+  click(dom, section.querySelector('[data-history-next]'));
+  await sleep(30);
+  ok('负责人旧结果下一页仍为同一只读 GET', section.querySelectorAll('tbody tr').length === 1 && section.textContent.includes('历史结果 #81') && test.calls.at(-1)?.query === '?limit=20&offset=20' && test.calls.every((call) => call.path === '/api/admin/contact-history/owner-migration-results' && call.method === 'GET'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1&history_kind=sidebar&customer_id=7', contactHistoryHttp: {} });
+  const d = dom.window.document;
+  const section = d.querySelector('#contact-history-content');
+  const test = dom.window.__contactHistoryHttpTest;
+  ok('Sidebar 历史保留客户过滤、空文本和转义原文字', section.querySelectorAll('tbody tr').length === 20 && section.textContent.includes('行业 <历史>') && section.textContent.includes('<img src=x onerror=alert(1)>') && !section.querySelector('img') && d.querySelector('#contact-history-customer-filter input')?.value === '7' && test.calls.length === 1 && test.calls[0].path === '/api/admin/contact-history/sidebar-profiles' && test.calls[0].query === '?limit=20&offset=0&customer_id=7');
+  click(dom, d.querySelector('[data-contact-history-clear]'));
+  await sleep(30);
+  ok('Sidebar 筛选可清除并重读未过滤历史', test.calls.at(-1)?.query === '?limit=20&offset=0' && d.querySelector('#contact-history-customer-filter input')?.value === '');
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: {} });
+  const d = dom.window.document;
+  const section = d.querySelector('#contact-history-content');
+  const test = dom.window.__contactHistoryHttpTest;
+  ok('单条历史结果只请求真实详情并保留原欢迎文字', section.textContent.includes('<b>原欢迎语</b>') && !section.querySelector('b') && test.calls.length === 1 && test.calls[0].path === '/api/admin/contact-history/owner-migration-results/61' && test.calls[0].method === 'GET');
+  ok('详情切换类型回各自列表，不沿用另一张表的历史 ID', d.querySelector('a[href="ownerMig.html?contact_history=1&history_kind=sidebar"]') && section.querySelector('a[href="ownerMig.html?contact_history=1&history_kind=owner"]'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1', contactHistoryHttp: { fail: true } });
+  const d = dom.window.document;
+  ok('历史读取失败明确关闭，不回退当前迁移或 Mock', d.querySelector('#contact-history-content')?.textContent.includes('HTTP 503') && !d.body.textContent.includes('尚未生成迁移预览') && !d.body.textContent.includes('历史结果 #61'));
+  dom.window.close();
+}
+for (const fixture of [
+  { q: 'contact_history=1', contactHistoryHttp: { raw: true }, text: '额外 raw 字段在列表响应中失败关闭' },
+  { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: { raw: true }, text: '额外 raw 字段在详情响应中失败关闭' },
+  { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: { wrongID: true }, text: '详情返回错 ID 时失败关闭' },
+  { q: 'contact_history=1&history_kind=sidebar&history_id=32&customer_id=7', contactHistoryHttp: { wrongCustomer: true }, text: 'Sidebar 详情返回错客户时失败关闭' },
+]) {
+  const dom = await loadPage('admin/ownerMig.html', fixture);
+  ok(fixture.text, dom.window.document.querySelector('#contact-history-content [role="alert"]')?.textContent.includes('响应无效') && !dom.window.document.body.textContent.includes('must-not-render'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: { fail: true } });
+  const d = dom.window.document;
+  const test = dom.window.__contactHistoryHttpTest;
+  test.fail = false;
+  click(dom, d.querySelector('#contact-history-content [data-history-retry]'));
+  await sleep(30);
+  ok('详情失败后可按同一 GET 重试', d.querySelector('#contact-history-content')?.textContent.includes('<b>原欢迎语</b>') && test.calls.length === 2 && test.calls.every((call) => call.path === '/api/admin/contact-history/owner-migration-results/61' && call.method === 'GET'));
   dom.window.close();
 }
 
@@ -2078,6 +2349,53 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
   await sleep(30);
   ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
   failed.window.close();
+}
+
+console.log('admin/campaigns.html?history=1（七个真实GET只读历史）');
+{
+  const dom = await loadPage('admin/campaigns.html', { q: 'history=1', campaignHistoryHttp: {} });
+  const d = dom.window.document, test = dom.window.__campaignHistoryHttpTest;
+  const segments = d.querySelector('#campaign-history-segments');
+  ok('Campaign历史列表读取分群与群发计划，不走当前任务接口', test.calls.length === 2 && segments?.querySelectorAll('tbody tr').length === 20 && d.querySelector('#campaign-history-plans tbody tr'));
+  ok('源孤儿父关系明确标注且源文本转义', segments?.textContent.includes('missing_campaign') && segments.textContent.includes('<legacy>') && !segments.querySelector('legacy'));
+  click(dom, segments.querySelector('[data-history-next]')); await sleep(30);
+  ok('Campaign历史独立分页请求offset=20', segments.querySelectorAll('tbody tr').length === 1 && test.calls.at(-1).query === '?limit=20&offset=20');
+  test.fail = '/api/admin/campaign-history/segments';
+  click(dom, segments.querySelector('[data-history-retry]')); await sleep(30);
+  ok('Campaign历史读取失败清空旧行并提供重试', !segments.querySelector('tbody') && segments.textContent.includes('未显示旧数据或演示数据'));
+  test.fail = false;
+  click(dom, segments.querySelector('[data-history-retry]')); await sleep(30);
+  ok('Campaign历史重试保留失败页offset', segments.querySelectorAll('tbody tr').length === 1 && test.calls.at(-1).query === '?limit=20&offset=20');
+  ok('Campaign历史所有请求均为携带会话的无body GET', test.calls.every((call) => call.method === 'GET' && call.credentials === 'include' && call.body === undefined));
+  dom.window.close();
+
+  const segment = await loadPage('admin/campaigns.html', { q: 'history=1&segment=11', campaignHistoryHttp: {} });
+  const sd = segment.window.document, st = segment.window.__campaignHistoryHttpTest;
+  ok('历史成员由服务端分群详情后按父ID查询', st.calls.length === 2 && st.calls[0].path.endsWith('/segments/11') && st.calls[1].query === '?limit=20&offset=0&segment_history_id=11' && sd.querySelector('#campaign-history-members tbody tr'));
+  ok('缺失客户引用不猜配Customer360，负数源计数保留', !sd.querySelector('#campaign-history-members a') && sd.querySelector('#campaign-history-members').textContent.includes('retry：-6'));
+  segment.window.close();
+
+  const plan = await loadPage('admin/campaigns.html', { q: 'history=1&plan=31&recipient=41', campaignHistoryHttp: {} });
+  const pd = plan.window.document, pt = plan.window.__campaignHistoryHttpTest;
+  ok('历史群发计划、收件人、消息顺序使用三个独立GET', pt.calls.length === 3 && pt.calls[0].path.endsWith('/broadcast-plans/31') && pt.calls[1].path.endsWith('/broadcast-plans/31/recipients') && pt.calls[2].path.endsWith('/broadcast-recipients/41/messages'));
+  ok('历史正文转义并保留原civil时间，已验证客户链接可见', pd.querySelector('#campaign-history-messages').textContent.includes('<old>') && pd.querySelector('#campaign-history-messages').textContent.includes('old civil') && !pd.querySelector('old') && pd.querySelector('#campaign-history-recipients a[href="customerDetail.html?id=7"]'));
+  ok('历史页面没有审批、启动、发送写操作', [...pd.querySelectorAll('button')].every((button) => ['上一页', '下一页', '刷新本页'].includes(button.textContent.trim())));
+  plan.window.close();
+
+  const wrong = await loadPage('admin/campaigns.html', { q: 'history=1&plan=31&recipient=41', campaignHistoryHttp: { wrongPlan: true } });
+  ok('消息跨计划不一致失败关闭，不展示正文', wrong.window.document.querySelector('#campaign-history-messages').textContent.includes('不一致') && !wrong.window.document.querySelector('#campaign-history-messages tbody'));
+  wrong.window.close();
+  const failed = await loadPage('admin/campaigns.html', { q: 'history=1&segment=11', campaignHistoryHttp: { fail: true } });
+  ok('历史父详情失败时不读取子表', failed.window.__campaignHistoryHttpTest.calls.length === 1 && !failed.window.document.querySelector('#campaign-history-members'));
+  failed.window.close();
+  const empty = await loadPage('admin/campaigns.html', { q: 'history=1', campaignHistoryHttp: { empty: true } });
+  ok('历史空页显示真实零条，不使用种子数据', empty.window.document.querySelector('#campaign-history-segments').textContent.includes('共 0 条'));
+  empty.window.close();
+  for (const q of ['history=1&segment=01', 'history=1&plan=31&segment=11', 'history=1&recipient=41', 'history=1&plan=31&plan=32', 'history=1&unknown=1']) {
+    const invalid = await loadPage('admin/campaigns.html', { q, campaignHistoryHttp: {} });
+    ok(`历史非法URL不发出请求: ${q}`, invalid.window.__campaignHistoryHttpTest.calls.length === 0 && !invalid.window.document.querySelector('#campaign-history-detail'));
+    invalid.window.close();
+  }
 }
 
 console.log('admin/campaigns.html（External Effects / Push Center 本地边界）');

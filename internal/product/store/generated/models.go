@@ -61,3 +61,36 @@ type ProductServicePeriodHistory struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
+
+type ProductV1MemberUsageHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	CustomerID          pgtype.Int8        `json:"customer_id"`
+	FormallyLoggedIn    bool               `json:"formally_logged_in"`
+	HasTokenUsage       bool               `json:"has_token_usage"`
+	LearningPlanID      string             `json:"learning_plan_id"`
+	LearningPlanCurrent pgtype.Int8        `json:"learning_plan_current"`
+	LearningPlanTotal   pgtype.Int8        `json:"learning_plan_total"`
+	OpenCount7d         int64              `json:"open_count_7d"`
+	LastOpenAt          pgtype.Timestamptz `json:"last_open_at"`
+	RefreshedAt         pgtype.Timestamptz `json:"refreshed_at"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	RecoveryEntryDigest []byte             `json:"recovery_entry_digest"`
+}
+
+type ProductV1MemberViewHistory struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourceViewID           int64              `json:"source_view_id"`
+	SourceServiceProductID int64              `json:"source_service_product_id"`
+	ProductID              pgtype.Int8        `json:"product_id"`
+	Name                   string             `json:"name"`
+	Position               int64              `json:"position"`
+	IsDefault              bool               `json:"is_default"`
+	SchemaVersion          int16              `json:"schema_version"`
+	ConfigDigest           []byte             `json:"config_digest"`
+	Version                int64              `json:"version"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+}

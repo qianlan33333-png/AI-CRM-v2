@@ -2128,6 +2128,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.channelHistory = contactstore.NewHistoricalChannelHistoryReader(pool)
 	legacyHandler.servicePeriodHistory = productstore.NewServicePeriodHistoryReader(pool)
+	legacyHandler.memberGridHistory = productstore.NewMemberGridHistoryReader(pool)
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
 	legacyHandler.entrantReceipts = channelAcquisitionEntrantReceiptsFragment
@@ -2153,11 +2154,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
 	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
+	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
+	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
 	legacyHandler.automationRuleReconcile = automationOutboundMessage
 	legacyHandler.messageArchive = messageArchiveService
+	legacyHandler.messageHistory = wecomstore.NewMessageHistoryReader(pool)
 	legacyHandler.messageArchiveUnionID = legacyUnionIDResolver
 	legacyHandler.customerQuestionnaires = customerProfileQuestionnaireAnswersHandler
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
@@ -3302,6 +3306,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{"/api/admin/service-period-history", authport.CapabilityProductsRead, legacy.ListServicePeriodHistoryDefinitions},
 			{"/api/admin/service-period-history/{definition_id}/entitlements", authport.CapabilityEntitlementsRead, legacy.ListServicePeriodHistoryEntitlements},
 			{"/api/admin/service-period-history/{definition_id}/events", authport.CapabilityEntitlementsRead, legacy.ListServicePeriodHistoryEvents},
+			{"/api/admin/member-grid-history/views", authport.CapabilityAdminRead, legacy.ListMemberViewHistory},
+			{"/api/admin/member-grid-history/views/{history_id}", authport.CapabilityAdminRead, legacy.GetMemberViewHistory},
+			{"/api/admin/member-grid-history/usage", authport.CapabilityAdminRead, legacy.ListMemberUsageHistory},
+			{"/api/admin/member-grid-history/usage/{history_id}", authport.CapabilityAdminRead, legacy.GetMemberUsageHistory},
 		} {
 			if err = registerLegacy(http.MethodGet, route.path, route.capability, false, route.handler); err != nil {
 				return nil, err
@@ -3671,6 +3679,19 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/automation-history/prompts/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryPrompt)},
 			{http.MethodGet, "/api/admin/automation-history/agents", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryAgents)},
 			{http.MethodGet, "/api/admin/automation-history/agents/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryAgent)},
+			{http.MethodGet, "/api/admin/contact-history/sidebar-profiles", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListSidebarProfileHistory)},
+			{http.MethodGet, "/api/admin/contact-history/sidebar-profiles/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetSidebarProfileHistory)},
+			{http.MethodGet, "/api/admin/contact-history/owner-migration-results", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListOwnerMigrationResultHistory)},
+			{http.MethodGet, "/api/admin/contact-history/owner-migration-results/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetOwnerMigrationResultHistory)},
+			{http.MethodGet, "/api/admin/message-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMessageHistory)},
+			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
+			{http.MethodGet, "/api/admin/campaign-history/segments", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistorySegments)},
+			{http.MethodGet, "/api/admin/campaign-history/segments/{segment_history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistorySegment)},
+			{http.MethodGet, "/api/admin/campaign-history/members", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryMembers)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastPlans)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans/{plan_history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistoryBroadcastPlan)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastRecipients)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastMessages)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryClaims)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/redemptions", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryRedemptions)},
 			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},

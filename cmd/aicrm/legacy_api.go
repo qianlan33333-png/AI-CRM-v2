@@ -23,6 +23,7 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
+	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -38,6 +39,7 @@ import (
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
 
@@ -173,6 +175,7 @@ type runtimeConfigDeclaration struct {
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
+	campaignHistory         campaignport.CampaignHistoryReader
 	auth                    authport.Service
 	customers               customerListApplication
 	customerDetail          customerDetailApplication
@@ -184,6 +187,7 @@ type Handler struct {
 	products                legacyProductApplication
 	servicePeriod           http.Handler
 	servicePeriodHistory    productport.ServicePeriodHistoryReader
+	memberGridHistory       productport.MemberGridHistoryReader
 	memberGrid              http.Handler
 	memberGridManagement    http.Handler
 	memberGridExternalShare http.Handler
@@ -229,12 +233,14 @@ type Handler struct {
 	coupons                 legacyCouponApplication
 	couponBoard             couponBoardApplication
 	couponHistory           couponport.HistoricalReader
+	contactHistory          contactport.ContactHistoryReader
 	settings                legacySettingsApplication
 	setupWizard             http.Handler
 	adminAccess             http.Handler
 	orders                  legacyOrderApplication
 	orderBoard              legacyOrderBoardApplication
 	messageArchive          legacyMessageArchiveApplication
+	messageHistory          wecomport.MessageHistoryReader
 	messageArchiveUnionID   legacyMessageArchiveUnionResolver
 	customerQuestionnaires  *legacyCustomerProfileQuestionnaireAnswersHandler
 	adminOps                legacyAdminOps
