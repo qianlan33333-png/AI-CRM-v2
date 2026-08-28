@@ -45,6 +45,28 @@ try {
   empty = false; fail = true; await mountOutboundTaskHistory(stage);
   if (!stage.querySelector('[role="alert"]') || stage.textContent.includes('unavailable') || stage.textContent.includes('历史 #')) throw new Error('failed result retained raw or fallback data');
   if (!calls.every(({ init }) => init.method === 'GET' && init.credentials === 'include' && init.body === undefined)) throw new Error('history UI made a non-GET request');
+  let html = fs.readFileSync(path.join(root, 'dist', 'admin/automation.html'), 'utf8');
+  const bundle = fs.readFileSync(path.join(root, 'dist', 'assets/admin.js'), 'utf8');
+  const bootCalls = [];
+  const boot = new JSDOM(html, {
+    url: 'http://localhost/admin/automation.html?outbound_task_history=1',
+    runScripts: 'outside-only',
+    pretendToBeVisual: true,
+    beforeParse(window) {
+      window.__AICRM_TEST_MOCK__ = false;
+      window.Headers = Headers;
+      window.fetch = async (input, init = {}) => {
+        const url = new URL(String(input), window.location.origin);
+        bootCalls.push({ path: url.pathname, query: url.search, method: init.method, body: init.body });
+        return { status: 200, headers: new Headers(), text: async () => JSON.stringify({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: [task(1)], total: 1, limit: Number(url.searchParams.get('limit')), offset: Number(url.searchParams.get('offset')) }) };
+      };
+    },
+  });
+  boot.window.eval(bundle);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const bootStage = boot.window.document.querySelector('#stage');
+  if (!bootStage?.querySelector('[data-outbound-task-history]') || bootCalls.length !== 1 || bootCalls[0].path !== '/api/admin/outbound-task-history' || bootCalls[0].query !== '?limit=50&offset=0' || bootCalls[0].method !== 'GET' || bootCalls[0].body !== undefined) throw new Error('built automation boot did not make the expected generated GET');
+  boot.window.close();
   console.log('outbound-task-history-e2e: PASS');
 } finally {
   globalThis.fetch = saved.fetch;
