@@ -85,6 +85,26 @@ type MediaV1GroupInviteHistory struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
+type MediaV1InvalidAssetHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	RedactedRoots       []string           `json:"redacted_roots"`
+	Kind                string             `json:"kind"`
+	SourceID            int64              `json:"source_id"`
+	Name                string             `json:"name"`
+	FileName            string             `json:"file_name"`
+	MimeType            string             `json:"mime_type"`
+	FileSize            int64              `json:"file_size"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	ContentDigest       []byte             `json:"content_digest"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	QuarantineReason    string             `json:"quarantine_reason"`
+}
+
 type MediaWecomUploadReceipt struct {
 	ExternalEffectID  int64              `json:"external_effect_id"`
 	PreparationID     int64              `json:"preparation_id"`

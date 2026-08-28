@@ -6,6 +6,178 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/contact-invalid-history/tags:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: listUnboundTagHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/UnboundTagHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-invalid-history/tags/{history_id}:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: getUnboundTagHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/UnboundTagHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-invalid-history/channels:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: listInvalidChannelHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/InvalidChannelHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-invalid-history/channels/{history_id}:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: getInvalidChannelHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/InvalidChannelHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/media-invalid-history:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: listInvalidAssetHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: media.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/InvalidAssetHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/media-invalid-history/{history_id}:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: getInvalidAssetHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: media.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/InvalidAssetHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-invalid-history:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: listInvalidRadarLinkHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: radar.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/InvalidRadarLinkHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-invalid-history/{history_id}:
+    get:
+      tags: [p4-invalid-source-history]
+      operationId: getInvalidRadarLinkHistory
+      summary: Read inert invalid V1 source history without current business effects
+      x-p4-decision-evidence: P4-V1-INVALID-SOURCE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: radar.read_only_v1_invalid_source_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Inert source history, content: { application/json: { schema: { $ref: "#/components/schemas/InvalidRadarLinkHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/outbound-task-history:
     get:
       tags: [p4-outbound-task-history]
@@ -15626,6 +15798,141 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    UnboundTagHistory:
+      type: object
+      additionalProperties: false
+      required: [id, tag_source_id, created_at, quarantine_reason]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        tag_source_id: { type: string }
+        created_at: { type: string, format: date-time }
+        quarantine_reason: { type: string, enum: [invalid_contact_tag] }
+    UnboundTagHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/UnboundTagHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    UnboundTagHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/UnboundTagHistory" }
+    InvalidChannelHistory:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, code, name, channel_type, carrier_type, created_at, updated_at, quarantine_reason]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        code: { type: string }
+        name: { type: string }
+        channel_type: { type: string }
+        carrier_type: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        quarantine_reason: { type: string, enum: [invalid_channel_definition] }
+    InvalidChannelHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/InvalidChannelHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    InvalidChannelHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/InvalidChannelHistory" }
+    InvalidAssetHistory:
+      type: object
+      additionalProperties: false
+      required: [id, kind, source_id, name, file_name, mime_type, file_size, original_enabled, created_at, updated_at, quarantine_reason]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        kind: { type: string, enum: [image, attachment] }
+        source_id: { type: integer, format: int64 }
+        name: { type: string }
+        file_name: { type: string }
+        mime_type: { type: string }
+        file_size: { type: integer, format: int64 }
+        original_enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        quarantine_reason: { type: string, enum: [invalid_static_media_definition] }
+    InvalidAssetHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/InvalidAssetHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    InvalidAssetHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/InvalidAssetHistory" }
+    InvalidRadarLinkHistory:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, code, title, created_at, updated_at, quarantine_reason]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        code: { type: string }
+        title: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        quarantine_reason: { type: string, enum: [invalid_radar_definition] }
+    InvalidRadarLinkHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/InvalidRadarLinkHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    InvalidRadarLinkHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/InvalidRadarLinkHistory" }
     OutboundTaskHistory:
       type: object
       additionalProperties: false

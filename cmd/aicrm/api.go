@@ -2125,6 +2125,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.signupTagHistory = contactstore.NewSignupTagHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
 	legacyHandler.outboundTaskHistory = outboundstore.NewOutboundTaskHistoryReader(pool)
+	legacyHandler.contactInvalidSourceHistory = contactstore.NewInvalidSourceHistoryReader(pool)
+	legacyHandler.mediaInvalidSourceHistory = mediastore.NewInvalidSourceHistoryReader(pool)
+	legacyHandler.radarInvalidSourceHistory = radarstore.NewInvalidSourceHistoryReader(pool)
 	legacyHandler.hxcHistory = hxcstore.NewHXCHistoryReader(pool)
 	legacyHandler.staticMediaHistory = mediastore.NewStaticMediaHistoryReader(pool)
 	legacyHandler.customerStateHistory = contactstore.NewCustomerStateHistoryReader(pool)
@@ -3778,6 +3781,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/campaign-history/definitions/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistoryDefinition)},
 			{http.MethodGet, "/api/admin/campaign-history/definition-steps", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryDefinitionSteps)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
+			{http.MethodGet, "/api/admin/contact-invalid-history/tags", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListUnboundTagHistory)},
+			{http.MethodGet, "/api/admin/contact-invalid-history/tags/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetUnboundTagHistory)},
+			{http.MethodGet, "/api/admin/contact-invalid-history/channels", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListInvalidChannelHistory)},
+			{http.MethodGet, "/api/admin/contact-invalid-history/channels/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetInvalidChannelHistory)},
+			{http.MethodGet, "/api/admin/media-invalid-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListInvalidAssetHistory)},
+			{http.MethodGet, "/api/admin/media-invalid-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetInvalidAssetHistory)},
+			{http.MethodGet, "/api/admin/radar-invalid-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListInvalidRadarLinkHistory)},
+			{http.MethodGet, "/api/admin/radar-invalid-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetInvalidRadarLinkHistory)},
 			{http.MethodGet, "/api/admin/outbound-task-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListOutboundTaskHistory)},
 			{http.MethodGet, "/api/admin/outbound-task-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetOutboundTaskHistory)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryEvent)},

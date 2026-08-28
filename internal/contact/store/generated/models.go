@@ -186,6 +186,23 @@ type ContactV1DeferredPersonHistory struct {
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ContactV1InvalidChannelHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	RedactedRoots       []string           `json:"redacted_roots"`
+	SourceID            int64              `json:"source_id"`
+	Code                string             `json:"code"`
+	Name                string             `json:"name"`
+	ChannelType         string             `json:"channel_type"`
+	CarrierType         string             `json:"carrier_type"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	QuarantineReason    string             `json:"quarantine_reason"`
+}
+
 type ContactV1MissingRootIdentityHistory struct {
 	ID                       int64              `json:"id"`
 	SourceKeyDigest          []byte             `json:"source_key_digest"`
@@ -256,6 +273,19 @@ type ContactV1SignupTagRule struct {
 	SignupStatus        string             `json:"signup_status"`
 	OriginalActive      bool               `json:"original_active"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ContactV1UnboundTagHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	RedactedRoots       []string           `json:"redacted_roots"`
+	TagSourceID         string             `json:"tag_source_id"`
+	UnionIDDigest       []byte             `json:"union_id_digest"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	QuarantineReason    string             `json:"quarantine_reason"`
 }
 
 type ContactV1WecomEventLogHistory struct {

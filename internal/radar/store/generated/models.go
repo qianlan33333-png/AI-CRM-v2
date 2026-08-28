@@ -74,3 +74,19 @@ type RadarV1ClickHistory struct {
 	RefererDigest          []byte             `json:"referer_digest"`
 	QueryParamsDigest      []byte             `json:"query_params_digest"`
 }
+
+type RadarV1InvalidLinkHistory struct {
+	ID                   int64              `json:"id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	SourceFieldDigest    []byte             `json:"source_field_digest"`
+	PrivateDigest        []byte             `json:"private_digest"`
+	RedactedRoots        []string           `json:"redacted_roots"`
+	SourceID             int64              `json:"source_id"`
+	Code                 string             `json:"code"`
+	Title                string             `json:"title"`
+	DestinationUrlDigest []byte             `json:"destination_url_digest"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	QuarantineReason     string             `json:"quarantine_reason"`
+}

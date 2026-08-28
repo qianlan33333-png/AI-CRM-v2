@@ -62,7 +62,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != deferredIdentityHistoryDomain && *domain != campaignDefinitionHistoryDomain && *domain != "outbound-task-history" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" && *domain != "campaign-history" && *domain != "automation-history" && *domain != "profile-catalog-history" && *domain != "hxc-history" && *domain != "static-tail-history" && *domain != "customer-state-history" && *domain != "marketing-state-history" && *domain != "survey-unresolved-history" && *domain != "legacy-marketing-history" && *domain != "broadcast-job-history" && *domain != "external-identity-gap" && *domain != weComContactHistoryDomain && *domain != v1domain.RadarClickHistoryDomain && *domain != v1domain.MarketingConfigHistoryDomain {
+	if *mode == "reconcile" && *domain != "invalid-source-history" && *domain != deferredIdentityHistoryDomain && *domain != campaignDefinitionHistoryDomain && *domain != "outbound-task-history" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" && *domain != "campaign-history" && *domain != "automation-history" && *domain != "profile-catalog-history" && *domain != "hxc-history" && *domain != "static-tail-history" && *domain != "customer-state-history" && *domain != "marketing-state-history" && *domain != "survey-unresolved-history" && *domain != "legacy-marketing-history" && *domain != "broadcast-job-history" && *domain != "external-identity-gap" && *domain != weComContactHistoryDomain && *domain != v1domain.RadarClickHistoryDomain && *domain != v1domain.MarketingConfigHistoryDomain {
 		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history contact-history, message-history member-grid-history campaign-history or automation-history or profile-catalog-history or hxc-history or static-tail-history or customer-state-history or marketing-state-history or survey-unresolved-history or legacy-marketing-history or broadcast-job-history or external-identity-gap or wecom-contact-history or radar-click-history or marketing-config-history")
 	}
 	var actors v1candidate.ActorIDs
@@ -115,6 +115,21 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return err
 	}
 	defer pool.Close()
+	if *domain == "invalid-source-history" {
+		if environment.SourceDatabaseURL != "" || len(environment.SourceHMACKey) < 32 || len(environment.ArchiveKey) != 32 {
+			return fmt.Errorf("invalid-source-history requires local-only archive keys")
+		}
+		archive, err := v1archive.OpenPostgresArchiveReader(ctx, environment.TargetDatabaseURL, []byte(environment.ArchiveKey))
+		if err != nil {
+			return err
+		}
+		defer archive.Close()
+		value, err := v1domain.RunInvalidSourceHistory(ctx, pool, archive, *archiveRunID, []byte(environment.SourceHMACKey), *mode == "reconcile")
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"invalid_source_history": value})
+	}
 	if *domain == deferredIdentityHistoryDomain {
 		archive, err := v1archive.OpenPostgresArchiveReader(ctx, environment.TargetDatabaseURL, []byte(environment.ArchiveKey))
 		if err != nil {
@@ -556,7 +571,7 @@ func validDomain(value string) bool {
 	if value == deferredIdentityHistoryDomain || value == campaignDefinitionHistoryDomain {
 		return true
 	}
-	return value == "outbound-task-history" || value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history" || value == "campaign-history" || value == "automation-history" || value == "profile-catalog-history" || value == "hxc-history" || value == "static-tail-history" || value == "customer-state-history" || value == "marketing-state-history" || value == "survey-unresolved-history" || value == "legacy-marketing-history" || value == "broadcast-job-history" || value == "external-identity-gap" || value == weComContactHistoryDomain || value == v1domain.RadarClickHistoryDomain || value == v1domain.MarketingConfigHistoryDomain
+	return value == "invalid-source-history" || value == "outbound-task-history" || value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history" || value == "campaign-history" || value == "automation-history" || value == "profile-catalog-history" || value == "hxc-history" || value == "static-tail-history" || value == "customer-state-history" || value == "marketing-state-history" || value == "survey-unresolved-history" || value == "legacy-marketing-history" || value == "broadcast-job-history" || value == "external-identity-gap" || value == weComContactHistoryDomain || value == v1domain.RadarClickHistoryDomain || value == v1domain.MarketingConfigHistoryDomain
 }
 
 func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {

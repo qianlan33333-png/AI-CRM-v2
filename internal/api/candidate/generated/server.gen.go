@@ -5710,6 +5710,339 @@ func (e InternalEventSafeExportResponseRealExternalCallExecuted) Valid() bool {
 	}
 }
 
+// Defines values for InvalidAssetHistoryKind.
+const (
+	InvalidAssetHistoryKindAttachment InvalidAssetHistoryKind = "attachment"
+	InvalidAssetHistoryKindImage      InvalidAssetHistoryKind = "image"
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryKind enum.
+func (e InvalidAssetHistoryKind) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryKindAttachment:
+		return true
+	case InvalidAssetHistoryKindImage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryQuarantineReason.
+const (
+	InvalidStaticMediaDefinition InvalidAssetHistoryQuarantineReason = "invalid_static_media_definition"
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryQuarantineReason enum.
+func (e InvalidAssetHistoryQuarantineReason) Valid() bool {
+	switch e {
+	case InvalidStaticMediaDefinition:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryDetailReadOnly.
+const (
+	InvalidAssetHistoryDetailReadOnlyTrue InvalidAssetHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryDetailReadOnly enum.
+func (e InvalidAssetHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryDetailRealExternalCallExecuted.
+const (
+	InvalidAssetHistoryDetailRealExternalCallExecutedFalse InvalidAssetHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryDetailRealExternalCallExecuted enum.
+func (e InvalidAssetHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryDetailSource.
+const (
+	InvalidAssetHistoryDetailSourceV1History InvalidAssetHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryDetailSource enum.
+func (e InvalidAssetHistoryDetailSource) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryPageReadOnly.
+const (
+	InvalidAssetHistoryPageReadOnlyTrue InvalidAssetHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryPageReadOnly enum.
+func (e InvalidAssetHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryPageRealExternalCallExecuted.
+const (
+	InvalidAssetHistoryPageRealExternalCallExecutedFalse InvalidAssetHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryPageRealExternalCallExecuted enum.
+func (e InvalidAssetHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidAssetHistoryPageSource.
+const (
+	InvalidAssetHistoryPageSourceV1History InvalidAssetHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the InvalidAssetHistoryPageSource enum.
+func (e InvalidAssetHistoryPageSource) Valid() bool {
+	switch e {
+	case InvalidAssetHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryQuarantineReason.
+const (
+	InvalidChannelDefinition InvalidChannelHistoryQuarantineReason = "invalid_channel_definition"
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryQuarantineReason enum.
+func (e InvalidChannelHistoryQuarantineReason) Valid() bool {
+	switch e {
+	case InvalidChannelDefinition:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryDetailReadOnly.
+const (
+	InvalidChannelHistoryDetailReadOnlyTrue InvalidChannelHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryDetailReadOnly enum.
+func (e InvalidChannelHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case InvalidChannelHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryDetailRealExternalCallExecuted.
+const (
+	InvalidChannelHistoryDetailRealExternalCallExecutedFalse InvalidChannelHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryDetailRealExternalCallExecuted enum.
+func (e InvalidChannelHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InvalidChannelHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryDetailSource.
+const (
+	InvalidChannelHistoryDetailSourceV1History InvalidChannelHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryDetailSource enum.
+func (e InvalidChannelHistoryDetailSource) Valid() bool {
+	switch e {
+	case InvalidChannelHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryPageReadOnly.
+const (
+	InvalidChannelHistoryPageReadOnlyTrue InvalidChannelHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryPageReadOnly enum.
+func (e InvalidChannelHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case InvalidChannelHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryPageRealExternalCallExecuted.
+const (
+	InvalidChannelHistoryPageRealExternalCallExecutedFalse InvalidChannelHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryPageRealExternalCallExecuted enum.
+func (e InvalidChannelHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InvalidChannelHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidChannelHistoryPageSource.
+const (
+	InvalidChannelHistoryPageSourceV1History InvalidChannelHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the InvalidChannelHistoryPageSource enum.
+func (e InvalidChannelHistoryPageSource) Valid() bool {
+	switch e {
+	case InvalidChannelHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryQuarantineReason.
+const (
+	InvalidRadarDefinition InvalidRadarLinkHistoryQuarantineReason = "invalid_radar_definition"
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryQuarantineReason enum.
+func (e InvalidRadarLinkHistoryQuarantineReason) Valid() bool {
+	switch e {
+	case InvalidRadarDefinition:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryDetailReadOnly.
+const (
+	InvalidRadarLinkHistoryDetailReadOnlyTrue InvalidRadarLinkHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryDetailReadOnly enum.
+func (e InvalidRadarLinkHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case InvalidRadarLinkHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryDetailRealExternalCallExecuted.
+const (
+	InvalidRadarLinkHistoryDetailRealExternalCallExecutedFalse InvalidRadarLinkHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryDetailRealExternalCallExecuted enum.
+func (e InvalidRadarLinkHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InvalidRadarLinkHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryDetailSource.
+const (
+	InvalidRadarLinkHistoryDetailSourceV1History InvalidRadarLinkHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryDetailSource enum.
+func (e InvalidRadarLinkHistoryDetailSource) Valid() bool {
+	switch e {
+	case InvalidRadarLinkHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryPageReadOnly.
+const (
+	InvalidRadarLinkHistoryPageReadOnlyTrue InvalidRadarLinkHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryPageReadOnly enum.
+func (e InvalidRadarLinkHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case InvalidRadarLinkHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryPageRealExternalCallExecuted.
+const (
+	InvalidRadarLinkHistoryPageRealExternalCallExecutedFalse InvalidRadarLinkHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryPageRealExternalCallExecuted enum.
+func (e InvalidRadarLinkHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InvalidRadarLinkHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvalidRadarLinkHistoryPageSource.
+const (
+	InvalidRadarLinkHistoryPageSourceV1History InvalidRadarLinkHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the InvalidRadarLinkHistoryPageSource enum.
+func (e InvalidRadarLinkHistoryPageSource) Valid() bool {
+	switch e {
+	case InvalidRadarLinkHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyChannelAssignmentMode.
 const (
 	LegacyChannelAssignmentModeMultiStaff  LegacyChannelAssignmentMode = "multi_staff"
@@ -12174,16 +12507,16 @@ func (e SidebarMaterialItemThumbnailStatus) Valid() bool {
 
 // Defines values for SidebarOtherStaffChatItemMessageType.
 const (
-	SidebarOtherStaffChatItemMessageTypeImage SidebarOtherStaffChatItemMessageType = "image"
-	SidebarOtherStaffChatItemMessageTypeText  SidebarOtherStaffChatItemMessageType = "text"
+	Image SidebarOtherStaffChatItemMessageType = "image"
+	Text  SidebarOtherStaffChatItemMessageType = "text"
 )
 
 // Valid indicates whether the value is a known member of the SidebarOtherStaffChatItemMessageType enum.
 func (e SidebarOtherStaffChatItemMessageType) Valid() bool {
 	switch e {
-	case SidebarOtherStaffChatItemMessageTypeImage:
+	case Image:
 		return true
-	case SidebarOtherStaffChatItemMessageTypeText:
+	case Text:
 		return true
 	default:
 		return false
@@ -13126,6 +13459,111 @@ const (
 func (e SurveyUnresolvedHistorySubmissionPageSource) Valid() bool {
 	switch e {
 	case SurveyUnresolvedHistorySubmissionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryQuarantineReason.
+const (
+	InvalidContactTag UnboundTagHistoryQuarantineReason = "invalid_contact_tag"
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryQuarantineReason enum.
+func (e UnboundTagHistoryQuarantineReason) Valid() bool {
+	switch e {
+	case InvalidContactTag:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryDetailReadOnly.
+const (
+	UnboundTagHistoryDetailReadOnlyTrue UnboundTagHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryDetailReadOnly enum.
+func (e UnboundTagHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case UnboundTagHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryDetailRealExternalCallExecuted.
+const (
+	UnboundTagHistoryDetailRealExternalCallExecutedFalse UnboundTagHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryDetailRealExternalCallExecuted enum.
+func (e UnboundTagHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case UnboundTagHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryDetailSource.
+const (
+	UnboundTagHistoryDetailSourceV1History UnboundTagHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryDetailSource enum.
+func (e UnboundTagHistoryDetailSource) Valid() bool {
+	switch e {
+	case UnboundTagHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryPageReadOnly.
+const (
+	UnboundTagHistoryPageReadOnlyTrue UnboundTagHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryPageReadOnly enum.
+func (e UnboundTagHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case UnboundTagHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryPageRealExternalCallExecuted.
+const (
+	UnboundTagHistoryPageRealExternalCallExecutedFalse UnboundTagHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryPageRealExternalCallExecuted enum.
+func (e UnboundTagHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case UnboundTagHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UnboundTagHistoryPageSource.
+const (
+	UnboundTagHistoryPageSourceV1History UnboundTagHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the UnboundTagHistoryPageSource enum.
+func (e UnboundTagHistoryPageSource) Valid() bool {
+	switch e {
+	case UnboundTagHistoryPageSourceV1History:
 		return true
 	default:
 		return false
@@ -17403,6 +17841,168 @@ type InternalEventSafeExportResponseLocalOnly bool
 
 // InternalEventSafeExportResponseRealExternalCallExecuted defines model for InternalEventSafeExportResponse.RealExternalCallExecuted.
 type InternalEventSafeExportResponseRealExternalCallExecuted bool
+
+// InvalidAssetHistory defines model for InvalidAssetHistory.
+type InvalidAssetHistory struct {
+	CreatedAt        time.Time                           `json:"created_at"`
+	FileName         string                              `json:"file_name"`
+	FileSize         int64                               `json:"file_size"`
+	Id               int64                               `json:"id"`
+	Kind             InvalidAssetHistoryKind             `json:"kind"`
+	MimeType         string                              `json:"mime_type"`
+	Name             string                              `json:"name"`
+	OriginalEnabled  bool                                `json:"original_enabled"`
+	QuarantineReason InvalidAssetHistoryQuarantineReason `json:"quarantine_reason"`
+	SourceId         int64                               `json:"source_id"`
+	UpdatedAt        time.Time                           `json:"updated_at"`
+}
+
+// InvalidAssetHistoryKind defines model for InvalidAssetHistory.Kind.
+type InvalidAssetHistoryKind string
+
+// InvalidAssetHistoryQuarantineReason defines model for InvalidAssetHistory.QuarantineReason.
+type InvalidAssetHistoryQuarantineReason string
+
+// InvalidAssetHistoryDetail defines model for InvalidAssetHistoryDetail.
+type InvalidAssetHistoryDetail struct {
+	Item                     InvalidAssetHistory                               `json:"item"`
+	ReadOnly                 InvalidAssetHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted InvalidAssetHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   InvalidAssetHistoryDetailSource                   `json:"source"`
+}
+
+// InvalidAssetHistoryDetailReadOnly defines model for InvalidAssetHistoryDetail.ReadOnly.
+type InvalidAssetHistoryDetailReadOnly bool
+
+// InvalidAssetHistoryDetailRealExternalCallExecuted defines model for InvalidAssetHistoryDetail.RealExternalCallExecuted.
+type InvalidAssetHistoryDetailRealExternalCallExecuted bool
+
+// InvalidAssetHistoryDetailSource defines model for InvalidAssetHistoryDetail.Source.
+type InvalidAssetHistoryDetailSource string
+
+// InvalidAssetHistoryPage defines model for InvalidAssetHistoryPage.
+type InvalidAssetHistoryPage struct {
+	Items                    []InvalidAssetHistory                           `json:"items"`
+	Limit                    int32                                           `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 InvalidAssetHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted InvalidAssetHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   InvalidAssetHistoryPageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// InvalidAssetHistoryPageReadOnly defines model for InvalidAssetHistoryPage.ReadOnly.
+type InvalidAssetHistoryPageReadOnly bool
+
+// InvalidAssetHistoryPageRealExternalCallExecuted defines model for InvalidAssetHistoryPage.RealExternalCallExecuted.
+type InvalidAssetHistoryPageRealExternalCallExecuted bool
+
+// InvalidAssetHistoryPageSource defines model for InvalidAssetHistoryPage.Source.
+type InvalidAssetHistoryPageSource string
+
+// InvalidChannelHistory defines model for InvalidChannelHistory.
+type InvalidChannelHistory struct {
+	CarrierType      string                                `json:"carrier_type"`
+	ChannelType      string                                `json:"channel_type"`
+	Code             string                                `json:"code"`
+	CreatedAt        time.Time                             `json:"created_at"`
+	Id               int64                                 `json:"id"`
+	Name             string                                `json:"name"`
+	QuarantineReason InvalidChannelHistoryQuarantineReason `json:"quarantine_reason"`
+	SourceId         int64                                 `json:"source_id"`
+	UpdatedAt        time.Time                             `json:"updated_at"`
+}
+
+// InvalidChannelHistoryQuarantineReason defines model for InvalidChannelHistory.QuarantineReason.
+type InvalidChannelHistoryQuarantineReason string
+
+// InvalidChannelHistoryDetail defines model for InvalidChannelHistoryDetail.
+type InvalidChannelHistoryDetail struct {
+	Item                     InvalidChannelHistory                               `json:"item"`
+	ReadOnly                 InvalidChannelHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted InvalidChannelHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   InvalidChannelHistoryDetailSource                   `json:"source"`
+}
+
+// InvalidChannelHistoryDetailReadOnly defines model for InvalidChannelHistoryDetail.ReadOnly.
+type InvalidChannelHistoryDetailReadOnly bool
+
+// InvalidChannelHistoryDetailRealExternalCallExecuted defines model for InvalidChannelHistoryDetail.RealExternalCallExecuted.
+type InvalidChannelHistoryDetailRealExternalCallExecuted bool
+
+// InvalidChannelHistoryDetailSource defines model for InvalidChannelHistoryDetail.Source.
+type InvalidChannelHistoryDetailSource string
+
+// InvalidChannelHistoryPage defines model for InvalidChannelHistoryPage.
+type InvalidChannelHistoryPage struct {
+	Items                    []InvalidChannelHistory                           `json:"items"`
+	Limit                    int32                                             `json:"limit"`
+	Offset                   int32                                             `json:"offset"`
+	ReadOnly                 InvalidChannelHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted InvalidChannelHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   InvalidChannelHistoryPageSource                   `json:"source"`
+	Total                    int64                                             `json:"total"`
+}
+
+// InvalidChannelHistoryPageReadOnly defines model for InvalidChannelHistoryPage.ReadOnly.
+type InvalidChannelHistoryPageReadOnly bool
+
+// InvalidChannelHistoryPageRealExternalCallExecuted defines model for InvalidChannelHistoryPage.RealExternalCallExecuted.
+type InvalidChannelHistoryPageRealExternalCallExecuted bool
+
+// InvalidChannelHistoryPageSource defines model for InvalidChannelHistoryPage.Source.
+type InvalidChannelHistoryPageSource string
+
+// InvalidRadarLinkHistory defines model for InvalidRadarLinkHistory.
+type InvalidRadarLinkHistory struct {
+	Code             string                                  `json:"code"`
+	CreatedAt        time.Time                               `json:"created_at"`
+	Id               int64                                   `json:"id"`
+	QuarantineReason InvalidRadarLinkHistoryQuarantineReason `json:"quarantine_reason"`
+	SourceId         int64                                   `json:"source_id"`
+	Title            string                                  `json:"title"`
+	UpdatedAt        time.Time                               `json:"updated_at"`
+}
+
+// InvalidRadarLinkHistoryQuarantineReason defines model for InvalidRadarLinkHistory.QuarantineReason.
+type InvalidRadarLinkHistoryQuarantineReason string
+
+// InvalidRadarLinkHistoryDetail defines model for InvalidRadarLinkHistoryDetail.
+type InvalidRadarLinkHistoryDetail struct {
+	Item                     InvalidRadarLinkHistory                               `json:"item"`
+	ReadOnly                 InvalidRadarLinkHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted InvalidRadarLinkHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   InvalidRadarLinkHistoryDetailSource                   `json:"source"`
+}
+
+// InvalidRadarLinkHistoryDetailReadOnly defines model for InvalidRadarLinkHistoryDetail.ReadOnly.
+type InvalidRadarLinkHistoryDetailReadOnly bool
+
+// InvalidRadarLinkHistoryDetailRealExternalCallExecuted defines model for InvalidRadarLinkHistoryDetail.RealExternalCallExecuted.
+type InvalidRadarLinkHistoryDetailRealExternalCallExecuted bool
+
+// InvalidRadarLinkHistoryDetailSource defines model for InvalidRadarLinkHistoryDetail.Source.
+type InvalidRadarLinkHistoryDetailSource string
+
+// InvalidRadarLinkHistoryPage defines model for InvalidRadarLinkHistoryPage.
+type InvalidRadarLinkHistoryPage struct {
+	Items                    []InvalidRadarLinkHistory                           `json:"items"`
+	Limit                    int32                                               `json:"limit"`
+	Offset                   int32                                               `json:"offset"`
+	ReadOnly                 InvalidRadarLinkHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted InvalidRadarLinkHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   InvalidRadarLinkHistoryPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// InvalidRadarLinkHistoryPageReadOnly defines model for InvalidRadarLinkHistoryPage.ReadOnly.
+type InvalidRadarLinkHistoryPageReadOnly bool
+
+// InvalidRadarLinkHistoryPageRealExternalCallExecuted defines model for InvalidRadarLinkHistoryPage.RealExternalCallExecuted.
+type InvalidRadarLinkHistoryPageRealExternalCallExecuted bool
+
+// InvalidRadarLinkHistoryPageSource defines model for InvalidRadarLinkHistoryPage.Source.
+type InvalidRadarLinkHistoryPageSource string
 
 // LegacyChannel defines model for LegacyChannel.
 type LegacyChannel struct {
@@ -21900,6 +22500,54 @@ type TagListResponse struct {
 	Items []Tag `json:"items"`
 }
 
+// UnboundTagHistory defines model for UnboundTagHistory.
+type UnboundTagHistory struct {
+	CreatedAt        time.Time                         `json:"created_at"`
+	Id               int64                             `json:"id"`
+	QuarantineReason UnboundTagHistoryQuarantineReason `json:"quarantine_reason"`
+	TagSourceId      string                            `json:"tag_source_id"`
+}
+
+// UnboundTagHistoryQuarantineReason defines model for UnboundTagHistory.QuarantineReason.
+type UnboundTagHistoryQuarantineReason string
+
+// UnboundTagHistoryDetail defines model for UnboundTagHistoryDetail.
+type UnboundTagHistoryDetail struct {
+	Item                     UnboundTagHistory                               `json:"item"`
+	ReadOnly                 UnboundTagHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted UnboundTagHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   UnboundTagHistoryDetailSource                   `json:"source"`
+}
+
+// UnboundTagHistoryDetailReadOnly defines model for UnboundTagHistoryDetail.ReadOnly.
+type UnboundTagHistoryDetailReadOnly bool
+
+// UnboundTagHistoryDetailRealExternalCallExecuted defines model for UnboundTagHistoryDetail.RealExternalCallExecuted.
+type UnboundTagHistoryDetailRealExternalCallExecuted bool
+
+// UnboundTagHistoryDetailSource defines model for UnboundTagHistoryDetail.Source.
+type UnboundTagHistoryDetailSource string
+
+// UnboundTagHistoryPage defines model for UnboundTagHistoryPage.
+type UnboundTagHistoryPage struct {
+	Items                    []UnboundTagHistory                           `json:"items"`
+	Limit                    int32                                         `json:"limit"`
+	Offset                   int32                                         `json:"offset"`
+	ReadOnly                 UnboundTagHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted UnboundTagHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   UnboundTagHistoryPageSource                   `json:"source"`
+	Total                    int64                                         `json:"total"`
+}
+
+// UnboundTagHistoryPageReadOnly defines model for UnboundTagHistoryPage.ReadOnly.
+type UnboundTagHistoryPageReadOnly bool
+
+// UnboundTagHistoryPageRealExternalCallExecuted defines model for UnboundTagHistoryPage.RealExternalCallExecuted.
+type UnboundTagHistoryPageRealExternalCallExecuted bool
+
+// UnboundTagHistoryPageSource defines model for UnboundTagHistoryPage.Source.
+type UnboundTagHistoryPageSource string
+
 // UpdateLocalTagNameRequest defines model for UpdateLocalTagNameRequest.
 type UpdateLocalTagNameRequest struct {
 	Name string `json:"name"`
@@ -22885,6 +23533,18 @@ type ListSidebarProfileHistoryParams struct {
 	Offset     *int   `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListInvalidChannelHistoryParams defines parameters for ListInvalidChannelHistory.
+type ListInvalidChannelHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListUnboundTagHistoryParams defines parameters for ListUnboundTagHistory.
+type ListUnboundTagHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // CreateMediaContentPackageParams defines parameters for CreateMediaContentPackage.
 type CreateMediaContentPackageParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -23105,6 +23765,12 @@ type ListMarketingStateHistoryValueSnapshotParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListInvalidAssetHistoryParams defines parameters for ListInvalidAssetHistory.
+type ListInvalidAssetHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListMemberUsageHistoryParams defines parameters for ListMemberUsageHistory.
 type ListMemberUsageHistoryParams struct {
 	CustomerId *int64 `form:"customer_id,omitempty" json:"customer_id,omitempty"`
@@ -23308,6 +23974,12 @@ type ReconcileSurveyExternalPushParams struct {
 
 // ListRadarClickHistoryParams defines parameters for ListRadarClickHistory.
 type ListRadarClickHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListInvalidRadarLinkHistoryParams defines parameters for ListInvalidRadarLinkHistory.
+type ListInvalidRadarLinkHistoryParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
@@ -26113,6 +26785,18 @@ type ServerInterface interface {
 	// Read immutable V1 contact history without current mutations
 	// (GET /api/admin/contact-history/sidebar-profiles/{history_id})
 	GetSidebarProfileHistory(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/channels)
+	ListInvalidChannelHistory(w http.ResponseWriter, r *http.Request, params ListInvalidChannelHistoryParams)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/channels/{history_id})
+	GetInvalidChannelHistory(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/tags)
+	ListUnboundTagHistory(w http.ResponseWriter, r *http.Request, params ListUnboundTagHistoryParams)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/tags/{history_id})
+	GetUnboundTagHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Persist one local content package
 	// (POST /api/admin/content-packages)
 	CreateMediaContentPackage(w http.ResponseWriter, r *http.Request, params CreateMediaContentPackageParams)
@@ -26305,6 +26989,12 @@ type ServerInterface interface {
 	// Read immutable V1 marketing observations without changing scores or membership
 	// (GET /api/admin/marketing-state-history/value-snapshots/{history_id})
 	GetMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/media-invalid-history)
+	ListInvalidAssetHistory(w http.ResponseWriter, r *http.Request, params ListInvalidAssetHistoryParams)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/media-invalid-history/{history_id})
+	GetInvalidAssetHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable V1 Member Grid history without current access or usage changes
 	// (GET /api/admin/member-grid-history/usage)
 	ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams)
@@ -26413,6 +27103,12 @@ type ServerInterface interface {
 	// Read immutable source history without current-state effects
 	// (GET /api/admin/radar-click-history/{history_id})
 	GetRadarClickHistory(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/radar-invalid-history)
+	ListInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request, params ListInvalidRadarLinkHistoryParams)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/radar-invalid-history/{history_id})
+	GetInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read historical service-period definitions attached to existing Products
 	// (GET /api/admin/service-period-history)
 	ListServicePeriodHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListServicePeriodHistoryDefinitionsParams)
@@ -27490,6 +28186,30 @@ func (_ Unimplemented) GetSidebarProfileHistory(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/contact-invalid-history/channels)
+func (_ Unimplemented) ListInvalidChannelHistory(w http.ResponseWriter, r *http.Request, params ListInvalidChannelHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/contact-invalid-history/channels/{history_id})
+func (_ Unimplemented) GetInvalidChannelHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/contact-invalid-history/tags)
+func (_ Unimplemented) ListUnboundTagHistory(w http.ResponseWriter, r *http.Request, params ListUnboundTagHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/contact-invalid-history/tags/{history_id})
+func (_ Unimplemented) GetUnboundTagHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Persist one local content package
 // (POST /api/admin/content-packages)
 func (_ Unimplemented) CreateMediaContentPackage(w http.ResponseWriter, r *http.Request, params CreateMediaContentPackageParams) {
@@ -27874,6 +28594,18 @@ func (_ Unimplemented) GetMarketingStateHistoryValueSnapshot(w http.ResponseWrit
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/media-invalid-history)
+func (_ Unimplemented) ListInvalidAssetHistory(w http.ResponseWriter, r *http.Request, params ListInvalidAssetHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/media-invalid-history/{history_id})
+func (_ Unimplemented) GetInvalidAssetHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read immutable V1 Member Grid history without current access or usage changes
 // (GET /api/admin/member-grid-history/usage)
 func (_ Unimplemented) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams) {
@@ -28087,6 +28819,18 @@ func (_ Unimplemented) ListRadarClickHistory(w http.ResponseWriter, r *http.Requ
 // Read immutable source history without current-state effects
 // (GET /api/admin/radar-click-history/{history_id})
 func (_ Unimplemented) GetRadarClickHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/radar-invalid-history)
+func (_ Unimplemented) ListInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request, params ListInvalidRadarLinkHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert invalid V1 source history without current business effects
+// (GET /api/admin/radar-invalid-history/{history_id})
+func (_ Unimplemented) GetInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -33741,6 +34485,150 @@ func (siw *ServerInterfaceWrapper) GetSidebarProfileHistory(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// ListInvalidChannelHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListInvalidChannelHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvalidChannelHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvalidChannelHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInvalidChannelHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetInvalidChannelHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInvalidChannelHistory(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUnboundTagHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListUnboundTagHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUnboundTagHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUnboundTagHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUnboundTagHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetUnboundTagHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUnboundTagHistory(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateMediaContentPackage operation middleware
 func (siw *ServerInterfaceWrapper) CreateMediaContentPackage(w http.ResponseWriter, r *http.Request) {
 
@@ -36285,6 +37173,78 @@ func (siw *ServerInterfaceWrapper) GetMarketingStateHistoryValueSnapshot(w http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListInvalidAssetHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListInvalidAssetHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvalidAssetHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvalidAssetHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInvalidAssetHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetInvalidAssetHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInvalidAssetHistory(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListMemberUsageHistory operation middleware
 func (siw *ServerInterfaceWrapper) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request) {
 
@@ -38414,6 +39374,78 @@ func (siw *ServerInterfaceWrapper) GetRadarClickHistory(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetRadarClickHistory(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInvalidRadarLinkHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvalidRadarLinkHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvalidRadarLinkHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInvalidRadarLinkHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInvalidRadarLinkHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -48987,6 +50019,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/contact-history/sidebar-profiles/{history_id}", wrapper.GetSidebarProfileHistory)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-invalid-history/channels", wrapper.ListInvalidChannelHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-invalid-history/channels/{history_id}", wrapper.GetInvalidChannelHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-invalid-history/tags", wrapper.ListUnboundTagHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-invalid-history/tags/{history_id}", wrapper.GetUnboundTagHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/content-packages", wrapper.CreateMediaContentPackage)
 	})
 	r.Group(func(r chi.Router) {
@@ -49179,6 +50223,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/marketing-state-history/value-snapshots/{history_id}", wrapper.GetMarketingStateHistoryValueSnapshot)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/media-invalid-history", wrapper.ListInvalidAssetHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/media-invalid-history/{history_id}", wrapper.GetInvalidAssetHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/member-grid-history/usage", wrapper.ListMemberUsageHistory)
 	})
 	r.Group(func(r chi.Router) {
@@ -49285,6 +50335,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/radar-click-history/{history_id}", wrapper.GetRadarClickHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/radar-invalid-history", wrapper.ListInvalidRadarLinkHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/radar-invalid-history/{history_id}", wrapper.GetInvalidRadarLinkHistory)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-history", wrapper.ListServicePeriodHistoryDefinitions)
@@ -55128,6 +56184,218 @@ func (response GetSidebarProfileHistory503JSONResponse) VisitGetSidebarProfileHi
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListInvalidChannelHistoryRequestObject struct {
+	Params ListInvalidChannelHistoryParams
+}
+
+type ListInvalidChannelHistoryResponseObject interface {
+	VisitListInvalidChannelHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListInvalidChannelHistory200JSONResponse InvalidChannelHistoryPage
+
+func (response ListInvalidChannelHistory200JSONResponse) VisitListInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidChannelHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListInvalidChannelHistory400JSONResponse) VisitListInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidChannelHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListInvalidChannelHistory401JSONResponse) VisitListInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidChannelHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListInvalidChannelHistory403JSONResponse) VisitListInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidChannelHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListInvalidChannelHistory503JSONResponse) VisitListInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidChannelHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetInvalidChannelHistoryResponseObject interface {
+	VisitGetInvalidChannelHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetInvalidChannelHistory200JSONResponse InvalidChannelHistoryDetail
+
+func (response GetInvalidChannelHistory200JSONResponse) VisitGetInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidChannelHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetInvalidChannelHistory400JSONResponse) VisitGetInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidChannelHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetInvalidChannelHistory401JSONResponse) VisitGetInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidChannelHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetInvalidChannelHistory403JSONResponse) VisitGetInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidChannelHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetInvalidChannelHistory503JSONResponse) VisitGetInvalidChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUnboundTagHistoryRequestObject struct {
+	Params ListUnboundTagHistoryParams
+}
+
+type ListUnboundTagHistoryResponseObject interface {
+	VisitListUnboundTagHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListUnboundTagHistory200JSONResponse UnboundTagHistoryPage
+
+func (response ListUnboundTagHistory200JSONResponse) VisitListUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUnboundTagHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListUnboundTagHistory400JSONResponse) VisitListUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUnboundTagHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListUnboundTagHistory401JSONResponse) VisitListUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUnboundTagHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListUnboundTagHistory403JSONResponse) VisitListUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUnboundTagHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListUnboundTagHistory503JSONResponse) VisitListUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUnboundTagHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetUnboundTagHistoryResponseObject interface {
+	VisitGetUnboundTagHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetUnboundTagHistory200JSONResponse UnboundTagHistoryDetail
+
+func (response GetUnboundTagHistory200JSONResponse) VisitGetUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUnboundTagHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetUnboundTagHistory400JSONResponse) VisitGetUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUnboundTagHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetUnboundTagHistory401JSONResponse) VisitGetUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUnboundTagHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetUnboundTagHistory403JSONResponse) VisitGetUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUnboundTagHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetUnboundTagHistory503JSONResponse) VisitGetUnboundTagHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CreateMediaContentPackageRequestObject struct {
 	Params CreateMediaContentPackageParams
 	Body   *CreateMediaContentPackageJSONRequestBody
@@ -58597,6 +59865,112 @@ func (response GetMarketingStateHistoryValueSnapshot503JSONResponse) VisitGetMar
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListInvalidAssetHistoryRequestObject struct {
+	Params ListInvalidAssetHistoryParams
+}
+
+type ListInvalidAssetHistoryResponseObject interface {
+	VisitListInvalidAssetHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListInvalidAssetHistory200JSONResponse InvalidAssetHistoryPage
+
+func (response ListInvalidAssetHistory200JSONResponse) VisitListInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidAssetHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListInvalidAssetHistory400JSONResponse) VisitListInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidAssetHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListInvalidAssetHistory401JSONResponse) VisitListInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidAssetHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListInvalidAssetHistory403JSONResponse) VisitListInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidAssetHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListInvalidAssetHistory503JSONResponse) VisitListInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidAssetHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetInvalidAssetHistoryResponseObject interface {
+	VisitGetInvalidAssetHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetInvalidAssetHistory200JSONResponse InvalidAssetHistoryDetail
+
+func (response GetInvalidAssetHistory200JSONResponse) VisitGetInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidAssetHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetInvalidAssetHistory400JSONResponse) VisitGetInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidAssetHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetInvalidAssetHistory401JSONResponse) VisitGetInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidAssetHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetInvalidAssetHistory403JSONResponse) VisitGetInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidAssetHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetInvalidAssetHistory503JSONResponse) VisitGetInvalidAssetHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListMemberUsageHistoryRequestObject struct {
 	Params ListMemberUsageHistoryParams
 }
@@ -60738,6 +62112,112 @@ type GetRadarClickHistory503Response struct {
 func (response GetRadarClickHistory503Response) VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error {
 	w.WriteHeader(503)
 	return nil
+}
+
+type ListInvalidRadarLinkHistoryRequestObject struct {
+	Params ListInvalidRadarLinkHistoryParams
+}
+
+type ListInvalidRadarLinkHistoryResponseObject interface {
+	VisitListInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListInvalidRadarLinkHistory200JSONResponse InvalidRadarLinkHistoryPage
+
+func (response ListInvalidRadarLinkHistory200JSONResponse) VisitListInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidRadarLinkHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListInvalidRadarLinkHistory400JSONResponse) VisitListInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidRadarLinkHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListInvalidRadarLinkHistory401JSONResponse) VisitListInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidRadarLinkHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListInvalidRadarLinkHistory403JSONResponse) VisitListInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListInvalidRadarLinkHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListInvalidRadarLinkHistory503JSONResponse) VisitListInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidRadarLinkHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetInvalidRadarLinkHistoryResponseObject interface {
+	VisitGetInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetInvalidRadarLinkHistory200JSONResponse InvalidRadarLinkHistoryDetail
+
+func (response GetInvalidRadarLinkHistory200JSONResponse) VisitGetInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidRadarLinkHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetInvalidRadarLinkHistory400JSONResponse) VisitGetInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidRadarLinkHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetInvalidRadarLinkHistory401JSONResponse) VisitGetInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidRadarLinkHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetInvalidRadarLinkHistory403JSONResponse) VisitGetInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInvalidRadarLinkHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetInvalidRadarLinkHistory503JSONResponse) VisitGetInvalidRadarLinkHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListServicePeriodHistoryDefinitionsRequestObject struct {
@@ -72125,6 +73605,18 @@ type StrictServerInterface interface {
 	// Read immutable V1 contact history without current mutations
 	// (GET /api/admin/contact-history/sidebar-profiles/{history_id})
 	GetSidebarProfileHistory(ctx context.Context, request GetSidebarProfileHistoryRequestObject) (GetSidebarProfileHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/channels)
+	ListInvalidChannelHistory(ctx context.Context, request ListInvalidChannelHistoryRequestObject) (ListInvalidChannelHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/channels/{history_id})
+	GetInvalidChannelHistory(ctx context.Context, request GetInvalidChannelHistoryRequestObject) (GetInvalidChannelHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/tags)
+	ListUnboundTagHistory(ctx context.Context, request ListUnboundTagHistoryRequestObject) (ListUnboundTagHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/contact-invalid-history/tags/{history_id})
+	GetUnboundTagHistory(ctx context.Context, request GetUnboundTagHistoryRequestObject) (GetUnboundTagHistoryResponseObject, error)
 	// Persist one local content package
 	// (POST /api/admin/content-packages)
 	CreateMediaContentPackage(ctx context.Context, request CreateMediaContentPackageRequestObject) (CreateMediaContentPackageResponseObject, error)
@@ -72317,6 +73809,12 @@ type StrictServerInterface interface {
 	// Read immutable V1 marketing observations without changing scores or membership
 	// (GET /api/admin/marketing-state-history/value-snapshots/{history_id})
 	GetMarketingStateHistoryValueSnapshot(ctx context.Context, request GetMarketingStateHistoryValueSnapshotRequestObject) (GetMarketingStateHistoryValueSnapshotResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/media-invalid-history)
+	ListInvalidAssetHistory(ctx context.Context, request ListInvalidAssetHistoryRequestObject) (ListInvalidAssetHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/media-invalid-history/{history_id})
+	GetInvalidAssetHistory(ctx context.Context, request GetInvalidAssetHistoryRequestObject) (GetInvalidAssetHistoryResponseObject, error)
 	// Read immutable V1 Member Grid history without current access or usage changes
 	// (GET /api/admin/member-grid-history/usage)
 	ListMemberUsageHistory(ctx context.Context, request ListMemberUsageHistoryRequestObject) (ListMemberUsageHistoryResponseObject, error)
@@ -72425,6 +73923,12 @@ type StrictServerInterface interface {
 	// Read immutable source history without current-state effects
 	// (GET /api/admin/radar-click-history/{history_id})
 	GetRadarClickHistory(ctx context.Context, request GetRadarClickHistoryRequestObject) (GetRadarClickHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/radar-invalid-history)
+	ListInvalidRadarLinkHistory(ctx context.Context, request ListInvalidRadarLinkHistoryRequestObject) (ListInvalidRadarLinkHistoryResponseObject, error)
+	// Read inert invalid V1 source history without current business effects
+	// (GET /api/admin/radar-invalid-history/{history_id})
+	GetInvalidRadarLinkHistory(ctx context.Context, request GetInvalidRadarLinkHistoryRequestObject) (GetInvalidRadarLinkHistoryResponseObject, error)
 	// Read historical service-period definitions attached to existing Products
 	// (GET /api/admin/service-period-history)
 	ListServicePeriodHistoryDefinitions(ctx context.Context, request ListServicePeriodHistoryDefinitionsRequestObject) (ListServicePeriodHistoryDefinitionsResponseObject, error)
@@ -75558,6 +77062,110 @@ func (sh *strictHandler) GetSidebarProfileHistory(w http.ResponseWriter, r *http
 	}
 }
 
+// ListInvalidChannelHistory operation middleware
+func (sh *strictHandler) ListInvalidChannelHistory(w http.ResponseWriter, r *http.Request, params ListInvalidChannelHistoryParams) {
+	var request ListInvalidChannelHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvalidChannelHistory(ctx, request.(ListInvalidChannelHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvalidChannelHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvalidChannelHistoryResponseObject); ok {
+		if err := validResponse.VisitListInvalidChannelHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInvalidChannelHistory operation middleware
+func (sh *strictHandler) GetInvalidChannelHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetInvalidChannelHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInvalidChannelHistory(ctx, request.(GetInvalidChannelHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInvalidChannelHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInvalidChannelHistoryResponseObject); ok {
+		if err := validResponse.VisitGetInvalidChannelHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListUnboundTagHistory operation middleware
+func (sh *strictHandler) ListUnboundTagHistory(w http.ResponseWriter, r *http.Request, params ListUnboundTagHistoryParams) {
+	var request ListUnboundTagHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUnboundTagHistory(ctx, request.(ListUnboundTagHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUnboundTagHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUnboundTagHistoryResponseObject); ok {
+		if err := validResponse.VisitListUnboundTagHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUnboundTagHistory operation middleware
+func (sh *strictHandler) GetUnboundTagHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetUnboundTagHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUnboundTagHistory(ctx, request.(GetUnboundTagHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUnboundTagHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUnboundTagHistoryResponseObject); ok {
+		if err := validResponse.VisitGetUnboundTagHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateMediaContentPackage operation middleware
 func (sh *strictHandler) CreateMediaContentPackage(w http.ResponseWriter, r *http.Request, params CreateMediaContentPackageParams) {
 	var request CreateMediaContentPackageRequestObject
@@ -77269,6 +78877,58 @@ func (sh *strictHandler) GetMarketingStateHistoryValueSnapshot(w http.ResponseWr
 	}
 }
 
+// ListInvalidAssetHistory operation middleware
+func (sh *strictHandler) ListInvalidAssetHistory(w http.ResponseWriter, r *http.Request, params ListInvalidAssetHistoryParams) {
+	var request ListInvalidAssetHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvalidAssetHistory(ctx, request.(ListInvalidAssetHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvalidAssetHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvalidAssetHistoryResponseObject); ok {
+		if err := validResponse.VisitListInvalidAssetHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInvalidAssetHistory operation middleware
+func (sh *strictHandler) GetInvalidAssetHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetInvalidAssetHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInvalidAssetHistory(ctx, request.(GetInvalidAssetHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInvalidAssetHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInvalidAssetHistoryResponseObject); ok {
+		if err := validResponse.VisitGetInvalidAssetHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMemberUsageHistory operation middleware
 func (sh *strictHandler) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams) {
 	var request ListMemberUsageHistoryRequestObject
@@ -78278,6 +79938,58 @@ func (sh *strictHandler) GetRadarClickHistory(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetRadarClickHistoryResponseObject); ok {
 		if err := validResponse.VisitGetRadarClickHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInvalidRadarLinkHistory operation middleware
+func (sh *strictHandler) ListInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request, params ListInvalidRadarLinkHistoryParams) {
+	var request ListInvalidRadarLinkHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvalidRadarLinkHistory(ctx, request.(ListInvalidRadarLinkHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvalidRadarLinkHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvalidRadarLinkHistoryResponseObject); ok {
+		if err := validResponse.VisitListInvalidRadarLinkHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInvalidRadarLinkHistory operation middleware
+func (sh *strictHandler) GetInvalidRadarLinkHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetInvalidRadarLinkHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInvalidRadarLinkHistory(ctx, request.(GetInvalidRadarLinkHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInvalidRadarLinkHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInvalidRadarLinkHistoryResponseObject); ok {
+		if err := validResponse.VisitGetInvalidRadarLinkHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
