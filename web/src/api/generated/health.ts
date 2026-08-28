@@ -4246,6 +4246,165 @@ export interface RadarEventStats {
   real_external_call_executed: boolean;
 }
 
+export interface ServicePeriodHistoryDefinition {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_definition_id: number;
+  /** @minimum 1 */
+  product_id: number;
+  membership_config_id: string;
+  membership_config_name: string;
+  duration_days: number;
+  deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  product_code: string;
+  product_name: string;
+  price_minor: number;
+  currency: string;
+}
+
+export interface ServicePeriodHistoryEntitlement {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_entitlement_id: number;
+  /** @minimum 1 */
+  definition_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  membership_config_id: string;
+  status: string;
+  start_at: string;
+  end_at: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  last_order_id: number | null;
+  last_out_trade_no: string;
+  renewal_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServicePeriodHistoryEvent {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_event_id: number;
+  /** @minimum 1 */
+  definition_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  entitlement_id: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  order_id: number | null;
+  event_id: string;
+  event_type: string;
+  duration_days: number;
+  out_trade_no: string;
+  /** @nullable */
+  before_start_at: string | null;
+  /** @nullable */
+  before_end_at: string | null;
+  /** @nullable */
+  after_start_at: string | null;
+  /** @nullable */
+  after_end_at: string | null;
+  created_at: string;
+}
+
+export type ServicePeriodHistoryDefinitionPageSource =
+  (typeof ServicePeriodHistoryDefinitionPageSource)[keyof typeof ServicePeriodHistoryDefinitionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodHistoryDefinitionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ServicePeriodHistoryDefinitionPage {
+  source: ServicePeriodHistoryDefinitionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ServicePeriodHistoryDefinition[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type ServicePeriodHistoryEntitlementPageSource =
+  (typeof ServicePeriodHistoryEntitlementPageSource)[keyof typeof ServicePeriodHistoryEntitlementPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodHistoryEntitlementPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ServicePeriodHistoryEntitlementPage {
+  source: ServicePeriodHistoryEntitlementPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  definition_id: number;
+  items: ServicePeriodHistoryEntitlement[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type ServicePeriodHistoryEventPageSource =
+  (typeof ServicePeriodHistoryEventPageSource)[keyof typeof ServicePeriodHistoryEventPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodHistoryEventPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ServicePeriodHistoryEventPage {
+  source: ServicePeriodHistoryEventPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  definition_id: number;
+  items: ServicePeriodHistoryEvent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
 export type ServicePeriodProductLifecycle =
   (typeof ServicePeriodProductLifecycle)[keyof typeof ServicePeriodProductLifecycle];
 
@@ -18564,6 +18723,42 @@ export type ListExternalEffectJobsParams = {
    * @maximum 100
    */
   limit?: number;
+};
+
+export type ListServicePeriodHistoryDefinitionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListServicePeriodHistoryEntitlementsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListServicePeriodHistoryEventsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
 };
 
 export type ListServicePeriodProductsParams = {
@@ -48257,6 +48452,268 @@ export const getExternalEffectsDiagnostics = async (
     status: res.status,
     headers: res.headers,
   } as getExternalEffectsDiagnosticsResponse;
+};
+
+/**
+ * @summary Read historical service-period definitions attached to existing Products
+ */
+export type listServicePeriodHistoryDefinitionsResponse200 = {
+  data: ServicePeriodHistoryDefinitionPage;
+  status: 200;
+};
+
+export type listServicePeriodHistoryDefinitionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listServicePeriodHistoryDefinitionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listServicePeriodHistoryDefinitionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listServicePeriodHistoryDefinitionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listServicePeriodHistoryDefinitionsResponseSuccess =
+  listServicePeriodHistoryDefinitionsResponse200 & {
+    headers: Headers;
+  };
+export type listServicePeriodHistoryDefinitionsResponseError = (
+  | listServicePeriodHistoryDefinitionsResponse400
+  | listServicePeriodHistoryDefinitionsResponse401
+  | listServicePeriodHistoryDefinitionsResponse403
+  | listServicePeriodHistoryDefinitionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listServicePeriodHistoryDefinitionsResponse =
+  | listServicePeriodHistoryDefinitionsResponseSuccess
+  | listServicePeriodHistoryDefinitionsResponseError;
+
+export const getListServicePeriodHistoryDefinitionsUrl = (
+  params?: ListServicePeriodHistoryDefinitionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/service-period-history?${stringifiedParams}`
+    : `/api/admin/service-period-history`;
+};
+
+export const listServicePeriodHistoryDefinitions = async (
+  params?: ListServicePeriodHistoryDefinitionsParams,
+  options?: RequestInit,
+): Promise<listServicePeriodHistoryDefinitionsResponse> => {
+  const res = await fetch(getListServicePeriodHistoryDefinitionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listServicePeriodHistoryDefinitionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listServicePeriodHistoryDefinitionsResponse;
+};
+
+/**
+ * @summary Read V1 snapshot entitlement facts without granting current membership
+ */
+export type listServicePeriodHistoryEntitlementsResponse200 = {
+  data: ServicePeriodHistoryEntitlementPage;
+  status: 200;
+};
+
+export type listServicePeriodHistoryEntitlementsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listServicePeriodHistoryEntitlementsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listServicePeriodHistoryEntitlementsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listServicePeriodHistoryEntitlementsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listServicePeriodHistoryEntitlementsResponseSuccess =
+  listServicePeriodHistoryEntitlementsResponse200 & {
+    headers: Headers;
+  };
+export type listServicePeriodHistoryEntitlementsResponseError = (
+  | listServicePeriodHistoryEntitlementsResponse400
+  | listServicePeriodHistoryEntitlementsResponse401
+  | listServicePeriodHistoryEntitlementsResponse403
+  | listServicePeriodHistoryEntitlementsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listServicePeriodHistoryEntitlementsResponse =
+  | listServicePeriodHistoryEntitlementsResponseSuccess
+  | listServicePeriodHistoryEntitlementsResponseError;
+
+export const getListServicePeriodHistoryEntitlementsUrl = (
+  definitionId: number,
+  params?: ListServicePeriodHistoryEntitlementsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/service-period-history/${definitionId}/entitlements?${stringifiedParams}`
+    : `/api/admin/service-period-history/${definitionId}/entitlements`;
+};
+
+export const listServicePeriodHistoryEntitlements = async (
+  definitionId: number,
+  params?: ListServicePeriodHistoryEntitlementsParams,
+  options?: RequestInit,
+): Promise<listServicePeriodHistoryEntitlementsResponse> => {
+  const res = await fetch(
+    getListServicePeriodHistoryEntitlementsUrl(definitionId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listServicePeriodHistoryEntitlementsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listServicePeriodHistoryEntitlementsResponse;
+};
+
+/**
+ * @summary Read non-executable historical entitlement events
+ */
+export type listServicePeriodHistoryEventsResponse200 = {
+  data: ServicePeriodHistoryEventPage;
+  status: 200;
+};
+
+export type listServicePeriodHistoryEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listServicePeriodHistoryEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listServicePeriodHistoryEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listServicePeriodHistoryEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listServicePeriodHistoryEventsResponseSuccess =
+  listServicePeriodHistoryEventsResponse200 & {
+    headers: Headers;
+  };
+export type listServicePeriodHistoryEventsResponseError = (
+  | listServicePeriodHistoryEventsResponse400
+  | listServicePeriodHistoryEventsResponse401
+  | listServicePeriodHistoryEventsResponse403
+  | listServicePeriodHistoryEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listServicePeriodHistoryEventsResponse =
+  | listServicePeriodHistoryEventsResponseSuccess
+  | listServicePeriodHistoryEventsResponseError;
+
+export const getListServicePeriodHistoryEventsUrl = (
+  definitionId: number,
+  params?: ListServicePeriodHistoryEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/service-period-history/${definitionId}/events?${stringifiedParams}`
+    : `/api/admin/service-period-history/${definitionId}/events`;
+};
+
+export const listServicePeriodHistoryEvents = async (
+  definitionId: number,
+  params?: ListServicePeriodHistoryEventsParams,
+  options?: RequestInit,
+): Promise<listServicePeriodHistoryEventsResponse> => {
+  const res = await fetch(
+    getListServicePeriodHistoryEventsUrl(definitionId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listServicePeriodHistoryEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listServicePeriodHistoryEventsResponse;
 };
 
 /**

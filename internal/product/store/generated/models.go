@@ -15,3 +15,49 @@ type ProductExternalPushConfiguration struct {
 	ConfigurationReference string             `json:"configuration_reference"`
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
+
+type ProductServicePeriodEntitlementHistory struct {
+	ID                  int64              `json:"id"`
+	SourceEntitlementID int64              `json:"source_entitlement_id"`
+	DefinitionID        int64              `json:"definition_id"`
+	CustomerID          pgtype.Int8        `json:"customer_id"`
+	MembershipConfigID  string             `json:"membership_config_id"`
+	Status              string             `json:"status"`
+	StartAt             pgtype.Timestamptz `json:"start_at"`
+	EndAt               pgtype.Timestamptz `json:"end_at"`
+	LastOrderID         pgtype.Int8        `json:"last_order_id"`
+	LastOutTradeNo      string             `json:"last_out_trade_no"`
+	RenewalCount        int32              `json:"renewal_count"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ProductServicePeriodEventHistory struct {
+	ID            int64              `json:"id"`
+	SourceEventID int64              `json:"source_event_id"`
+	DefinitionID  int64              `json:"definition_id"`
+	EntitlementID pgtype.Int8        `json:"entitlement_id"`
+	CustomerID    pgtype.Int8        `json:"customer_id"`
+	OrderID       pgtype.Int8        `json:"order_id"`
+	EventID       string             `json:"event_id"`
+	EventType     string             `json:"event_type"`
+	DurationDays  int32              `json:"duration_days"`
+	OutTradeNo    string             `json:"out_trade_no"`
+	BeforeStartAt pgtype.Timestamptz `json:"before_start_at"`
+	BeforeEndAt   pgtype.Timestamptz `json:"before_end_at"`
+	AfterStartAt  pgtype.Timestamptz `json:"after_start_at"`
+	AfterEndAt    pgtype.Timestamptz `json:"after_end_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ProductServicePeriodHistory struct {
+	ID                   int64              `json:"id"`
+	SourceDefinitionID   int64              `json:"source_definition_id"`
+	ProductID            int64              `json:"product_id"`
+	MembershipConfigID   string             `json:"membership_config_id"`
+	MembershipConfigName string             `json:"membership_config_name"`
+	DurationDays         int32              `json:"duration_days"`
+	Deleted              bool               `json:"deleted"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}

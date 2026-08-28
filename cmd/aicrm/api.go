@@ -2125,6 +2125,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudienceSendRecords = audienceSendRecordHandler
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.channelHistory = contactstore.NewHistoricalChannelHistoryReader(pool)
+	legacyHandler.servicePeriodHistory = productstore.NewServicePeriodHistoryReader(pool)
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
 	legacyHandler.entrantReceipts = channelAcquisitionEntrantReceiptsFragment
@@ -3254,6 +3255,19 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		}
 		if err = registerLegacy(http.MethodGet, "/api/admin/channels/{channel_id}/history", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetChannelHistory)); err != nil {
 			return nil, err
+		}
+		for _, route := range []struct {
+			path       string
+			capability authport.Capability
+			handler    http.HandlerFunc
+		}{
+			{"/api/admin/service-period-history", authport.CapabilityProductsRead, legacy.ListServicePeriodHistoryDefinitions},
+			{"/api/admin/service-period-history/{definition_id}/entitlements", authport.CapabilityEntitlementsRead, legacy.ListServicePeriodHistoryEntitlements},
+			{"/api/admin/service-period-history/{definition_id}/events", authport.CapabilityEntitlementsRead, legacy.ListServicePeriodHistoryEvents},
+		} {
+			if err = registerLegacy(http.MethodGet, route.path, route.capability, false, route.handler); err != nil {
+				return nil, err
+			}
 		}
 		if legacy.channelEntrants != nil {
 			if err = registerLegacy(

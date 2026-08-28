@@ -8964,6 +8964,80 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-history:
+    get:
+      tags: [p4-service-period-products]
+      operationId: listServicePeriodHistoryDefinitions
+      summary: Read historical service-period definitions attached to existing Products
+      x-p4-decision-evidence: P4-V1-SERVICE-PERIOD-HISTORY-2026-08-28
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: product.read_only_service_period_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Historical definitions, not current sellable product configuration.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodHistoryDefinitionPage" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-history/{definition_id}/entitlements:
+    get:
+      tags: [p4-service-period-products]
+      operationId: listServicePeriodHistoryEntitlements
+      summary: Read V1 snapshot entitlement facts without granting current membership
+      x-p4-decision-evidence: P4-V1-SERVICE-PERIOD-HISTORY-2026-08-28
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_service_period_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: definition_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Original snapshot status and dates, not current member access.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodHistoryEntitlementPage" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-history/{definition_id}/events:
+    get:
+      tags: [p4-service-period-products]
+      operationId: listServicePeriodHistoryEvents
+      summary: Read non-executable historical entitlement events
+      x-p4-decision-evidence: P4-V1-SERVICE-PERIOD-HISTORY-2026-08-28
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_service_period_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: definition_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Source events including unsuccessful grants and negative adjustments; nothing is replayed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodHistoryEventPage" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/service-period-products:
     get:
       tags: [p4-service-period-products]
@@ -15371,6 +15445,100 @@ components:
         last_viewed_at: { type: string, format: date-time, nullable: true }
         identity_attributed: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    ServicePeriodHistoryDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, source_definition_id, product_id, membership_config_id, membership_config_name, duration_days, deleted, created_at, updated_at, product_code, product_name, price_minor, currency]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_definition_id: { type: integer, format: int64, minimum: 1 }
+        product_id: { type: integer, format: int64, minimum: 1 }
+        membership_config_id: { type: string }
+        membership_config_name: { type: string }
+        duration_days: { type: integer, format: int32 }
+        deleted: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        product_code: { type: string }
+        product_name: { type: string }
+        price_minor: { type: integer, format: int64 }
+        currency: { type: string }
+    ServicePeriodHistoryEntitlement:
+      type: object
+      additionalProperties: false
+      required: [id, source_entitlement_id, definition_id, customer_id, membership_config_id, status, start_at, end_at, last_order_id, last_out_trade_no, renewal_count, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_entitlement_id: { type: integer, format: int64, minimum: 1 }
+        definition_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        membership_config_id: { type: string }
+        status: { type: string }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        last_order_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        last_out_trade_no: { type: string }
+        renewal_count: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ServicePeriodHistoryEvent:
+      type: object
+      additionalProperties: false
+      required: [id, source_event_id, definition_id, entitlement_id, customer_id, order_id, event_id, event_type, duration_days, out_trade_no, before_start_at, before_end_at, after_start_at, after_end_at, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_event_id: { type: integer, format: int64, minimum: 1 }
+        definition_id: { type: integer, format: int64, minimum: 1 }
+        entitlement_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        order_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        event_id: { type: string }
+        event_type: { type: string }
+        duration_days: { type: integer, format: int32 }
+        out_trade_no: { type: string }
+        before_start_at: { type: string, format: date-time, nullable: true }
+        before_end_at: { type: string, format: date-time, nullable: true }
+        after_start_at: { type: string, format: date-time, nullable: true }
+        after_end_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+    ServicePeriodHistoryDefinitionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/ServicePeriodHistoryDefinition" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    ServicePeriodHistoryEntitlementPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, definition_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        definition_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/ServicePeriodHistoryEntitlement" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    ServicePeriodHistoryEventPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, definition_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        definition_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/ServicePeriodHistoryEvent" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
     ServicePeriodProduct:
       type: object
       additionalProperties: false

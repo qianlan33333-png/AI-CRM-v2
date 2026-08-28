@@ -182,6 +182,7 @@ type Handler struct {
 	manualRetry             legacyRetryApplication
 	products                legacyProductApplication
 	servicePeriod           http.Handler
+	servicePeriodHistory    productport.ServicePeriodHistoryReader
 	memberGrid              http.Handler
 	memberGridManagement    http.Handler
 	memberGridExternalShare http.Handler
