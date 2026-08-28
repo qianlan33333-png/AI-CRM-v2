@@ -2130,6 +2130,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.radarInvalidSourceHistory = radarstore.NewInvalidSourceHistoryReader(pool)
 	legacyHandler.hxcHistory = hxcstore.NewHXCHistoryReader(pool)
 	legacyHandler.hxcRuntimeHistory = hxcstore.NewHXCHistoryReader(pool)
+	legacyHandler.hxcMemberUsageHistory = hxcstore.NewHXCHistoryReader(pool)
 	legacyHandler.staticMediaHistory = mediastore.NewStaticMediaHistoryReader(pool)
 	legacyHandler.customerStateHistory = contactstore.NewCustomerStateHistoryReader(pool)
 	legacyHandler.marketingStateHistory = segmentstore.NewMarketingStateHistoryReader(pool)
@@ -3755,6 +3756,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/hxc-history/sender-configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistorySenderConfig)},
 			{http.MethodGet, "/api/admin/hxc-history/send-records", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistorySendRecord)},
 			{http.MethodGet, "/api/admin/hxc-history/send-records/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistorySendRecord)},
+			{http.MethodGet, "/api/admin/hxc-history/member-usage", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryMemberUsage)},
+			{http.MethodGet, "/api/admin/hxc-history/member-usage/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryMemberUsage)},
 			{http.MethodGet, "/api/admin/automation-history/sops", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistorySOPs)},
 			{http.MethodGet, "/api/admin/radar-click-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListRadarClickHistory)},
 			{http.MethodGet, "/api/admin/radar-click-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetRadarClickHistory)},

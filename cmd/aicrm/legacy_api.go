@@ -212,6 +212,7 @@ type Handler struct {
 	outboundTaskHistory         outboundport.OutboundTaskHistoryReader
 	hxcHistory                  hxcport.HXCHistoryReader
 	hxcRuntimeHistory           hxcport.HXCRuntimeHistoryReader
+	hxcMemberUsageHistory       hxcport.HXCMemberUsageHistoryReader
 	staticMediaHistory          mediaport.StaticMediaHistoryReader
 	customerStateHistory        contactport.CustomerStateHistoryReader
 	marketingStateHistory       segmentport.MarketingStateHistoryReader
