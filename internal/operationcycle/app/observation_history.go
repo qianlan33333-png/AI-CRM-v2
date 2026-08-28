@@ -107,8 +107,8 @@ func importCycleObservation[T any](w *CycleObservationWriter, ctx context.Contex
 }
 
 // HistoricalCycleMetricDigest binds every persisted typed value. In particular
-// the raw limitations bytes deliberately remain bytes: nil, empty, null and
-// valid scalar/array/object values are not normalized into each other.
+// the raw, valid limitations bytes deliberately remain bytes: null and valid
+// scalar/array/object values are not normalized into each other.
 func HistoricalCycleMetricDigest(value cycle.HistoricalCycleMetric) ([32]byte, error) {
 	value = normalizeCycleMetric(value)
 	if !validCycleMetric(value, true) {
@@ -161,6 +161,7 @@ func cycleObservationDigest(kind string, value any) ([32]byte, error) {
 func validCycleMetric(value cycle.HistoricalCycleMetric, stored bool) bool {
 	return validCycleObservationIdentity(value.ID, value.SourceKeyDigest, value.SourcePayloadDigest, value.SourceFieldDigest, stored) &&
 		validCycleObservationNumber(value.Numerator) && validCycleObservationNumber(value.Denominator) && validCycleObservationNumber(value.Value) &&
+		json.Valid(value.LimitationsJSON) &&
 		validCycleObservationTime(value.CreatedAt, stored) && validCycleObservationTime(value.UpdatedAt, stored)
 }
 

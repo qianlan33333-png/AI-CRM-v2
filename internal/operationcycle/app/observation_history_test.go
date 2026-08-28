@@ -66,9 +66,9 @@ func TestCycleObservationDigestsCoverEveryFact(t *testing.T) {
 	assertDigestMutations(t, reference, HistoricalCycleReferenceDigest, referenceCases)
 }
 
-func TestCycleMetricDigestDistinguishesRawJSONStatesAndRejectsNonFinite(t *testing.T) {
+func TestCycleMetricDigestPreservesLegalRawJSONAndRejectsInvalid(t *testing.T) {
 	at := time.Date(2026, 8, 29, 1, 2, 3, 456789000, time.UTC)
-	states := []json.RawMessage{nil, json.RawMessage{}, json.RawMessage("null"), json.RawMessage("[]"), json.RawMessage(`"scalar"`)}
+	states := []json.RawMessage{json.RawMessage("null"), json.RawMessage("[]"), json.RawMessage(`"scalar"`), json.RawMessage(`{"object":1}`)}
 	digests := map[[32]byte]bool{}
 	for _, raw := range states {
 		value := cycleMetricFixture(3, at)
@@ -78,6 +78,13 @@ func TestCycleMetricDigestDistinguishesRawJSONStatesAndRejectsNonFinite(t *testi
 			t.Fatalf("raw JSON state digest=%x err=%v", digest, err)
 		}
 		digests[digest] = true
+	}
+	for _, raw := range []json.RawMessage{nil, json.RawMessage{}, json.RawMessage("not-json")} {
+		value := cycleMetricFixture(3, at)
+		value.ID, value.LimitationsJSON = 1, raw
+		if _, err := HistoricalCycleMetricDigest(value); !errors.Is(err, cycle.ErrCycleObservationInvalid) {
+			t.Fatalf("invalid raw JSON %q = %v", raw, err)
+		}
 	}
 	for _, number := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
 		value := cycleMetricFixture(4, at)
