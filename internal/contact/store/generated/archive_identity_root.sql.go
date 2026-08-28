@@ -7,7 +7,83 @@ package contactdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const countArchiveIdentityRootFixtureRows = `-- name: CountArchiveIdentityRootFixtureRows :one
+SELECT (SELECT count(*) FROM customers)::bigint AS customers,
+  (SELECT count(*) FROM legacy_contact_identity_source_mappings)::bigint AS mappings,
+  (SELECT count(*) FROM legacy_contact_identity_import_row_receipts)::bigint AS receipts
+`
+
+type CountArchiveIdentityRootFixtureRowsRow struct {
+	Customers int64 `json:"customers"`
+	Mappings  int64 `json:"mappings"`
+	Receipts  int64 `json:"receipts"`
+}
+
+func (q *Queries) CountArchiveIdentityRootFixtureRows(ctx context.Context) (CountArchiveIdentityRootFixtureRowsRow, error) {
+	row := q.db.QueryRow(ctx, countArchiveIdentityRootFixtureRows)
+	var i CountArchiveIdentityRootFixtureRowsRow
+	err := row.Scan(&i.Customers, &i.Mappings, &i.Receipts)
+	return i, err
+}
+
+const createArchiveIdentityRootFixture = `-- name: CreateArchiveIdentityRootFixture :one
+WITH fixture_run AS (
+  INSERT INTO legacy_contact_identity_import_runs
+    (source_manifest_sha256, source_repository_sha, snapshot_id, mode, upper_watermark, hmac_key_version, state)
+  VALUES ($1::bytea, $2::text, 'root-lock-test', 'full',
+    $3::timestamptz, 1, 'imported') RETURNING id
+), fixture_customer AS (
+  INSERT INTO customers (name, is_deleted)
+  VALUES ('dm01-root-lock-test', $4::boolean) RETURNING id
+), fixture_mapping AS (
+  INSERT INTO legacy_contact_identity_source_mappings
+    (source_table, source_key_hmac, customer_id, first_run_id, last_run_id, payload_hmac)
+  SELECT 'crm_user_identity', $5::bytea, c.id, r.id, r.id, $6::bytea
+  FROM fixture_run r, fixture_customer c
+), fixture_receipt AS (
+  INSERT INTO legacy_contact_identity_import_row_receipts
+    (run_id, source_table, source_ordinal, source_key_hmac, payload_hmac, field_digest, disposition)
+  SELECT r.id, 'crm_user_identity', 1, $5::bytea,
+    $7::bytea, $8::bytea, 'imported' FROM fixture_run r
+)
+SELECT r.id AS run_id, c.id AS customer_id FROM fixture_run r, fixture_customer c
+`
+
+type CreateArchiveIdentityRootFixtureParams struct {
+	Manifest       []byte             `json:"manifest"`
+	RepositorySha  string             `json:"repository_sha"`
+	Watermark      pgtype.Timestamptz `json:"watermark"`
+	Deleted        bool               `json:"deleted"`
+	SourceKey      []byte             `json:"source_key"`
+	Payload        []byte             `json:"payload"`
+	ReceiptPayload []byte             `json:"receipt_payload"`
+	FieldDigest    []byte             `json:"field_digest"`
+}
+
+type CreateArchiveIdentityRootFixtureRow struct {
+	RunID      int64 `json:"run_id"`
+	CustomerID int64 `json:"customer_id"`
+}
+
+func (q *Queries) CreateArchiveIdentityRootFixture(ctx context.Context, arg CreateArchiveIdentityRootFixtureParams) (CreateArchiveIdentityRootFixtureRow, error) {
+	row := q.db.QueryRow(ctx, createArchiveIdentityRootFixture,
+		arg.Manifest,
+		arg.RepositorySha,
+		arg.Watermark,
+		arg.Deleted,
+		arg.SourceKey,
+		arg.Payload,
+		arg.ReceiptPayload,
+		arg.FieldDigest,
+	)
+	var i CreateArchiveIdentityRootFixtureRow
+	err := row.Scan(&i.RunID, &i.CustomerID)
+	return i, err
+}
 
 const lockVerifiedDM01CustomerRoot = `-- name: LockVerifiedDM01CustomerRoot :one
 SELECT c.id

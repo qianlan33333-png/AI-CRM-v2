@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
@@ -37,59 +39,27 @@ func TestLockVerifiedDM01CustomerRootRequiresCallerTransactionAndCanonicalInput(
 	}
 }
 
-type archiveIdentityRootQueryer interface {
-	QueryRow(context.Context, string, ...any) pgx.Row
-}
+type archiveIdentityRootCounts = contactdb.CountArchiveIdentityRootFixtureRowsRow
 
-type archiveIdentityRootCounts struct {
-	Customers, Mappings, Receipts int64
-}
-
-func archiveIdentityRootCount(ctx context.Context, queryer archiveIdentityRootQueryer) (archiveIdentityRootCounts, error) {
-	var counts archiveIdentityRootCounts
-	err := queryer.QueryRow(ctx, `SELECT
-  (SELECT count(*) FROM customers),
-  (SELECT count(*) FROM legacy_contact_identity_source_mappings),
-  (SELECT count(*) FROM legacy_contact_identity_import_row_receipts)`).Scan(&counts.Customers, &counts.Mappings, &counts.Receipts)
-	return counts, err
+func archiveIdentityRootCount(ctx context.Context, queryer contactdb.DBTX) (archiveIdentityRootCounts, error) {
+	return contactdb.New(queryer).CountArchiveIdentityRootFixtureRows(ctx)
 }
 
 func archiveIdentityRootFixture(ctx context.Context, tx pgx.Tx, seed byte, deleted, matchingPayload bool) (int64, [32]byte, int64, error) {
-	key := [32]byte{}
-	key[0] = seed
+	key := [32]byte{seed}
 	payload := bytes.Repeat([]byte{seed + 1}, 32)
-	field := bytes.Repeat([]byte{seed + 2}, 32)
-	var runID, customerID int64
-	err := tx.QueryRow(ctx, `INSERT INTO legacy_contact_identity_import_runs (
-  source_manifest_sha256, source_repository_sha, snapshot_id, mode, upper_watermark, hmac_key_version, state
-) VALUES ($1, $2, $3, 'full', $4, 1, 'imported') RETURNING id`,
-		bytes.Repeat([]byte{seed + 3}, 32), strings.Repeat(fmt.Sprintf("%02x", seed), 20), "root-lock-test", time.Date(2026, 8, 28, 0, 0, int(seed), 0, time.UTC)).Scan(&runID)
-	if err != nil {
-		return 0, [32]byte{}, 0, err
-	}
-	if err = tx.QueryRow(ctx, `INSERT INTO customers (name) VALUES ('dm01-root-lock-test') RETURNING id`).Scan(&customerID); err != nil {
-		return 0, [32]byte{}, 0, err
-	}
-	if deleted {
-		if _, err = tx.Exec(ctx, `UPDATE customers SET is_deleted = true WHERE id = $1`, customerID); err != nil {
-			return 0, [32]byte{}, 0, err
-		}
-	}
-	if _, err = tx.Exec(ctx, `INSERT INTO legacy_contact_identity_source_mappings (
-  source_table, source_key_hmac, customer_id, first_run_id, last_run_id, payload_hmac
-) VALUES ('crm_user_identity', $1, $2, $3, $3, $4)`, key[:], customerID, runID, payload); err != nil {
-		return 0, [32]byte{}, 0, err
-	}
 	receiptPayload := append([]byte(nil), payload...)
 	if !matchingPayload {
 		receiptPayload[0]++
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO legacy_contact_identity_import_row_receipts (
-  run_id, source_table, source_ordinal, source_key_hmac, payload_hmac, field_digest, disposition
-) VALUES ($1, 'crm_user_identity', 1, $2, $3, $4, 'imported')`, runID, key[:], receiptPayload, field); err != nil {
-		return 0, [32]byte{}, 0, err
-	}
-	return runID, key, customerID, nil
+	row, err := contactdb.New(tx).CreateArchiveIdentityRootFixture(ctx, contactdb.CreateArchiveIdentityRootFixtureParams{
+		Manifest:      bytes.Repeat([]byte{seed + 3}, 32),
+		RepositorySha: strings.Repeat(fmt.Sprintf("%02x", seed), 20),
+		Watermark:     pgtype.Timestamptz{Time: time.Date(2026, 8, 28, 0, 0, int(seed), 0, time.UTC), Valid: true},
+		Deleted:       deleted, SourceKey: key[:], Payload: payload, ReceiptPayload: receiptPayload,
+		FieldDigest: bytes.Repeat([]byte{seed + 2}, 32),
+	})
+	return row.RunID, key, row.CustomerID, err
 }
 
 func TestLockVerifiedDM01CustomerRootPostgresRollback(t *testing.T) {
