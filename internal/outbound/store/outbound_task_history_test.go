@@ -102,10 +102,8 @@ func TestOutboundTaskHistoryPostgresRoundTripRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	beforeRuntime, err := outboundTaskHistoryRuntimeCounts(ctx, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Cross-domain runtime conservation is checked by the isolated migration
+	// rehearsal; this owner test accesses only generated Outbound queries.
 	rollback := errors.New("outbound task history forced rollback")
 	err = platformstore.NewUnitOfWork(pool).Within(ctx, func(txCtx context.Context) error {
 		store := NewOutboundTaskHistoryStore()
@@ -153,10 +151,6 @@ func TestOutboundTaskHistoryPostgresRoundTripRollback(t *testing.T) {
 	if err != nil || beforeHistory != afterHistory {
 		t.Fatalf("rollback_left_history before=%d after=%d err=%v", beforeHistory, afterHistory, err)
 	}
-	afterRuntime, err := outboundTaskHistoryRuntimeCounts(ctx, pool)
-	if err != nil || beforeRuntime != afterRuntime {
-		t.Fatalf("runtime_side_effect_changed before=%v after=%v err=%v", beforeRuntime, afterRuntime, err)
-	}
 
 	err = platformstore.NewUnitOfWork(pool).Within(ctx, func(txCtx context.Context) error {
 		store := NewOutboundTaskHistoryStore()
@@ -177,23 +171,6 @@ func TestOutboundTaskHistoryPostgresRoundTripRollback(t *testing.T) {
 	if err != nil || beforeHistory != afterHistory {
 		t.Fatalf("unique_rollback_left_history before=%d after=%d err=%v", beforeHistory, afterHistory, err)
 	}
-	afterRuntime, err = outboundTaskHistoryRuntimeCounts(ctx, pool)
-	if err != nil || beforeRuntime != afterRuntime {
-		t.Fatalf("unique_rollback_changed_runtime before=%v after=%v err=%v", beforeRuntime, afterRuntime, err)
-	}
-}
-
-type outboundTaskHistoryRuntimeCount struct{ Tasks, Batches, Events, River, Effects int64 }
-
-func outboundTaskHistoryRuntimeCounts(ctx context.Context, db *pgxpool.Pool) (outboundTaskHistoryRuntimeCount, error) {
-	var value outboundTaskHistoryRuntimeCount
-	err := db.QueryRow(ctx, `SELECT
-  (SELECT count(*) FROM outbound_tasks),
-  (SELECT count(*) FROM outbound_batches),
-  (SELECT count(*) FROM event_log),
-  (SELECT count(*) FROM river_job),
-  (SELECT count(*) FROM external_effects)`).Scan(&value.Tasks, &value.Batches, &value.Events, &value.River, &value.Effects)
-	return value, err
 }
 
 func storeOutboundTaskHistoryValue(sourceID int64, legacy, parent *int64) outboundport.HistoricalOutboundTask {
