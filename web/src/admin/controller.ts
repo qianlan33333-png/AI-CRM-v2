@@ -21,6 +21,7 @@ import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picke
 import { copyText } from './sections/util';
 import { downloadQr, renderQr } from './sections/qr';
 import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
+import { openGroupOpsDirectory } from './sections/groupOpsDirectory';
 
 const ACCENT = '#3370ff';
 const CHANNEL_HISTORY_PAGE_SIZE = 50;
@@ -1454,6 +1455,16 @@ export class AdminController extends PageBase {
     }).catch((error) => toast(error instanceof Error ? error.message : '渠道或本地分配配置保存失败', true));
   }
 
+  private openGroupOpsDirectory(): void {
+    if (this.api.mode !== 'http') return toast('群目录需要真实 HTTP 与可信 owner_staff_id；测试 Mock 不提供目录刷新', true);
+    const textarea = document.getElementById('groupOpsAssets') as HTMLTextAreaElement | null;
+    void openGroupOpsDirectory(textarea ? { selected: textarea.value.split(/[\s,，]+/).filter(Boolean) } : {}).then((selected) => {
+      if (!textarea || selected === null) return;
+      textarea.value = selected.join('\n');
+      toast('已更新待保存群选择；点击保存完整计划后写入，未发送群消息');
+    });
+  }
+
   private saveGroupOpsForm(): void {
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null)?.value.trim() || '';
     let nodes: GroupOpsWriteInput['nodes'];
@@ -2268,10 +2279,11 @@ export class AdminController extends PageBase {
         historicalRefunds: rows.orders[0]?.historicalRefunds || [],
         submitRefund: () => this.submitRefundIntent(),
       },
-      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },
+      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directory: () => this.openGroupOpsDirectory() },
       groupOpsDetailPage: {
         item: groupOpsDetail ? { ...groupOpsDetail, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
         members: groupOpsMemberOptions,
+        directory: () => this.openGroupOpsDirectory(),
         save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'),
       },
       hxcPage: {
