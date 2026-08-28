@@ -281,7 +281,11 @@ func campaignDefinitionHistoryPriorReceipt(row v1archive.ArchivedRow, dispositio
 	if row.TableID == campaignDefinitionHistoryStepTable {
 		target = "cloud_campaign_steps"
 	}
-	return CampaignDefinitionPriorReceipt{ImportVersion: campaignDefinitionSelectionImportVersion, ArchiveRunID: "run", AdapterID: v1archive.DefaultAdapterID, TableID: row.TableID, TargetDomain: "campaign", TargetTable: target, SourceKey: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC, Disposition: disposition, Reason: reason}
+	receipt := CampaignDefinitionPriorReceipt{ImportVersion: campaignDefinitionSelectionImportVersion, ArchiveRunID: "run", AdapterID: v1archive.DefaultAdapterID, TableID: row.TableID, SourceKey: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC, Disposition: disposition, Reason: reason}
+	if disposition == "import" {
+		receipt.TargetDomain, receipt.TargetTable = "campaign", target
+	}
+	return receipt
 }
 
 func campaignDefinitionHistoryDefinitionPayload(t *testing.T, id int64) []byte {
