@@ -2127,6 +2127,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.channelHistory = contactstore.NewHistoricalChannelHistoryReader(pool)
 	legacyHandler.servicePeriodHistory = productstore.NewServicePeriodHistoryReader(pool)
+	legacyHandler.memberGridHistory = productstore.NewMemberGridHistoryReader(pool)
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
 	legacyHandler.entrantReceipts = channelAcquisitionEntrantReceiptsFragment
@@ -3303,6 +3304,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{"/api/admin/service-period-history", authport.CapabilityProductsRead, legacy.ListServicePeriodHistoryDefinitions},
 			{"/api/admin/service-period-history/{definition_id}/entitlements", authport.CapabilityEntitlementsRead, legacy.ListServicePeriodHistoryEntitlements},
 			{"/api/admin/service-period-history/{definition_id}/events", authport.CapabilityEntitlementsRead, legacy.ListServicePeriodHistoryEvents},
+			{"/api/admin/member-grid-history/views", authport.CapabilityAdminRead, legacy.ListMemberViewHistory},
+			{"/api/admin/member-grid-history/views/{history_id}", authport.CapabilityAdminRead, legacy.GetMemberViewHistory},
+			{"/api/admin/member-grid-history/usage", authport.CapabilityAdminRead, legacy.ListMemberUsageHistory},
+			{"/api/admin/member-grid-history/usage/{history_id}", authport.CapabilityAdminRead, legacy.GetMemberUsageHistory},
 		} {
 			if err = registerLegacy(http.MethodGet, route.path, route.capability, false, route.handler); err != nil {
 				return nil, err

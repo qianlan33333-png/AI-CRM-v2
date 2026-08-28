@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1candidate"
 	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1domain"
+	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1membergridhistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
@@ -46,11 +47,12 @@ func main() {
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
 	mode := flags.String("mode", "import", "import|reconcile")
-	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|member-grid-history (read-only)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
 	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
 	dm01RunID := flags.Int64("dm01-run-id", 0, "verified DM01 full-import run for historical references")
+	usageRecoveryFile := flags.String("usage-recovery-file", "", "frozen has_token_usage recovery JSONL for member-grid-history import")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -60,8 +62,8 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" {
-		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history, message-history or contact-history")
+	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" {
+		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history contact-history, message-history or member-grid-history")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
@@ -75,10 +77,20 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return fmt.Errorf("migration-actor is required")
 	}
 	var dm01HMACKey []byte
-	if *mode == "import" && (*domain == "static" || *domain == "finance" || *domain == "channel" || *domain == "coupon" || *domain == "service-period" || *domain == "groupops" || *domain == "audience-history" || *domain == "message-history" || *domain == "contact-history") {
+	if *mode == "import" && (*domain == "static" || *domain == "finance" || *domain == "channel" || *domain == "coupon" || *domain == "service-period" || *domain == "groupops" || *domain == "audience-history" || *domain == "message-history" || *domain == "contact-history" || *domain == "member-grid-history") {
 		dm01HMACKey = []byte(appconfig.LoadDM01RuntimeEnvironment().SourceHMACKey)
 		if *dm01RunID < 1 || len(dm01HMACKey) < 32 {
 			return fmt.Errorf("%s import requires dm01-run-id and the frozen DM01 source HMAC key", *domain)
+		}
+	}
+	var usageRecovery []v1membergridhistory.UsageSnapshotRecoveryEntry
+	if *mode == "import" && *domain == "member-grid-history" {
+		if len(environment.SourceHMACKey) < 32 {
+			return fmt.Errorf("member-grid-history requires the frozen archive source HMAC key")
+		}
+		usageRecovery, err = loadMemberGridHistoryRecovery(*usageRecoveryFile, *archiveRunID)
+		if err != nil {
+			return err
 		}
 	}
 	ctx := context.Background()
@@ -101,6 +113,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 				return err
 			}
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"audience_history_reconciliation": result})
+		}
+		if *domain == "member-grid-history" {
+			result, err := v1domain.ReconcileMemberGridHistory(ctx, pool, memberGridHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"member_grid_history_reconciliation": result})
 		}
 		if *domain == "contact-history" {
 			result, err := v1domain.ReconcileContactHistory(ctx, pool, contactHistoryImportVersion, *archiveRunID)
@@ -171,6 +190,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return json.NewEncoder(os.Stdout).Encode(result)
 	}
 	result := map[string]any{}
+	if *domain == "member-grid-history" {
+		value, err := importMemberGridHistory(ctx, pool, archive, uow, *archiveRunID, *dm01RunID, dm01HMACKey, []byte(environment.SourceHMACKey), usageRecovery)
+		if err != nil {
+			return err
+		}
+		result["member_grid_history"] = value
+	}
 	if *domain == "contact-history" {
 		value, err := importContactHistory(ctx, archive, uow, *archiveRunID, *dm01RunID, dm01HMACKey)
 		if err != nil {
@@ -266,7 +292,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 }
 
 func validDomain(value string) bool {
-	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "contact-history" || value == "message-history"
+	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history"
 }
 
 func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {

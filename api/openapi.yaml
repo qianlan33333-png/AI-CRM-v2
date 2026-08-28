@@ -13208,6 +13208,94 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/views:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: listMemberViewHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: product_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberViewHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/views/{history_id}:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: getMemberViewHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberViewHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/usage:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: listMemberUsageHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberUsageHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/member-grid-history/usage/{history_id}:
+    get:
+      tags: [p4-member-grid-history]
+      operationId: getMemberUsageHistory
+      summary: Read immutable V1 Member Grid history without current access or usage changes
+      x-p4-decision-evidence: P4-V1-MEMBER-GRID-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: product.read_only_v1_member_grid_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/MemberUsageHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -13607,6 +13695,85 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    MemberViewHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, source_view_id, source_service_product_id, product_id, name, position, is_default, schema_version, config_digest, version, created_at, updated_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_view_id: { type: integer, format: int64, minimum: 1 }
+        source_service_product_id: { type: integer, format: int64, minimum: 1 }
+        product_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        name: { type: string }
+        position: { type: integer, format: int64 }
+        is_default: { type: boolean }
+        schema_version: { type: integer, format: int32, minimum: -32768, maximum: 32767 }
+        config_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        version: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    MemberViewHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MemberViewHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    MemberViewHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MemberViewHistoryItem" }
+    MemberUsageHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, customer_id, formally_logged_in, has_token_usage, learning_plan_id, learning_plan_current, learning_plan_total, open_count_7d, last_open_at, refreshed_at, source_payload_digest, recovery_entry_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        formally_logged_in: { type: boolean }
+        has_token_usage: { type: boolean }
+        learning_plan_id: { type: string }
+        learning_plan_current: { type: integer, format: int64, minimum: 0, nullable: true }
+        learning_plan_total: { type: integer, format: int64, minimum: 0, nullable: true }
+        open_count_7d: { type: integer, format: int64, minimum: 0 }
+        last_open_at: { type: string, format: date-time, nullable: true }
+        refreshed_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        recovery_entry_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    MemberUsageHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MemberUsageHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    MemberUsageHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MemberUsageHistoryItem" }
     CI01Customer:
       type: object
       additionalProperties: false

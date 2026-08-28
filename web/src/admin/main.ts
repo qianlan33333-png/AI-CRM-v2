@@ -21,6 +21,7 @@ import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
+import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
@@ -40,6 +41,16 @@ function boot(): void {
     void mountContactHistory(stage, {
       kind: historyParams.get('history_kind') ?? undefined,
       historyID: historyParams.get('history_id') ?? undefined,
+      customerID: historyParams.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+
+  if (page === 'spProductData' && historyParams.get('member_grid_history') === '1') {
+    void mountMemberGridHistory(stage, {
+      kind: historyParams.get('history_kind') ?? undefined,
+      historyID: historyParams.get('history_id') ?? undefined,
+      productID: historyParams.get('product_id') ?? undefined,
       customerID: historyParams.get('customer_id') ?? undefined,
     }).catch((error) => showLoadError(stage, error));
     return;

@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, contactHistoryHttp, messageHistoryHttp = f
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (contactHistoryHttp) {
         window.Headers = Headers;
         const test = window.__contactHistoryHttpTest = { calls: [], fail: contactHistoryHttp.fail || false };
@@ -101,6 +101,35 @@ async function loadPage(rel, { id, q, contactHistoryHttp, messageHistoryHttp = f
           const filtered = sidebar && customer !== null ? rows.filter((entry) => entry.customer_id === Number(customer)) : rows;
           const body = { source: 'v1_history', read_only: true, real_external_call_executed: false, items: filtered.slice(offset, offset + limit), total: filtered.length, limit, offset };
           return json(contactHistoryHttp.raw ? { ...body, raw_identity: 'must-not-render' } : body);
+        };
+        return;
+      }
+      if (memberGridHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__memberGridHistoryHttpTest = { calls: [], fail: memberGridHistoryHttp.fail || false };
+        const at = '2026-08-28T00:00:00.000000Z';
+        const digest = Array.from({ length: 32 }, (_, index) => index);
+        const views = Array.from({ length: 21 }, (_, index) => ({ id: 31 + index, source_key_digest: digest, source_view_id: 8 + index, source_service_product_id: 91, product_id: 91, name: index ? `旧视图 ${index + 1}` : '<img src=x onerror=alert(1)>', position: -index, is_default: false, schema_version: -1, config_digest: digest, version: -2, created_at: at, updated_at: at, source_payload_digest: digest }));
+        const usage = Array.from({ length: 21 }, (_, index) => ({ id: 61 + index, source_key_digest: digest, customer_id: 7, formally_logged_in: false, has_token_usage: false, learning_plan_id: index ? `plan-${index + 1}` : '', learning_plan_current: null, learning_plan_total: 0, open_count_7d: 0, last_open_at: null, refreshed_at: at, source_payload_digest: digest, recovery_entry_digest: digest }));
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const viewList = url.pathname === '/api/admin/member-grid-history/views';
+          const usageList = url.pathname === '/api/admin/member-grid-history/usage';
+          const viewDetail = /^\/api\/admin\/member-grid-history\/views\/\d+$/.test(url.pathname);
+          const usageDetail = /^\/api\/admin\/member-grid-history\/usage\/\d+$/.test(url.pathname);
+          if (!viewList && !usageList && !viewDetail && !usageDetail) return json({ code: 'unexpected_member_grid_history_request' }, 500);
+          const rows = viewList || viewDetail ? views : usage;
+          if (viewDetail || usageDetail) {
+            const item = rows.find((row) => row.id === Number(url.pathname.split('/').at(-1)));
+            return item ? json({ source: 'v1_history', read_only: true, real_external_call_executed: false, item }) : json({ code: 'not_found' }, 404);
+          }
+          const filter = Number(url.searchParams.get(viewList ? 'product_id' : 'customer_id'));
+          if (filter && filter !== (viewList ? 91 : 7)) return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: [], total: 0, limit: Number(url.searchParams.get('limit')), offset: Number(url.searchParams.get('offset')) });
+          const limit = Number(url.searchParams.get('limit')); const offset = Number(url.searchParams.get('offset'));
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
         };
         return;
       }
@@ -1615,6 +1644,57 @@ for (const fixture of [{ serviceHistoryEmpty: true }, { serviceHistoryFailure: '
 {
   const dom = await loadPage('admin/spProductData.html', { q: 'history=0', serviceHistoryHttp: true });
   ok('无效历史定义 ID 在发请求前失败关闭', dom.window.document.querySelector('#stage')?.textContent.includes('定义 ID 无效') && dom.window.__serviceHistoryHttpTest.calls.length === 0);
+  dom.window.close();
+}
+
+console.log('admin/spProductData.html（V1 Member Grid 历史只读 GET）');
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view&product_id=91', memberGridHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__memberGridHistoryHttpTest;
+  ok('旧保存视图只读页保留 false、负值和危险文本转义', d.querySelector('#stage')?.textContent.includes('默认：false') && d.querySelector('#stage')?.textContent.includes('位置：0') && d.querySelector('#stage')?.textContent.includes('<img src=x onerror=alert(1)>') && !d.querySelector('#stage img') && d.querySelector('#stage')?.textContent.includes('不表示当前登录、权益或权限'));
+  ok('旧保存视图只调用真实生成 GET 且使用 Product 筛选', test.calls.length === 1 && test.calls[0].path === '/api/admin/member-grid-history/views' && test.calls[0].query === '?offset=0&limit=20&product_id=91' && test.calls[0].method === 'GET' && test.calls[0].credentials === 'include' && dom.window.__AICRM_TEST_MOCK__ === false);
+  ok('切换类型会清空详情和异类型筛选', d.querySelector('a[href="spProductData.html?member_grid_history=1&history_kind=usage"]') !== null);
+  const filter = d.querySelector('#member-grid-history-filter input');
+  filter.value = '-1';
+  d.querySelector('#member-grid-history-filter').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  ok('非法历史筛选留在当前列表并明确失败，不发 GET', d.querySelector('#member-grid-history-filter-error')?.textContent.includes('Product ID 必须') && test.calls.length === 1 && d.querySelector('#stage')?.textContent.includes('默认：false'));
+  click(dom, d.querySelector('#member-grid-history-next'));
+  await sleep(30);
+  ok('旧保存视图以 20 条分页真实 GET', test.calls.at(-1)?.path === '/api/admin/member-grid-history/views' && test.calls.at(-1)?.query === '?offset=20&limit=20&product_id=91' && d.querySelector('#stage')?.textContent.includes('旧视图 21'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view&history_id=31&product_id=91', memberGridHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__memberGridHistoryHttpTest;
+  ok('旧保存视图详情只使用详情 GET，且不泄露 ConfigJSON 或摘要', test.calls.length === 1 && test.calls[0].path === '/api/admin/member-grid-history/views/31' && test.calls[0].method === 'GET' && d.querySelector('#stage')?.textContent.includes('旧视图 ID') && !d.querySelector('#stage')?.textContent.includes('config_digest') && !d.querySelector('#stage')?.textContent.includes('source_key_digest'));
+  test.fail = '/api/admin/member-grid-history/views/31';
+  const retry = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view&history_id=31&product_id=91', memberGridHistoryHttp: { fail: '/api/admin/member-grid-history/views/31' } });
+  ok('详情失败明确显示并允许 GET 重试，不回退 Mock', retry.window.document.querySelector('#stage')?.textContent.includes('HTTP 503') && !!retry.window.document.querySelector('#member-grid-history-detail-retry') && retry.window.__AICRM_TEST_MOCK__ === false);
+  click(retry, retry.window.document.querySelector('#member-grid-history-detail-retry'));
+  await sleep(30);
+  ok('详情重试仍为同一路由 GET', retry.window.__memberGridHistoryHttpTest.calls.length === 2 && retry.window.__memberGridHistoryHttpTest.calls.every((call) => call.path === '/api/admin/member-grid-history/views/31' && call.method === 'GET'));
+  retry.window.close();
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=usage&customer_id=7', memberGridHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__memberGridHistoryHttpTest;
+  ok('旧使用快照保留 false、NULL 和空学习计划', d.querySelector('#stage')?.textContent.includes('正式登录：false') && d.querySelector('#stage')?.textContent.includes('Token 使用：false') && d.querySelector('#stage')?.textContent.includes('（空）'));
+  ok('旧使用快照只发送 Customer 筛选 GET', test.calls.length === 1 && test.calls[0].path === '/api/admin/member-grid-history/usage' && test.calls[0].query === '?offset=0&limit=20&customer_id=7' && test.calls[0].method === 'GET');
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=usage&product_id=91', memberGridHistoryHttp: {} });
+  ok('跨类型筛选请求前 fail closed', dom.window.document.querySelector('#stage')?.textContent.includes('不接受 Product ID 筛选') && dom.window.__memberGridHistoryHttpTest.calls.length === 0);
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/spProductData.html', { q: 'member_grid_history=1&history_kind=view', memberGridHistoryHttp: { fail: true } });
+  const text = dom.window.document.querySelector('#stage')?.textContent || '';
+  ok('历史列表失败不伪装为空集或零计数，并保留 GET 重试', text.includes('HTTP 503') && text.includes('数量未获取') && text.includes('读取失败，未显示历史数据') && !text.includes('当前筛选没有 V1 历史记录') && !!dom.window.document.querySelector('#member-grid-history-retry'));
   dom.window.close();
 }
 
