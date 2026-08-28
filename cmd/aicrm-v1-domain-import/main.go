@@ -47,7 +47,7 @@ func main() {
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
 	mode := flags.String("mode", "import", "import|reconcile")
-	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|member-grid-history (read-only)|campaign-history (read-only snapshots)|automation-history (non-executable configuration)|profile-catalog-history (inert templates and signup rules)|hxc-history (immutable observations)|static-tail-history (inert media/product/cycle facts)|customer-state-history (immutable status observations)|marketing-state-history (immutable marketing observations)")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|member-grid-history (read-only)|campaign-history (read-only snapshots)|automation-history (non-executable configuration)|profile-catalog-history (inert templates and signup rules)|hxc-history (immutable observations)|static-tail-history (inert media/product/cycle facts)|customer-state-history (immutable status observations)|marketing-state-history (immutable marketing observations)|wecom-contact-history (read-only source observations)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
 	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
@@ -62,8 +62,8 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" && *domain != "campaign-history" && *domain != "automation-history" && *domain != "profile-catalog-history" && *domain != "hxc-history" && *domain != "static-tail-history" && *domain != "customer-state-history" && *domain != "marketing-state-history" {
-		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history contact-history, message-history member-grid-history campaign-history or automation-history or profile-catalog-history or hxc-history or static-tail-history or customer-state-history or marketing-state-history")
+	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" && *domain != "campaign-history" && *domain != "automation-history" && *domain != "profile-catalog-history" && *domain != "hxc-history" && *domain != "static-tail-history" && *domain != "customer-state-history" && *domain != "marketing-state-history" && *domain != weComContactHistoryDomain {
+		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history contact-history, message-history member-grid-history campaign-history or automation-history or profile-catalog-history or hxc-history or static-tail-history or customer-state-history or marketing-state-history or wecom-contact-history")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
@@ -113,6 +113,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 				return err
 			}
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"automation_history_reconciliation": result})
+		}
+		if *domain == weComContactHistoryDomain {
+			result, err := v1domain.ReconcileWeComContactHistory(ctx, pool, weComContactHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"wecom_contact_history_reconciliation": result})
 		}
 		if *domain == "message-history" {
 			result, err := v1domain.ReconcileMessageHistory(ctx, pool, messageHistoryImportVersion, *archiveRunID)
@@ -253,6 +260,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		}
 		result["automation_history"] = value
 	}
+	if *domain == weComContactHistoryDomain {
+		value, err := importWeComContactHistory(ctx, archive, uow, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		result["wecom_contact_history"] = value
+	}
 	if *domain == "member-grid-history" {
 		value, err := importMemberGridHistory(ctx, pool, archive, uow, *archiveRunID, *dm01RunID, dm01HMACKey, []byte(environment.SourceHMACKey), usageRecovery)
 		if err != nil {
@@ -390,7 +404,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 }
 
 func validDomain(value string) bool {
-	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history" || value == "campaign-history" || value == "automation-history" || value == "profile-catalog-history" || value == "hxc-history" || value == "static-tail-history" || value == "customer-state-history" || value == "marketing-state-history"
+	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history" || value == "campaign-history" || value == "automation-history" || value == "profile-catalog-history" || value == "hxc-history" || value == "static-tail-history" || value == "customer-state-history" || value == "marketing-state-history" || value == weComContactHistoryDomain
 }
 
 func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {

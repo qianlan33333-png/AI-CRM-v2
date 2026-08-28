@@ -6,6 +6,96 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/wecom-contact-history/events:
+    get:
+      tags: [p4-wecom-contact-history]
+      operationId: listWeComContactHistoryEvents
+      summary: Read immutable V1 WeCom contact history without current owner or callback effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-WECOM-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only source observation, content: { application/json: { schema: { $ref: "#/components/schemas/WeComContactHistoryEventPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wecom-contact-history/events/{history_id}:
+    get:
+      tags: [p4-wecom-contact-history]
+      operationId: getWeComContactHistoryEvent
+      summary: Read immutable V1 WeCom contact history without current owner or callback effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-WECOM-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only source observation, content: { application/json: { schema: { $ref: "#/components/schemas/WeComContactHistoryEventDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wecom-contact-history/relations:
+    get:
+      tags: [p4-wecom-contact-history]
+      operationId: listWeComContactHistoryRelations
+      summary: Read immutable V1 WeCom contact history without current owner or callback effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-WECOM-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only source observation, content: { application/json: { schema: { $ref: "#/components/schemas/WeComContactHistoryRelationPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wecom-contact-history/relations/{history_id}:
+    get:
+      tags: [p4-wecom-contact-history]
+      operationId: getWeComContactHistoryRelation
+      summary: Read immutable V1 WeCom contact history without current owner or callback effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-WECOM-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only source observation, content: { application/json: { schema: { $ref: "#/components/schemas/WeComContactHistoryRelationDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/marketing-state-history/state-snapshots:
     get:
       tags: [p4-marketing-state-history]
@@ -14883,6 +14973,78 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    WeComContactHistoryEvent:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, event_type, change_type, event_time, process_status, retry_count, created_at, updated_at, identity_sync_status]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        event_type: { type: string }
+        change_type: { type: string }
+        event_time: { type: integer, format: int64, nullable: true }
+        process_status: { type: string }
+        retry_count: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        identity_sync_status: { type: string }
+    WeComContactHistoryEventPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/WeComContactHistoryEvent" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    WeComContactHistoryEventDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/WeComContactHistoryEvent" }
+    WeComContactHistoryRelation:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, relation_status, is_primary, add_way, create_time, first_seen_at, last_seen_at, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        relation_status: { type: string }
+        is_primary: { type: boolean }
+        add_way: { type: integer, format: int32, nullable: true }
+        create_time: { type: integer, format: int64, nullable: true }
+        first_seen_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    WeComContactHistoryRelationPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/WeComContactHistoryRelation" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    WeComContactHistoryRelationDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/WeComContactHistoryRelation" }
     MarketingStateHistorySnapshotDetail:
       type: object
       additionalProperties: false

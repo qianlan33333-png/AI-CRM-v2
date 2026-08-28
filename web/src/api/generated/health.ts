@@ -5,6 +5,115 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface WeComContactHistoryEvent {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  event_type: string;
+  change_type: string;
+  /** @nullable */
+  event_time: number | null;
+  process_status: string;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
+  identity_sync_status: string;
+}
+
+export type WeComContactHistoryEventPageSource =
+  (typeof WeComContactHistoryEventPageSource)[keyof typeof WeComContactHistoryEventPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryEventPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryEventPage {
+  source: WeComContactHistoryEventPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: WeComContactHistoryEvent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type WeComContactHistoryEventDetailSource =
+  (typeof WeComContactHistoryEventDetailSource)[keyof typeof WeComContactHistoryEventDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryEventDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryEventDetail {
+  source: WeComContactHistoryEventDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: WeComContactHistoryEvent;
+}
+
+export interface WeComContactHistoryRelation {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  relation_status: string;
+  is_primary: boolean;
+  /** @nullable */
+  add_way: number | null;
+  /** @nullable */
+  create_time: number | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WeComContactHistoryRelationPageSource =
+  (typeof WeComContactHistoryRelationPageSource)[keyof typeof WeComContactHistoryRelationPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryRelationPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryRelationPage {
+  source: WeComContactHistoryRelationPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: WeComContactHistoryRelation[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type WeComContactHistoryRelationDetailSource =
+  (typeof WeComContactHistoryRelationDetailSource)[keyof typeof WeComContactHistoryRelationDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryRelationDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryRelationDetail {
+  source: WeComContactHistoryRelationDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: WeComContactHistoryRelation;
+}
+
 export type MarketingStateHistorySnapshotDetailSource =
   (typeof MarketingStateHistorySnapshotDetailSource)[keyof typeof MarketingStateHistorySnapshotDetailSource];
 
@@ -20150,6 +20259,30 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListWeComContactHistoryEventsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListWeComContactHistoryRelationsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListMarketingStateHistorySnapshotParams = {
   /**
    * @minimum 1
@@ -22798,6 +22931,314 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type listWeComContactHistoryEventsResponse200 = {
+  data: WeComContactHistoryEventPage;
+  status: 200;
+};
+
+export type listWeComContactHistoryEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listWeComContactHistoryEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listWeComContactHistoryEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listWeComContactHistoryEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listWeComContactHistoryEventsResponseSuccess =
+  listWeComContactHistoryEventsResponse200 & {
+    headers: Headers;
+  };
+export type listWeComContactHistoryEventsResponseError = (
+  | listWeComContactHistoryEventsResponse400
+  | listWeComContactHistoryEventsResponse401
+  | listWeComContactHistoryEventsResponse403
+  | listWeComContactHistoryEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listWeComContactHistoryEventsResponse =
+  | listWeComContactHistoryEventsResponseSuccess
+  | listWeComContactHistoryEventsResponseError;
+
+export const getListWeComContactHistoryEventsUrl = (
+  params?: ListWeComContactHistoryEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-contact-history/events?${stringifiedParams}`
+    : `/api/admin/wecom-contact-history/events`;
+};
+
+export const listWeComContactHistoryEvents = async (
+  params?: ListWeComContactHistoryEventsParams,
+  options?: RequestInit,
+): Promise<listWeComContactHistoryEventsResponse> => {
+  const res = await fetch(getListWeComContactHistoryEventsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWeComContactHistoryEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listWeComContactHistoryEventsResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type getWeComContactHistoryEventResponse200 = {
+  data: WeComContactHistoryEventDetail;
+  status: 200;
+};
+
+export type getWeComContactHistoryEventResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getWeComContactHistoryEventResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeComContactHistoryEventResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeComContactHistoryEventResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWeComContactHistoryEventResponseSuccess =
+  getWeComContactHistoryEventResponse200 & {
+    headers: Headers;
+  };
+export type getWeComContactHistoryEventResponseError = (
+  | getWeComContactHistoryEventResponse400
+  | getWeComContactHistoryEventResponse401
+  | getWeComContactHistoryEventResponse403
+  | getWeComContactHistoryEventResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWeComContactHistoryEventResponse =
+  | getWeComContactHistoryEventResponseSuccess
+  | getWeComContactHistoryEventResponseError;
+
+export const getGetWeComContactHistoryEventUrl = (historyId: number) => {
+  return `/api/admin/wecom-contact-history/events/${historyId}`;
+};
+
+export const getWeComContactHistoryEvent = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getWeComContactHistoryEventResponse> => {
+  const res = await fetch(getGetWeComContactHistoryEventUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeComContactHistoryEventResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeComContactHistoryEventResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type listWeComContactHistoryRelationsResponse200 = {
+  data: WeComContactHistoryRelationPage;
+  status: 200;
+};
+
+export type listWeComContactHistoryRelationsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listWeComContactHistoryRelationsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listWeComContactHistoryRelationsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listWeComContactHistoryRelationsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listWeComContactHistoryRelationsResponseSuccess =
+  listWeComContactHistoryRelationsResponse200 & {
+    headers: Headers;
+  };
+export type listWeComContactHistoryRelationsResponseError = (
+  | listWeComContactHistoryRelationsResponse400
+  | listWeComContactHistoryRelationsResponse401
+  | listWeComContactHistoryRelationsResponse403
+  | listWeComContactHistoryRelationsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listWeComContactHistoryRelationsResponse =
+  | listWeComContactHistoryRelationsResponseSuccess
+  | listWeComContactHistoryRelationsResponseError;
+
+export const getListWeComContactHistoryRelationsUrl = (
+  params?: ListWeComContactHistoryRelationsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-contact-history/relations?${stringifiedParams}`
+    : `/api/admin/wecom-contact-history/relations`;
+};
+
+export const listWeComContactHistoryRelations = async (
+  params?: ListWeComContactHistoryRelationsParams,
+  options?: RequestInit,
+): Promise<listWeComContactHistoryRelationsResponse> => {
+  const res = await fetch(getListWeComContactHistoryRelationsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWeComContactHistoryRelationsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listWeComContactHistoryRelationsResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type getWeComContactHistoryRelationResponse200 = {
+  data: WeComContactHistoryRelationDetail;
+  status: 200;
+};
+
+export type getWeComContactHistoryRelationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getWeComContactHistoryRelationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeComContactHistoryRelationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeComContactHistoryRelationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWeComContactHistoryRelationResponseSuccess =
+  getWeComContactHistoryRelationResponse200 & {
+    headers: Headers;
+  };
+export type getWeComContactHistoryRelationResponseError = (
+  | getWeComContactHistoryRelationResponse400
+  | getWeComContactHistoryRelationResponse401
+  | getWeComContactHistoryRelationResponse403
+  | getWeComContactHistoryRelationResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWeComContactHistoryRelationResponse =
+  | getWeComContactHistoryRelationResponseSuccess
+  | getWeComContactHistoryRelationResponseError;
+
+export const getGetWeComContactHistoryRelationUrl = (historyId: number) => {
+  return `/api/admin/wecom-contact-history/relations/${historyId}`;
+};
+
+export const getWeComContactHistoryRelation = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getWeComContactHistoryRelationResponse> => {
+  const res = await fetch(getGetWeComContactHistoryRelationUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeComContactHistoryRelationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeComContactHistoryRelationResponse;
 };
 
 /**
