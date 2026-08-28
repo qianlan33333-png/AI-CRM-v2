@@ -95,6 +95,23 @@ func TestCampaignHistoryImporterQuarantinesMissingMemberParentWithoutWriting(t *
 	}
 }
 
+func TestNewCampaignHistoryImporterAcceptsExactTableKeyedJournals(t *testing.T) {
+	journals := make(map[string]*Journal, len(campaignHistoryScopes))
+	for kind, scope := range campaignHistoryScopes {
+		journals[scope[0]] = campaignHistoryScopedJournal(kind, "archive")
+	}
+	if _, err := NewCampaignHistoryImporter(&campaignHistoryArchiveFake{}, campaignHistoryTxUOW{}, &campaignHistoryWriterFake{}, &campaignHistoryResolverFake{}, journals); err != nil {
+		t.Fatalf("table keyed journals rejected: %v", err)
+	}
+	wrongKeys := make(map[string]*Journal, len(campaignHistoryScopes))
+	for kind := range campaignHistoryScopes {
+		wrongKeys[kind] = campaignHistoryScopedJournal(kind, "archive")
+	}
+	if _, err := NewCampaignHistoryImporter(&campaignHistoryArchiveFake{}, campaignHistoryTxUOW{}, &campaignHistoryWriterFake{}, &campaignHistoryResolverFake{}, wrongKeys); !errors.Is(err, ErrInvalidScope) {
+		t.Fatalf("owner kind map accepted as source table map: %v", err)
+	}
+}
+
 type campaignHistoryArchiveFake struct {
 	rows map[string][]v1archive.ArchivedRow
 }

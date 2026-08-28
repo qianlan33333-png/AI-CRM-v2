@@ -53,7 +53,7 @@ type CampaignHistoryImporter struct {
 }
 
 func NewCampaignHistoryImporter(archive ArchiveSource, uow UnitOfWork, writer CampaignHistoryWriter, resolver CampaignHistoryCustomerResolver, journals map[string]*Journal) (*CampaignHistoryImporter, error) {
-	if archive == nil || uow == nil || writer == nil || resolver == nil || !validCampaignHistoryJournals(journals) {
+	if archive == nil || uow == nil || writer == nil || resolver == nil || !validCampaignHistoryImportJournals(journals) {
 		return nil, ErrInvalidScope
 	}
 	terminals := make(map[string]campaignHistoryTerminalJournal, len(journals))

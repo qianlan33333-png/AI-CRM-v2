@@ -53,7 +53,7 @@ func NewCampaignHistoryJournal(segments, members, plans, recipients, messages *J
 		campaignHistoryPlansKind: plans, campaignHistoryRecipientsKind: recipients,
 		campaignHistoryMessagesKind: messages,
 	}
-	if !validCampaignHistoryJournals(values) {
+	if !validCampaignHistoryJournalKinds(values) {
 		return nil, campaignport.ErrCampaignHistoryInvalid
 	}
 	terminals := make(map[string]campaignHistoryTerminalJournal, len(values))
@@ -75,7 +75,9 @@ func newCampaignHistoryJournal(journals map[string]campaignHistoryTerminalJourna
 	return &CampaignHistoryJournal{journals: journals}, nil
 }
 
-func validCampaignHistoryJournals(journals map[string]*Journal) bool {
+// validCampaignHistoryJournalKinds validates the owner Journal constructor,
+// whose five arguments are keyed by owner receipt kind.
+func validCampaignHistoryJournalKinds(journals map[string]*Journal) bool {
 	if len(journals) != len(campaignHistoryScopes) {
 		return false
 	}
@@ -94,6 +96,24 @@ func validCampaignHistoryJournals(journals map[string]*Journal) bool {
 		}
 	}
 	return run != ""
+}
+
+// validCampaignHistoryImportJournals validates the importer map, whose keys
+// are source table IDs so terminal quarantine receipts use the same scope as
+// their archived source row.
+func validCampaignHistoryImportJournals(journals map[string]*Journal) bool {
+	if len(journals) != len(campaignHistoryScopes) {
+		return false
+	}
+	byKind := make(map[string]*Journal, len(campaignHistoryScopes))
+	for kind, expected := range campaignHistoryScopes {
+		journal := journals[expected[0]]
+		if journal == nil {
+			return false
+		}
+		byKind[kind] = journal
+	}
+	return validCampaignHistoryJournalKinds(byKind)
 }
 
 func (journal *CampaignHistoryJournal) LoadCampaignHistory(ctx context.Context, kind, source string) (campaignport.CampaignHistoryReceipt, bool, error) {
