@@ -3,3 +3,22 @@
 //   sqlc v1.28.0
 
 package identitydb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type Identity struct {
+	ID                    int64              `json:"id"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	Kind                  string             `json:"kind"`
+	Scope                 string             `json:"scope"`
+	NormalizedValue       string             `json:"normalized_value"`
+	NormalizerVersion     int16              `json:"normalizer_version"`
+	Assurance             string             `json:"assurance"`
+	Source                string             `json:"source"`
+	ReviewFingerprint     []byte             `json:"review_fingerprint"`
+	FingerprintKeyVersion int16              `json:"fingerprint_key_version"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	BoundAt               pgtype.Timestamptz `json:"bound_at"`
+}
