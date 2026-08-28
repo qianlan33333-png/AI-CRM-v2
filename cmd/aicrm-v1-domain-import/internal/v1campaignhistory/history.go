@@ -23,6 +23,15 @@ const (
 	Invalid   Disposition = "invalid"
 )
 
+// SourceParentState records only whether the frozen V1 Campaign source
+// relation was observed. It is not a V2 crosswalk or an executable state.
+type SourceParentState string
+
+const (
+	SourceParentObserved        SourceParentState = "observed"
+	SourceParentMissingCampaign SourceParentState = "missing_campaign"
+)
+
 // All IDs are source IDs. None identifies a V2 Campaign, customer or segment.
 // Source references are private migration inputs, excluded from JSON output.
 type CampaignSource struct {
@@ -49,13 +58,14 @@ type CampaignFact struct {
 }
 
 type SegmentFact struct {
-	SourceID         int64     `json:"id"`
-	CampaignSourceID int64     `json:"campaign_id"`
-	SegmentSourceID  int64     `json:"segment_id"`
-	Code             string    `json:"segment_code"`
-	Priority         int32     `json:"priority"`
-	Label            string    `json:"label"`
-	CreatedAt        time.Time `json:"created_at"`
+	SourceID          int64             `json:"id"`
+	CampaignSourceID  int64             `json:"campaign_id"`
+	SegmentSourceID   int64             `json:"segment_id"`
+	Code              string            `json:"segment_code"`
+	Priority          int32             `json:"priority"`
+	Label             string            `json:"label"`
+	CreatedAt         time.Time         `json:"created_at"`
+	SourceParentState SourceParentState `json:"source_parent_state"`
 }
 
 type MemberSource struct {
@@ -115,7 +125,10 @@ func AdaptHistory(campaigns, segments, members []json.RawMessage) History {
 	for i, row := range h.Segments {
 		if row.Fact != nil && parents[row.Fact.CampaignSourceID] == nil {
 			delete(segmentParents, row.Fact.SourceID)
-			h.Segments[i] = Result[SegmentFact]{Disposition: Pending, Reason: "segment_campaign_unresolved"}
+			// V1 did not enforce this foreign key. Preserve the valid historical
+			// segment, but do not let it qualify a member relationship.
+			row.Fact.SourceParentState = SourceParentMissingCampaign
+			h.Segments[i] = row
 		}
 	}
 	for i, payload := range members {
@@ -171,6 +184,7 @@ func AdaptSegment(payload json.RawMessage) Result[SegmentFact] {
 	if f.SourceID < 1 || f.CampaignSourceID < 1 || !timesPresent(f.CreatedAt) {
 		return Result[SegmentFact]{Disposition: Invalid, Reason: "segment_fact_invalid"}
 	}
+	f.SourceParentState = SourceParentObserved
 	return Result[SegmentFact]{Disposition: Candidate, Fact: &f}
 }
 

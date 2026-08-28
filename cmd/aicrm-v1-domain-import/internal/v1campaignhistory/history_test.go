@@ -90,7 +90,7 @@ func TestHistoricalFactsPreserveSourceValuesWithoutExecution(t *testing.T) {
 	if c.ApprovedAt == nil || c.ApprovedAt.Format(time.RFC3339Nano) != "2026-08-28T01:00:00.123456+08:00" || c.FinishedAt == nil || c.StartedAt != nil || c.PausedAt != nil || !c.UpdatedAt.Before(c.CreatedAt) {
 		t.Fatal("campaign_times_changed")
 	}
-	if s.SourceID != 2 || s.CampaignSourceID != 1 || s.SegmentSourceID != 3 || s.Code != " 原分群code " || s.Priority != -2 || s.Label != "原分群名称" || !s.CreatedAt.Equal(c.CreatedAt) {
+	if s.SourceID != 2 || s.CampaignSourceID != 1 || s.SegmentSourceID != 3 || s.Code != " 原分群code " || s.Priority != -2 || s.Label != "原分群名称" || !s.CreatedAt.Equal(c.CreatedAt) || s.SourceParentState != SourceParentObserved {
 		t.Fatal("segment_source_changed")
 	}
 	if m.SourceID != 4 || m.CampaignSourceID != 1 || m.CampaignSegmentSourceID != 2 || m.SegmentSourceID != 3 || m.MemberSourceID != 9007199254740993 || m.CurrentStepIndex != -1 || m.RetryCount != -2 || m.Status != "active" || m.AnchorDate != "源日期标签" || m.StopReason != " 原因 " {
@@ -134,34 +134,33 @@ func TestHistoryDoesNotFilterStatesOrInferCurrentIdentity(t *testing.T) {
 }
 
 func TestHistoryRelationsUseSourceParentsNotCodesOrCurrentTargets(t *testing.T) {
+	h := fixtureHistory(nil, []json.RawMessage{changed(t, segmentFixture, "campaign_id", 99)}, nil)
+	if h.Segments[0].Disposition != Candidate || h.Segments[0].Fact == nil || h.Segments[0].Fact.SourceParentState != SourceParentMissingCampaign || h.Segments[0].Reason != "" || h.Members[0].Reason != "member_campaign_segment_unresolved" {
+		t.Fatal("missing_source_parent_not_preserved_as_history_orphan")
+	}
+	encoded, err := json.Marshal(h.Segments[0].Fact)
+	if err != nil || strings.Contains(string(encoded), "verified_") || strings.Contains(string(encoded), "target_") {
+		t.Fatal("source_parent_state_was_confused_with_v2_crosswalk")
+	}
+
 	for _, test := range []struct {
 		kind, field string
 		value       any
 		reason      string
 	}{
-		{"segment", "campaign_id", 99, "segment_campaign_unresolved"},
 		{"member", "campaign_id", 99, "member_campaign_unresolved"},
 		{"member", "campaign_segment_id", 99, "member_campaign_segment_unresolved"},
 		{"member", "segment_id", 99, "member_campaign_segment_mismatch"},
 	} {
 		t.Run(test.reason, func(t *testing.T) {
-			var h History
-			if test.kind == "segment" {
-				h = fixtureHistory(nil, []json.RawMessage{changed(t, segmentFixture, test.field, test.value)}, nil)
-			} else {
-				h = fixtureHistory(nil, nil, []json.RawMessage{changed(t, memberFixture, test.field, test.value)})
-			}
-			if test.kind == "segment" {
-				if h.Segments[0].Disposition != Pending || h.Segments[0].Fact != nil || h.Segments[0].Reason != test.reason || h.Members[0].Reason != "member_campaign_segment_unresolved" {
-					t.Fatal("segment_parent_not_isolated")
-				}
-			} else if h.Members[0].Disposition != Pending || h.Members[0].Fact != nil || h.Members[0].Reason != test.reason {
+			h := fixtureHistory(nil, nil, []json.RawMessage{changed(t, memberFixture, test.field, test.value)})
+			if h.Members[0].Disposition != Pending || h.Members[0].Fact != nil || h.Members[0].Reason != test.reason {
 				t.Fatal("member_parent_not_isolated")
 			}
 		})
 	}
 	parents := []json.RawMessage{campaignFixture, changed(t, campaignFixture, "id", int64(5))}
-	h := fixtureHistory(parents, []json.RawMessage{changed(t, segmentFixture, "campaign_id", int64(5))}, nil)
+	h = fixtureHistory(parents, []json.RawMessage{changed(t, segmentFixture, "campaign_id", int64(5))}, nil)
 	if h.Campaigns[0].Disposition != Candidate || h.Campaigns[1].Disposition != Candidate || h.Members[0].Reason != "member_campaign_segment_mismatch" {
 		t.Fatal("same_code_was_used_as_parent_identity")
 	}
@@ -173,7 +172,7 @@ func TestHistoryRelationsUseSourceParentsNotCodesOrCurrentTargets(t *testing.T) 
 
 func TestHistoryDuplicateSourceIDsRemainIsolatedAndConserved(t *testing.T) {
 	h := fixtureHistory([]json.RawMessage{campaignFixture, campaignFixture}, nil, nil)
-	if len(h.Campaigns) != 2 || h.Campaigns[0].Reason != "duplicate_source_id" || h.Campaigns[1].Fact != nil || h.Segments[0].Reason != "segment_campaign_unresolved" || h.Members[0].Reason != "member_campaign_unresolved" {
+	if len(h.Campaigns) != 2 || h.Campaigns[0].Reason != "duplicate_source_id" || h.Campaigns[1].Fact != nil || h.Segments[0].Fact == nil || h.Segments[0].Fact.SourceParentState != SourceParentMissingCampaign || h.Members[0].Reason != "member_campaign_unresolved" {
 		t.Fatal("duplicate_campaign_accepted")
 	}
 	h = fixtureHistory(nil, []json.RawMessage{segmentFixture, segmentFixture}, nil)

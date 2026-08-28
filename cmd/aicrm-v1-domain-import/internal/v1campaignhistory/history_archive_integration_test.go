@@ -65,6 +65,7 @@ func TestReconciledCampaignHistoryArchiveShape(t *testing.T) {
 		t.Fatal("candidate_row_conservation_failed")
 	}
 	counts, reasons := [3]int{}, map[string]int{}
+	orphanSegments := 0
 	count := func(kind int, disposition Disposition, reason string, hasFact bool) {
 		if disposition == Candidate && hasFact && reason == "" {
 			counts[kind]++
@@ -80,6 +81,13 @@ func TestReconciledCampaignHistoryArchiveShape(t *testing.T) {
 	}
 	for _, row := range h.Segments {
 		count(1, row.Disposition, row.Reason, row.Fact != nil)
+		switch row.Fact.SourceParentState {
+		case SourceParentObserved:
+		case SourceParentMissingCampaign:
+			orphanSegments++
+		default:
+			t.Fatal("campaign_history_segment_parent_state_invalid")
+		}
 	}
 	for _, row := range h.Members {
 		count(2, row.Disposition, row.Reason, row.Fact != nil)
@@ -93,9 +101,12 @@ func TestReconciledCampaignHistoryArchiveShape(t *testing.T) {
 	for _, reason := range codes {
 		t.Logf("reason=%s count=%d", reason, reasons[reason])
 	}
-	t.Logf("source_campaigns=%d source_segments=%d source_members=%d candidate_campaigns=%d candidate_segments=%d candidate_members=%d isolated_rows=%d source_relations_only=1 target_writer_checked=0 target_fk_checked=0 target_writes=0", len(payloads[0]), len(payloads[1]), len(payloads[2]), counts[0], counts[1], counts[2], isolated)
+	t.Logf("source_campaigns=%d source_segments=%d source_members=%d candidate_campaigns=%d candidate_segments=%d candidate_members=%d orphan_segments=%d isolated_rows=%d source_relations_only=1 target_writer_checked=0 target_fk_checked=0 target_writes=0", len(payloads[0]), len(payloads[1]), len(payloads[2]), counts[0], counts[1], counts[2], orphanSegments, isolated)
 	if counts[0]+counts[1]+counts[2]+isolated != 6382+7338+6707 {
 		t.Fatal("candidate_terminal_count_mismatch")
+	}
+	if orphanSegments != 958 {
+		t.Errorf("campaign_history_orphan_segment_count=%d", orphanSegments)
 	}
 	if isolated > 0 {
 		t.Errorf("campaign_history_rows_isolated count=%d", isolated)
