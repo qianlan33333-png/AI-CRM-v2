@@ -12,6 +12,40 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
 
+func TestImportedIdentityTerminalKeepsDistinctSourceAndTargetFieldDigests(t *testing.T) {
+	for _, mutation := range []string{"none", "source-key", "payload", "empty-source-field", "empty-target-field"} {
+		t.Run(mutation, func(t *testing.T) {
+			fixture := newDeferredIdentitySelectionFixture(t)
+			table := DM01IdentityMapSourceTable
+			receipts := fixture.dm01.receipts[table]
+			last := &receipts[len(receipts)-1]
+			last.Disposition = "imported"
+			last.FieldDigest[0] ^= 1 // DM01 withFieldDigest(target), not tracker source fields.
+			fixture.dm01.quarantines[table] = fixture.dm01.quarantines[table][:2]
+			checkpoint := fixture.dm01.checkpoints[table]
+			switch mutation {
+			case "source-key":
+				checkpoint.FinalSourceKeyHMAC[0] ^= 1
+			case "payload":
+				checkpoint.PayloadHMAC[0] ^= 1
+			case "empty-source-field":
+				checkpoint.FieldDigest = [32]byte{}
+			case "empty-target-field":
+				last.FieldDigest = [32]byte{}
+			}
+			fixture.dm01.checkpoints[table] = checkpoint
+			selection, err := SelectDeferredIdentityEvidence(context.Background(), fixture.archive, fixture.dm01, fixture.options)
+			if mutation == "none" {
+				if err != nil || selection.Count() != 1392 || selection.MapImportedRows != 2 {
+					t.Fatalf("legitimate target digest rejected: %v", err)
+				}
+			} else if !errors.Is(err, ErrInvalidDeferredIdentitySelection) {
+				t.Fatalf("invalid checkpoint accepted: %v", err)
+			}
+		})
+	}
+}
+
 func TestSelectDeferredIdentityEvidencePreservesOnlyFrozenScope(t *testing.T) {
 	fixture := newDeferredIdentitySelectionFixture(t)
 	selection, err := SelectDeferredIdentityEvidence(context.Background(), fixture.archive, fixture.dm01, fixture.options)

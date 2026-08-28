@@ -315,7 +315,11 @@ func readDM01TableEvidence(ctx context.Context, dm01 DM01EvidenceReader, runID i
 	}); err != nil {
 		return dm01TableEvidence{}, normalizeSelectionError(err, "receipt_stream")
 	}
-	if evidence.receiptCount == 0 || checkpoint.FinalSourceKeyHMAC != evidence.last.SourceKeyHMAC || checkpoint.PayloadHMAC != evidence.last.PayloadHMAC || checkpoint.FieldDigest != evidence.last.FieldDigest {
+	// DM01 imported identities replace receipt.FieldDigest with the V2 target
+	// digest, while checkpoints keep the source-scan field HMAC. Such rows are
+	// outside this deferred scope; quarantines retain the source field HMAC.
+	importedIdentityTerminal := sourceTable == DM01IdentityMapSourceTable && evidence.last.Disposition == "imported"
+	if evidence.receiptCount == 0 || checkpoint.FinalSourceKeyHMAC != evidence.last.SourceKeyHMAC || checkpoint.PayloadHMAC != evidence.last.PayloadHMAC || (!importedIdentityTerminal && checkpoint.FieldDigest != evidence.last.FieldDigest) {
 		return dm01TableEvidence{}, selectionFailure("checkpoint_terminal")
 	}
 	if err := dm01.EachDM01Quarantine(ctx, runID, sourceTable, func(quarantine DM01Quarantine) error {
