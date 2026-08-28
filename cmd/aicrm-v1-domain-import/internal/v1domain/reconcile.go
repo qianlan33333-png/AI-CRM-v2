@@ -20,6 +20,9 @@ import (
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 )
 
+const archiveFieldDigestSQL = `SELECT field_digest FROM public.v1_archive_records
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`
+
 var reconciledTables = []string{
 	"public/campaigns",
 	"public/campaign_steps",
@@ -256,8 +259,7 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 		}
 		proof := "terminal:" + row.Disposition
 		if isWeComContactHistorySource(row.TableID) {
-			if err = tx.QueryRow(ctx, `SELECT field_hmac FROM public.v1_archive_records
-WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_hmac=$4 AND payload_hmac=$5`,
+			if err = tx.QueryRow(ctx, archiveFieldDigestSQL,
 				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
 				return ReconciliationResult{}, ErrConflict
 			}
