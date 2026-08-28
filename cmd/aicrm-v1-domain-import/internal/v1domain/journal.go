@@ -187,7 +187,6 @@ AND verified_count=receipt_count AND archived_count=0 AND quarantined_count=0)`,
 	}
 	return nil
 }
-
 func NewJournal(scope Scope) (*Journal, error) {
 	if !scope.valid() {
 		return nil, ErrInvalidScope
