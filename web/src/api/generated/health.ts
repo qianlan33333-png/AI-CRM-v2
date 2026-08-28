@@ -2125,6 +2125,123 @@ export interface HXCHistoryBatchDetail {
   item: HXCHistoryBatch;
 }
 
+export interface HXCHistorySenderConfig {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  priority: number;
+  original_is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HXCHistorySenderConfigPageSource =
+  (typeof HXCHistorySenderConfigPageSource)[keyof typeof HXCHistorySenderConfigPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySenderConfigPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistorySenderConfigPage {
+  source: HXCHistorySenderConfigPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistorySenderConfig[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistorySenderConfigDetailSource =
+  (typeof HXCHistorySenderConfigDetailSource)[keyof typeof HXCHistorySenderConfigDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySenderConfigDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistorySenderConfigDetail {
+  source: HXCHistorySenderConfigDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistorySenderConfig;
+}
+
+export interface HXCHistorySendRecord {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  task_type: string;
+  original_status: string;
+  selected_count: number;
+  eligible_count: number;
+  sent_count: number;
+  skipped_count: number;
+  planned_count: number;
+  queued_count: number;
+  dispatching_count: number;
+  succeeded_count: number;
+  failed_count: number;
+  blocked_count: number;
+  cancelled_count: number;
+  image_count: number;
+  include_do_not_disturb: boolean;
+  target_source: string;
+  /** @nullable */
+  target_source_id: number | null;
+  created_at: string;
+  /** @nullable */
+  last_status_sync_at: string | null;
+  /** @nullable */
+  last_refreshed_at: string | null;
+}
+
+export type HXCHistorySendRecordPageSource =
+  (typeof HXCHistorySendRecordPageSource)[keyof typeof HXCHistorySendRecordPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySendRecordPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistorySendRecordPage {
+  source: HXCHistorySendRecordPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistorySendRecord[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistorySendRecordDetailSource =
+  (typeof HXCHistorySendRecordDetailSource)[keyof typeof HXCHistorySendRecordDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySendRecordDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistorySendRecordDetail {
+  source: HXCHistorySendRecordDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistorySendRecord;
+}
+
 export interface AutomationHistorySOP {
   /** @minimum 1 */
   id: number;
@@ -21815,6 +21932,30 @@ export type ListHXCHistoryBatchParams = {
   offset?: number;
 };
 
+export type ListHXCHistorySenderConfigParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListHXCHistorySendRecordParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListAutomationHistorySOPsParams = {
   /**
    * @minimum 1
@@ -29569,6 +29710,313 @@ export const getHXCHistoryBatch = async (
     status: res.status,
     headers: res.headers,
   } as getHXCHistoryBatchResponse;
+};
+
+/**
+ * @summary Read immutable HXC send history without current sender authority or execution
+ */
+export type listHXCHistorySenderConfigResponse200 = {
+  data: HXCHistorySenderConfigPage;
+  status: 200;
+};
+
+export type listHXCHistorySenderConfigResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistorySenderConfigResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistorySenderConfigResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistorySenderConfigResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistorySenderConfigResponseSuccess =
+  listHXCHistorySenderConfigResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistorySenderConfigResponseError = (
+  | listHXCHistorySenderConfigResponse400
+  | listHXCHistorySenderConfigResponse401
+  | listHXCHistorySenderConfigResponse403
+  | listHXCHistorySenderConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistorySenderConfigResponse =
+  | listHXCHistorySenderConfigResponseSuccess
+  | listHXCHistorySenderConfigResponseError;
+
+export const getListHXCHistorySenderConfigUrl = (
+  params?: ListHXCHistorySenderConfigParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/sender-configs?${stringifiedParams}`
+    : `/api/admin/hxc-history/sender-configs`;
+};
+
+export const listHXCHistorySenderConfig = async (
+  params?: ListHXCHistorySenderConfigParams,
+  options?: RequestInit,
+): Promise<listHXCHistorySenderConfigResponse> => {
+  const res = await fetch(getListHXCHistorySenderConfigUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistorySenderConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistorySenderConfigResponse;
+};
+
+/**
+ * @summary Read immutable HXC send history without current sender authority or execution
+ */
+export type getHXCHistorySenderConfigResponse200 = {
+  data: HXCHistorySenderConfigDetail;
+  status: 200;
+};
+
+export type getHXCHistorySenderConfigResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistorySenderConfigResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistorySenderConfigResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistorySenderConfigResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistorySenderConfigResponseSuccess =
+  getHXCHistorySenderConfigResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistorySenderConfigResponseError = (
+  | getHXCHistorySenderConfigResponse400
+  | getHXCHistorySenderConfigResponse401
+  | getHXCHistorySenderConfigResponse403
+  | getHXCHistorySenderConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistorySenderConfigResponse =
+  | getHXCHistorySenderConfigResponseSuccess
+  | getHXCHistorySenderConfigResponseError;
+
+export const getGetHXCHistorySenderConfigUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/sender-configs/${historyId}`;
+};
+
+export const getHXCHistorySenderConfig = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistorySenderConfigResponse> => {
+  const res = await fetch(getGetHXCHistorySenderConfigUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistorySenderConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistorySenderConfigResponse;
+};
+
+/**
+ * @summary Read immutable HXC send history without current sender authority or execution
+ */
+export type listHXCHistorySendRecordResponse200 = {
+  data: HXCHistorySendRecordPage;
+  status: 200;
+};
+
+export type listHXCHistorySendRecordResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistorySendRecordResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistorySendRecordResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistorySendRecordResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistorySendRecordResponseSuccess =
+  listHXCHistorySendRecordResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistorySendRecordResponseError = (
+  | listHXCHistorySendRecordResponse400
+  | listHXCHistorySendRecordResponse401
+  | listHXCHistorySendRecordResponse403
+  | listHXCHistorySendRecordResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistorySendRecordResponse =
+  | listHXCHistorySendRecordResponseSuccess
+  | listHXCHistorySendRecordResponseError;
+
+export const getListHXCHistorySendRecordUrl = (
+  params?: ListHXCHistorySendRecordParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/send-records?${stringifiedParams}`
+    : `/api/admin/hxc-history/send-records`;
+};
+
+export const listHXCHistorySendRecord = async (
+  params?: ListHXCHistorySendRecordParams,
+  options?: RequestInit,
+): Promise<listHXCHistorySendRecordResponse> => {
+  const res = await fetch(getListHXCHistorySendRecordUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistorySendRecordResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistorySendRecordResponse;
+};
+
+/**
+ * @summary Read immutable HXC send history without current sender authority or execution
+ */
+export type getHXCHistorySendRecordResponse200 = {
+  data: HXCHistorySendRecordDetail;
+  status: 200;
+};
+
+export type getHXCHistorySendRecordResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistorySendRecordResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistorySendRecordResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistorySendRecordResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistorySendRecordResponseSuccess =
+  getHXCHistorySendRecordResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistorySendRecordResponseError = (
+  | getHXCHistorySendRecordResponse400
+  | getHXCHistorySendRecordResponse401
+  | getHXCHistorySendRecordResponse403
+  | getHXCHistorySendRecordResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistorySendRecordResponse =
+  getHXCHistorySendRecordResponseSuccess | getHXCHistorySendRecordResponseError;
+
+export const getGetHXCHistorySendRecordUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/send-records/${historyId}`;
+};
+
+export const getHXCHistorySendRecord = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistorySendRecordResponse> => {
+  const res = await fetch(getGetHXCHistorySendRecordUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistorySendRecordResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistorySendRecordResponse;
 };
 
 /**

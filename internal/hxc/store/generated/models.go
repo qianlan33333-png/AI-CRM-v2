@@ -101,3 +101,45 @@ type HxcV1ImportBatchHistory struct {
 	FailedRows          int64              `json:"failed_rows"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 }
+
+type HxcV1SendRecordHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	TaskType            string             `json:"task_type"`
+	OriginalStatus      string             `json:"original_status"`
+	SelectedCount       int64              `json:"selected_count"`
+	EligibleCount       int64              `json:"eligible_count"`
+	SentCount           int64              `json:"sent_count"`
+	SkippedCount        int64              `json:"skipped_count"`
+	PlannedCount        int64              `json:"planned_count"`
+	QueuedCount         int64              `json:"queued_count"`
+	DispatchingCount    int64              `json:"dispatching_count"`
+	SucceededCount      int64              `json:"succeeded_count"`
+	FailedCount         int64              `json:"failed_count"`
+	BlockedCount        int64              `json:"blocked_count"`
+	CancelledCount      int64              `json:"cancelled_count"`
+	ImageCount          int64              `json:"image_count"`
+	IncludeDoNotDisturb bool               `json:"include_do_not_disturb"`
+	TargetSource        string             `json:"target_source"`
+	TargetSourceID      pgtype.Int8        `json:"target_source_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	LastStatusSyncAt    pgtype.Timestamptz `json:"last_status_sync_at"`
+	LastRefreshedAt     pgtype.Timestamptz `json:"last_refreshed_at"`
+}
+
+type HxcV1SenderConfigHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	Priority            int64              `json:"priority"`
+	OriginalIsActive    bool               `json:"original_is_active"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}

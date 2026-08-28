@@ -2129,6 +2129,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.mediaInvalidSourceHistory = mediastore.NewInvalidSourceHistoryReader(pool)
 	legacyHandler.radarInvalidSourceHistory = radarstore.NewInvalidSourceHistoryReader(pool)
 	legacyHandler.hxcHistory = hxcstore.NewHXCHistoryReader(pool)
+	legacyHandler.hxcRuntimeHistory = hxcstore.NewHXCHistoryReader(pool)
 	legacyHandler.staticMediaHistory = mediastore.NewStaticMediaHistoryReader(pool)
 	legacyHandler.customerStateHistory = contactstore.NewCustomerStateHistoryReader(pool)
 	legacyHandler.marketingStateHistory = segmentstore.NewMarketingStateHistoryReader(pool)
@@ -3750,6 +3751,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/hxc-history/leads/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryLead)},
 			{http.MethodGet, "/api/admin/hxc-history/batches", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryBatch)},
 			{http.MethodGet, "/api/admin/hxc-history/batches/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryBatch)},
+			{http.MethodGet, "/api/admin/hxc-history/sender-configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistorySenderConfig)},
+			{http.MethodGet, "/api/admin/hxc-history/sender-configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistorySenderConfig)},
+			{http.MethodGet, "/api/admin/hxc-history/send-records", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistorySendRecord)},
+			{http.MethodGet, "/api/admin/hxc-history/send-records/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistorySendRecord)},
 			{http.MethodGet, "/api/admin/automation-history/sops", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistorySOPs)},
 			{http.MethodGet, "/api/admin/radar-click-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListRadarClickHistory)},
 			{http.MethodGet, "/api/admin/radar-click-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetRadarClickHistory)},

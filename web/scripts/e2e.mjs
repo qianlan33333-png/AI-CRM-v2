@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,33 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      if (hxcHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__hxcHistoryHttpTest = { calls: [], fail: hxcHistoryHttp.fail || false };
+        const at = '2026-08-29T01:02:03.123456Z';
+        const senders = Array.from({ length: 21 }, (_, index) => ({ id: 71 + index, source_id: index ? -index : 0, priority: -index, original_is_active: false, created_at: at, updated_at: at }));
+        const records = Array.from({ length: 21 }, (_, index) => ({ id: 101 + index, source_id: index ? -index : 0, task_type: index ? 'legacy' : '', original_status: '', selected_count: -index, eligible_count: 0, sent_count: index, skipped_count: -2, planned_count: 3, queued_count: 4, dispatching_count: 5, succeeded_count: 6, failed_count: 7, blocked_count: 8, cancelled_count: 9, image_count: 10, include_do_not_disturb: false, target_source: '', target_source_id: index ? -9 : null, created_at: at, last_status_sync_at: null, last_refreshed_at: at }));
+        const json = (data, status = 200) => ({ status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials, body: init.body });
+          if (test.fail) return json({ code: 'unavailable' }, 503);
+          const senderList = url.pathname === '/api/admin/hxc-history/sender-configs';
+          const recordList = url.pathname === '/api/admin/hxc-history/send-records';
+          const senderDetail = /^\/api\/admin\/hxc-history\/sender-configs\/\d+$/.test(url.pathname);
+          const recordDetail = /^\/api\/admin\/hxc-history\/send-records\/\d+$/.test(url.pathname);
+          if (!senderList && !recordList && !senderDetail && !recordDetail) return json({ code: 'unexpected_hxc_history_request' }, 500);
+          const rows = senderList || senderDetail ? senders : records;
+          if (senderDetail || recordDetail) {
+            const item = rows.find((row) => row.id === Number(url.pathname.split('/').at(-1)));
+            return item ? json({ source: 'v1_history', read_only: true, real_external_call_executed: false, item }) : json({ code: 'not_found' }, 404);
+          }
+          const limit = Number(url.searchParams.get('limit')); const offset = Number(url.searchParams.get('offset'));
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+        };
+        return;
+      }
       if (contactHistoryHttp) {
         window.Headers = Headers;
         const test = window.__contactHistoryHttpTest = { calls: [], fail: contactHistoryHttp.fail || false };
@@ -1128,6 +1154,38 @@ console.log('admin/funnel.html（多维表格）');
   await sleep(30);
   ok('群发内容出现素材 chip', d.querySelector('#bcMats').textContent.length > 0);
   dom.window.close();
+}
+
+console.log('admin/funnel.html?hxc_history=1（HXC 发送历史只读）');
+{
+  const sender = await loadPage('admin/funnel.html', { q: 'hxc_history=1&history_kind=sender_config', hxcHistoryHttp: {} });
+  const senderDocument = sender.window.document;
+  const senderCalls = sender.window.__hxcHistoryHttpTest.calls;
+  ok('发送配置历史展示 7 类入口、signed 源 ID 与只读边界', senderDocument.querySelectorAll('[data-hxc-kind]').length === 7 && senderDocument.body.textContent.includes('源行 #0') && senderDocument.body.textContent.includes('不授予当前发送权限'));
+  ok('发送配置历史只发生成 GET', senderCalls.length === 1 && senderCalls[0].path === '/api/admin/hxc-history/sender-configs' && senderCalls[0].query === '?limit=20&offset=0' && senderCalls[0].method === 'GET' && senderCalls[0].credentials === 'include' && senderCalls[0].body === undefined);
+  sender.window.close();
+
+  const senderDetail = await loadPage('admin/funnel.html', { q: 'hxc_history=1&history_kind=sender_config&history_id=71', hxcHistoryHttp: {} });
+  ok('发送配置历史详情使用生成 GET', senderDetail.window.__hxcHistoryHttpTest.calls[0].path === '/api/admin/hxc-history/sender-configs/71');
+  senderDetail.window.close();
+
+  const record = await loadPage('admin/funnel.html', { q: 'hxc_history=1&history_kind=send_record', hxcHistoryHttp: {} });
+  const recordDocument = record.window.document;
+  ok('发送记录历史保留空文本、NULL 目标和非执行提示', recordDocument.body.textContent.includes('任务类型：') && recordDocument.body.textContent.includes('目标来源：（空字符串） #NULL') && recordDocument.body.textContent.includes('不表示本次任务或外部发送成功') && !Array.from(recordDocument.querySelectorAll('button')).some((button) => /发送|执行|创建/.test(button.textContent)));
+  click(record, recordDocument.querySelector('[data-hxc-next]'));
+  await sleep(30);
+  ok('发送记录历史可安全翻页', record.window.__hxcHistoryHttpTest.calls.at(-1).path === '/api/admin/hxc-history/send-records' && record.window.__hxcHistoryHttpTest.calls.at(-1).query === '?limit=20&offset=20');
+  record.window.close();
+
+  const recordDetail = await loadPage('admin/funnel.html', { q: 'hxc_history=1&history_kind=send_record&history_id=101', hxcHistoryHttp: {} });
+  ok('发送记录历史详情使用生成 GET', recordDetail.window.__hxcHistoryHttpTest.calls[0].path === '/api/admin/hxc-history/send-records/101');
+  recordDetail.window.close();
+
+  const failed = await loadPage('admin/funnel.html', { q: 'hxc_history=1&history_kind=send_record', hxcHistoryHttp: { fail: true } });
+  await sleep(30);
+  const failedResults = failed.window.document.querySelector('[data-hxc-results]');
+  ok('发送记录历史失败关闭且不保留旧数据', !!failedResults?.querySelector('[role="alert"]') && !failedResults.textContent.includes('unavailable'));
+  failed.window.close();
 }
 
 /* ================= 后台 · 模板页回归 ================= */

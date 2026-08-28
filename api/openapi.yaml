@@ -1587,6 +1587,92 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/sender-configs:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistorySenderConfig
+      summary: Read immutable HXC send history without current sender authority or execution
+      x-p4-decision-evidence: P4-V1-HXC-RUNTIME-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistorySenderConfigPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/sender-configs/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistorySenderConfig
+      summary: Read immutable HXC send history without current sender authority or execution
+      x-p4-decision-evidence: P4-V1-HXC-RUNTIME-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistorySenderConfigDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/send-records:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistorySendRecord
+      summary: Read immutable HXC send history without current sender authority or execution
+      x-p4-decision-evidence: P4-V1-HXC-RUNTIME-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistorySendRecordPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/send-records/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistorySendRecord
+      summary: Read immutable HXC send history without current sender authority or execution
+      x-p4-decision-evidence: P4-V1-HXC-RUNTIME-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistorySendRecordDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/automation-history/sops:
     get:
       tags: [p4-automation-history]
@@ -17310,6 +17396,86 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/HXCHistoryBatch" }
+    HXCHistorySenderConfig:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, priority, original_is_active, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        priority: { type: integer, format: int64 }
+        original_is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    HXCHistorySenderConfigPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistorySenderConfig" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistorySenderConfigDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistorySenderConfig" }
+    HXCHistorySendRecord:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, task_type, original_status, selected_count, eligible_count, sent_count, skipped_count, planned_count, queued_count, dispatching_count, succeeded_count, failed_count, blocked_count, cancelled_count, image_count, include_do_not_disturb, target_source, target_source_id, created_at, last_status_sync_at, last_refreshed_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        task_type: { type: string }
+        original_status: { type: string }
+        selected_count: { type: integer, format: int64 }
+        eligible_count: { type: integer, format: int64 }
+        sent_count: { type: integer, format: int64 }
+        skipped_count: { type: integer, format: int64 }
+        planned_count: { type: integer, format: int64 }
+        queued_count: { type: integer, format: int64 }
+        dispatching_count: { type: integer, format: int64 }
+        succeeded_count: { type: integer, format: int64 }
+        failed_count: { type: integer, format: int64 }
+        blocked_count: { type: integer, format: int64 }
+        cancelled_count: { type: integer, format: int64 }
+        image_count: { type: integer, format: int64 }
+        include_do_not_disturb: { type: boolean }
+        target_source: { type: string }
+        target_source_id: { type: integer, format: int64, nullable: true }
+        created_at: { type: string, format: date-time }
+        last_status_sync_at: { type: string, format: date-time, nullable: true }
+        last_refreshed_at: { type: string, format: date-time, nullable: true }
+    HXCHistorySendRecordPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistorySendRecord" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistorySendRecordDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistorySendRecord" }
     AutomationHistorySOP:
       type: object
       additionalProperties: false

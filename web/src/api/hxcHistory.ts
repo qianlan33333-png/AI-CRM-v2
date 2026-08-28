@@ -1,12 +1,12 @@
 import {
-  getHXCHistoryActivation, getHXCHistoryBatch, getHXCHistoryLead, getHXCHistoryMeta, getHXCHistorySnapshot,
-  listHXCHistoryActivation, listHXCHistoryBatch, listHXCHistoryLead, listHXCHistoryMeta, listHXCHistorySnapshot,
-  type HXCHistoryActivation, type HXCHistoryBatch, type HXCHistoryLead, type HXCHistoryMeta, type HXCHistorySnapshot,
+  getHXCHistoryActivation, getHXCHistoryBatch, getHXCHistoryLead, getHXCHistoryMeta, getHXCHistorySendRecord, getHXCHistorySenderConfig, getHXCHistorySnapshot,
+  listHXCHistoryActivation, listHXCHistoryBatch, listHXCHistoryLead, listHXCHistoryMeta, listHXCHistorySendRecord, listHXCHistorySenderConfig, listHXCHistorySnapshot,
+  type HXCHistoryActivation, type HXCHistoryBatch, type HXCHistoryLead, type HXCHistoryMeta, type HXCHistorySendRecord, type HXCHistorySenderConfig, type HXCHistorySnapshot,
 } from './generated/health';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
-export type HxcHistoryKind = 'meta' | 'snapshot' | 'activation' | 'lead' | 'batch';
-export type HxcHistoryItem = HXCHistoryMeta | HXCHistorySnapshot | HXCHistoryActivation | HXCHistoryLead | HXCHistoryBatch;
+export type HxcHistoryKind = 'meta' | 'snapshot' | 'activation' | 'lead' | 'batch' | 'sender_config' | 'send_record';
+export type HxcHistoryItem = HXCHistoryMeta | HXCHistorySnapshot | HXCHistoryActivation | HXCHistoryLead | HXCHistoryBatch | HXCHistorySenderConfig | HXCHistorySendRecord;
 export type HxcHistoryPage = { items: HxcHistoryItem[]; total: number; limit: number; offset: number };
 type Row = Record<string, unknown>;
 const invalid = (): never => { throw new Error('HXC 历史响应不完整，未显示历史数据'); };
@@ -36,10 +36,12 @@ const kinds: Record<HxcHistoryKind, string[]> = {
   activation: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'source_table', 'original_state', 'is_active', 'legacy_import_batch_ref', 'created_at', 'updated_at'],
   lead: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'original_type', 'is_active', 'legacy_import_batch_ref', 'created_at', 'updated_at'],
   batch: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'import_type', 'total_rows', 'success_rows', 'failed_rows', 'created_at'],
+  sender_config: ['id', 'source_id', 'priority', 'original_is_active', 'created_at', 'updated_at'],
+  send_record: ['id', 'source_id', 'task_type', 'original_status', 'selected_count', 'eligible_count', 'sent_count', 'skipped_count', 'planned_count', 'queued_count', 'dispatching_count', 'succeeded_count', 'failed_count', 'blocked_count', 'cancelled_count', 'image_count', 'include_do_not_disturb', 'target_source', 'target_source_id', 'created_at', 'last_status_sync_at', 'last_refreshed_at'],
 };
 function item(kind: HxcHistoryKind, value: unknown): HxcHistoryItem {
   const row = object(value, kinds[kind]);
-  if (!base(row)) invalid();
+  if ((kind === 'sender_config' || kind === 'send_record') ? !integer(row.id, 1) || !integer(row.source_id) : !base(row)) invalid();
   if (kind === 'meta') {
     if (!instant(row.started_at) || !nullable(row.finished_at, instant) || !text(row.status) || !integer(row.row_count) || !integer(row.member_hit) || !integer(row.user_hit) || !integer(row.only_member) || !text(row.trigger_source)) invalid();
   } else if (kind === 'snapshot') {
@@ -52,7 +54,14 @@ function item(kind: HxcHistoryKind, value: unknown): HxcHistoryItem {
     if (!['public/user_ops_activation_status_source', 'public/user_ops_huangxiaocan_activation_source'].includes(String(row.source_table)) || !text(row.original_state) || typeof row.is_active !== 'boolean' || !nullable(row.legacy_import_batch_ref, text) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
   } else if (kind === 'lead') {
     if (!text(row.original_type) || typeof row.is_active !== 'boolean' || !nullable(row.legacy_import_batch_ref, text) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
-  } else if (!text(row.import_type) || !integer(row.total_rows) || !integer(row.success_rows) || !integer(row.failed_rows) || !instant(row.created_at)) invalid();
+  } else if (kind === 'batch') {
+    if (!text(row.import_type) || !integer(row.total_rows) || !integer(row.success_rows) || !integer(row.failed_rows) || !instant(row.created_at)) invalid();
+  } else if (kind === 'sender_config') {
+    if (!integer(row.priority) || typeof row.original_is_active !== 'boolean' || !instant(row.created_at) || !instant(row.updated_at)) invalid();
+  } else {
+    const counts = ['selected_count', 'eligible_count', 'sent_count', 'skipped_count', 'planned_count', 'queued_count', 'dispatching_count', 'succeeded_count', 'failed_count', 'blocked_count', 'cancelled_count', 'image_count'];
+    if (!text(row.task_type) || !text(row.original_status) || !counts.every((key) => integer(row[key])) || typeof row.include_do_not_disturb !== 'boolean' || !text(row.target_source) || !nullable(row.target_source_id, integer) || !instant(row.created_at) || !nullable(row.last_status_sync_at, instant) || !nullable(row.last_refreshed_at, instant)) invalid();
+  }
   return row as unknown as HxcHistoryItem;
 }
 function pagination(limit: number, offset: number): { limit: number; offset: number } {
@@ -77,6 +86,8 @@ export async function readHxcHistory(kind: HxcHistoryKind, offset = 0, limit = 2
     case 'activation': { const result = page(kind, unwrapGenerated(await listHXCHistoryActivation({ ...query, ...(sourceTable === undefined ? {} : { source_table: sourceTable }) }, apiRequestOptions())), limit, offset); if (sourceTable !== undefined && result.items.some((item) => (item as HXCHistoryActivation).source_table !== sourceTable)) invalid(); return result; }
     case 'lead': return page(kind, unwrapGenerated(await listHXCHistoryLead(query, apiRequestOptions())), limit, offset);
     case 'batch': return page(kind, unwrapGenerated(await listHXCHistoryBatch(query, apiRequestOptions())), limit, offset);
+    case 'sender_config': return page(kind, unwrapGenerated(await listHXCHistorySenderConfig(query, apiRequestOptions())), limit, offset);
+    case 'send_record': return page(kind, unwrapGenerated(await listHXCHistorySendRecord(query, apiRequestOptions())), limit, offset);
   }
 }
 export async function getHxcHistory(kind: HxcHistoryKind, id: number): Promise<HxcHistoryItem> {
@@ -87,5 +98,7 @@ export async function getHxcHistory(kind: HxcHistoryKind, id: number): Promise<H
     case 'activation': return detail(kind, unwrapGenerated(await getHXCHistoryActivation(id, apiRequestOptions())), id);
     case 'lead': return detail(kind, unwrapGenerated(await getHXCHistoryLead(id, apiRequestOptions())), id);
     case 'batch': return detail(kind, unwrapGenerated(await getHXCHistoryBatch(id, apiRequestOptions())), id);
+    case 'sender_config': return detail(kind, unwrapGenerated(await getHXCHistorySenderConfig(id, apiRequestOptions())), id);
+    case 'send_record': return detail(kind, unwrapGenerated(await getHXCHistorySendRecord(id, apiRequestOptions())), id);
   }
 }

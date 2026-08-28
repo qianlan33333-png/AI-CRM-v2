@@ -250,6 +250,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListAutomationHistorySOPs", "GetAutomationHistorySOP", "ListAutomationHistoryConfigs", "GetAutomationHistoryConfig", "ListAutomationHistoryPrompts", "GetAutomationHistoryPrompt", "ListAutomationHistoryAgents", "GetAutomationHistoryAgent",
 		"ListSurveyUnresolvedHistorySubmissions", "GetSurveyUnresolvedHistorySubmission", "ListSurveyUnresolvedHistoryAnswers",
 		"ListHXCHistoryMeta", "GetHXCHistoryMeta", "ListHXCHistorySnapshot", "GetHXCHistorySnapshot", "ListHXCHistoryActivation", "GetHXCHistoryActivation", "ListHXCHistoryLead", "GetHXCHistoryLead", "ListHXCHistoryBatch", "GetHXCHistoryBatch",
+		"ListHXCHistorySenderConfig", "GetHXCHistorySenderConfig", "ListHXCHistorySendRecord", "GetHXCHistorySendRecord",
 		"ListCustomerStateHistorySnapshot", "GetCustomerStateHistorySnapshot", "ListCustomerStateHistoryChange", "GetCustomerStateHistoryChange", "ListCustomerStateHistoryClassTermTagMapping", "GetCustomerStateHistoryClassTermTagMapping",
 		"ListStaticHistoryGroupInvite", "GetStaticHistoryGroupInvite", "ListStaticHistoryProductPageSlice", "GetStaticHistoryProductPageSlice", "ListStaticHistoryCycleStrategy", "GetStaticHistoryCycleStrategy", "ListStaticHistoryCycleVersion", "GetStaticHistoryCycleVersion", "ListStaticHistoryCycleDocument", "GetStaticHistoryCycleDocument",
 		"ListRadarClickHistory", "GetRadarClickHistory", "ListMarketingConfigHistoryConfigs", "GetMarketingConfigHistoryConfig", "ListMarketingConfigHistoryRules", "GetMarketingConfigHistoryRule",
