@@ -121,7 +121,7 @@ function boot(): void {
       break;
     }
     case 'radar':
-      void mountRadar(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
+      void mountRadar(stage, api, { view: 'list' }).then(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="radar.html?click_history=1">V1 Radar 历史点击（只读）</a></p>'); }).catch((error) => showLoadError(stage, error));
       return;
     case 'radarDetail':
       void mountRadar(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
@@ -130,7 +130,7 @@ function boot(): void {
       void mountRadar(stage, api, { view: 'form', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'ai':
-      void mountAiAssistant(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
+      void mountAiAssistant(stage, api, { view: 'list' }).then(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="ai.html?marketing_config_history=1">V1 营销自动化历史（只读）</a></p>'); }).catch((error) => showLoadError(stage, error));
       return;
     case 'aiDetail':
       void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
