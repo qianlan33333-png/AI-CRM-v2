@@ -21,10 +21,20 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes) {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(memberGridHistoryReconciledTables) != 5 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+2 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
+	for _, table := range memberGridHistoryReconciledTables {
+		if !isMemberGridHistorySource(table) || seen[table] {
+			t.Fatalf("invalid Member Grid source set: %s", table)
+		}
+		seen[table] = true
+		_, mapped := targetBySourceTable[table]
+		if mapped != (table == "public/service_period_member_views" || table == "public/service_period_huangyoucan_usage_snapshot") {
+			t.Fatalf("only Member Grid views and usage may have a history target: %s", table)
+		}
+	}
 	all := append(append(append([]string(nil), reconciledTables...), staticReconciledTables...), financeReconciledTables...)
 	all = append(all, servicePeriodReconciledTables...)
 	all = append(all, couponReconciledTables...)

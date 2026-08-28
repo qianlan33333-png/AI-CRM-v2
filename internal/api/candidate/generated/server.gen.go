@@ -6622,6 +6622,186 @@ func (e MediaContentRefKind) Valid() bool {
 	}
 }
 
+// Defines values for MemberUsageHistoryDetailReadOnly.
+const (
+	MemberUsageHistoryDetailReadOnlyTrue MemberUsageHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MemberUsageHistoryDetailReadOnly enum.
+func (e MemberUsageHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case MemberUsageHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberUsageHistoryDetailRealExternalCallExecuted.
+const (
+	MemberUsageHistoryDetailRealExternalCallExecutedFalse MemberUsageHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MemberUsageHistoryDetailRealExternalCallExecuted enum.
+func (e MemberUsageHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MemberUsageHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberUsageHistoryDetailSource.
+const (
+	MemberUsageHistoryDetailSourceV1History MemberUsageHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MemberUsageHistoryDetailSource enum.
+func (e MemberUsageHistoryDetailSource) Valid() bool {
+	switch e {
+	case MemberUsageHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberUsageHistoryPageReadOnly.
+const (
+	MemberUsageHistoryPageReadOnlyTrue MemberUsageHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MemberUsageHistoryPageReadOnly enum.
+func (e MemberUsageHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case MemberUsageHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberUsageHistoryPageRealExternalCallExecuted.
+const (
+	MemberUsageHistoryPageRealExternalCallExecutedFalse MemberUsageHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MemberUsageHistoryPageRealExternalCallExecuted enum.
+func (e MemberUsageHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MemberUsageHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberUsageHistoryPageSource.
+const (
+	MemberUsageHistoryPageSourceV1History MemberUsageHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MemberUsageHistoryPageSource enum.
+func (e MemberUsageHistoryPageSource) Valid() bool {
+	switch e {
+	case MemberUsageHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberViewHistoryDetailReadOnly.
+const (
+	MemberViewHistoryDetailReadOnlyTrue MemberViewHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MemberViewHistoryDetailReadOnly enum.
+func (e MemberViewHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case MemberViewHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberViewHistoryDetailRealExternalCallExecuted.
+const (
+	MemberViewHistoryDetailRealExternalCallExecutedFalse MemberViewHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MemberViewHistoryDetailRealExternalCallExecuted enum.
+func (e MemberViewHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MemberViewHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberViewHistoryDetailSource.
+const (
+	MemberViewHistoryDetailSourceV1History MemberViewHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MemberViewHistoryDetailSource enum.
+func (e MemberViewHistoryDetailSource) Valid() bool {
+	switch e {
+	case MemberViewHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberViewHistoryPageReadOnly.
+const (
+	MemberViewHistoryPageReadOnlyTrue MemberViewHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MemberViewHistoryPageReadOnly enum.
+func (e MemberViewHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case MemberViewHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberViewHistoryPageRealExternalCallExecuted.
+const (
+	MemberViewHistoryPageRealExternalCallExecutedFalse MemberViewHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MemberViewHistoryPageRealExternalCallExecuted enum.
+func (e MemberViewHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MemberViewHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemberViewHistoryPageSource.
+const (
+	MemberViewHistoryPageSourceV1History MemberViewHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MemberViewHistoryPageSource enum.
+func (e MemberViewHistoryPageSource) Valid() bool {
+	switch e {
+	case MemberViewHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OutboundCampaignDispatchReconciliationDeliveryProven.
 const (
 	OutboundCampaignDispatchReconciliationDeliveryProvenFalse OutboundCampaignDispatchReconciliationDeliveryProven = false
@@ -13014,6 +13194,115 @@ type MediaContentRef struct {
 // MediaContentRefKind defines model for MediaContentRef.Kind.
 type MediaContentRefKind string
 
+// MemberUsageHistoryDetail defines model for MemberUsageHistoryDetail.
+type MemberUsageHistoryDetail struct {
+	Item                     MemberUsageHistoryItem                           `json:"item"`
+	ReadOnly                 MemberUsageHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MemberUsageHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MemberUsageHistoryDetailSource                   `json:"source"`
+}
+
+// MemberUsageHistoryDetailReadOnly defines model for MemberUsageHistoryDetail.ReadOnly.
+type MemberUsageHistoryDetailReadOnly bool
+
+// MemberUsageHistoryDetailRealExternalCallExecuted defines model for MemberUsageHistoryDetail.RealExternalCallExecuted.
+type MemberUsageHistoryDetailRealExternalCallExecuted bool
+
+// MemberUsageHistoryDetailSource defines model for MemberUsageHistoryDetail.Source.
+type MemberUsageHistoryDetailSource string
+
+// MemberUsageHistoryItem defines model for MemberUsageHistoryItem.
+type MemberUsageHistoryItem struct {
+	CustomerId          *int64     `json:"customer_id"`
+	FormallyLoggedIn    bool       `json:"formally_logged_in"`
+	HasTokenUsage       bool       `json:"has_token_usage"`
+	Id                  int64      `json:"id"`
+	LastOpenAt          *time.Time `json:"last_open_at"`
+	LearningPlanCurrent *int64     `json:"learning_plan_current"`
+	LearningPlanId      string     `json:"learning_plan_id"`
+	LearningPlanTotal   *int64     `json:"learning_plan_total"`
+	OpenCount7d         int64      `json:"open_count_7d"`
+	RecoveryEntryDigest []int      `json:"recovery_entry_digest"`
+	RefreshedAt         time.Time  `json:"refreshed_at"`
+	SourceKeyDigest     []int      `json:"source_key_digest"`
+	SourcePayloadDigest []int      `json:"source_payload_digest"`
+}
+
+// MemberUsageHistoryPage defines model for MemberUsageHistoryPage.
+type MemberUsageHistoryPage struct {
+	Items                    []MemberUsageHistoryItem                       `json:"items"`
+	Limit                    int32                                          `json:"limit"`
+	Offset                   int32                                          `json:"offset"`
+	ReadOnly                 MemberUsageHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MemberUsageHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MemberUsageHistoryPageSource                   `json:"source"`
+	Total                    int64                                          `json:"total"`
+}
+
+// MemberUsageHistoryPageReadOnly defines model for MemberUsageHistoryPage.ReadOnly.
+type MemberUsageHistoryPageReadOnly bool
+
+// MemberUsageHistoryPageRealExternalCallExecuted defines model for MemberUsageHistoryPage.RealExternalCallExecuted.
+type MemberUsageHistoryPageRealExternalCallExecuted bool
+
+// MemberUsageHistoryPageSource defines model for MemberUsageHistoryPage.Source.
+type MemberUsageHistoryPageSource string
+
+// MemberViewHistoryDetail defines model for MemberViewHistoryDetail.
+type MemberViewHistoryDetail struct {
+	Item                     MemberViewHistoryItem                           `json:"item"`
+	ReadOnly                 MemberViewHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MemberViewHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MemberViewHistoryDetailSource                   `json:"source"`
+}
+
+// MemberViewHistoryDetailReadOnly defines model for MemberViewHistoryDetail.ReadOnly.
+type MemberViewHistoryDetailReadOnly bool
+
+// MemberViewHistoryDetailRealExternalCallExecuted defines model for MemberViewHistoryDetail.RealExternalCallExecuted.
+type MemberViewHistoryDetailRealExternalCallExecuted bool
+
+// MemberViewHistoryDetailSource defines model for MemberViewHistoryDetail.Source.
+type MemberViewHistoryDetailSource string
+
+// MemberViewHistoryItem defines model for MemberViewHistoryItem.
+type MemberViewHistoryItem struct {
+	ConfigDigest           []int     `json:"config_digest"`
+	CreatedAt              time.Time `json:"created_at"`
+	Id                     int64     `json:"id"`
+	IsDefault              bool      `json:"is_default"`
+	Name                   string    `json:"name"`
+	Position               int64     `json:"position"`
+	ProductId              *int64    `json:"product_id"`
+	SchemaVersion          int32     `json:"schema_version"`
+	SourceKeyDigest        []int     `json:"source_key_digest"`
+	SourcePayloadDigest    []int     `json:"source_payload_digest"`
+	SourceServiceProductId int64     `json:"source_service_product_id"`
+	SourceViewId           int64     `json:"source_view_id"`
+	UpdatedAt              time.Time `json:"updated_at"`
+	Version                int64     `json:"version"`
+}
+
+// MemberViewHistoryPage defines model for MemberViewHistoryPage.
+type MemberViewHistoryPage struct {
+	Items                    []MemberViewHistoryItem                       `json:"items"`
+	Limit                    int32                                         `json:"limit"`
+	Offset                   int32                                         `json:"offset"`
+	ReadOnly                 MemberViewHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MemberViewHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MemberViewHistoryPageSource                   `json:"source"`
+	Total                    int64                                         `json:"total"`
+}
+
+// MemberViewHistoryPageReadOnly defines model for MemberViewHistoryPage.ReadOnly.
+type MemberViewHistoryPageReadOnly bool
+
+// MemberViewHistoryPageRealExternalCallExecuted defines model for MemberViewHistoryPage.RealExternalCallExecuted.
+type MemberViewHistoryPageRealExternalCallExecuted bool
+
+// MemberViewHistoryPageSource defines model for MemberViewHistoryPage.Source.
+type MemberViewHistoryPageSource string
+
 // OutboundCampaignDispatchReconcileRequest defines model for OutboundCampaignDispatchReconcileRequest.
 type OutboundCampaignDispatchReconcileRequest struct {
 	EvidenceDigest string    `json:"evidence_digest"`
@@ -15693,6 +15982,20 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ListMemberUsageHistoryParams defines parameters for ListMemberUsageHistory.
+type ListMemberUsageHistoryParams struct {
+	CustomerId *int64 `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	Limit      *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset     *int   `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMemberViewHistoryParams defines parameters for ListMemberViewHistory.
+type ListMemberViewHistoryParams struct {
+	ProductId *int64 `form:"product_id,omitempty" json:"product_id,omitempty"`
+	Limit     *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset    *int   `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // AcceptOutboundMediaContentPackageParams defines parameters for AcceptOutboundMediaContentPackage.
@@ -18591,6 +18894,18 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/usage)
+	ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/usage/{history_id})
+	GetMemberUsageHistory(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/views)
+	ListMemberViewHistory(w http.ResponseWriter, r *http.Request, params ListMemberViewHistoryParams)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/views/{history_id})
+	GetMemberViewHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Atomically accept one published content package into local outbound-media records
 	// (POST /api/admin/outbound-media/accept)
 	AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams)
@@ -19689,6 +20004,30 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Member Grid history without current access or usage changes
+// (GET /api/admin/member-grid-history/usage)
+func (_ Unimplemented) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Member Grid history without current access or usage changes
+// (GET /api/admin/member-grid-history/usage/{history_id})
+func (_ Unimplemented) GetMemberUsageHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Member Grid history without current access or usage changes
+// (GET /api/admin/member-grid-history/views)
+func (_ Unimplemented) ListMemberViewHistory(w http.ResponseWriter, r *http.Request, params ListMemberViewHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Member Grid history without current access or usage changes
+// (GET /api/admin/member-grid-history/views/{history_id})
+func (_ Unimplemented) GetMemberViewHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -25576,6 +25915,166 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMemberUsageHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMemberUsageHistoryParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMemberUsageHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMemberUsageHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetMemberUsageHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMemberUsageHistory(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMemberViewHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListMemberViewHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMemberViewHistoryParams
+
+	// ------------- Optional query parameter "product_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "product_id", r.URL.Query(), &params.ProductId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMemberViewHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMemberViewHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetMemberViewHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMemberViewHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -37029,6 +37528,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/member-grid-history/usage", wrapper.ListMemberUsageHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/member-grid-history/usage/{history_id}", wrapper.GetMemberUsageHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/member-grid-history/views", wrapper.ListMemberViewHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/member-grid-history/views/{history_id}", wrapper.GetMemberViewHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/outbound-media/accept", wrapper.AcceptOutboundMediaContentPackage)
 	})
 	r.Group(func(r chi.Router) {
@@ -43073,6 +43584,218 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberUsageHistoryRequestObject struct {
+	Params ListMemberUsageHistoryParams
+}
+
+type ListMemberUsageHistoryResponseObject interface {
+	VisitListMemberUsageHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListMemberUsageHistory200JSONResponse MemberUsageHistoryPage
+
+func (response ListMemberUsageHistory200JSONResponse) VisitListMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberUsageHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMemberUsageHistory400JSONResponse) VisitListMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberUsageHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMemberUsageHistory401JSONResponse) VisitListMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberUsageHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMemberUsageHistory403JSONResponse) VisitListMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberUsageHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMemberUsageHistory503JSONResponse) VisitListMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberUsageHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMemberUsageHistoryResponseObject interface {
+	VisitGetMemberUsageHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetMemberUsageHistory200JSONResponse MemberUsageHistoryDetail
+
+func (response GetMemberUsageHistory200JSONResponse) VisitGetMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberUsageHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMemberUsageHistory400JSONResponse) VisitGetMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberUsageHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMemberUsageHistory401JSONResponse) VisitGetMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberUsageHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMemberUsageHistory403JSONResponse) VisitGetMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberUsageHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMemberUsageHistory503JSONResponse) VisitGetMemberUsageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberViewHistoryRequestObject struct {
+	Params ListMemberViewHistoryParams
+}
+
+type ListMemberViewHistoryResponseObject interface {
+	VisitListMemberViewHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListMemberViewHistory200JSONResponse MemberViewHistoryPage
+
+func (response ListMemberViewHistory200JSONResponse) VisitListMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberViewHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMemberViewHistory400JSONResponse) VisitListMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberViewHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMemberViewHistory401JSONResponse) VisitListMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberViewHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMemberViewHistory403JSONResponse) VisitListMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMemberViewHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMemberViewHistory503JSONResponse) VisitListMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberViewHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMemberViewHistoryResponseObject interface {
+	VisitGetMemberViewHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetMemberViewHistory200JSONResponse MemberViewHistoryDetail
+
+func (response GetMemberViewHistory200JSONResponse) VisitGetMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberViewHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMemberViewHistory400JSONResponse) VisitGetMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberViewHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMemberViewHistory401JSONResponse) VisitGetMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberViewHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMemberViewHistory403JSONResponse) VisitGetMemberViewHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMemberViewHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMemberViewHistory503JSONResponse) VisitGetMemberViewHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -54921,6 +55644,18 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/usage)
+	ListMemberUsageHistory(ctx context.Context, request ListMemberUsageHistoryRequestObject) (ListMemberUsageHistoryResponseObject, error)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/usage/{history_id})
+	GetMemberUsageHistory(ctx context.Context, request GetMemberUsageHistoryRequestObject) (GetMemberUsageHistoryResponseObject, error)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/views)
+	ListMemberViewHistory(ctx context.Context, request ListMemberViewHistoryRequestObject) (ListMemberViewHistoryResponseObject, error)
+	// Read immutable V1 Member Grid history without current access or usage changes
+	// (GET /api/admin/member-grid-history/views/{history_id})
+	GetMemberViewHistory(ctx context.Context, request GetMemberViewHistoryRequestObject) (GetMemberViewHistoryResponseObject, error)
 	// Atomically accept one published content package into local outbound-media records
 	// (POST /api/admin/outbound-media/accept)
 	AcceptOutboundMediaContentPackage(ctx context.Context, request AcceptOutboundMediaContentPackageRequestObject) (AcceptOutboundMediaContentPackageResponseObject, error)
@@ -58156,6 +58891,110 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMemberUsageHistory operation middleware
+func (sh *strictHandler) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams) {
+	var request ListMemberUsageHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMemberUsageHistory(ctx, request.(ListMemberUsageHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMemberUsageHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMemberUsageHistoryResponseObject); ok {
+		if err := validResponse.VisitListMemberUsageHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMemberUsageHistory operation middleware
+func (sh *strictHandler) GetMemberUsageHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMemberUsageHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMemberUsageHistory(ctx, request.(GetMemberUsageHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMemberUsageHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMemberUsageHistoryResponseObject); ok {
+		if err := validResponse.VisitGetMemberUsageHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMemberViewHistory operation middleware
+func (sh *strictHandler) ListMemberViewHistory(w http.ResponseWriter, r *http.Request, params ListMemberViewHistoryParams) {
+	var request ListMemberViewHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMemberViewHistory(ctx, request.(ListMemberViewHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMemberViewHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMemberViewHistoryResponseObject); ok {
+		if err := validResponse.VisitListMemberViewHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMemberViewHistory operation middleware
+func (sh *strictHandler) GetMemberViewHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMemberViewHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMemberViewHistory(ctx, request.(GetMemberViewHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMemberViewHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMemberViewHistoryResponseObject); ok {
+		if err := validResponse.VisitGetMemberViewHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -184,6 +184,7 @@ type Handler struct {
 	products                legacyProductApplication
 	servicePeriod           http.Handler
 	servicePeriodHistory    productport.ServicePeriodHistoryReader
+	memberGridHistory       productport.MemberGridHistoryReader
 	memberGrid              http.Handler
 	memberGridManagement    http.Handler
 	memberGridExternalShare http.Handler

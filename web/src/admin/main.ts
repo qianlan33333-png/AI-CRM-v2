@@ -20,6 +20,7 @@ import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from '
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
+import { mountMemberGridHistory } from './sections/memberGridHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -32,6 +33,17 @@ function boot(): void {
 
   const rawId = Number(new URLSearchParams(location.search).get('id') || '');
   const id = rawId || undefined;
+
+  const historyParams = new URLSearchParams(location.search);
+  if (page === 'spProductData' && historyParams.get('member_grid_history') === '1') {
+    void mountMemberGridHistory(stage, {
+      kind: historyParams.get('history_kind') ?? undefined,
+      historyID: historyParams.get('history_id') ?? undefined,
+      productID: historyParams.get('product_id') ?? undefined,
+      customerID: historyParams.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
 
   if (['coupons', 'couponData'].includes(page) && new URLSearchParams(location.search).get('history') === '1') {
     const historyID = page === 'couponData' ? new URLSearchParams(location.search).get('id') || '' : undefined;

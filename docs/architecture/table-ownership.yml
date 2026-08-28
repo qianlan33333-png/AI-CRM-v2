@@ -265,7 +265,7 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings, product_service_period_history, product_service_period_entitlement_history, product_service_period_event_history]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings, product_service_period_history, product_service_period_entitlement_history, product_service_period_event_history, product_v1_member_view_history, product_v1_member_usage_history]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
@@ -279,6 +279,8 @@ owners:
       product_service_period_history: read_only_legacy_definition_extension_of_verified_existing_product
       product_service_period_entitlement_history: source_snapshot_facts_not_current_members_or_grants
       product_service_period_event_history: historical_events_not_replayed_to_runtime_or_provider
+      product_v1_member_view_history: immutable_source_view_metadata_not_executable_saved_views_or_grants
+      product_v1_member_usage_history: immutable_usage_snapshot_not_current_login_entitlement_or_refresh
       entitlement_operation_receipts: actor_scoped_transactional_entitlement_mutation_idempotency_receipts
       service_period_member_views: local_saved_member_grid_views_without_arbitrary_SQL_or_member_mutation
       service_period_member_grid_collaborators: local_staff_metadata_without_invitation_or_permission_escalation
