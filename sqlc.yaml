@@ -97,6 +97,7 @@ sql:
       - internal/contact/store/queries/customer_state_history.sql
       - internal/contact/store/queries/wecom_contact_history.sql
       - internal/contact/store/queries/invalid_source_history.sql
+      - internal/contact/store/queries/deferred_identity_history.sql
       - internal/contact/store/queries/dm01_acceptance.sql
       - internal/contact/store/queries/order_read_port.sql
       - internal/contact/store/queries/outbound_targets.sql

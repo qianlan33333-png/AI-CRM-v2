@@ -146,6 +146,46 @@ type ContactV1CustomerStatusSnapshot struct {
 	Unionid               string             `json:"unionid"`
 }
 
+type ContactV1DeferredIdentityConflictHistory struct {
+	ID                      int64              `json:"id"`
+	SourceKeyDigest         []byte             `json:"source_key_digest"`
+	SourcePayloadDigest     []byte             `json:"source_payload_digest"`
+	SourceFieldDigest       []byte             `json:"source_field_digest"`
+	SourceID                int64              `json:"source_id"`
+	ConflictType            string             `json:"conflict_type"`
+	SourceType              string             `json:"source_type"`
+	Status                  string             `json:"status"`
+	ResolutionStatus        string             `json:"resolution_status"`
+	UnionIDDigest           []byte             `json:"union_id_digest"`
+	CandidateUnionIDDigest  []byte             `json:"candidate_union_id_digest"`
+	ExternalUserIDDigest    []byte             `json:"external_user_id_digest"`
+	OpenIDDigest            []byte             `json:"open_id_digest"`
+	MobileDigest            []byte             `json:"mobile_digest"`
+	LegacySourceKeyDigest   []byte             `json:"legacy_source_key_digest"`
+	PayloadJsonDigest       []byte             `json:"payload_json_digest"`
+	SourcePayloadJsonDigest []byte             `json:"source_payload_json_digest"`
+	ResolutionNoteDigest    []byte             `json:"resolution_note_digest"`
+	PrivateDigest           []byte             `json:"private_digest"`
+	RedactedRoots           []string           `json:"redacted_roots"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	ResolvedAt              pgtype.Timestamptz `json:"resolved_at"`
+}
+
+type ContactV1DeferredPersonHistory struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+	SourceFieldDigest      []byte             `json:"source_field_digest"`
+	SourceID               int64              `json:"source_id"`
+	MobileDigest           []byte             `json:"mobile_digest"`
+	ThirdPartyUserIDDigest []byte             `json:"third_party_user_id_digest"`
+	PrivateDigest          []byte             `json:"private_digest"`
+	RedactedRoots          []string           `json:"redacted_roots"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ContactV1InvalidChannelHistory struct {
 	ID                  int64              `json:"id"`
 	SourceKeyDigest     []byte             `json:"source_key_digest"`
@@ -161,6 +201,35 @@ type ContactV1InvalidChannelHistory struct {
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 	QuarantineReason    string             `json:"quarantine_reason"`
+}
+
+type ContactV1MissingRootIdentityHistory struct {
+	ID                       int64              `json:"id"`
+	SourceKeyDigest          []byte             `json:"source_key_digest"`
+	SourcePayloadDigest      []byte             `json:"source_payload_digest"`
+	SourceFieldDigest        []byte             `json:"source_field_digest"`
+	SourceID                 int64              `json:"source_id"`
+	Dm01RunID                int64              `json:"dm01_run_id"`
+	Dm01SourceKeyDigest      []byte             `json:"dm01_source_key_digest"`
+	Dm01SourceHmacKeyVersion string             `json:"dm01_source_hmac_key_version"`
+	QuarantineReason         string             `json:"quarantine_reason"`
+	Type                     pgtype.Int4        `json:"type"`
+	Status                   string             `json:"status"`
+	CorpIDDigest             []byte             `json:"corp_id_digest"`
+	ExternalUserIDDigest     []byte             `json:"external_user_id_digest"`
+	UnionIDDigest            []byte             `json:"union_id_digest"`
+	OpenIDDigest             []byte             `json:"open_id_digest"`
+	FollowUserIDDigest       []byte             `json:"follow_user_id_digest"`
+	NameDigest               []byte             `json:"name_digest"`
+	AvatarDigest             []byte             `json:"avatar_digest"`
+	GenderDigest             []byte             `json:"gender_digest"`
+	RawProfileDigest         []byte             `json:"raw_profile_digest"`
+	PrivateDigest            []byte             `json:"private_digest"`
+	RedactedRoots            []string           `json:"redacted_roots"`
+	FirstSeenAt              pgtype.Timestamptz `json:"first_seen_at"`
+	LastSeenAt               pgtype.Timestamptz `json:"last_seen_at"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
 
 type ContactV1OwnerMigrationResultHistory struct {

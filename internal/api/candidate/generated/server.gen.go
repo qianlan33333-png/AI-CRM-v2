@@ -3736,6 +3736,291 @@ func (e CustomerSurveyChoiceAnswerQuestionType) Valid() bool {
 	}
 }
 
+// Defines values for DeferredIdentityHistoryConflictDetailReadOnly.
+const (
+	DeferredIdentityHistoryConflictDetailReadOnlyTrue DeferredIdentityHistoryConflictDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryConflictDetailReadOnly enum.
+func (e DeferredIdentityHistoryConflictDetailReadOnly) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryConflictDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryConflictDetailRealExternalCallExecuted.
+const (
+	DeferredIdentityHistoryConflictDetailRealExternalCallExecutedFalse DeferredIdentityHistoryConflictDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryConflictDetailRealExternalCallExecuted enum.
+func (e DeferredIdentityHistoryConflictDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryConflictDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryConflictDetailSource.
+const (
+	DeferredIdentityHistoryConflictDetailSourceV1History DeferredIdentityHistoryConflictDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryConflictDetailSource enum.
+func (e DeferredIdentityHistoryConflictDetailSource) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryConflictDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryConflictPageReadOnly.
+const (
+	DeferredIdentityHistoryConflictPageReadOnlyTrue DeferredIdentityHistoryConflictPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryConflictPageReadOnly enum.
+func (e DeferredIdentityHistoryConflictPageReadOnly) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryConflictPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryConflictPageRealExternalCallExecuted.
+const (
+	DeferredIdentityHistoryConflictPageRealExternalCallExecutedFalse DeferredIdentityHistoryConflictPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryConflictPageRealExternalCallExecuted enum.
+func (e DeferredIdentityHistoryConflictPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryConflictPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryConflictPageSource.
+const (
+	DeferredIdentityHistoryConflictPageSourceV1History DeferredIdentityHistoryConflictPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryConflictPageSource enum.
+func (e DeferredIdentityHistoryConflictPageSource) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryConflictPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootQuarantineReason.
+const (
+	MissingCustomerRoot DeferredIdentityHistoryMissingRootQuarantineReason = "missing_customer_root"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootQuarantineReason enum.
+func (e DeferredIdentityHistoryMissingRootQuarantineReason) Valid() bool {
+	switch e {
+	case MissingCustomerRoot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootDetailReadOnly.
+const (
+	DeferredIdentityHistoryMissingRootDetailReadOnlyTrue DeferredIdentityHistoryMissingRootDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootDetailReadOnly enum.
+func (e DeferredIdentityHistoryMissingRootDetailReadOnly) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryMissingRootDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted.
+const (
+	DeferredIdentityHistoryMissingRootDetailRealExternalCallExecutedFalse DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted enum.
+func (e DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryMissingRootDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootDetailSource.
+const (
+	DeferredIdentityHistoryMissingRootDetailSourceV1History DeferredIdentityHistoryMissingRootDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootDetailSource enum.
+func (e DeferredIdentityHistoryMissingRootDetailSource) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryMissingRootDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootPageReadOnly.
+const (
+	DeferredIdentityHistoryMissingRootPageReadOnlyTrue DeferredIdentityHistoryMissingRootPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootPageReadOnly enum.
+func (e DeferredIdentityHistoryMissingRootPageReadOnly) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryMissingRootPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted.
+const (
+	DeferredIdentityHistoryMissingRootPageRealExternalCallExecutedFalse DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted enum.
+func (e DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryMissingRootPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryMissingRootPageSource.
+const (
+	DeferredIdentityHistoryMissingRootPageSourceV1History DeferredIdentityHistoryMissingRootPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryMissingRootPageSource enum.
+func (e DeferredIdentityHistoryMissingRootPageSource) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryMissingRootPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryPersonDetailReadOnly.
+const (
+	DeferredIdentityHistoryPersonDetailReadOnlyTrue DeferredIdentityHistoryPersonDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryPersonDetailReadOnly enum.
+func (e DeferredIdentityHistoryPersonDetailReadOnly) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryPersonDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryPersonDetailRealExternalCallExecuted.
+const (
+	DeferredIdentityHistoryPersonDetailRealExternalCallExecutedFalse DeferredIdentityHistoryPersonDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryPersonDetailRealExternalCallExecuted enum.
+func (e DeferredIdentityHistoryPersonDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryPersonDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryPersonDetailSource.
+const (
+	DeferredIdentityHistoryPersonDetailSourceV1History DeferredIdentityHistoryPersonDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryPersonDetailSource enum.
+func (e DeferredIdentityHistoryPersonDetailSource) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryPersonDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryPersonPageReadOnly.
+const (
+	DeferredIdentityHistoryPersonPageReadOnlyTrue DeferredIdentityHistoryPersonPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryPersonPageReadOnly enum.
+func (e DeferredIdentityHistoryPersonPageReadOnly) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryPersonPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryPersonPageRealExternalCallExecuted.
+const (
+	DeferredIdentityHistoryPersonPageRealExternalCallExecutedFalse DeferredIdentityHistoryPersonPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryPersonPageRealExternalCallExecuted enum.
+func (e DeferredIdentityHistoryPersonPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryPersonPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeferredIdentityHistoryPersonPageSource.
+const (
+	DeferredIdentityHistoryPersonPageSourceV1History DeferredIdentityHistoryPersonPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the DeferredIdentityHistoryPersonPageSource enum.
+func (e DeferredIdentityHistoryPersonPageSource) Valid() bool {
+	switch e {
+	case DeferredIdentityHistoryPersonPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ExternalEffectRuntimeKind.
 const (
 	AudienceWebhook                ExternalEffectRuntimeKind = "audience_webhook"
@@ -16406,6 +16691,154 @@ type CustomerUpdateRequest struct {
 	OwnerStaffId *int64                  `json:"owner_staff_id,omitempty"`
 }
 
+// DeferredIdentityHistoryConflict defines model for DeferredIdentityHistoryConflict.
+type DeferredIdentityHistoryConflict struct {
+	ConflictType     string     `json:"conflict_type"`
+	CreatedAt        time.Time  `json:"created_at"`
+	Id               int64      `json:"id"`
+	ResolutionStatus string     `json:"resolution_status"`
+	ResolvedAt       *time.Time `json:"resolved_at"`
+	SourceId         int64      `json:"source_id"`
+	SourceType       string     `json:"source_type"`
+	Status           string     `json:"status"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+}
+
+// DeferredIdentityHistoryConflictDetail defines model for DeferredIdentityHistoryConflictDetail.
+type DeferredIdentityHistoryConflictDetail struct {
+	Item                     DeferredIdentityHistoryConflict                               `json:"item"`
+	ReadOnly                 DeferredIdentityHistoryConflictDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted DeferredIdentityHistoryConflictDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   DeferredIdentityHistoryConflictDetailSource                   `json:"source"`
+}
+
+// DeferredIdentityHistoryConflictDetailReadOnly defines model for DeferredIdentityHistoryConflictDetail.ReadOnly.
+type DeferredIdentityHistoryConflictDetailReadOnly bool
+
+// DeferredIdentityHistoryConflictDetailRealExternalCallExecuted defines model for DeferredIdentityHistoryConflictDetail.RealExternalCallExecuted.
+type DeferredIdentityHistoryConflictDetailRealExternalCallExecuted bool
+
+// DeferredIdentityHistoryConflictDetailSource defines model for DeferredIdentityHistoryConflictDetail.Source.
+type DeferredIdentityHistoryConflictDetailSource string
+
+// DeferredIdentityHistoryConflictPage defines model for DeferredIdentityHistoryConflictPage.
+type DeferredIdentityHistoryConflictPage struct {
+	Items                    []DeferredIdentityHistoryConflict                           `json:"items"`
+	Limit                    int32                                                       `json:"limit"`
+	Offset                   int32                                                       `json:"offset"`
+	ReadOnly                 DeferredIdentityHistoryConflictPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted DeferredIdentityHistoryConflictPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   DeferredIdentityHistoryConflictPageSource                   `json:"source"`
+	Total                    int64                                                       `json:"total"`
+}
+
+// DeferredIdentityHistoryConflictPageReadOnly defines model for DeferredIdentityHistoryConflictPage.ReadOnly.
+type DeferredIdentityHistoryConflictPageReadOnly bool
+
+// DeferredIdentityHistoryConflictPageRealExternalCallExecuted defines model for DeferredIdentityHistoryConflictPage.RealExternalCallExecuted.
+type DeferredIdentityHistoryConflictPageRealExternalCallExecuted bool
+
+// DeferredIdentityHistoryConflictPageSource defines model for DeferredIdentityHistoryConflictPage.Source.
+type DeferredIdentityHistoryConflictPageSource string
+
+// DeferredIdentityHistoryMissingRoot defines model for DeferredIdentityHistoryMissingRoot.
+type DeferredIdentityHistoryMissingRoot struct {
+	CreatedAt        time.Time                                          `json:"created_at"`
+	FirstSeenAt      time.Time                                          `json:"first_seen_at"`
+	Id               int64                                              `json:"id"`
+	LastSeenAt       time.Time                                          `json:"last_seen_at"`
+	QuarantineReason DeferredIdentityHistoryMissingRootQuarantineReason `json:"quarantine_reason"`
+	SourceId         int64                                              `json:"source_id"`
+	Status           string                                             `json:"status"`
+	Type             *int32                                             `json:"type"`
+	UpdatedAt        time.Time                                          `json:"updated_at"`
+}
+
+// DeferredIdentityHistoryMissingRootQuarantineReason defines model for DeferredIdentityHistoryMissingRoot.QuarantineReason.
+type DeferredIdentityHistoryMissingRootQuarantineReason string
+
+// DeferredIdentityHistoryMissingRootDetail defines model for DeferredIdentityHistoryMissingRootDetail.
+type DeferredIdentityHistoryMissingRootDetail struct {
+	Item                     DeferredIdentityHistoryMissingRoot                               `json:"item"`
+	ReadOnly                 DeferredIdentityHistoryMissingRootDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   DeferredIdentityHistoryMissingRootDetailSource                   `json:"source"`
+}
+
+// DeferredIdentityHistoryMissingRootDetailReadOnly defines model for DeferredIdentityHistoryMissingRootDetail.ReadOnly.
+type DeferredIdentityHistoryMissingRootDetailReadOnly bool
+
+// DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted defines model for DeferredIdentityHistoryMissingRootDetail.RealExternalCallExecuted.
+type DeferredIdentityHistoryMissingRootDetailRealExternalCallExecuted bool
+
+// DeferredIdentityHistoryMissingRootDetailSource defines model for DeferredIdentityHistoryMissingRootDetail.Source.
+type DeferredIdentityHistoryMissingRootDetailSource string
+
+// DeferredIdentityHistoryMissingRootPage defines model for DeferredIdentityHistoryMissingRootPage.
+type DeferredIdentityHistoryMissingRootPage struct {
+	Items                    []DeferredIdentityHistoryMissingRoot                           `json:"items"`
+	Limit                    int32                                                          `json:"limit"`
+	Offset                   int32                                                          `json:"offset"`
+	ReadOnly                 DeferredIdentityHistoryMissingRootPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   DeferredIdentityHistoryMissingRootPageSource                   `json:"source"`
+	Total                    int64                                                          `json:"total"`
+}
+
+// DeferredIdentityHistoryMissingRootPageReadOnly defines model for DeferredIdentityHistoryMissingRootPage.ReadOnly.
+type DeferredIdentityHistoryMissingRootPageReadOnly bool
+
+// DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted defines model for DeferredIdentityHistoryMissingRootPage.RealExternalCallExecuted.
+type DeferredIdentityHistoryMissingRootPageRealExternalCallExecuted bool
+
+// DeferredIdentityHistoryMissingRootPageSource defines model for DeferredIdentityHistoryMissingRootPage.Source.
+type DeferredIdentityHistoryMissingRootPageSource string
+
+// DeferredIdentityHistoryPerson defines model for DeferredIdentityHistoryPerson.
+type DeferredIdentityHistoryPerson struct {
+	CreatedAt time.Time `json:"created_at"`
+	Id        int64     `json:"id"`
+	SourceId  int64     `json:"source_id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// DeferredIdentityHistoryPersonDetail defines model for DeferredIdentityHistoryPersonDetail.
+type DeferredIdentityHistoryPersonDetail struct {
+	Item                     DeferredIdentityHistoryPerson                               `json:"item"`
+	ReadOnly                 DeferredIdentityHistoryPersonDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted DeferredIdentityHistoryPersonDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   DeferredIdentityHistoryPersonDetailSource                   `json:"source"`
+}
+
+// DeferredIdentityHistoryPersonDetailReadOnly defines model for DeferredIdentityHistoryPersonDetail.ReadOnly.
+type DeferredIdentityHistoryPersonDetailReadOnly bool
+
+// DeferredIdentityHistoryPersonDetailRealExternalCallExecuted defines model for DeferredIdentityHistoryPersonDetail.RealExternalCallExecuted.
+type DeferredIdentityHistoryPersonDetailRealExternalCallExecuted bool
+
+// DeferredIdentityHistoryPersonDetailSource defines model for DeferredIdentityHistoryPersonDetail.Source.
+type DeferredIdentityHistoryPersonDetailSource string
+
+// DeferredIdentityHistoryPersonPage defines model for DeferredIdentityHistoryPersonPage.
+type DeferredIdentityHistoryPersonPage struct {
+	Items                    []DeferredIdentityHistoryPerson                           `json:"items"`
+	Limit                    int32                                                     `json:"limit"`
+	Offset                   int32                                                     `json:"offset"`
+	ReadOnly                 DeferredIdentityHistoryPersonPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted DeferredIdentityHistoryPersonPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   DeferredIdentityHistoryPersonPageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// DeferredIdentityHistoryPersonPageReadOnly defines model for DeferredIdentityHistoryPersonPage.ReadOnly.
+type DeferredIdentityHistoryPersonPageReadOnly bool
+
+// DeferredIdentityHistoryPersonPageRealExternalCallExecuted defines model for DeferredIdentityHistoryPersonPage.RealExternalCallExecuted.
+type DeferredIdentityHistoryPersonPageRealExternalCallExecuted bool
+
+// DeferredIdentityHistoryPersonPageSource defines model for DeferredIdentityHistoryPersonPage.Source.
+type DeferredIdentityHistoryPersonPageSource string
+
 // EmptyObject defines model for EmptyObject.
 type EmptyObject = map[string]interface{}
 
@@ -23172,6 +23605,24 @@ type ListCustomerStateHistoryClassTermTagMappingParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListDeferredIdentityConflictsParams defines parameters for ListDeferredIdentityConflicts.
+type ListDeferredIdentityConflictsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMissingRootIdentitiesParams defines parameters for ListMissingRootIdentities.
+type ListMissingRootIdentitiesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListDeferredPeopleParams defines parameters for ListDeferredPeople.
+type ListDeferredPeopleParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListExternalEffectsRuntimeParams defines parameters for ListExternalEffectsRuntime.
 type ListExternalEffectsRuntimeParams struct {
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
@@ -26382,6 +26833,24 @@ type ServerInterface interface {
 	// Read immutable customer-state observations without changing current status or tags
 	// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
 	GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/conflicts)
+	ListDeferredIdentityConflicts(w http.ResponseWriter, r *http.Request, params ListDeferredIdentityConflictsParams)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/conflicts/{history_id})
+	GetDeferredIdentityConflict(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/missing-roots)
+	ListMissingRootIdentities(w http.ResponseWriter, r *http.Request, params ListMissingRootIdentitiesParams)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/missing-roots/{history_id})
+	GetMissingRootIdentity(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/people)
+	ListDeferredPeople(w http.ResponseWriter, r *http.Request, params ListDeferredPeopleParams)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/people/{history_id})
+	GetDeferredPerson(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
@@ -27810,6 +28279,42 @@ func (_ Unimplemented) ListCustomerStateHistoryClassTermTagMapping(w http.Respon
 // Read immutable customer-state observations without changing current status or tags
 // (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
 func (_ Unimplemented) GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read unbound V1 evidence without creating or binding a Customer
+// (GET /api/admin/deferred-identity-history/conflicts)
+func (_ Unimplemented) ListDeferredIdentityConflicts(w http.ResponseWriter, r *http.Request, params ListDeferredIdentityConflictsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read unbound V1 evidence without creating or binding a Customer
+// (GET /api/admin/deferred-identity-history/conflicts/{history_id})
+func (_ Unimplemented) GetDeferredIdentityConflict(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read unbound V1 evidence without creating or binding a Customer
+// (GET /api/admin/deferred-identity-history/missing-roots)
+func (_ Unimplemented) ListMissingRootIdentities(w http.ResponseWriter, r *http.Request, params ListMissingRootIdentitiesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read unbound V1 evidence without creating or binding a Customer
+// (GET /api/admin/deferred-identity-history/missing-roots/{history_id})
+func (_ Unimplemented) GetMissingRootIdentity(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read unbound V1 evidence without creating or binding a Customer
+// (GET /api/admin/deferred-identity-history/people)
+func (_ Unimplemented) ListDeferredPeople(w http.ResponseWriter, r *http.Request, params ListDeferredPeopleParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read unbound V1 evidence without creating or binding a Customer
+// (GET /api/admin/deferred-identity-history/people/{history_id})
+func (_ Unimplemented) GetDeferredPerson(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -34677,6 +35182,222 @@ func (siw *ServerInterfaceWrapper) GetCustomerStateHistoryClassTermTagMapping(w 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCustomerStateHistoryClassTermTagMapping(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeferredIdentityConflicts operation middleware
+func (siw *ServerInterfaceWrapper) ListDeferredIdentityConflicts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeferredIdentityConflictsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeferredIdentityConflicts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDeferredIdentityConflict operation middleware
+func (siw *ServerInterfaceWrapper) GetDeferredIdentityConflict(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDeferredIdentityConflict(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMissingRootIdentities operation middleware
+func (siw *ServerInterfaceWrapper) ListMissingRootIdentities(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMissingRootIdentitiesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMissingRootIdentities(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMissingRootIdentity operation middleware
+func (siw *ServerInterfaceWrapper) GetMissingRootIdentity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMissingRootIdentity(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeferredPeople operation middleware
+func (siw *ServerInterfaceWrapper) ListDeferredPeople(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeferredPeopleParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeferredPeople(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDeferredPerson operation middleware
+func (siw *ServerInterfaceWrapper) GetDeferredPerson(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDeferredPerson(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -49346,6 +50067,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/customer-state-history/term-tag-mappings/{history_id}", wrapper.GetCustomerStateHistoryClassTermTagMapping)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/conflicts", wrapper.ListDeferredIdentityConflicts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/conflicts/{history_id}", wrapper.GetDeferredIdentityConflict)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/missing-roots", wrapper.ListMissingRootIdentities)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/missing-roots/{history_id}", wrapper.GetMissingRootIdentity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/people", wrapper.ListDeferredPeople)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/people/{history_id}", wrapper.GetDeferredPerson)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/execution-runtime", wrapper.GetLegacyExecutionRuntime)
 	})
 	r.Group(func(r chi.Router) {
@@ -56311,6 +57050,324 @@ func (response GetCustomerStateHistoryClassTermTagMapping403JSONResponse) VisitG
 type GetCustomerStateHistoryClassTermTagMapping503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetCustomerStateHistoryClassTermTagMapping503JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredIdentityConflictsRequestObject struct {
+	Params ListDeferredIdentityConflictsParams
+}
+
+type ListDeferredIdentityConflictsResponseObject interface {
+	VisitListDeferredIdentityConflictsResponse(w http.ResponseWriter) error
+}
+
+type ListDeferredIdentityConflicts200JSONResponse DeferredIdentityHistoryConflictPage
+
+func (response ListDeferredIdentityConflicts200JSONResponse) VisitListDeferredIdentityConflictsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredIdentityConflicts400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListDeferredIdentityConflicts400JSONResponse) VisitListDeferredIdentityConflictsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredIdentityConflicts401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDeferredIdentityConflicts401JSONResponse) VisitListDeferredIdentityConflictsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredIdentityConflicts403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListDeferredIdentityConflicts403JSONResponse) VisitListDeferredIdentityConflictsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredIdentityConflicts503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListDeferredIdentityConflicts503JSONResponse) VisitListDeferredIdentityConflictsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredIdentityConflictRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetDeferredIdentityConflictResponseObject interface {
+	VisitGetDeferredIdentityConflictResponse(w http.ResponseWriter) error
+}
+
+type GetDeferredIdentityConflict200JSONResponse DeferredIdentityHistoryConflictDetail
+
+func (response GetDeferredIdentityConflict200JSONResponse) VisitGetDeferredIdentityConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredIdentityConflict400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetDeferredIdentityConflict400JSONResponse) VisitGetDeferredIdentityConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredIdentityConflict401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDeferredIdentityConflict401JSONResponse) VisitGetDeferredIdentityConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredIdentityConflict403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetDeferredIdentityConflict403JSONResponse) VisitGetDeferredIdentityConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredIdentityConflict503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetDeferredIdentityConflict503JSONResponse) VisitGetDeferredIdentityConflictResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMissingRootIdentitiesRequestObject struct {
+	Params ListMissingRootIdentitiesParams
+}
+
+type ListMissingRootIdentitiesResponseObject interface {
+	VisitListMissingRootIdentitiesResponse(w http.ResponseWriter) error
+}
+
+type ListMissingRootIdentities200JSONResponse DeferredIdentityHistoryMissingRootPage
+
+func (response ListMissingRootIdentities200JSONResponse) VisitListMissingRootIdentitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMissingRootIdentities400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMissingRootIdentities400JSONResponse) VisitListMissingRootIdentitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMissingRootIdentities401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMissingRootIdentities401JSONResponse) VisitListMissingRootIdentitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMissingRootIdentities403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMissingRootIdentities403JSONResponse) VisitListMissingRootIdentitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMissingRootIdentities503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMissingRootIdentities503JSONResponse) VisitListMissingRootIdentitiesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMissingRootIdentityRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMissingRootIdentityResponseObject interface {
+	VisitGetMissingRootIdentityResponse(w http.ResponseWriter) error
+}
+
+type GetMissingRootIdentity200JSONResponse DeferredIdentityHistoryMissingRootDetail
+
+func (response GetMissingRootIdentity200JSONResponse) VisitGetMissingRootIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMissingRootIdentity400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMissingRootIdentity400JSONResponse) VisitGetMissingRootIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMissingRootIdentity401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMissingRootIdentity401JSONResponse) VisitGetMissingRootIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMissingRootIdentity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMissingRootIdentity403JSONResponse) VisitGetMissingRootIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMissingRootIdentity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMissingRootIdentity503JSONResponse) VisitGetMissingRootIdentityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredPeopleRequestObject struct {
+	Params ListDeferredPeopleParams
+}
+
+type ListDeferredPeopleResponseObject interface {
+	VisitListDeferredPeopleResponse(w http.ResponseWriter) error
+}
+
+type ListDeferredPeople200JSONResponse DeferredIdentityHistoryPersonPage
+
+func (response ListDeferredPeople200JSONResponse) VisitListDeferredPeopleResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredPeople400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListDeferredPeople400JSONResponse) VisitListDeferredPeopleResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredPeople401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDeferredPeople401JSONResponse) VisitListDeferredPeopleResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredPeople403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListDeferredPeople403JSONResponse) VisitListDeferredPeopleResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListDeferredPeople503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListDeferredPeople503JSONResponse) VisitListDeferredPeopleResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredPersonRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetDeferredPersonResponseObject interface {
+	VisitGetDeferredPersonResponse(w http.ResponseWriter) error
+}
+
+type GetDeferredPerson200JSONResponse DeferredIdentityHistoryPersonDetail
+
+func (response GetDeferredPerson200JSONResponse) VisitGetDeferredPersonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredPerson400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetDeferredPerson400JSONResponse) VisitGetDeferredPersonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredPerson401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDeferredPerson401JSONResponse) VisitGetDeferredPersonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredPerson403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetDeferredPerson403JSONResponse) VisitGetDeferredPersonResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetDeferredPerson503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetDeferredPerson503JSONResponse) VisitGetDeferredPersonResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -72596,6 +73653,24 @@ type StrictServerInterface interface {
 	// Read immutable customer-state observations without changing current status or tags
 	// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
 	GetCustomerStateHistoryClassTermTagMapping(ctx context.Context, request GetCustomerStateHistoryClassTermTagMappingRequestObject) (GetCustomerStateHistoryClassTermTagMappingResponseObject, error)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/conflicts)
+	ListDeferredIdentityConflicts(ctx context.Context, request ListDeferredIdentityConflictsRequestObject) (ListDeferredIdentityConflictsResponseObject, error)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/conflicts/{history_id})
+	GetDeferredIdentityConflict(ctx context.Context, request GetDeferredIdentityConflictRequestObject) (GetDeferredIdentityConflictResponseObject, error)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/missing-roots)
+	ListMissingRootIdentities(ctx context.Context, request ListMissingRootIdentitiesRequestObject) (ListMissingRootIdentitiesResponseObject, error)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/missing-roots/{history_id})
+	GetMissingRootIdentity(ctx context.Context, request GetMissingRootIdentityRequestObject) (GetMissingRootIdentityResponseObject, error)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/people)
+	ListDeferredPeople(ctx context.Context, request ListDeferredPeopleRequestObject) (ListDeferredPeopleResponseObject, error)
+	// Read unbound V1 evidence without creating or binding a Customer
+	// (GET /api/admin/deferred-identity-history/people/{history_id})
+	GetDeferredPerson(ctx context.Context, request GetDeferredPersonRequestObject) (GetDeferredPersonResponseObject, error)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
@@ -76420,6 +77495,162 @@ func (sh *strictHandler) GetCustomerStateHistoryClassTermTagMapping(w http.Respo
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCustomerStateHistoryClassTermTagMappingResponseObject); ok {
 		if err := validResponse.VisitGetCustomerStateHistoryClassTermTagMappingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeferredIdentityConflicts operation middleware
+func (sh *strictHandler) ListDeferredIdentityConflicts(w http.ResponseWriter, r *http.Request, params ListDeferredIdentityConflictsParams) {
+	var request ListDeferredIdentityConflictsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeferredIdentityConflicts(ctx, request.(ListDeferredIdentityConflictsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeferredIdentityConflicts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeferredIdentityConflictsResponseObject); ok {
+		if err := validResponse.VisitListDeferredIdentityConflictsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDeferredIdentityConflict operation middleware
+func (sh *strictHandler) GetDeferredIdentityConflict(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetDeferredIdentityConflictRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDeferredIdentityConflict(ctx, request.(GetDeferredIdentityConflictRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDeferredIdentityConflict")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDeferredIdentityConflictResponseObject); ok {
+		if err := validResponse.VisitGetDeferredIdentityConflictResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMissingRootIdentities operation middleware
+func (sh *strictHandler) ListMissingRootIdentities(w http.ResponseWriter, r *http.Request, params ListMissingRootIdentitiesParams) {
+	var request ListMissingRootIdentitiesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMissingRootIdentities(ctx, request.(ListMissingRootIdentitiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMissingRootIdentities")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMissingRootIdentitiesResponseObject); ok {
+		if err := validResponse.VisitListMissingRootIdentitiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMissingRootIdentity operation middleware
+func (sh *strictHandler) GetMissingRootIdentity(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMissingRootIdentityRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMissingRootIdentity(ctx, request.(GetMissingRootIdentityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMissingRootIdentity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMissingRootIdentityResponseObject); ok {
+		if err := validResponse.VisitGetMissingRootIdentityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeferredPeople operation middleware
+func (sh *strictHandler) ListDeferredPeople(w http.ResponseWriter, r *http.Request, params ListDeferredPeopleParams) {
+	var request ListDeferredPeopleRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeferredPeople(ctx, request.(ListDeferredPeopleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeferredPeople")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeferredPeopleResponseObject); ok {
+		if err := validResponse.VisitListDeferredPeopleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDeferredPerson operation middleware
+func (sh *strictHandler) GetDeferredPerson(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetDeferredPersonRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDeferredPerson(ctx, request.(GetDeferredPersonRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDeferredPerson")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDeferredPersonResponseObject); ok {
+		if err := validResponse.VisitGetDeferredPersonResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

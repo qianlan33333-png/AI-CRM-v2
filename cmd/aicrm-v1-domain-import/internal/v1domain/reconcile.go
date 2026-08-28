@@ -13,9 +13,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
@@ -69,6 +71,98 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 		if err != nil || selected != count || receipts != count || imported != count || verified != count || archived != 0 || quarantined != 0 || !equalBytes(old, digest) {
 			return ReconciliationResult{}, ErrConflict
 		}
+	}
+	return result, nil
+}
+
+// ReconcileDeferredIdentityHistory seals the selected DM01 quarantine scope,
+// not the entire identity-map archive. All owner reads use the same transaction.
+func ReconcileDeferredIdentityHistory(ctx context.Context, pool *pgxpool.Pool, importer *DeferredIdentityHistoryImporter) (ReconciliationResult, error) {
+	if ctx == nil || pool == nil || importer == nil || !validDeferredIdentityHistoryOptions(importer.options) || nilDeferredHistory(importer.archive) || nilDeferredHistory(importer.dm01) {
+		return ReconciliationResult{}, ErrInvalidScope
+	}
+	var result ReconciliationResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(bound context.Context) error {
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(bound, `LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+			return err
+		}
+		selection, err := deferredhistory.SelectDeferredIdentityEvidence(bound, importer.archive, importer.dm01, importer.options)
+		if err != nil {
+			return err
+		}
+		targets, err := NewDeferredIdentityHistoryReconcileTargets(selection, importer.options, contactstore.NewDeferredIdentityHistoryReader(tx))
+		if err != nil {
+			return err
+		}
+		rows, err := tx.Query(bound, `SELECT r.table_id,r.source_key_digest,r.payload_digest,a.field_digest,r.disposition,r.reason,r.target_domain,r.target_table,r.target_id,r.target_digest,r.metadata,r.verified
+FROM public.v1_domain_import_receipts r LEFT JOIN public.v1_archive_records a
+ON a.run_id=r.archive_run_id AND a.adapter_id=r.adapter_id AND a.adapter_id=$3 AND a.table_id=r.table_id AND a.source_key_digest=r.source_key_digest AND a.payload_digest=r.payload_digest
+WHERE r.import_version=$1 AND r.archive_run_id=$2 ORDER BY r.table_id,r.source_key_digest`, DeferredIdentityHistoryImportVersion, importer.options.ArchiveRunID, v1archive.DefaultAdapterID)
+		if err != nil {
+			return err
+		}
+		var receipts []reconciliationRow
+		for rows.Next() {
+			var row reconciliationRow
+			if err = rows.Scan(&row.TableID, &row.SourceKeyDigest, &row.PayloadDigest, &row.FieldDigest, &row.Disposition, &row.Reason, &row.TargetDomain, &row.TargetTable, &row.TargetID, &row.TargetDigest, &row.Metadata, &row.Verified); err != nil {
+				rows.Close()
+				return err
+			}
+			receipts = append(receipts, row)
+		}
+		if err = rows.Err(); err != nil {
+			rows.Close()
+			return err
+		}
+		rows.Close()
+		if len(receipts) != selection.Count() {
+			return ErrConflict
+		}
+		hash := sha256.New()
+		encoder := json.NewEncoder(hash)
+		for _, row := range receipts {
+			var metadata map[string]any
+			if json.Unmarshal(row.Metadata, &metadata) != nil || metadata == nil || len(metadata) != 0 {
+				return ErrConflict
+			}
+			proof, err := targets.Verify(bound, row)
+			if err != nil {
+				return err
+			}
+			if err = encoder.Encode([]any{row.TableID, hex.EncodeToString(row.SourceKeyDigest), hex.EncodeToString(row.PayloadDigest), hex.EncodeToString(row.FieldDigest), stringValue(row.TargetTable), stringValue(row.TargetID), proof}); err != nil {
+				return err
+			}
+		}
+		if err = targets.VerifyComplete(); err != nil {
+			return err
+		}
+		digest := hash.Sum(nil)
+		count := int64(selection.Count())
+		result = ReconciliationResult{SelectedSourceCount: count, ReceiptCount: count, ImportedCount: count, VerifiedCount: count, ComparisonDigest: hex.EncodeToString(digest)}
+		command, err := tx.Exec(bound, `INSERT INTO public.v1_domain_import_reconciliation_receipts
+(import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest)
+VALUES ($1,$2,$3,$3,$3,0,0,$3,$4) ON CONFLICT (import_version,archive_run_id) DO NOTHING`, DeferredIdentityHistoryImportVersion, importer.options.ArchiveRunID, count, digest)
+		if err != nil {
+			return err
+		}
+		result.Replayed = command.RowsAffected() == 0
+		if result.Replayed {
+			var selected, receiptCount, imported, archived, quarantined, verified int64
+			var existing []byte
+			err = tx.QueryRow(bound, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, DeferredIdentityHistoryImportVersion, importer.options.ArchiveRunID).Scan(&selected, &receiptCount, &imported, &archived, &quarantined, &verified, &existing)
+			if err != nil || selected != count || receiptCount != count || imported != count || verified != count || archived != 0 || quarantined != 0 || !equalBytes(existing, digest) {
+				return ErrConflict
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return ReconciliationResult{}, err
 	}
 	return result, nil
 }
