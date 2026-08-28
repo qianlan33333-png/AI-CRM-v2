@@ -52,6 +52,9 @@ go test -count=1 ./internal/hxc/store -run '^TestHXCHistoryPostgresRoundTripRoll
 go test -count=1 ./internal/product/store -run '^TestStaticProductHistoryPostgresRoundTripRollback$' -static-product-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/media/store -run '^TestStaticMediaHistoryPostgresRoundTripRollback$' -static-media-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/operationcycle/store -run '^TestStaticCycleHistoryPostgresRoundTripRollback$' -static-cycle-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/contact/store -run '^TestWeComContactHistoryPostgresRoundTripRollback$' -wecom-contact-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/radar/store -run '^TestRadarClickHistoryPostgresRoundTripRollback$' -radar-click-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/automation/store -run '^TestMarketingConfigHistoryPostgresRoundTripRollback$' -marketing-config-history-postgres-dsn="$database_url"
 
 P0S03_PG_INTEGRATION=1 \
 P0S03_TEST_DATABASE_URL="$database_url" \

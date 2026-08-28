@@ -39,6 +39,7 @@ import (
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
@@ -177,6 +178,7 @@ type runtimeConfigDeclaration struct {
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
+	wecomContactHistory     contactport.WeComContactHistoryReader
 	campaignHistory         campaignport.CampaignHistoryReader
 	auth                    authport.Service
 	customers               customerListApplication
@@ -206,6 +208,8 @@ type Handler struct {
 	marketingStateHistory   segmentport.MarketingStateHistoryReader
 	staticProductHistory    productport.StaticProductHistoryReader
 	staticCycleHistory      cycleport.StaticCycleHistoryReader
+	radarClickHistory       radarport.RadarClickHistoryReader
+	marketingConfigHistory  automationport.MarketingConfigHistoryReader
 	aiAudienceInbound       *aiAudienceInboundRoutes
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler

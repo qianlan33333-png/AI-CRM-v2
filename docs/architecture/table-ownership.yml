@@ -60,6 +60,8 @@ owners:
       - contact_v1_customer_status_snapshots
       - contact_v1_customer_status_changes
       - contact_v1_class_term_tag_history
+      - contact_v1_wecom_event_log_history
+      - contact_v1_wecom_follow_user_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -134,7 +136,7 @@ owners:
 
   automation:
     package: internal/automation
-    tables: [automations, automation_rule_versions, automation_enrollments, automation_execution_actions, automation_operation_receipts, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts, automation_v1_sop_history, automation_v1_agent_config_history, automation_v1_prompt_history, automation_v1_agent_history]
+    tables: [automations, automation_rule_versions, automation_enrollments, automation_execution_actions, automation_operation_receipts, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts, automation_v1_sop_history, automation_v1_agent_config_history, automation_v1_prompt_history, automation_v1_agent_history, automation_v1_marketing_config_history, automation_v1_marketing_rule_history]
     constraints:
       automation_trigger_receipts: unique_tag_trigger_receipt_per_source_event
       automations: closed_tag_applied_rule_configuration_with_versioned_execution_snapshot
@@ -375,7 +377,7 @@ owners:
 
   radar:
     package: internal/radar
-    tables: [radar_links, radar_link_idempotency_records, radar_link_events]
+    tables: [radar_links, radar_link_idempotency_records, radar_link_events, radar_v1_click_history]
     constraints:
       radar_links: local_only_link_facts_without_public_route_click_tracking_or_provider_effect
       radar_link_idempotency_records: actor_scoped_transactional_mutation_deduplication_without_raw_keys_or_provider_data
