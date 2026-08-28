@@ -2166,6 +2166,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
 	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
 	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
+	legacyHandler.campaignDefinitionHistory = campaignstore.NewCampaignDefinitionHistoryReader(pool)
 	legacyHandler.wecomContactHistory = contactstore.NewWeComContactHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
@@ -3743,6 +3744,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/message-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMessageHistory)},
 			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
 			{http.MethodGet, "/api/admin/campaign-history/segments", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistorySegments)},
+			{http.MethodGet, "/api/admin/campaign-history/definitions", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryDefinitions)},
+			{http.MethodGet, "/api/admin/campaign-history/definitions/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistoryDefinition)},
+			{http.MethodGet, "/api/admin/campaign-history/definition-steps", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryDefinitionSteps)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryEvent)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/relations", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryRelations)},
