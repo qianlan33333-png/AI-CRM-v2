@@ -6,6 +6,135 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/radar-click-history:
+    get:
+      tags: [p4-radar-click-history]
+      operationId: listRadarClickHistory
+      summary: Read immutable source history without current-state effects
+      x-p4-decision-evidence: P4-V1-RADAR-CLICK-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: radar.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only history, content: { application/json: { schema: { $ref: "#/components/schemas/RadarClickHistoryPage" } } } }
+        "400": { description: Invalid history query }
+        "401": { description: Session required }
+        "403": { description: Capability denied }
+        "503": { description: History unavailable }
+  /api/admin/radar-click-history/{history_id}:
+    get:
+      tags: [p4-radar-click-history]
+      operationId: getRadarClickHistory
+      summary: Read immutable source history without current-state effects
+      x-p4-decision-evidence: P4-V1-RADAR-CLICK-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: radar.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only history, content: { application/json: { schema: { $ref: "#/components/schemas/RadarClickHistoryDetail" } } } }
+        "400": { description: Invalid history query }
+        "401": { description: Session required }
+        "403": { description: Capability denied }
+        "503": { description: History unavailable }
+  /api/admin/marketing-config-history/configs:
+    get:
+      tags: [p4-marketing-config-history]
+      operationId: listMarketingConfigHistoryConfigs
+      summary: Read immutable source history without current-state effects
+      x-p4-decision-evidence: P4-V1-MARKETING-CONFIG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only history, content: { application/json: { schema: { $ref: "#/components/schemas/MarketingConfigHistoryConfigPage" } } } }
+        "400": { description: Invalid history query }
+        "401": { description: Session required }
+        "403": { description: Capability denied }
+        "503": { description: History unavailable }
+  /api/admin/marketing-config-history/configs/{history_id}:
+    get:
+      tags: [p4-marketing-config-history]
+      operationId: getMarketingConfigHistoryConfig
+      summary: Read immutable source history without current-state effects
+      x-p4-decision-evidence: P4-V1-MARKETING-CONFIG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only history, content: { application/json: { schema: { $ref: "#/components/schemas/MarketingConfigHistoryConfigDetail" } } } }
+        "400": { description: Invalid history query }
+        "401": { description: Session required }
+        "403": { description: Capability denied }
+        "503": { description: History unavailable }
+  /api/admin/marketing-config-history/rules:
+    get:
+      tags: [p4-marketing-config-history]
+      operationId: listMarketingConfigHistoryRules
+      summary: Read immutable source history without current-state effects
+      x-p4-decision-evidence: P4-V1-MARKETING-CONFIG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only history, content: { application/json: { schema: { $ref: "#/components/schemas/MarketingConfigHistoryRulePage" } } } }
+        "400": { description: Invalid history query }
+        "401": { description: Session required }
+        "403": { description: Capability denied }
+        "503": { description: History unavailable }
+  /api/admin/marketing-config-history/rules/{history_id}:
+    get:
+      tags: [p4-marketing-config-history]
+      operationId: getMarketingConfigHistoryRule
+      summary: Read immutable source history without current-state effects
+      x-p4-decision-evidence: P4-V1-MARKETING-CONFIG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only history, content: { application/json: { schema: { $ref: "#/components/schemas/MarketingConfigHistoryRuleDetail" } } } }
+        "400": { description: Invalid history query }
+        "401": { description: Session required }
+        "403": { description: Capability denied }
+        "503": { description: History unavailable }
   /api/admin/automation-history/sops:
     get:
       tags: [p4-automation-history]
@@ -14031,6 +14160,122 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    RadarClickHistory:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, link_source_id, radar_link_id, customer_id, code, raw_stage, source_channel, target_type_snapshot, source_channel_snapshot, error_code, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        link_source_id: { type: integer, format: int64 }
+        radar_link_id: { type: integer, format: int64, nullable: true }
+        customer_id: { type: integer, format: int64, nullable: true }
+        code: { type: string }
+        raw_stage: { type: string }
+        source_channel: { type: string }
+        target_type_snapshot: { type: string }
+        source_channel_snapshot: { type: string }
+        error_code: { type: string }
+        created_at: { type: string, format: date-time }
+    RadarClickHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/RadarClickHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    RadarClickHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/RadarClickHistory" }
+    MarketingConfigHistoryConfig:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, automation_key, automation_name, target_event, channel_type, original_status, do_not_start_after_hour, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        automation_key: { type: string }
+        automation_name: { type: string }
+        target_event: { type: string }
+        channel_type: { type: string }
+        original_status: { type: string }
+        do_not_start_after_hour: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    MarketingConfigHistoryConfigPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MarketingConfigHistoryConfig" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    MarketingConfigHistoryConfigDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MarketingConfigHistoryConfig" }
+    MarketingConfigHistoryRule:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, config_id, config_source_id, questionnaire_source_id, question_source_id, rule_code, rule_name, answer_match_type, score_delta, segment_hint, stage_hint, original_active, sort_order, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        config_id: { type: integer, format: int64 }
+        config_source_id: { type: integer, format: int64 }
+        questionnaire_source_id: { type: integer, format: int64, nullable: true }
+        question_source_id: { type: integer, format: int64, nullable: true }
+        rule_code: { type: string }
+        rule_name: { type: string }
+        answer_match_type: { type: string }
+        score_delta: { type: integer, format: int32 }
+        segment_hint: { type: string }
+        stage_hint: { type: string }
+        original_active: { type: boolean }
+        sort_order: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    MarketingConfigHistoryRulePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MarketingConfigHistoryRule" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    MarketingConfigHistoryRuleDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MarketingConfigHistoryRule" }
     AutomationHistoryDigest:
       type: array
       minItems: 32

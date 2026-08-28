@@ -196,6 +196,8 @@ type Handler struct {
 	aiAudience              http.Handler
 	audienceHistory         segmentport.AudienceHistoryReader
 	automationHistory       automationport.AutomationHistoryReader
+	radarClickHistory       radarport.RadarClickHistoryReader
+	marketingConfigHistory  automationport.MarketingConfigHistoryReader
 	aiAudienceInbound       *aiAudienceInboundRoutes
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler

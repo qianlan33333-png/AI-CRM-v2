@@ -7291,6 +7291,186 @@ func (e LocalProductLifecycleShareReason) Valid() bool {
 	}
 }
 
+// Defines values for MarketingConfigHistoryConfigDetailReadOnly.
+const (
+	MarketingConfigHistoryConfigDetailReadOnlyTrue MarketingConfigHistoryConfigDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryConfigDetailReadOnly enum.
+func (e MarketingConfigHistoryConfigDetailReadOnly) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryConfigDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryConfigDetailRealExternalCallExecuted.
+const (
+	MarketingConfigHistoryConfigDetailRealExternalCallExecutedFalse MarketingConfigHistoryConfigDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryConfigDetailRealExternalCallExecuted enum.
+func (e MarketingConfigHistoryConfigDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryConfigDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryConfigDetailSource.
+const (
+	MarketingConfigHistoryConfigDetailSourceV1History MarketingConfigHistoryConfigDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryConfigDetailSource enum.
+func (e MarketingConfigHistoryConfigDetailSource) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryConfigDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryConfigPageReadOnly.
+const (
+	MarketingConfigHistoryConfigPageReadOnlyTrue MarketingConfigHistoryConfigPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryConfigPageReadOnly enum.
+func (e MarketingConfigHistoryConfigPageReadOnly) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryConfigPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryConfigPageRealExternalCallExecuted.
+const (
+	MarketingConfigHistoryConfigPageRealExternalCallExecutedFalse MarketingConfigHistoryConfigPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryConfigPageRealExternalCallExecuted enum.
+func (e MarketingConfigHistoryConfigPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryConfigPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryConfigPageSource.
+const (
+	MarketingConfigHistoryConfigPageSourceV1History MarketingConfigHistoryConfigPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryConfigPageSource enum.
+func (e MarketingConfigHistoryConfigPageSource) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryConfigPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryRuleDetailReadOnly.
+const (
+	MarketingConfigHistoryRuleDetailReadOnlyTrue MarketingConfigHistoryRuleDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryRuleDetailReadOnly enum.
+func (e MarketingConfigHistoryRuleDetailReadOnly) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryRuleDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryRuleDetailRealExternalCallExecuted.
+const (
+	MarketingConfigHistoryRuleDetailRealExternalCallExecutedFalse MarketingConfigHistoryRuleDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryRuleDetailRealExternalCallExecuted enum.
+func (e MarketingConfigHistoryRuleDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryRuleDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryRuleDetailSource.
+const (
+	MarketingConfigHistoryRuleDetailSourceV1History MarketingConfigHistoryRuleDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryRuleDetailSource enum.
+func (e MarketingConfigHistoryRuleDetailSource) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryRuleDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryRulePageReadOnly.
+const (
+	MarketingConfigHistoryRulePageReadOnlyTrue MarketingConfigHistoryRulePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryRulePageReadOnly enum.
+func (e MarketingConfigHistoryRulePageReadOnly) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryRulePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryRulePageRealExternalCallExecuted.
+const (
+	MarketingConfigHistoryRulePageRealExternalCallExecutedFalse MarketingConfigHistoryRulePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryRulePageRealExternalCallExecuted enum.
+func (e MarketingConfigHistoryRulePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryRulePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingConfigHistoryRulePageSource.
+const (
+	MarketingConfigHistoryRulePageSourceV1History MarketingConfigHistoryRulePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingConfigHistoryRulePageSource enum.
+func (e MarketingConfigHistoryRulePageSource) Valid() bool {
+	switch e {
+	case MarketingConfigHistoryRulePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MediaContentRefKind.
 const (
 	MediaContentRefKindAttachment  MediaContentRefKind = "attachment"
@@ -8029,6 +8209,96 @@ const (
 func (e PublicSurveyResultLocalOnly) Valid() bool {
 	switch e {
 	case PublicSurveyResultLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RadarClickHistoryDetailReadOnly.
+const (
+	RadarClickHistoryDetailReadOnlyTrue RadarClickHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the RadarClickHistoryDetailReadOnly enum.
+func (e RadarClickHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case RadarClickHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RadarClickHistoryDetailRealExternalCallExecuted.
+const (
+	RadarClickHistoryDetailRealExternalCallExecutedFalse RadarClickHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the RadarClickHistoryDetailRealExternalCallExecuted enum.
+func (e RadarClickHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case RadarClickHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RadarClickHistoryDetailSource.
+const (
+	RadarClickHistoryDetailSourceV1History RadarClickHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the RadarClickHistoryDetailSource enum.
+func (e RadarClickHistoryDetailSource) Valid() bool {
+	switch e {
+	case RadarClickHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RadarClickHistoryPageReadOnly.
+const (
+	RadarClickHistoryPageReadOnlyTrue RadarClickHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the RadarClickHistoryPageReadOnly enum.
+func (e RadarClickHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case RadarClickHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RadarClickHistoryPageRealExternalCallExecuted.
+const (
+	RadarClickHistoryPageRealExternalCallExecutedFalse RadarClickHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the RadarClickHistoryPageRealExternalCallExecuted enum.
+func (e RadarClickHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case RadarClickHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RadarClickHistoryPageSource.
+const (
+	RadarClickHistoryPageSourceV1History RadarClickHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the RadarClickHistoryPageSource enum.
+func (e RadarClickHistoryPageSource) Valid() bool {
+	switch e {
+	case RadarClickHistoryPageSourceV1History:
 		return true
 	default:
 		return false
@@ -14632,6 +14902,114 @@ type LocalTagListResponse struct {
 	Items []LocalTag `json:"items"`
 }
 
+// MarketingConfigHistoryConfig defines model for MarketingConfigHistoryConfig.
+type MarketingConfigHistoryConfig struct {
+	AutomationKey       string    `json:"automation_key"`
+	AutomationName      string    `json:"automation_name"`
+	ChannelType         string    `json:"channel_type"`
+	CreatedAt           time.Time `json:"created_at"`
+	DoNotStartAfterHour int32     `json:"do_not_start_after_hour"`
+	Id                  int64     `json:"id"`
+	OriginalStatus      string    `json:"original_status"`
+	SourceId            int64     `json:"source_id"`
+	TargetEvent         string    `json:"target_event"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// MarketingConfigHistoryConfigDetail defines model for MarketingConfigHistoryConfigDetail.
+type MarketingConfigHistoryConfigDetail struct {
+	Item                     MarketingConfigHistoryConfig                               `json:"item"`
+	ReadOnly                 MarketingConfigHistoryConfigDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingConfigHistoryConfigDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingConfigHistoryConfigDetailSource                   `json:"source"`
+}
+
+// MarketingConfigHistoryConfigDetailReadOnly defines model for MarketingConfigHistoryConfigDetail.ReadOnly.
+type MarketingConfigHistoryConfigDetailReadOnly bool
+
+// MarketingConfigHistoryConfigDetailRealExternalCallExecuted defines model for MarketingConfigHistoryConfigDetail.RealExternalCallExecuted.
+type MarketingConfigHistoryConfigDetailRealExternalCallExecuted bool
+
+// MarketingConfigHistoryConfigDetailSource defines model for MarketingConfigHistoryConfigDetail.Source.
+type MarketingConfigHistoryConfigDetailSource string
+
+// MarketingConfigHistoryConfigPage defines model for MarketingConfigHistoryConfigPage.
+type MarketingConfigHistoryConfigPage struct {
+	Items                    []MarketingConfigHistoryConfig                           `json:"items"`
+	Limit                    int                                                      `json:"limit"`
+	Offset                   int                                                      `json:"offset"`
+	ReadOnly                 MarketingConfigHistoryConfigPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingConfigHistoryConfigPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingConfigHistoryConfigPageSource                   `json:"source"`
+	Total                    int64                                                    `json:"total"`
+}
+
+// MarketingConfigHistoryConfigPageReadOnly defines model for MarketingConfigHistoryConfigPage.ReadOnly.
+type MarketingConfigHistoryConfigPageReadOnly bool
+
+// MarketingConfigHistoryConfigPageRealExternalCallExecuted defines model for MarketingConfigHistoryConfigPage.RealExternalCallExecuted.
+type MarketingConfigHistoryConfigPageRealExternalCallExecuted bool
+
+// MarketingConfigHistoryConfigPageSource defines model for MarketingConfigHistoryConfigPage.Source.
+type MarketingConfigHistoryConfigPageSource string
+
+// MarketingConfigHistoryRule defines model for MarketingConfigHistoryRule.
+type MarketingConfigHistoryRule struct {
+	AnswerMatchType       string    `json:"answer_match_type"`
+	ConfigId              int64     `json:"config_id"`
+	ConfigSourceId        int64     `json:"config_source_id"`
+	CreatedAt             time.Time `json:"created_at"`
+	Id                    int64     `json:"id"`
+	OriginalActive        bool      `json:"original_active"`
+	QuestionSourceId      *int64    `json:"question_source_id"`
+	QuestionnaireSourceId *int64    `json:"questionnaire_source_id"`
+	RuleCode              string    `json:"rule_code"`
+	RuleName              string    `json:"rule_name"`
+	ScoreDelta            int32     `json:"score_delta"`
+	SegmentHint           string    `json:"segment_hint"`
+	SortOrder             int32     `json:"sort_order"`
+	SourceId              int64     `json:"source_id"`
+	StageHint             string    `json:"stage_hint"`
+	UpdatedAt             time.Time `json:"updated_at"`
+}
+
+// MarketingConfigHistoryRuleDetail defines model for MarketingConfigHistoryRuleDetail.
+type MarketingConfigHistoryRuleDetail struct {
+	Item                     MarketingConfigHistoryRule                               `json:"item"`
+	ReadOnly                 MarketingConfigHistoryRuleDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingConfigHistoryRuleDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingConfigHistoryRuleDetailSource                   `json:"source"`
+}
+
+// MarketingConfigHistoryRuleDetailReadOnly defines model for MarketingConfigHistoryRuleDetail.ReadOnly.
+type MarketingConfigHistoryRuleDetailReadOnly bool
+
+// MarketingConfigHistoryRuleDetailRealExternalCallExecuted defines model for MarketingConfigHistoryRuleDetail.RealExternalCallExecuted.
+type MarketingConfigHistoryRuleDetailRealExternalCallExecuted bool
+
+// MarketingConfigHistoryRuleDetailSource defines model for MarketingConfigHistoryRuleDetail.Source.
+type MarketingConfigHistoryRuleDetailSource string
+
+// MarketingConfigHistoryRulePage defines model for MarketingConfigHistoryRulePage.
+type MarketingConfigHistoryRulePage struct {
+	Items                    []MarketingConfigHistoryRule                           `json:"items"`
+	Limit                    int                                                    `json:"limit"`
+	Offset                   int                                                    `json:"offset"`
+	ReadOnly                 MarketingConfigHistoryRulePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingConfigHistoryRulePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingConfigHistoryRulePageSource                   `json:"source"`
+	Total                    int64                                                  `json:"total"`
+}
+
+// MarketingConfigHistoryRulePageReadOnly defines model for MarketingConfigHistoryRulePage.ReadOnly.
+type MarketingConfigHistoryRulePageReadOnly bool
+
+// MarketingConfigHistoryRulePageRealExternalCallExecuted defines model for MarketingConfigHistoryRulePage.RealExternalCallExecuted.
+type MarketingConfigHistoryRulePageRealExternalCallExecuted bool
+
+// MarketingConfigHistoryRulePageSource defines model for MarketingConfigHistoryRulePage.Source.
+type MarketingConfigHistoryRulePageSource string
+
 // MediaAttachmentUploadInitiateRequest defines model for MediaAttachmentUploadInitiateRequest.
 type MediaAttachmentUploadInitiateRequest struct {
 	Description *string `json:"description,omitempty"`
@@ -15299,6 +15677,59 @@ type PublicSurveySubmissionResponse struct {
 	// ResultToken POST-body-only opaque result credential; it is never accepted in a query parameter or returned by lookup responses.
 	ResultToken string `json:"result_token"`
 }
+
+// RadarClickHistory defines model for RadarClickHistory.
+type RadarClickHistory struct {
+	Code                  string    `json:"code"`
+	CreatedAt             time.Time `json:"created_at"`
+	CustomerId            *int64    `json:"customer_id"`
+	ErrorCode             string    `json:"error_code"`
+	Id                    int64     `json:"id"`
+	LinkSourceId          int64     `json:"link_source_id"`
+	RadarLinkId           *int64    `json:"radar_link_id"`
+	RawStage              string    `json:"raw_stage"`
+	SourceChannel         string    `json:"source_channel"`
+	SourceChannelSnapshot string    `json:"source_channel_snapshot"`
+	SourceId              int64     `json:"source_id"`
+	TargetTypeSnapshot    string    `json:"target_type_snapshot"`
+}
+
+// RadarClickHistoryDetail defines model for RadarClickHistoryDetail.
+type RadarClickHistoryDetail struct {
+	Item                     RadarClickHistory                               `json:"item"`
+	ReadOnly                 RadarClickHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted RadarClickHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   RadarClickHistoryDetailSource                   `json:"source"`
+}
+
+// RadarClickHistoryDetailReadOnly defines model for RadarClickHistoryDetail.ReadOnly.
+type RadarClickHistoryDetailReadOnly bool
+
+// RadarClickHistoryDetailRealExternalCallExecuted defines model for RadarClickHistoryDetail.RealExternalCallExecuted.
+type RadarClickHistoryDetailRealExternalCallExecuted bool
+
+// RadarClickHistoryDetailSource defines model for RadarClickHistoryDetail.Source.
+type RadarClickHistoryDetailSource string
+
+// RadarClickHistoryPage defines model for RadarClickHistoryPage.
+type RadarClickHistoryPage struct {
+	Items                    []RadarClickHistory                           `json:"items"`
+	Limit                    int                                           `json:"limit"`
+	Offset                   int                                           `json:"offset"`
+	ReadOnly                 RadarClickHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted RadarClickHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   RadarClickHistoryPageSource                   `json:"source"`
+	Total                    int64                                         `json:"total"`
+}
+
+// RadarClickHistoryPageReadOnly defines model for RadarClickHistoryPage.ReadOnly.
+type RadarClickHistoryPageReadOnly bool
+
+// RadarClickHistoryPageRealExternalCallExecuted defines model for RadarClickHistoryPage.RealExternalCallExecuted.
+type RadarClickHistoryPageRealExternalCallExecuted bool
+
+// RadarClickHistoryPageSource defines model for RadarClickHistoryPage.Source.
+type RadarClickHistoryPageSource string
 
 // RecordReleasePrerequisiteRequest defines model for RecordReleasePrerequisiteRequest.
 type RecordReleasePrerequisiteRequest struct {
@@ -17725,6 +18156,18 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
+// ListMarketingConfigHistoryConfigsParams defines parameters for ListMarketingConfigHistoryConfigs.
+type ListMarketingConfigHistoryConfigsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMarketingConfigHistoryRulesParams defines parameters for ListMarketingConfigHistoryRules.
+type ListMarketingConfigHistoryRulesParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListMemberUsageHistoryParams defines parameters for ListMemberUsageHistory.
 type ListMemberUsageHistoryParams struct {
 	CustomerId *int64 `form:"customer_id,omitempty" json:"customer_id,omitempty"`
@@ -17894,6 +18337,12 @@ type ReconcileSurveyExternalPushParams struct {
 
 	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListRadarClickHistoryParams defines parameters for ListRadarClickHistory.
+type ListRadarClickHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListServicePeriodHistoryDefinitionsParams defines parameters for ListServicePeriodHistoryDefinitions.
@@ -20703,6 +21152,18 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/configs)
+	ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryConfigsParams)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/configs/{history_id})
+	GetMarketingConfigHistoryConfig(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/rules)
+	ListMarketingConfigHistoryRules(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryRulesParams)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/rules/{history_id})
+	GetMarketingConfigHistoryRule(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable V1 Member Grid history without current access or usage changes
 	// (GET /api/admin/member-grid-history/usage)
 	ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams)
@@ -20784,6 +21245,12 @@ type ServerInterface interface {
 	// Manually reconcile only an outcome-unknown verified Survey external-push binding
 	// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
 	ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/radar-click-history)
+	ListRadarClickHistory(w http.ResponseWriter, r *http.Request, params ListRadarClickHistoryParams)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/radar-click-history/{history_id})
+	GetRadarClickHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read historical service-period definitions attached to existing Products
 	// (GET /api/admin/service-period-history)
 	ListServicePeriodHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListServicePeriodHistoryDefinitionsParams)
@@ -21936,6 +22403,30 @@ func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read immutable source history without current-state effects
+// (GET /api/admin/marketing-config-history/configs)
+func (_ Unimplemented) ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryConfigsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable source history without current-state effects
+// (GET /api/admin/marketing-config-history/configs/{history_id})
+func (_ Unimplemented) GetMarketingConfigHistoryConfig(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable source history without current-state effects
+// (GET /api/admin/marketing-config-history/rules)
+func (_ Unimplemented) ListMarketingConfigHistoryRules(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable source history without current-state effects
+// (GET /api/admin/marketing-config-history/rules/{history_id})
+func (_ Unimplemented) GetMarketingConfigHistoryRule(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read immutable V1 Member Grid history without current access or usage changes
 // (GET /api/admin/member-grid-history/usage)
 func (_ Unimplemented) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams) {
@@ -22095,6 +22586,18 @@ func (_ Unimplemented) GetSurveyExternalPushDetail(w http.ResponseWriter, r *htt
 // Manually reconcile only an outcome-unknown verified Survey external-push binding
 // (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
 func (_ Unimplemented) ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable source history without current-state effects
+// (GET /api/admin/radar-click-history)
+func (_ Unimplemented) ListRadarClickHistory(w http.ResponseWriter, r *http.Request, params ListRadarClickHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable source history without current-state effects
+// (GET /api/admin/radar-click-history/{history_id})
+func (_ Unimplemented) GetRadarClickHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -28614,6 +29117,150 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 	handler.ServeHTTP(w, r)
 }
 
+// ListMarketingConfigHistoryConfigs operation middleware
+func (siw *ServerInterfaceWrapper) ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMarketingConfigHistoryConfigsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMarketingConfigHistoryConfigs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMarketingConfigHistoryConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetMarketingConfigHistoryConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMarketingConfigHistoryConfig(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMarketingConfigHistoryRules operation middleware
+func (siw *ServerInterfaceWrapper) ListMarketingConfigHistoryRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMarketingConfigHistoryRulesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMarketingConfigHistoryRules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMarketingConfigHistoryRule operation middleware
+func (siw *ServerInterfaceWrapper) GetMarketingConfigHistoryRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMarketingConfigHistoryRule(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListMemberUsageHistory operation middleware
 func (siw *ServerInterfaceWrapper) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request) {
 
@@ -30377,6 +31024,78 @@ func (siw *ServerInterfaceWrapper) ReconcileSurveyExternalPush(w http.ResponseWr
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReconcileSurveyExternalPush(w, r, questionnaireId, submissionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRadarClickHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListRadarClickHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRadarClickHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRadarClickHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRadarClickHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetRadarClickHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRadarClickHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -40363,6 +41082,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-config-history/configs", wrapper.ListMarketingConfigHistoryConfigs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-config-history/configs/{history_id}", wrapper.GetMarketingConfigHistoryConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-config-history/rules", wrapper.ListMarketingConfigHistoryRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-config-history/rules/{history_id}", wrapper.GetMarketingConfigHistoryRule)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/member-grid-history/usage", wrapper.ListMemberUsageHistory)
 	})
 	r.Group(func(r chi.Router) {
@@ -40442,6 +41173,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile", wrapper.ReconcileSurveyExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/radar-click-history", wrapper.ListRadarClickHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/radar-click-history/{history_id}", wrapper.GetRadarClickHistory)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-history", wrapper.ListServicePeriodHistoryDefinitions)
@@ -47440,6 +48177,202 @@ func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOps
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListMarketingConfigHistoryConfigsRequestObject struct {
+	Params ListMarketingConfigHistoryConfigsParams
+}
+
+type ListMarketingConfigHistoryConfigsResponseObject interface {
+	VisitListMarketingConfigHistoryConfigsResponse(w http.ResponseWriter) error
+}
+
+type ListMarketingConfigHistoryConfigs200JSONResponse MarketingConfigHistoryConfigPage
+
+func (response ListMarketingConfigHistoryConfigs200JSONResponse) VisitListMarketingConfigHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingConfigHistoryConfigs400Response struct {
+}
+
+func (response ListMarketingConfigHistoryConfigs400Response) VisitListMarketingConfigHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type ListMarketingConfigHistoryConfigs401Response struct {
+}
+
+func (response ListMarketingConfigHistoryConfigs401Response) VisitListMarketingConfigHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type ListMarketingConfigHistoryConfigs403Response struct {
+}
+
+func (response ListMarketingConfigHistoryConfigs403Response) VisitListMarketingConfigHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type ListMarketingConfigHistoryConfigs503Response struct {
+}
+
+func (response ListMarketingConfigHistoryConfigs503Response) VisitListMarketingConfigHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
+type GetMarketingConfigHistoryConfigRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMarketingConfigHistoryConfigResponseObject interface {
+	VisitGetMarketingConfigHistoryConfigResponse(w http.ResponseWriter) error
+}
+
+type GetMarketingConfigHistoryConfig200JSONResponse MarketingConfigHistoryConfigDetail
+
+func (response GetMarketingConfigHistoryConfig200JSONResponse) VisitGetMarketingConfigHistoryConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingConfigHistoryConfig400Response struct {
+}
+
+func (response GetMarketingConfigHistoryConfig400Response) VisitGetMarketingConfigHistoryConfigResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type GetMarketingConfigHistoryConfig401Response struct {
+}
+
+func (response GetMarketingConfigHistoryConfig401Response) VisitGetMarketingConfigHistoryConfigResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type GetMarketingConfigHistoryConfig403Response struct {
+}
+
+func (response GetMarketingConfigHistoryConfig403Response) VisitGetMarketingConfigHistoryConfigResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type GetMarketingConfigHistoryConfig503Response struct {
+}
+
+func (response GetMarketingConfigHistoryConfig503Response) VisitGetMarketingConfigHistoryConfigResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
+type ListMarketingConfigHistoryRulesRequestObject struct {
+	Params ListMarketingConfigHistoryRulesParams
+}
+
+type ListMarketingConfigHistoryRulesResponseObject interface {
+	VisitListMarketingConfigHistoryRulesResponse(w http.ResponseWriter) error
+}
+
+type ListMarketingConfigHistoryRules200JSONResponse MarketingConfigHistoryRulePage
+
+func (response ListMarketingConfigHistoryRules200JSONResponse) VisitListMarketingConfigHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingConfigHistoryRules400Response struct {
+}
+
+func (response ListMarketingConfigHistoryRules400Response) VisitListMarketingConfigHistoryRulesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type ListMarketingConfigHistoryRules401Response struct {
+}
+
+func (response ListMarketingConfigHistoryRules401Response) VisitListMarketingConfigHistoryRulesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type ListMarketingConfigHistoryRules403Response struct {
+}
+
+func (response ListMarketingConfigHistoryRules403Response) VisitListMarketingConfigHistoryRulesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type ListMarketingConfigHistoryRules503Response struct {
+}
+
+func (response ListMarketingConfigHistoryRules503Response) VisitListMarketingConfigHistoryRulesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
+type GetMarketingConfigHistoryRuleRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMarketingConfigHistoryRuleResponseObject interface {
+	VisitGetMarketingConfigHistoryRuleResponse(w http.ResponseWriter) error
+}
+
+type GetMarketingConfigHistoryRule200JSONResponse MarketingConfigHistoryRuleDetail
+
+func (response GetMarketingConfigHistoryRule200JSONResponse) VisitGetMarketingConfigHistoryRuleResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingConfigHistoryRule400Response struct {
+}
+
+func (response GetMarketingConfigHistoryRule400Response) VisitGetMarketingConfigHistoryRuleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type GetMarketingConfigHistoryRule401Response struct {
+}
+
+func (response GetMarketingConfigHistoryRule401Response) VisitGetMarketingConfigHistoryRuleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type GetMarketingConfigHistoryRule403Response struct {
+}
+
+func (response GetMarketingConfigHistoryRule403Response) VisitGetMarketingConfigHistoryRuleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type GetMarketingConfigHistoryRule503Response struct {
+}
+
+func (response GetMarketingConfigHistoryRule503Response) VisitGetMarketingConfigHistoryRuleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
 type ListMemberUsageHistoryRequestObject struct {
 	Params ListMemberUsageHistoryParams
 }
@@ -49109,6 +50042,104 @@ func (response ReconcileSurveyExternalPush503JSONResponse) VisitReconcileSurveyE
 	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
+}
+
+type ListRadarClickHistoryRequestObject struct {
+	Params ListRadarClickHistoryParams
+}
+
+type ListRadarClickHistoryResponseObject interface {
+	VisitListRadarClickHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListRadarClickHistory200JSONResponse RadarClickHistoryPage
+
+func (response ListRadarClickHistory200JSONResponse) VisitListRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListRadarClickHistory400Response struct {
+}
+
+func (response ListRadarClickHistory400Response) VisitListRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type ListRadarClickHistory401Response struct {
+}
+
+func (response ListRadarClickHistory401Response) VisitListRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type ListRadarClickHistory403Response struct {
+}
+
+func (response ListRadarClickHistory403Response) VisitListRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type ListRadarClickHistory503Response struct {
+}
+
+func (response ListRadarClickHistory503Response) VisitListRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
+type GetRadarClickHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetRadarClickHistoryResponseObject interface {
+	VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetRadarClickHistory200JSONResponse RadarClickHistoryDetail
+
+func (response GetRadarClickHistory200JSONResponse) VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetRadarClickHistory400Response struct {
+}
+
+func (response GetRadarClickHistory400Response) VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type GetRadarClickHistory401Response struct {
+}
+
+func (response GetRadarClickHistory401Response) VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(401)
+	return nil
+}
+
+type GetRadarClickHistory403Response struct {
+}
+
+func (response GetRadarClickHistory403Response) VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type GetRadarClickHistory503Response struct {
+}
+
+func (response GetRadarClickHistory503Response) VisitGetRadarClickHistoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
 }
 
 type ListServicePeriodHistoryDefinitionsRequestObject struct {
@@ -59657,6 +60688,18 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/configs)
+	ListMarketingConfigHistoryConfigs(ctx context.Context, request ListMarketingConfigHistoryConfigsRequestObject) (ListMarketingConfigHistoryConfigsResponseObject, error)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/configs/{history_id})
+	GetMarketingConfigHistoryConfig(ctx context.Context, request GetMarketingConfigHistoryConfigRequestObject) (GetMarketingConfigHistoryConfigResponseObject, error)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/rules)
+	ListMarketingConfigHistoryRules(ctx context.Context, request ListMarketingConfigHistoryRulesRequestObject) (ListMarketingConfigHistoryRulesResponseObject, error)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/marketing-config-history/rules/{history_id})
+	GetMarketingConfigHistoryRule(ctx context.Context, request GetMarketingConfigHistoryRuleRequestObject) (GetMarketingConfigHistoryRuleResponseObject, error)
 	// Read immutable V1 Member Grid history without current access or usage changes
 	// (GET /api/admin/member-grid-history/usage)
 	ListMemberUsageHistory(ctx context.Context, request ListMemberUsageHistoryRequestObject) (ListMemberUsageHistoryResponseObject, error)
@@ -59738,6 +60781,12 @@ type StrictServerInterface interface {
 	// Manually reconcile only an outcome-unknown verified Survey external-push binding
 	// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
 	ReconcileSurveyExternalPush(ctx context.Context, request ReconcileSurveyExternalPushRequestObject) (ReconcileSurveyExternalPushResponseObject, error)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/radar-click-history)
+	ListRadarClickHistory(ctx context.Context, request ListRadarClickHistoryRequestObject) (ListRadarClickHistoryResponseObject, error)
+	// Read immutable source history without current-state effects
+	// (GET /api/admin/radar-click-history/{history_id})
+	GetRadarClickHistory(ctx context.Context, request GetRadarClickHistoryRequestObject) (GetRadarClickHistoryResponseObject, error)
 	// Read historical service-period definitions attached to existing Products
 	// (GET /api/admin/service-period-history)
 	ListServicePeriodHistoryDefinitions(ctx context.Context, request ListServicePeriodHistoryDefinitionsRequestObject) (ListServicePeriodHistoryDefinitionsResponseObject, error)
@@ -63413,6 +64462,110 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 	}
 }
 
+// ListMarketingConfigHistoryConfigs operation middleware
+func (sh *strictHandler) ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryConfigsParams) {
+	var request ListMarketingConfigHistoryConfigsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMarketingConfigHistoryConfigs(ctx, request.(ListMarketingConfigHistoryConfigsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMarketingConfigHistoryConfigs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMarketingConfigHistoryConfigsResponseObject); ok {
+		if err := validResponse.VisitListMarketingConfigHistoryConfigsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMarketingConfigHistoryConfig operation middleware
+func (sh *strictHandler) GetMarketingConfigHistoryConfig(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMarketingConfigHistoryConfigRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMarketingConfigHistoryConfig(ctx, request.(GetMarketingConfigHistoryConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMarketingConfigHistoryConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMarketingConfigHistoryConfigResponseObject); ok {
+		if err := validResponse.VisitGetMarketingConfigHistoryConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMarketingConfigHistoryRules operation middleware
+func (sh *strictHandler) ListMarketingConfigHistoryRules(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryRulesParams) {
+	var request ListMarketingConfigHistoryRulesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMarketingConfigHistoryRules(ctx, request.(ListMarketingConfigHistoryRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMarketingConfigHistoryRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMarketingConfigHistoryRulesResponseObject); ok {
+		if err := validResponse.VisitListMarketingConfigHistoryRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMarketingConfigHistoryRule operation middleware
+func (sh *strictHandler) GetMarketingConfigHistoryRule(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMarketingConfigHistoryRuleRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMarketingConfigHistoryRule(ctx, request.(GetMarketingConfigHistoryRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMarketingConfigHistoryRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMarketingConfigHistoryRuleResponseObject); ok {
+		if err := validResponse.VisitGetMarketingConfigHistoryRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMemberUsageHistory operation middleware
 func (sh *strictHandler) ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams) {
 	var request ListMemberUsageHistoryRequestObject
@@ -64185,6 +65338,58 @@ func (sh *strictHandler) ReconcileSurveyExternalPush(w http.ResponseWriter, r *h
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileSurveyExternalPushResponseObject); ok {
 		if err := validResponse.VisitReconcileSurveyExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRadarClickHistory operation middleware
+func (sh *strictHandler) ListRadarClickHistory(w http.ResponseWriter, r *http.Request, params ListRadarClickHistoryParams) {
+	var request ListRadarClickHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRadarClickHistory(ctx, request.(ListRadarClickHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRadarClickHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRadarClickHistoryResponseObject); ok {
+		if err := validResponse.VisitListRadarClickHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRadarClickHistory operation middleware
+func (sh *strictHandler) GetRadarClickHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetRadarClickHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRadarClickHistory(ctx, request.(GetRadarClickHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRadarClickHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRadarClickHistoryResponseObject); ok {
+		if err := validResponse.VisitGetRadarClickHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

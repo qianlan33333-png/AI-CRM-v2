@@ -20,6 +20,8 @@ output-options:
     - p4-service-period-products
     - p4-coupon-history
     - p4-automation-history
+    - p4-radar-click-history
+    - p4-marketing-config-history
     - p4-member-grid-history
     - p4-contact-history
     - p4-message-history

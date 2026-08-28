@@ -227,6 +227,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListServicePeriodHistoryDefinitions", "ListServicePeriodHistoryEntitlements", "ListServicePeriodHistoryEvents",
 		"ListCouponHistoryDefinitions", "ListCouponHistoryClaims", "ListCouponHistoryRedemptions",
 		"ListAutomationHistorySOPs", "GetAutomationHistorySOP", "ListAutomationHistoryConfigs", "GetAutomationHistoryConfig", "ListAutomationHistoryPrompts", "GetAutomationHistoryPrompt", "ListAutomationHistoryAgents", "GetAutomationHistoryAgent",
+		"ListRadarClickHistory", "GetRadarClickHistory", "ListMarketingConfigHistoryConfigs", "GetMarketingConfigHistoryConfig", "ListMarketingConfigHistoryRules", "GetMarketingConfigHistoryRule",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",
 		"ListMemberViewHistory", "GetMemberViewHistory", "ListMemberUsageHistory", "GetMemberUsageHistory",
 		"ListSidebarProfileHistory", "GetSidebarProfileHistory", "ListOwnerMigrationResultHistory", "GetOwnerMigrationResultHistory",

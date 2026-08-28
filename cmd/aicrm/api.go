@@ -2119,6 +2119,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
+	legacyHandler.radarClickHistory = radarstore.NewRadarClickHistoryReader(pool)
+	legacyHandler.marketingConfigHistory = automationstore.NewMarketingConfigHistoryReader(pool)
 	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
 		webhook: inboundWebhookHandler, retiredSubscriptions: retiredOutboundSubscriptionHandler,
 	}
@@ -3672,6 +3674,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
 			{http.MethodGet, "/api/admin/coupon-history", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryDefinitions)},
 			{http.MethodGet, "/api/admin/automation-history/sops", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistorySOPs)},
+			{http.MethodGet, "/api/admin/radar-click-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListRadarClickHistory)},
+			{http.MethodGet, "/api/admin/radar-click-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetRadarClickHistory)},
+			{http.MethodGet, "/api/admin/marketing-config-history/configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingConfigHistoryConfigs)},
+			{http.MethodGet, "/api/admin/marketing-config-history/configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingConfigHistoryConfig)},
+			{http.MethodGet, "/api/admin/marketing-config-history/rules", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingConfigHistoryRules)},
+			{http.MethodGet, "/api/admin/marketing-config-history/rules/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingConfigHistoryRule)},
 			{http.MethodGet, "/api/admin/automation-history/sops/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistorySOP)},
 			{http.MethodGet, "/api/admin/automation-history/configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryConfigs)},
 			{http.MethodGet, "/api/admin/automation-history/configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryConfig)},

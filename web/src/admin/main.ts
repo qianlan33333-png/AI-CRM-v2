@@ -23,6 +23,7 @@ import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
+import { mountRadarMarketingHistory } from './sections/radarMarketingHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
 
@@ -36,6 +37,13 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if ((page === 'radar' && historyQuery.get('click_history') === '1') || (page === 'ai' && historyQuery.get('marketing_config_history') === '1')) {
+    void mountRadarMarketingHistory(stage, {
+      kind: page === 'radar' ? 'radar_click' : historyQuery.get('history_kind') ?? 'marketing_config',
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch(() => { stage.innerHTML = '<p role="alert">历史参数或读取失败；未进入当前业务。</p>'; });
+    return;
+  }
   if (page === 'config' && historyQuery.get('automation_history') === '1') {
     void mountAutomationHistory(stage, {
       kind: historyQuery.get('history_kind') ?? undefined,

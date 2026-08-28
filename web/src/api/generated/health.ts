@@ -5,6 +5,177 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface RadarClickHistory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  link_source_id: number;
+  /** @nullable */
+  radar_link_id: number | null;
+  /** @nullable */
+  customer_id: number | null;
+  code: string;
+  raw_stage: string;
+  source_channel: string;
+  target_type_snapshot: string;
+  source_channel_snapshot: string;
+  error_code: string;
+  created_at: string;
+}
+
+export type RadarClickHistoryPageSource =
+  (typeof RadarClickHistoryPageSource)[keyof typeof RadarClickHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarClickHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface RadarClickHistoryPage {
+  source: RadarClickHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: RadarClickHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type RadarClickHistoryDetailSource =
+  (typeof RadarClickHistoryDetailSource)[keyof typeof RadarClickHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarClickHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface RadarClickHistoryDetail {
+  source: RadarClickHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: RadarClickHistory;
+}
+
+export interface MarketingConfigHistoryConfig {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  automation_key: string;
+  automation_name: string;
+  target_event: string;
+  channel_type: string;
+  original_status: string;
+  do_not_start_after_hour: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MarketingConfigHistoryConfigPageSource =
+  (typeof MarketingConfigHistoryConfigPageSource)[keyof typeof MarketingConfigHistoryConfigPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryConfigPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryConfigPage {
+  source: MarketingConfigHistoryConfigPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: MarketingConfigHistoryConfig[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type MarketingConfigHistoryConfigDetailSource =
+  (typeof MarketingConfigHistoryConfigDetailSource)[keyof typeof MarketingConfigHistoryConfigDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryConfigDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryConfigDetail {
+  source: MarketingConfigHistoryConfigDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: MarketingConfigHistoryConfig;
+}
+
+export interface MarketingConfigHistoryRule {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  config_id: number;
+  config_source_id: number;
+  /** @nullable */
+  questionnaire_source_id: number | null;
+  /** @nullable */
+  question_source_id: number | null;
+  rule_code: string;
+  rule_name: string;
+  answer_match_type: string;
+  score_delta: number;
+  segment_hint: string;
+  stage_hint: string;
+  original_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MarketingConfigHistoryRulePageSource =
+  (typeof MarketingConfigHistoryRulePageSource)[keyof typeof MarketingConfigHistoryRulePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryRulePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryRulePage {
+  source: MarketingConfigHistoryRulePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: MarketingConfigHistoryRule[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type MarketingConfigHistoryRuleDetailSource =
+  (typeof MarketingConfigHistoryRuleDetailSource)[keyof typeof MarketingConfigHistoryRuleDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryRuleDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryRuleDetail {
+  source: MarketingConfigHistoryRuleDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: MarketingConfigHistoryRule;
+}
+
 /**
  * @minItems 32
  * @maxItems 32
@@ -18885,6 +19056,42 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListRadarClickHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListMarketingConfigHistoryConfigsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListMarketingConfigHistoryRulesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListAutomationHistorySOPsParams = {
   /**
    * @minimum 1
@@ -21257,6 +21464,466 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type listRadarClickHistoryResponse200 = {
+  data: RadarClickHistoryPage;
+  status: 200;
+};
+
+export type listRadarClickHistoryResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type listRadarClickHistoryResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type listRadarClickHistoryResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type listRadarClickHistoryResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type listRadarClickHistoryResponseSuccess =
+  listRadarClickHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listRadarClickHistoryResponseError = (
+  | listRadarClickHistoryResponse400
+  | listRadarClickHistoryResponse401
+  | listRadarClickHistoryResponse403
+  | listRadarClickHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listRadarClickHistoryResponse =
+  listRadarClickHistoryResponseSuccess | listRadarClickHistoryResponseError;
+
+export const getListRadarClickHistoryUrl = (
+  params?: ListRadarClickHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/radar-click-history?${stringifiedParams}`
+    : `/api/admin/radar-click-history`;
+};
+
+export const listRadarClickHistory = async (
+  params?: ListRadarClickHistoryParams,
+  options?: RequestInit,
+): Promise<listRadarClickHistoryResponse> => {
+  const res = await fetch(getListRadarClickHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRadarClickHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listRadarClickHistoryResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type getRadarClickHistoryResponse200 = {
+  data: RadarClickHistoryDetail;
+  status: 200;
+};
+
+export type getRadarClickHistoryResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type getRadarClickHistoryResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getRadarClickHistoryResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type getRadarClickHistoryResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type getRadarClickHistoryResponseSuccess =
+  getRadarClickHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getRadarClickHistoryResponseError = (
+  | getRadarClickHistoryResponse400
+  | getRadarClickHistoryResponse401
+  | getRadarClickHistoryResponse403
+  | getRadarClickHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getRadarClickHistoryResponse =
+  getRadarClickHistoryResponseSuccess | getRadarClickHistoryResponseError;
+
+export const getGetRadarClickHistoryUrl = (historyId: number) => {
+  return `/api/admin/radar-click-history/${historyId}`;
+};
+
+export const getRadarClickHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getRadarClickHistoryResponse> => {
+  const res = await fetch(getGetRadarClickHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRadarClickHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRadarClickHistoryResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type listMarketingConfigHistoryConfigsResponse200 = {
+  data: MarketingConfigHistoryConfigPage;
+  status: 200;
+};
+
+export type listMarketingConfigHistoryConfigsResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type listMarketingConfigHistoryConfigsResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type listMarketingConfigHistoryConfigsResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type listMarketingConfigHistoryConfigsResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type listMarketingConfigHistoryConfigsResponseSuccess =
+  listMarketingConfigHistoryConfigsResponse200 & {
+    headers: Headers;
+  };
+export type listMarketingConfigHistoryConfigsResponseError = (
+  | listMarketingConfigHistoryConfigsResponse400
+  | listMarketingConfigHistoryConfigsResponse401
+  | listMarketingConfigHistoryConfigsResponse403
+  | listMarketingConfigHistoryConfigsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listMarketingConfigHistoryConfigsResponse =
+  | listMarketingConfigHistoryConfigsResponseSuccess
+  | listMarketingConfigHistoryConfigsResponseError;
+
+export const getListMarketingConfigHistoryConfigsUrl = (
+  params?: ListMarketingConfigHistoryConfigsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/marketing-config-history/configs?${stringifiedParams}`
+    : `/api/admin/marketing-config-history/configs`;
+};
+
+export const listMarketingConfigHistoryConfigs = async (
+  params?: ListMarketingConfigHistoryConfigsParams,
+  options?: RequestInit,
+): Promise<listMarketingConfigHistoryConfigsResponse> => {
+  const res = await fetch(getListMarketingConfigHistoryConfigsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMarketingConfigHistoryConfigsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listMarketingConfigHistoryConfigsResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type getMarketingConfigHistoryConfigResponse200 = {
+  data: MarketingConfigHistoryConfigDetail;
+  status: 200;
+};
+
+export type getMarketingConfigHistoryConfigResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type getMarketingConfigHistoryConfigResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getMarketingConfigHistoryConfigResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type getMarketingConfigHistoryConfigResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type getMarketingConfigHistoryConfigResponseSuccess =
+  getMarketingConfigHistoryConfigResponse200 & {
+    headers: Headers;
+  };
+export type getMarketingConfigHistoryConfigResponseError = (
+  | getMarketingConfigHistoryConfigResponse400
+  | getMarketingConfigHistoryConfigResponse401
+  | getMarketingConfigHistoryConfigResponse403
+  | getMarketingConfigHistoryConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type getMarketingConfigHistoryConfigResponse =
+  | getMarketingConfigHistoryConfigResponseSuccess
+  | getMarketingConfigHistoryConfigResponseError;
+
+export const getGetMarketingConfigHistoryConfigUrl = (historyId: number) => {
+  return `/api/admin/marketing-config-history/configs/${historyId}`;
+};
+
+export const getMarketingConfigHistoryConfig = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getMarketingConfigHistoryConfigResponse> => {
+  const res = await fetch(getGetMarketingConfigHistoryConfigUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMarketingConfigHistoryConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getMarketingConfigHistoryConfigResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type listMarketingConfigHistoryRulesResponse200 = {
+  data: MarketingConfigHistoryRulePage;
+  status: 200;
+};
+
+export type listMarketingConfigHistoryRulesResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type listMarketingConfigHistoryRulesResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type listMarketingConfigHistoryRulesResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type listMarketingConfigHistoryRulesResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type listMarketingConfigHistoryRulesResponseSuccess =
+  listMarketingConfigHistoryRulesResponse200 & {
+    headers: Headers;
+  };
+export type listMarketingConfigHistoryRulesResponseError = (
+  | listMarketingConfigHistoryRulesResponse400
+  | listMarketingConfigHistoryRulesResponse401
+  | listMarketingConfigHistoryRulesResponse403
+  | listMarketingConfigHistoryRulesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listMarketingConfigHistoryRulesResponse =
+  | listMarketingConfigHistoryRulesResponseSuccess
+  | listMarketingConfigHistoryRulesResponseError;
+
+export const getListMarketingConfigHistoryRulesUrl = (
+  params?: ListMarketingConfigHistoryRulesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/marketing-config-history/rules?${stringifiedParams}`
+    : `/api/admin/marketing-config-history/rules`;
+};
+
+export const listMarketingConfigHistoryRules = async (
+  params?: ListMarketingConfigHistoryRulesParams,
+  options?: RequestInit,
+): Promise<listMarketingConfigHistoryRulesResponse> => {
+  const res = await fetch(getListMarketingConfigHistoryRulesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMarketingConfigHistoryRulesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listMarketingConfigHistoryRulesResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type getMarketingConfigHistoryRuleResponse200 = {
+  data: MarketingConfigHistoryRuleDetail;
+  status: 200;
+};
+
+export type getMarketingConfigHistoryRuleResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type getMarketingConfigHistoryRuleResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getMarketingConfigHistoryRuleResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type getMarketingConfigHistoryRuleResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type getMarketingConfigHistoryRuleResponseSuccess =
+  getMarketingConfigHistoryRuleResponse200 & {
+    headers: Headers;
+  };
+export type getMarketingConfigHistoryRuleResponseError = (
+  | getMarketingConfigHistoryRuleResponse400
+  | getMarketingConfigHistoryRuleResponse401
+  | getMarketingConfigHistoryRuleResponse403
+  | getMarketingConfigHistoryRuleResponse503
+) & {
+  headers: Headers;
+};
+
+export type getMarketingConfigHistoryRuleResponse =
+  | getMarketingConfigHistoryRuleResponseSuccess
+  | getMarketingConfigHistoryRuleResponseError;
+
+export const getGetMarketingConfigHistoryRuleUrl = (historyId: number) => {
+  return `/api/admin/marketing-config-history/rules/${historyId}`;
+};
+
+export const getMarketingConfigHistoryRule = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getMarketingConfigHistoryRuleResponse> => {
+  const res = await fetch(getGetMarketingConfigHistoryRuleUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMarketingConfigHistoryRuleResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getMarketingConfigHistoryRuleResponse;
 };
 
 /**
