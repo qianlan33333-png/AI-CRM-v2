@@ -1956,6 +1956,153 @@ export interface AutomationHistoryAgentDetail {
   item: AutomationHistoryAgent;
 }
 
+export type HistoricalCampaignDefinitionOriginalDisposition =
+  (typeof HistoricalCampaignDefinitionOriginalDisposition)[keyof typeof HistoricalCampaignDefinitionOriginalDisposition];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignDefinitionOriginalDisposition = {
+  archive: "archive",
+  quarantine: "quarantine",
+} as const;
+
+export interface HistoricalCampaignDefinition {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  code: string;
+  display_name: string;
+  intent: string;
+  anchor_mode: string;
+  anchor_date: string;
+  review_status: string;
+  run_status: string;
+  /** @nullable */
+  approved_at: string | null;
+  /** @nullable */
+  started_at: string | null;
+  /** @nullable */
+  finished_at: string | null;
+  /** @nullable */
+  paused_at: string | null;
+  paused_reason: string;
+  created_at: string;
+  updated_at: string;
+  original_disposition: HistoricalCampaignDefinitionOriginalDisposition;
+  original_reason: string;
+}
+
+export type HistoricalCampaignDefinitionStepSourceParentState =
+  (typeof HistoricalCampaignDefinitionStepSourceParentState)[keyof typeof HistoricalCampaignDefinitionStepSourceParentState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignDefinitionStepSourceParentState = {
+  history_definition: "history_definition",
+  current_definition: "current_definition",
+  unresolved_definition: "unresolved_definition",
+} as const;
+
+export type HistoricalCampaignDefinitionStepOriginalDisposition =
+  (typeof HistoricalCampaignDefinitionStepOriginalDisposition)[keyof typeof HistoricalCampaignDefinitionStepOriginalDisposition];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignDefinitionStepOriginalDisposition = {
+  archive: "archive",
+  quarantine: "quarantine",
+} as const;
+
+export interface HistoricalCampaignDefinitionStep {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  campaign_source_id: number;
+  segment_source_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  history_definition_id: number | null;
+  /**
+   * @minLength 1
+   * @nullable
+   */
+  current_campaign_code: string | null;
+  source_parent_state: HistoricalCampaignDefinitionStepSourceParentState;
+  step_index: number;
+  day_offset: number;
+  send_time: string;
+  timezone: string;
+  content_masked: string;
+  stop_on_reply: boolean;
+  skip_recent_days: number;
+  created_at: string;
+  updated_at: string;
+  original_disposition: HistoricalCampaignDefinitionStepOriginalDisposition;
+  original_reason: string;
+}
+
+export type HistoricalCampaignDefinitionPageSource =
+  (typeof HistoricalCampaignDefinitionPageSource)[keyof typeof HistoricalCampaignDefinitionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignDefinitionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalCampaignDefinitionPage {
+  source: HistoricalCampaignDefinitionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalCampaignDefinition[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HistoricalCampaignDefinitionDetailSource =
+  (typeof HistoricalCampaignDefinitionDetailSource)[keyof typeof HistoricalCampaignDefinitionDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignDefinitionDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalCampaignDefinitionDetail {
+  source: HistoricalCampaignDefinitionDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HistoricalCampaignDefinition;
+}
+
+export type HistoricalCampaignDefinitionStepPageSource =
+  (typeof HistoricalCampaignDefinitionStepPageSource)[keyof typeof HistoricalCampaignDefinitionStepPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignDefinitionStepPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalCampaignDefinitionStepPage {
+  source: HistoricalCampaignDefinitionStepPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalCampaignDefinitionStep[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
 export type HistoricalCampaignSegmentSourceParentState =
   (typeof HistoricalCampaignSegmentSourceParentState)[keyof typeof HistoricalCampaignSegmentSourceParentState];
 
@@ -21227,6 +21374,31 @@ export type ListAutomationHistoryAgentsParams = {
   offset?: number;
 };
 
+export type ListCampaignHistoryDefinitionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCampaignHistoryDefinitionStepsParams = {
+  campaign_source_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListCampaignHistorySegmentsParams = {
   /**
    * @minimum 1
@@ -28459,6 +28631,244 @@ export const getAutomationHistoryAgent = async (
     status: res.status,
     headers: res.headers,
   } as getAutomationHistoryAgentResponse;
+};
+
+/**
+ * @summary Read non-executable V1 Campaign definitions and steps
+ */
+export type listCampaignHistoryDefinitionsResponse200 = {
+  data: HistoricalCampaignDefinitionPage;
+  status: 200;
+};
+
+export type listCampaignHistoryDefinitionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistoryDefinitionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistoryDefinitionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistoryDefinitionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistoryDefinitionsResponseSuccess =
+  listCampaignHistoryDefinitionsResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistoryDefinitionsResponseError = (
+  | listCampaignHistoryDefinitionsResponse400
+  | listCampaignHistoryDefinitionsResponse401
+  | listCampaignHistoryDefinitionsResponse403
+  | listCampaignHistoryDefinitionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistoryDefinitionsResponse =
+  | listCampaignHistoryDefinitionsResponseSuccess
+  | listCampaignHistoryDefinitionsResponseError;
+
+export const getListCampaignHistoryDefinitionsUrl = (
+  params?: ListCampaignHistoryDefinitionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/definitions?${stringifiedParams}`
+    : `/api/admin/campaign-history/definitions`;
+};
+
+export const listCampaignHistoryDefinitions = async (
+  params?: ListCampaignHistoryDefinitionsParams,
+  options?: RequestInit,
+): Promise<listCampaignHistoryDefinitionsResponse> => {
+  const res = await fetch(getListCampaignHistoryDefinitionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistoryDefinitionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistoryDefinitionsResponse;
+};
+
+/**
+ * @summary Read non-executable V1 Campaign definitions and steps
+ */
+export type getCampaignHistoryDefinitionResponse200 = {
+  data: HistoricalCampaignDefinitionDetail;
+  status: 200;
+};
+
+export type getCampaignHistoryDefinitionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCampaignHistoryDefinitionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCampaignHistoryDefinitionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCampaignHistoryDefinitionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCampaignHistoryDefinitionResponseSuccess =
+  getCampaignHistoryDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type getCampaignHistoryDefinitionResponseError = (
+  | getCampaignHistoryDefinitionResponse400
+  | getCampaignHistoryDefinitionResponse401
+  | getCampaignHistoryDefinitionResponse403
+  | getCampaignHistoryDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCampaignHistoryDefinitionResponse =
+  | getCampaignHistoryDefinitionResponseSuccess
+  | getCampaignHistoryDefinitionResponseError;
+
+export const getGetCampaignHistoryDefinitionUrl = (historyId: number) => {
+  return `/api/admin/campaign-history/definitions/${historyId}`;
+};
+
+export const getCampaignHistoryDefinition = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getCampaignHistoryDefinitionResponse> => {
+  const res = await fetch(getGetCampaignHistoryDefinitionUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCampaignHistoryDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCampaignHistoryDefinitionResponse;
+};
+
+/**
+ * @summary Read non-executable V1 Campaign definitions and steps
+ */
+export type listCampaignHistoryDefinitionStepsResponse200 = {
+  data: HistoricalCampaignDefinitionStepPage;
+  status: 200;
+};
+
+export type listCampaignHistoryDefinitionStepsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistoryDefinitionStepsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistoryDefinitionStepsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistoryDefinitionStepsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistoryDefinitionStepsResponseSuccess =
+  listCampaignHistoryDefinitionStepsResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistoryDefinitionStepsResponseError = (
+  | listCampaignHistoryDefinitionStepsResponse400
+  | listCampaignHistoryDefinitionStepsResponse401
+  | listCampaignHistoryDefinitionStepsResponse403
+  | listCampaignHistoryDefinitionStepsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistoryDefinitionStepsResponse =
+  | listCampaignHistoryDefinitionStepsResponseSuccess
+  | listCampaignHistoryDefinitionStepsResponseError;
+
+export const getListCampaignHistoryDefinitionStepsUrl = (
+  params?: ListCampaignHistoryDefinitionStepsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/definition-steps?${stringifiedParams}`
+    : `/api/admin/campaign-history/definition-steps`;
+};
+
+export const listCampaignHistoryDefinitionSteps = async (
+  params?: ListCampaignHistoryDefinitionStepsParams,
+  options?: RequestInit,
+): Promise<listCampaignHistoryDefinitionStepsResponse> => {
+  const res = await fetch(getListCampaignHistoryDefinitionStepsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistoryDefinitionStepsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistoryDefinitionStepsResponse;
 };
 
 /**

@@ -259,18 +259,20 @@ type ReconciliationResult struct {
 }
 
 type reconciliationRow struct {
-	TableID         string
-	SourceKeyDigest []byte
-	PayloadDigest   []byte
-	FieldDigest     []byte
-	Disposition     string
-	Reason          string
-	TargetDomain    *string
-	TargetTable     *string
-	TargetID        *string
-	TargetDigest    []byte
-	Metadata        []byte
-	Verified        bool
+	PriorDisposition string
+	PriorReason      string
+	TableID          string
+	SourceKeyDigest  []byte
+	PayloadDigest    []byte
+	FieldDigest      []byte
+	Disposition      string
+	Reason           string
+	TargetDomain     *string
+	TargetTable      *string
+	TargetID         *string
+	TargetDigest     []byte
+	Metadata         []byte
+	Verified         bool
 }
 
 // ReconcileAll seals one complete import only after every selected archive row
@@ -299,6 +301,13 @@ func ReconcileGroupOps(ctx context.Context, pool *pgxpool.Pool, importVersion, a
 }
 
 func reconcileTables(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string, tables []string) (ReconciliationResult, error) {
+	return reconcileTablesWithCampaignDefinitionKey(ctx, pool, importVersion, archiveRunID, tables, nil)
+}
+
+func reconcileTablesWithCampaignDefinitionKey(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string, tables []string, campaignDefinitionKey []byte) (ReconciliationResult, error) {
+	if importVersion == "v1-campaign-definition-history-a1" && len(campaignDefinitionKey) < sha256.Size {
+		return ReconciliationResult{}, ErrInvalidScope
+	}
 	if pool == nil || !validVersion(importVersion) || !validToken(archiveRunID, 128) {
 		return ReconciliationResult{}, ErrInvalidScope
 	}
@@ -332,6 +341,16 @@ WHERE migration.run_id=$1`, archiveRunID).Scan(&phase, &adapterID); err != nil |
 		}
 		if err = tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4`, importVersion, archiveRunID, v1archive.DefaultAdapterID, tableID).Scan(&receiptCount); err != nil {
 			return ReconciliationResult{}, err
+		}
+		if importVersion == "v1-campaign-definition-history-a1" {
+			if selectedCount != sourceCount {
+				return ReconciliationResult{}, ErrConflict
+			}
+			selectedCount, err = campaignDefinitionHistorySelectedCount(ctx, tx, archiveRunID, tableID, sourceCount)
+			if err != nil {
+				return ReconciliationResult{}, err
+			}
+			sourceCount = selectedCount
 		}
 		if importVersion == SurveyUnresolvedHistoryImportVersion {
 			if selectedCount != sourceCount || surveyUnresolvedTargets[tableID] == "" {
@@ -386,6 +405,20 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 	hash := sha256.New()
 	encoder := json.NewEncoder(hash)
 	for _, row := range receipts {
+		if importVersion == "v1-campaign-definition-history-a1" {
+			if row.Disposition != "import" || row.Reason != "" {
+				return ReconciliationResult{}, ErrConflict
+			}
+			if err = tx.QueryRow(ctx, `SELECT a.field_digest,p.disposition,p.reason
+FROM public.v1_archive_records a JOIN public.v1_domain_import_receipts p
+ON p.archive_run_id=a.run_id AND p.adapter_id=a.adapter_id AND p.table_id=a.table_id
+AND p.source_key_digest=a.source_key_digest AND p.payload_digest=a.payload_digest
+WHERE a.run_id=$1 AND a.adapter_id=$2 AND a.table_id=$3 AND a.source_key_digest=$4 AND a.payload_digest=$5
+AND p.import_version='v1-domain-a1' AND p.verified AND p.disposition IN ('archive','quarantine')
+AND p.target_domain IS NULL AND p.target_table IS NULL AND p.target_id IS NULL AND p.target_digest IS NULL AND p.reason<>''`, archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest, &row.PriorDisposition, &row.PriorReason); err != nil || len(row.FieldDigest) != sha256.Size {
+				return ReconciliationResult{}, ErrConflict
+			}
+		}
 		result.ReceiptCount++
 		if !row.Verified {
 			return ReconciliationResult{}, fmt.Errorf("unverified receipt for %s", row.TableID)
@@ -419,7 +452,9 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 		switch row.Disposition {
 		case "import":
 			result.ImportedCount++
-			if importVersion == SurveyUnresolvedHistoryImportVersion {
+			if importVersion == "v1-campaign-definition-history-a1" {
+				proof, err = verifyCampaignDefinitionHistoryTarget(ctx, tx, row, archiveRunID, campaignDefinitionKey)
+			} else if importVersion == SurveyUnresolvedHistoryImportVersion {
 				var fieldDigest []byte
 				err = tx.QueryRow(ctx, `SELECT archive.field_digest FROM public.v1_archive_records archive
 JOIN public.v1_domain_import_receipts old ON old.archive_run_id=archive.run_id AND old.adapter_id=archive.adapter_id
@@ -485,6 +520,34 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 		return ReconciliationResult{}, err
 	}
 	return result, nil
+}
+
+// The source tables include definitions already imported into current V2.
+// Only the old terminal non-import subset belongs to this history package.
+func campaignDefinitionHistorySelectedCount(ctx context.Context, tx pgx.Tx, run, table string, archivedCount int64) (int64, error) {
+	if table != "public/campaigns" && table != "public/campaign_steps" {
+		return 0, ErrInvalidScope
+	}
+	target := "cloud_campaigns"
+	if table == "public/campaign_steps" {
+		target = "cloud_campaign_steps"
+	}
+	var total, matched, selected int64
+	err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE p.verified AND a.source_key_digest IS NOT NULL AND (
+(p.disposition='import' AND p.target_domain='campaign' AND p.target_table=$4 AND p.reason='') OR
+(p.disposition IN ('archive','quarantine') AND p.target_domain IS NULL AND p.target_table IS NULL AND p.target_id IS NULL AND p.target_digest IS NULL AND p.reason<>''))),
+count(*) FILTER(WHERE p.disposition IN ('archive','quarantine'))
+FROM public.v1_domain_import_receipts p LEFT JOIN public.v1_archive_records a
+ON a.run_id=p.archive_run_id AND a.adapter_id=p.adapter_id AND a.table_id=p.table_id
+AND a.source_key_digest=p.source_key_digest AND a.payload_digest=p.payload_digest
+WHERE p.import_version='v1-domain-a1' AND p.archive_run_id=$1 AND p.adapter_id=$2 AND p.table_id=$3`, run, v1archive.DefaultAdapterID, table, target).Scan(&total, &matched, &selected)
+	if err != nil {
+		return 0, err
+	}
+	if total != archivedCount || matched != total {
+		return 0, ErrConflict
+	}
+	return selected, nil
 }
 
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
