@@ -18,9 +18,11 @@ type Querier interface {
 	CompleteMediaImageUploadReceipt(ctx context.Context, arg CompleteMediaImageUploadReceiptParams) (CompleteMediaImageUploadReceiptRow, error)
 	CompleteMediaMiniProgramReceipt(ctx context.Context, arg CompleteMediaMiniProgramReceiptParams) (CompleteMediaMiniProgramReceiptRow, error)
 	CountHistoricalGroupInvite(ctx context.Context) (int64, error)
+	CountHistoricalInvalidAsset(ctx context.Context) (int64, error)
 	CountMediaGroupInvites(ctx context.Context, arg CountMediaGroupInvitesParams) (int64, error)
 	CountMediaMiniPrograms(ctx context.Context, arg CountMediaMiniProgramsParams) (int64, error)
 	CreateHistoricalGroupInvite(ctx context.Context, arg CreateHistoricalGroupInviteParams) (MediaV1GroupInviteHistory, error)
+	CreateHistoricalInvalidAsset(ctx context.Context, arg CreateHistoricalInvalidAssetParams) (MediaV1InvalidAssetHistory, error)
 	CreateMediaCampaignDeliveryBinding(ctx context.Context, arg CreateMediaCampaignDeliveryBindingParams) (MediaCampaignDeliveryBinding, error)
 	CreateMediaContentPackage(ctx context.Context, arg CreateMediaContentPackageParams) (MediaContentPackage, error)
 	CreateMediaGroupInvite(ctx context.Context, arg CreateMediaGroupInviteParams) (int64, error)
@@ -32,6 +34,7 @@ type Querier interface {
 	DeleteMediaMiniProgram(ctx context.Context, id int64) error
 	GetGroupOpsUploadPreparation(ctx context.Context, externalEffectID int64) (GetGroupOpsUploadPreparationRow, error)
 	GetHistoricalGroupInvite(ctx context.Context, id int64) (MediaV1GroupInviteHistory, error)
+	GetHistoricalInvalidAsset(ctx context.Context, id int64) (MediaV1InvalidAssetHistory, error)
 	GetMediaAttachment(ctx context.Context, attachmentID int64) (GetMediaAttachmentRow, error)
 	GetMediaAttachmentMutation(ctx context.Context, arg GetMediaAttachmentMutationParams) (GetMediaAttachmentMutationRow, error)
 	GetMediaAttachmentUploadPart(ctx context.Context, arg GetMediaAttachmentUploadPartParams) (MediaAttachmentUploadPart, error)
@@ -74,6 +77,7 @@ type Querier interface {
 	InsertOutboundMediaEffectBinding(ctx context.Context, arg InsertOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
 	InsertOutboundMediaReconciliationReceipt(ctx context.Context, arg InsertOutboundMediaReconciliationReceiptParams) error
 	ListHistoricalGroupInvite(ctx context.Context, arg ListHistoricalGroupInviteParams) ([]MediaV1GroupInviteHistory, error)
+	ListHistoricalInvalidAsset(ctx context.Context, arg ListHistoricalInvalidAssetParams) ([]MediaV1InvalidAssetHistory, error)
 	ListMediaAttachmentUploadParts(ctx context.Context, uploadID int64) ([]ListMediaAttachmentUploadPartsRow, error)
 	ListMediaAttachments(ctx context.Context, arg ListMediaAttachmentsParams) ([]ListMediaAttachmentsRow, error)
 	ListMediaContentPackageRefs(ctx context.Context, packageID int64) ([]ListMediaContentPackageRefsRow, error)

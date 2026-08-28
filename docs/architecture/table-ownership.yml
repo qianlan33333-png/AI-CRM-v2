@@ -62,6 +62,8 @@ owners:
       - contact_v1_class_term_tag_history
       - contact_v1_wecom_event_log_history
       - contact_v1_wecom_follow_user_history
+      - contact_v1_unbound_tag_history
+      - contact_v1_invalid_channel_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -346,7 +348,7 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, media_wecom_upload_preparations, media_wecom_upload_receipts, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts, media_v1_group_invite_history]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, media_wecom_upload_preparations, media_wecom_upload_receipts, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts, media_v1_group_invite_history, media_v1_invalid_asset_history]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
@@ -377,7 +379,7 @@ owners:
 
   radar:
     package: internal/radar
-    tables: [radar_links, radar_link_idempotency_records, radar_link_events, radar_v1_click_history]
+    tables: [radar_links, radar_link_idempotency_records, radar_link_events, radar_v1_click_history, radar_v1_invalid_link_history]
     constraints:
       radar_links: local_only_link_facts_without_public_route_click_tracking_or_provider_effect
       radar_link_idempotency_records: actor_scoped_transactional_mutation_deduplication_without_raw_keys_or_provider_data
