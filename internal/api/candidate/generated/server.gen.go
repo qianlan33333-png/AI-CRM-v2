@@ -2707,6 +2707,339 @@ func (e ExternalEffectRuntimeState) Valid() bool {
 	}
 }
 
+// Defines values for GroupOpsErrorErrorCode.
+const (
+	GroupOpsErrorErrorCodeAuthenticationRequired       GroupOpsErrorErrorCode = "authentication_required"
+	GroupOpsErrorErrorCodeGroupOpsUnavailable          GroupOpsErrorErrorCode = "group_ops_unavailable"
+	GroupOpsErrorErrorCodeInvalidAssetReference        GroupOpsErrorErrorCode = "invalid_asset_reference"
+	GroupOpsErrorErrorCodeInvalidIdempotencyKey        GroupOpsErrorErrorCode = "invalid_idempotency_key"
+	GroupOpsErrorErrorCodeInvalidNodeId                GroupOpsErrorErrorCode = "invalid_node_id"
+	GroupOpsErrorErrorCodeInvalidPage                  GroupOpsErrorErrorCode = "invalid_page"
+	GroupOpsErrorErrorCodeInvalidPlanId                GroupOpsErrorErrorCode = "invalid_plan_id"
+	GroupOpsErrorErrorCodeInvalidRequest               GroupOpsErrorErrorCode = "invalid_request"
+	GroupOpsErrorErrorCodeInvalidStaffId               GroupOpsErrorErrorCode = "invalid_staff_id"
+	GroupOpsErrorErrorCodeMethodNotAllowed             GroupOpsErrorErrorCode = "method_not_allowed"
+	GroupOpsErrorErrorCodeOperationsConflict           GroupOpsErrorErrorCode = "operations_conflict"
+	GroupOpsErrorErrorCodePermissionDenied             GroupOpsErrorErrorCode = "permission_denied"
+	GroupOpsErrorErrorCodePlanNotFound                 GroupOpsErrorErrorCode = "plan_not_found"
+	GroupOpsErrorErrorCodeProtocolAuthUnavailable      GroupOpsErrorErrorCode = "protocol_auth_unavailable"
+	GroupOpsErrorErrorCodeProtocolAuthenticationFailed GroupOpsErrorErrorCode = "protocol_authentication_failed"
+	GroupOpsErrorErrorCodeProviderDisabled             GroupOpsErrorErrorCode = "provider_disabled"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsErrorErrorCode enum.
+func (e GroupOpsErrorErrorCode) Valid() bool {
+	switch e {
+	case GroupOpsErrorErrorCodeAuthenticationRequired:
+		return true
+	case GroupOpsErrorErrorCodeGroupOpsUnavailable:
+		return true
+	case GroupOpsErrorErrorCodeInvalidAssetReference:
+		return true
+	case GroupOpsErrorErrorCodeInvalidIdempotencyKey:
+		return true
+	case GroupOpsErrorErrorCodeInvalidNodeId:
+		return true
+	case GroupOpsErrorErrorCodeInvalidPage:
+		return true
+	case GroupOpsErrorErrorCodeInvalidPlanId:
+		return true
+	case GroupOpsErrorErrorCodeInvalidRequest:
+		return true
+	case GroupOpsErrorErrorCodeInvalidStaffId:
+		return true
+	case GroupOpsErrorErrorCodeMethodNotAllowed:
+		return true
+	case GroupOpsErrorErrorCodeOperationsConflict:
+		return true
+	case GroupOpsErrorErrorCodePermissionDenied:
+		return true
+	case GroupOpsErrorErrorCodePlanNotFound:
+		return true
+	case GroupOpsErrorErrorCodeProtocolAuthUnavailable:
+		return true
+	case GroupOpsErrorErrorCodeProtocolAuthenticationFailed:
+		return true
+	case GroupOpsErrorErrorCodeProviderDisabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsErrorOk.
+const (
+	GroupOpsErrorOkFalse GroupOpsErrorOk = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsErrorOk enum.
+func (e GroupOpsErrorOk) Valid() bool {
+	switch e {
+	case GroupOpsErrorOkFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsErrorProviderExecutionEligible.
+const (
+	GroupOpsErrorProviderExecutionEligibleFalse GroupOpsErrorProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsErrorProviderExecutionEligible enum.
+func (e GroupOpsErrorProviderExecutionEligible) Valid() bool {
+	switch e {
+	case GroupOpsErrorProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsErrorRealExternalCallExecuted.
+const (
+	GroupOpsErrorRealExternalCallExecutedFalse GroupOpsErrorRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsErrorRealExternalCallExecuted enum.
+func (e GroupOpsErrorRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case GroupOpsErrorRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryDirectorySourceKind.
+const (
+	GroupChats              GroupOpsHistoryDirectorySourceKind = "group_chats"
+	WecomGroupChatSnapshots GroupOpsHistoryDirectorySourceKind = "wecom_group_chat_snapshots"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryDirectorySourceKind enum.
+func (e GroupOpsHistoryDirectorySourceKind) Valid() bool {
+	switch e {
+	case GroupChats:
+		return true
+	case WecomGroupChatSnapshots:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryDirectoryPageReadOnly.
+const (
+	GroupOpsHistoryDirectoryPageReadOnlyTrue GroupOpsHistoryDirectoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryDirectoryPageReadOnly enum.
+func (e GroupOpsHistoryDirectoryPageReadOnly) Valid() bool {
+	switch e {
+	case GroupOpsHistoryDirectoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryDirectoryPageRealExternalCallExecuted.
+const (
+	GroupOpsHistoryDirectoryPageRealExternalCallExecutedFalse GroupOpsHistoryDirectoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryDirectoryPageRealExternalCallExecuted enum.
+func (e GroupOpsHistoryDirectoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case GroupOpsHistoryDirectoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryDirectoryPageSource.
+const (
+	GroupOpsHistoryDirectoryPageSourceV1History GroupOpsHistoryDirectoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryDirectoryPageSource enum.
+func (e GroupOpsHistoryDirectoryPageSource) Valid() bool {
+	switch e {
+	case GroupOpsHistoryDirectoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryGroupPageReadOnly.
+const (
+	GroupOpsHistoryGroupPageReadOnlyTrue GroupOpsHistoryGroupPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryGroupPageReadOnly enum.
+func (e GroupOpsHistoryGroupPageReadOnly) Valid() bool {
+	switch e {
+	case GroupOpsHistoryGroupPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryGroupPageRealExternalCallExecuted.
+const (
+	GroupOpsHistoryGroupPageRealExternalCallExecutedFalse GroupOpsHistoryGroupPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryGroupPageRealExternalCallExecuted enum.
+func (e GroupOpsHistoryGroupPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case GroupOpsHistoryGroupPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryGroupPageSource.
+const (
+	GroupOpsHistoryGroupPageSourceV1History GroupOpsHistoryGroupPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryGroupPageSource enum.
+func (e GroupOpsHistoryGroupPageSource) Valid() bool {
+	switch e {
+	case GroupOpsHistoryGroupPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryNodePageReadOnly.
+const (
+	GroupOpsHistoryNodePageReadOnlyTrue GroupOpsHistoryNodePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryNodePageReadOnly enum.
+func (e GroupOpsHistoryNodePageReadOnly) Valid() bool {
+	switch e {
+	case GroupOpsHistoryNodePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryNodePageRealExternalCallExecuted.
+const (
+	GroupOpsHistoryNodePageRealExternalCallExecutedFalse GroupOpsHistoryNodePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryNodePageRealExternalCallExecuted enum.
+func (e GroupOpsHistoryNodePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case GroupOpsHistoryNodePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryNodePageSource.
+const (
+	GroupOpsHistoryNodePageSourceV1History GroupOpsHistoryNodePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryNodePageSource enum.
+func (e GroupOpsHistoryNodePageSource) Valid() bool {
+	switch e {
+	case GroupOpsHistoryNodePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryPlanRevision.
+const (
+	N1 GroupOpsHistoryPlanRevision = 1
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryPlanRevision enum.
+func (e GroupOpsHistoryPlanRevision) Valid() bool {
+	switch e {
+	case N1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryPlanStatus.
+const (
+	GroupOpsHistoryPlanStatusArchived GroupOpsHistoryPlanStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryPlanStatus enum.
+func (e GroupOpsHistoryPlanStatus) Valid() bool {
+	switch e {
+	case GroupOpsHistoryPlanStatusArchived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryPlanPageReadOnly.
+const (
+	GroupOpsHistoryPlanPageReadOnlyTrue GroupOpsHistoryPlanPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryPlanPageReadOnly enum.
+func (e GroupOpsHistoryPlanPageReadOnly) Valid() bool {
+	switch e {
+	case GroupOpsHistoryPlanPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryPlanPageRealExternalCallExecuted.
+const (
+	GroupOpsHistoryPlanPageRealExternalCallExecutedFalse GroupOpsHistoryPlanPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryPlanPageRealExternalCallExecuted enum.
+func (e GroupOpsHistoryPlanPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case GroupOpsHistoryPlanPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupOpsHistoryPlanPageSource.
+const (
+	GroupOpsHistoryPlanPageSourceV1History GroupOpsHistoryPlanPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the GroupOpsHistoryPlanPageSource enum.
+func (e GroupOpsHistoryPlanPageSource) Valid() bool {
+	switch e {
+	case GroupOpsHistoryPlanPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityMergeReviewStatus.
 const (
 	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
@@ -7524,31 +7857,31 @@ func (e SetupWizardAuditReceiptKey) Valid() bool {
 
 // Defines values for SetupWizardErrorError.
 const (
-	SetupWizardErrorErrorInvalidActionToken     SetupWizardErrorError = "invalid_action_token"
-	SetupWizardErrorErrorInvalidIdempotencyKey  SetupWizardErrorError = "invalid_idempotency_key"
-	SetupWizardErrorErrorInvalidRequest         SetupWizardErrorError = "invalid_request"
-	SetupWizardErrorErrorInvalidSetting         SetupWizardErrorError = "invalid_setting"
-	SetupWizardErrorErrorSecretInputForbidden   SetupWizardErrorError = "secret_input_forbidden"
-	SetupWizardErrorErrorSetupWizardConflict    SetupWizardErrorError = "setup_wizard_conflict"
-	SetupWizardErrorErrorSetupWizardUnavailable SetupWizardErrorError = "setup_wizard_unavailable"
+	InvalidActionToken     SetupWizardErrorError = "invalid_action_token"
+	InvalidIdempotencyKey  SetupWizardErrorError = "invalid_idempotency_key"
+	InvalidRequest         SetupWizardErrorError = "invalid_request"
+	InvalidSetting         SetupWizardErrorError = "invalid_setting"
+	SecretInputForbidden   SetupWizardErrorError = "secret_input_forbidden"
+	SetupWizardConflict    SetupWizardErrorError = "setup_wizard_conflict"
+	SetupWizardUnavailable SetupWizardErrorError = "setup_wizard_unavailable"
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardErrorError enum.
 func (e SetupWizardErrorError) Valid() bool {
 	switch e {
-	case SetupWizardErrorErrorInvalidActionToken:
+	case InvalidActionToken:
 		return true
-	case SetupWizardErrorErrorInvalidIdempotencyKey:
+	case InvalidIdempotencyKey:
 		return true
-	case SetupWizardErrorErrorInvalidRequest:
+	case InvalidRequest:
 		return true
-	case SetupWizardErrorErrorInvalidSetting:
+	case InvalidSetting:
 		return true
-	case SetupWizardErrorErrorSecretInputForbidden:
+	case SecretInputForbidden:
 		return true
-	case SetupWizardErrorErrorSetupWizardConflict:
+	case SetupWizardConflict:
 		return true
-	case SetupWizardErrorErrorSetupWizardUnavailable:
+	case SetupWizardUnavailable:
 		return true
 	default:
 		return false
@@ -7941,13 +8274,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -8400,19 +8733,19 @@ func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
 
 // Defines values for ListLegacyChannelsParamsStatus.
 const (
-	ListLegacyChannelsParamsStatusActive   ListLegacyChannelsParamsStatus = "active"
-	ListLegacyChannelsParamsStatusArchived ListLegacyChannelsParamsStatus = "archived"
-	ListLegacyChannelsParamsStatusInactive ListLegacyChannelsParamsStatus = "inactive"
+	Active   ListLegacyChannelsParamsStatus = "active"
+	Archived ListLegacyChannelsParamsStatus = "archived"
+	Inactive ListLegacyChannelsParamsStatus = "inactive"
 )
 
 // Valid indicates whether the value is a known member of the ListLegacyChannelsParamsStatus enum.
 func (e ListLegacyChannelsParamsStatus) Valid() bool {
 	switch e {
-	case ListLegacyChannelsParamsStatusActive:
+	case Active:
 		return true
-	case ListLegacyChannelsParamsStatusArchived:
+	case Archived:
 		return true
-	case ListLegacyChannelsParamsStatusInactive:
+	case Inactive:
 		return true
 	default:
 		return false
@@ -10259,6 +10592,184 @@ type FieldError struct {
 type GrantProductLocalEntitlementRequest struct {
 	OrderId int64 `json:"order_id"`
 }
+
+// GroupOpsError defines model for GroupOpsError.
+type GroupOpsError struct {
+	Error struct {
+		Code GroupOpsErrorErrorCode `json:"code"`
+	} `json:"error"`
+	Ok                        GroupOpsErrorOk                        `json:"ok"`
+	ProviderExecutionEligible GroupOpsErrorProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  GroupOpsErrorRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// GroupOpsErrorErrorCode defines model for GroupOpsError.Error.Code.
+type GroupOpsErrorErrorCode string
+
+// GroupOpsErrorOk defines model for GroupOpsError.Ok.
+type GroupOpsErrorOk bool
+
+// GroupOpsErrorProviderExecutionEligible defines model for GroupOpsError.ProviderExecutionEligible.
+type GroupOpsErrorProviderExecutionEligible bool
+
+// GroupOpsErrorRealExternalCallExecuted defines model for GroupOpsError.RealExternalCallExecuted.
+type GroupOpsErrorRealExternalCallExecuted bool
+
+// GroupOpsHistoryDirectory defines model for GroupOpsHistoryDirectory.
+type GroupOpsHistoryDirectory struct {
+	ChatReference       string                             `json:"chat_reference"`
+	DisplayName         *string                            `json:"display_name"`
+	ExternalMemberCount *int32                             `json:"external_member_count"`
+	Id                  int64                              `json:"id"`
+	InternalMemberCount *int32                             `json:"internal_member_count"`
+	MemberCount         *int32                             `json:"member_count"`
+	OriginalStatus      string                             `json:"original_status"`
+	OwnerName           *string                            `json:"owner_name"`
+	OwnerStaffId        *int64                             `json:"owner_staff_id"`
+	RecordedAt          time.Time                          `json:"recorded_at"`
+	SourceId            *int64                             `json:"source_id"`
+	SourceKind          GroupOpsHistoryDirectorySourceKind `json:"source_kind"`
+}
+
+// GroupOpsHistoryDirectorySourceKind defines model for GroupOpsHistoryDirectory.SourceKind.
+type GroupOpsHistoryDirectorySourceKind string
+
+// GroupOpsHistoryDirectoryPage defines model for GroupOpsHistoryDirectoryPage.
+type GroupOpsHistoryDirectoryPage struct {
+	Items                    []GroupOpsHistoryDirectory                           `json:"items"`
+	Limit                    int                                                  `json:"limit"`
+	Offset                   int32                                                `json:"offset"`
+	ReadOnly                 GroupOpsHistoryDirectoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted GroupOpsHistoryDirectoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   GroupOpsHistoryDirectoryPageSource                   `json:"source"`
+	Total                    int64                                                `json:"total"`
+}
+
+// GroupOpsHistoryDirectoryPageReadOnly defines model for GroupOpsHistoryDirectoryPage.ReadOnly.
+type GroupOpsHistoryDirectoryPageReadOnly bool
+
+// GroupOpsHistoryDirectoryPageRealExternalCallExecuted defines model for GroupOpsHistoryDirectoryPage.RealExternalCallExecuted.
+type GroupOpsHistoryDirectoryPageRealExternalCallExecuted bool
+
+// GroupOpsHistoryDirectoryPageSource defines model for GroupOpsHistoryDirectoryPage.Source.
+type GroupOpsHistoryDirectoryPageSource string
+
+// GroupOpsHistoryGroup defines model for GroupOpsHistoryGroup.
+type GroupOpsHistoryGroup struct {
+	ChatReference       string     `json:"chat_reference"`
+	CreatedAt           time.Time  `json:"created_at"`
+	DisplayName         string     `json:"display_name"`
+	ExternalMemberCount int32      `json:"external_member_count"`
+	Id                  int64      `json:"id"`
+	InternalMemberCount int32      `json:"internal_member_count"`
+	OriginalStatus      string     `json:"original_status"`
+	OwnerStaffId        *int64     `json:"owner_staff_id"`
+	PlanId              string     `json:"plan_id"`
+	RemovedAt           *time.Time `json:"removed_at"`
+	SourceGroupId       int64      `json:"source_group_id"`
+	SourcePlanId        int64      `json:"source_plan_id"`
+}
+
+// GroupOpsHistoryGroupPage defines model for GroupOpsHistoryGroupPage.
+type GroupOpsHistoryGroupPage struct {
+	Items                    []GroupOpsHistoryGroup                           `json:"items"`
+	Limit                    int                                              `json:"limit"`
+	Offset                   int32                                            `json:"offset"`
+	PlanId                   string                                           `json:"plan_id"`
+	ReadOnly                 GroupOpsHistoryGroupPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted GroupOpsHistoryGroupPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   GroupOpsHistoryGroupPageSource                   `json:"source"`
+	Total                    int64                                            `json:"total"`
+}
+
+// GroupOpsHistoryGroupPageReadOnly defines model for GroupOpsHistoryGroupPage.ReadOnly.
+type GroupOpsHistoryGroupPageReadOnly bool
+
+// GroupOpsHistoryGroupPageRealExternalCallExecuted defines model for GroupOpsHistoryGroupPage.RealExternalCallExecuted.
+type GroupOpsHistoryGroupPageRealExternalCallExecuted bool
+
+// GroupOpsHistoryGroupPageSource defines model for GroupOpsHistoryGroupPage.Source.
+type GroupOpsHistoryGroupPageSource string
+
+// GroupOpsHistoryNode defines model for GroupOpsHistoryNode.
+type GroupOpsHistoryNode struct {
+	ContentPackage map[string]interface{} `json:"content_package"`
+	CreatedAt      time.Time              `json:"created_at"`
+	DayIndex       int32                  `json:"day_index"`
+	Id             int64                  `json:"id"`
+	OriginalStatus string                 `json:"original_status"`
+	PlanId         string                 `json:"plan_id"`
+	SortOrder      int32                  `json:"sort_order"`
+	SourceNodeId   int64                  `json:"source_node_id"`
+	SourcePlanId   int64                  `json:"source_plan_id"`
+	TriggerTime    string                 `json:"trigger_time"`
+	UpdatedAt      time.Time              `json:"updated_at"`
+}
+
+// GroupOpsHistoryNodePage defines model for GroupOpsHistoryNodePage.
+type GroupOpsHistoryNodePage struct {
+	Items                    []GroupOpsHistoryNode                           `json:"items"`
+	Limit                    int                                             `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	PlanId                   string                                          `json:"plan_id"`
+	ReadOnly                 GroupOpsHistoryNodePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted GroupOpsHistoryNodePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   GroupOpsHistoryNodePageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// GroupOpsHistoryNodePageReadOnly defines model for GroupOpsHistoryNodePage.ReadOnly.
+type GroupOpsHistoryNodePageReadOnly bool
+
+// GroupOpsHistoryNodePageRealExternalCallExecuted defines model for GroupOpsHistoryNodePage.RealExternalCallExecuted.
+type GroupOpsHistoryNodePageRealExternalCallExecuted bool
+
+// GroupOpsHistoryNodePageSource defines model for GroupOpsHistoryNodePage.Source.
+type GroupOpsHistoryNodePageSource string
+
+// GroupOpsHistoryPlan defines model for GroupOpsHistoryPlan.
+type GroupOpsHistoryPlan struct {
+	ArchivedAt     *time.Time                  `json:"archived_at"`
+	CreatedAt      time.Time                   `json:"created_at"`
+	CreatedBy      int64                       `json:"created_by"`
+	Name           string                      `json:"name"`
+	OriginalStatus string                      `json:"original_status"`
+	OwnerStaffId   *int64                      `json:"owner_staff_id"`
+	PlanId         string                      `json:"plan_id"`
+	PlanType       string                      `json:"plan_type"`
+	Revision       GroupOpsHistoryPlanRevision `json:"revision"`
+	SourceCode     string                      `json:"source_code"`
+	SourcePlanId   int64                       `json:"source_plan_id"`
+	Status         GroupOpsHistoryPlanStatus   `json:"status"`
+	UpdatedAt      time.Time                   `json:"updated_at"`
+	UpdatedBy      int64                       `json:"updated_by"`
+}
+
+// GroupOpsHistoryPlanRevision defines model for GroupOpsHistoryPlan.Revision.
+type GroupOpsHistoryPlanRevision int64
+
+// GroupOpsHistoryPlanStatus defines model for GroupOpsHistoryPlan.Status.
+type GroupOpsHistoryPlanStatus string
+
+// GroupOpsHistoryPlanPage defines model for GroupOpsHistoryPlanPage.
+type GroupOpsHistoryPlanPage struct {
+	Items                    []GroupOpsHistoryPlan                           `json:"items"`
+	Limit                    int                                             `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 GroupOpsHistoryPlanPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted GroupOpsHistoryPlanPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   GroupOpsHistoryPlanPageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// GroupOpsHistoryPlanPageReadOnly defines model for GroupOpsHistoryPlanPage.ReadOnly.
+type GroupOpsHistoryPlanPageReadOnly bool
+
+// GroupOpsHistoryPlanPageRealExternalCallExecuted defines model for GroupOpsHistoryPlanPage.RealExternalCallExecuted.
+type GroupOpsHistoryPlanPageRealExternalCallExecuted bool
+
+// GroupOpsHistoryPlanPageSource defines model for GroupOpsHistoryPlanPage.Source.
+type GroupOpsHistoryPlanPageSource string
 
 // IdentityMergeReview Closed administrator fact. It never contains normalized identities, provider identifiers, or raw payloads; identity_fingerprint is a versioned secret-backed HMAC only.
 type IdentityMergeReview struct {
@@ -13752,6 +14263,9 @@ type EntitlementLimit = int
 // ExternalEffectRuntimeID defines model for ExternalEffectRuntimeID.
 type ExternalEffectRuntimeID = string
 
+// GroupOpsLimit defines model for GroupOpsLimit.
+type GroupOpsLimit = int
+
 // GroupOpsPlanID defines model for GroupOpsPlanID.
 type GroupOpsPlanID = string
 
@@ -13999,6 +14513,30 @@ type ListAutomationTriggerRunsParams struct {
 
 // ListAutomationTriggerRunsParamsVisibility defines parameters for ListAutomationTriggerRuns.
 type ListAutomationTriggerRunsParamsVisibility string
+
+// ListGroupOpsHistoryDirectoryParams defines parameters for ListGroupOpsHistoryDirectory.
+type ListGroupOpsHistoryDirectoryParams struct {
+	Limit  *GroupOpsLimit `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32         `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListGroupOpsHistoryPlansParams defines parameters for ListGroupOpsHistoryPlans.
+type ListGroupOpsHistoryPlansParams struct {
+	Limit  *GroupOpsLimit `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32         `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListGroupOpsHistoryGroupsParams defines parameters for ListGroupOpsHistoryGroups.
+type ListGroupOpsHistoryGroupsParams struct {
+	Limit  *GroupOpsLimit `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32         `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListGroupOpsHistoryNodesParams defines parameters for ListGroupOpsHistoryNodes.
+type ListGroupOpsHistoryNodesParams struct {
+	Limit  *GroupOpsLimit `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32         `form:"offset,omitempty" json:"offset,omitempty"`
+}
 
 // RunAdminOpsFeishuHourlyReportPlanParams defines parameters for RunAdminOpsFeishuHourlyReportPlan.
 type RunAdminOpsFeishuHourlyReportPlanParams struct {
@@ -16980,6 +17518,18 @@ type ServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/directory)
+	ListGroupOpsHistoryDirectory(w http.ResponseWriter, r *http.Request, params ListGroupOpsHistoryDirectoryParams)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/plans)
+	ListGroupOpsHistoryPlans(w http.ResponseWriter, r *http.Request, params ListGroupOpsHistoryPlansParams)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/groups)
+	ListGroupOpsHistoryGroups(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryGroupsParams)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes)
+	ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryNodesParams)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request)
@@ -17790,6 +18340,30 @@ func (_ Unimplemented) PutMediaAttachmentMultipartPart(w http.ResponseWriter, r 
 // List real D01 Automation trigger receipts through the frozen legacy path
 // (GET /api/admin/automation-conversion/agent-runs)
 func (_ Unimplemented) ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Group Ops history without runtime effects
+// (GET /api/admin/automation-conversion/group-ops/history/directory)
+func (_ Unimplemented) ListGroupOpsHistoryDirectory(w http.ResponseWriter, r *http.Request, params ListGroupOpsHistoryDirectoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Group Ops history without runtime effects
+// (GET /api/admin/automation-conversion/group-ops/history/plans)
+func (_ Unimplemented) ListGroupOpsHistoryPlans(w http.ResponseWriter, r *http.Request, params ListGroupOpsHistoryPlansParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Group Ops history without runtime effects
+// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/groups)
+func (_ Unimplemented) ListGroupOpsHistoryGroups(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryGroupsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Group Ops history without runtime effects
+// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes)
+func (_ Unimplemented) ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryNodesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -19862,6 +20436,188 @@ func (siw *ServerInterfaceWrapper) ListAutomationTriggerRuns(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAutomationTriggerRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGroupOpsHistoryDirectory operation middleware
+func (siw *ServerInterfaceWrapper) ListGroupOpsHistoryDirectory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupOpsHistoryDirectoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGroupOpsHistoryDirectory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGroupOpsHistoryPlans operation middleware
+func (siw *ServerInterfaceWrapper) ListGroupOpsHistoryPlans(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupOpsHistoryPlansParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGroupOpsHistoryPlans(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGroupOpsHistoryGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListGroupOpsHistoryGroups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId GroupOpsPlanID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupOpsHistoryGroupsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGroupOpsHistoryGroups(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListGroupOpsHistoryNodes operation middleware
+func (siw *ServerInterfaceWrapper) ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId GroupOpsPlanID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListGroupOpsHistoryNodesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListGroupOpsHistoryNodes(w, r, planId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -34684,6 +35440,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-conversion/group-ops/history/directory", wrapper.ListGroupOpsHistoryDirectory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-conversion/group-ops/history/plans", wrapper.ListGroupOpsHistoryPlans)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-conversion/group-ops/history/plans/{plan_id}/groups", wrapper.ListGroupOpsHistoryGroups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes", wrapper.ListGroupOpsHistoryNodes)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/broadcast-jobs", wrapper.ListAdminOpsBroadcastJobs)
 	})
 	r.Group(func(r chi.Router) {
@@ -36153,6 +36921,220 @@ func (response ListAutomationTriggerRuns403JSONResponse) VisitListAutomationTrig
 type ListAutomationTriggerRuns503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAutomationTriggerRuns503JSONResponse) VisitListAutomationTriggerRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryDirectoryRequestObject struct {
+	Params ListGroupOpsHistoryDirectoryParams
+}
+
+type ListGroupOpsHistoryDirectoryResponseObject interface {
+	VisitListGroupOpsHistoryDirectoryResponse(w http.ResponseWriter) error
+}
+
+type ListGroupOpsHistoryDirectory200JSONResponse GroupOpsHistoryDirectoryPage
+
+func (response ListGroupOpsHistoryDirectory200JSONResponse) VisitListGroupOpsHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryDirectory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListGroupOpsHistoryDirectory400JSONResponse) VisitListGroupOpsHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryDirectory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListGroupOpsHistoryDirectory401JSONResponse) VisitListGroupOpsHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryDirectory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListGroupOpsHistoryDirectory403JSONResponse) VisitListGroupOpsHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryDirectory503JSONResponse GroupOpsError
+
+func (response ListGroupOpsHistoryDirectory503JSONResponse) VisitListGroupOpsHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryPlansRequestObject struct {
+	Params ListGroupOpsHistoryPlansParams
+}
+
+type ListGroupOpsHistoryPlansResponseObject interface {
+	VisitListGroupOpsHistoryPlansResponse(w http.ResponseWriter) error
+}
+
+type ListGroupOpsHistoryPlans200JSONResponse GroupOpsHistoryPlanPage
+
+func (response ListGroupOpsHistoryPlans200JSONResponse) VisitListGroupOpsHistoryPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryPlans400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListGroupOpsHistoryPlans400JSONResponse) VisitListGroupOpsHistoryPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryPlans401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListGroupOpsHistoryPlans401JSONResponse) VisitListGroupOpsHistoryPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryPlans403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListGroupOpsHistoryPlans403JSONResponse) VisitListGroupOpsHistoryPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryPlans503JSONResponse GroupOpsError
+
+func (response ListGroupOpsHistoryPlans503JSONResponse) VisitListGroupOpsHistoryPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryGroupsRequestObject struct {
+	PlanId GroupOpsPlanID `json:"plan_id"`
+	Params ListGroupOpsHistoryGroupsParams
+}
+
+type ListGroupOpsHistoryGroupsResponseObject interface {
+	VisitListGroupOpsHistoryGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListGroupOpsHistoryGroups200JSONResponse GroupOpsHistoryGroupPage
+
+func (response ListGroupOpsHistoryGroups200JSONResponse) VisitListGroupOpsHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryGroups400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListGroupOpsHistoryGroups400JSONResponse) VisitListGroupOpsHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListGroupOpsHistoryGroups401JSONResponse) VisitListGroupOpsHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListGroupOpsHistoryGroups403JSONResponse) VisitListGroupOpsHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryGroups503JSONResponse GroupOpsError
+
+func (response ListGroupOpsHistoryGroups503JSONResponse) VisitListGroupOpsHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryNodesRequestObject struct {
+	PlanId GroupOpsPlanID `json:"plan_id"`
+	Params ListGroupOpsHistoryNodesParams
+}
+
+type ListGroupOpsHistoryNodesResponseObject interface {
+	VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error
+}
+
+type ListGroupOpsHistoryNodes200JSONResponse GroupOpsHistoryNodePage
+
+func (response ListGroupOpsHistoryNodes200JSONResponse) VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryNodes400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListGroupOpsHistoryNodes400JSONResponse) VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryNodes401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListGroupOpsHistoryNodes401JSONResponse) VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryNodes403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListGroupOpsHistoryNodes403JSONResponse) VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListGroupOpsHistoryNodes503JSONResponse GroupOpsError
+
+func (response ListGroupOpsHistoryNodes503JSONResponse) VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -51786,6 +52768,18 @@ type StrictServerInterface interface {
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/directory)
+	ListGroupOpsHistoryDirectory(ctx context.Context, request ListGroupOpsHistoryDirectoryRequestObject) (ListGroupOpsHistoryDirectoryResponseObject, error)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/plans)
+	ListGroupOpsHistoryPlans(ctx context.Context, request ListGroupOpsHistoryPlansRequestObject) (ListGroupOpsHistoryPlansResponseObject, error)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/groups)
+	ListGroupOpsHistoryGroups(ctx context.Context, request ListGroupOpsHistoryGroupsRequestObject) (ListGroupOpsHistoryGroupsResponseObject, error)
+	// Read immutable V1 Group Ops history without runtime effects
+	// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes)
+	ListGroupOpsHistoryNodes(ctx context.Context, request ListGroupOpsHistoryNodesRequestObject) (ListGroupOpsHistoryNodesResponseObject, error)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(ctx context.Context, request ListAdminOpsBroadcastJobsRequestObject) (ListAdminOpsBroadcastJobsResponseObject, error)
@@ -52869,6 +53863,112 @@ func (sh *strictHandler) ListAutomationTriggerRuns(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAutomationTriggerRunsResponseObject); ok {
 		if err := validResponse.VisitListAutomationTriggerRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListGroupOpsHistoryDirectory operation middleware
+func (sh *strictHandler) ListGroupOpsHistoryDirectory(w http.ResponseWriter, r *http.Request, params ListGroupOpsHistoryDirectoryParams) {
+	var request ListGroupOpsHistoryDirectoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListGroupOpsHistoryDirectory(ctx, request.(ListGroupOpsHistoryDirectoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListGroupOpsHistoryDirectory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListGroupOpsHistoryDirectoryResponseObject); ok {
+		if err := validResponse.VisitListGroupOpsHistoryDirectoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListGroupOpsHistoryPlans operation middleware
+func (sh *strictHandler) ListGroupOpsHistoryPlans(w http.ResponseWriter, r *http.Request, params ListGroupOpsHistoryPlansParams) {
+	var request ListGroupOpsHistoryPlansRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListGroupOpsHistoryPlans(ctx, request.(ListGroupOpsHistoryPlansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListGroupOpsHistoryPlans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListGroupOpsHistoryPlansResponseObject); ok {
+		if err := validResponse.VisitListGroupOpsHistoryPlansResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListGroupOpsHistoryGroups operation middleware
+func (sh *strictHandler) ListGroupOpsHistoryGroups(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryGroupsParams) {
+	var request ListGroupOpsHistoryGroupsRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListGroupOpsHistoryGroups(ctx, request.(ListGroupOpsHistoryGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListGroupOpsHistoryGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListGroupOpsHistoryGroupsResponseObject); ok {
+		if err := validResponse.VisitListGroupOpsHistoryGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListGroupOpsHistoryNodes operation middleware
+func (sh *strictHandler) ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryNodesParams) {
+	var request ListGroupOpsHistoryNodesRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListGroupOpsHistoryNodes(ctx, request.(ListGroupOpsHistoryNodesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListGroupOpsHistoryNodes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListGroupOpsHistoryNodesResponseObject); ok {
+		if err := validResponse.VisitListGroupOpsHistoryNodesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -43,3 +43,4 @@ output-options:
     - p4-media-content-delivery
     - commerce-refund-v2
     - p4-api-client-oauth
+    - p4-groupops-history

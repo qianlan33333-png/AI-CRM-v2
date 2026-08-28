@@ -5950,6 +5950,100 @@ paths:
         "503":
           description: Submission snapshot storage unavailable.
           content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /api/admin/automation-conversion/group-ops/history/plans:
+    get:
+      tags: [p4-groupops-history]
+      operationId: listGroupOpsHistoryPlans
+      summary: Read immutable V1 Group Ops history without runtime effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-GROUPOPS-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: group_ops.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { $ref: "#/components/parameters/GroupOpsLimit" }
+        - { name: offset, in: query, schema: { type: integer, format: int32, minimum: 0, maximum: 2147483647, default: 0 } }
+      responses:
+        "200": { description: Immutable historical page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsHistoryPlanPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: History unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/admin/automation-conversion/group-ops/history/directory:
+    get:
+      tags: [p4-groupops-history]
+      operationId: listGroupOpsHistoryDirectory
+      summary: Read immutable V1 Group Ops history without runtime effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-GROUPOPS-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: group_ops.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { $ref: "#/components/parameters/GroupOpsLimit" }
+        - { name: offset, in: query, schema: { type: integer, format: int32, minimum: 0, maximum: 2147483647, default: 0 } }
+      responses:
+        "200": { description: Immutable historical page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsHistoryDirectoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: History unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/groups:
+    get:
+      tags: [p4-groupops-history]
+      operationId: listGroupOpsHistoryGroups
+      summary: Read immutable V1 Group Ops history without runtime effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-GROUPOPS-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: group_ops.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { $ref: "#/components/parameters/GroupOpsPlanID" }
+        - { $ref: "#/components/parameters/GroupOpsLimit" }
+        - { name: offset, in: query, schema: { type: integer, format: int32, minimum: 0, maximum: 2147483647, default: 0 } }
+      responses:
+        "200": { description: Immutable historical page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsHistoryGroupPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: History unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes:
+    get:
+      tags: [p4-groupops-history]
+      operationId: listGroupOpsHistoryNodes
+      summary: Read immutable V1 Group Ops history without runtime effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-GROUPOPS-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: group_ops.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { $ref: "#/components/parameters/GroupOpsPlanID" }
+        - { $ref: "#/components/parameters/GroupOpsLimit" }
+        - { name: offset, in: query, schema: { type: integer, format: int32, minimum: 0, maximum: 2147483647, default: 0 } }
+      responses:
+        "200": { description: Immutable historical page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsHistoryNodePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: History unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
   /api/admin/automation-conversion/group-ops/plans:
     get:
       tags: [p4-group-ops]
@@ -14068,6 +14162,125 @@ components:
           properties: { code: { type: string, enum: [authentication_required, permission_denied, protocol_authentication_failed, protocol_auth_unavailable, provider_disabled, invalid_plan_id, invalid_staff_id, invalid_node_id, invalid_asset_reference, invalid_page, invalid_idempotency_key, invalid_request, plan_not_found, operations_conflict, group_ops_unavailable, method_not_allowed] } }
         provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    GroupOpsHistoryPlan:
+      type: object
+      additionalProperties: false
+      required: [plan_id, name, status, revision, created_by, updated_by, created_at, updated_at, source_plan_id, source_code, plan_type, original_status, owner_staff_id, archived_at]
+      properties:
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        name: { type: string }
+        status: { type: string, enum: [archived] }
+        revision: { type: integer, format: int64, enum: [1] }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        source_plan_id: { type: integer, format: int64, minimum: 1 }
+        source_code: { type: string }
+        plan_type: { type: string }
+        original_status: { type: string }
+        owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        archived_at: { type: string, format: date-time, nullable: true }
+    GroupOpsHistoryPlanPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsHistoryPlan" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    GroupOpsHistoryDirectory:
+      type: object
+      additionalProperties: false
+      required: [id, source_kind, source_id, chat_reference, display_name, owner_staff_id, owner_name, member_count, internal_member_count, external_member_count, original_status, recorded_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_kind: { type: string, enum: [group_chats, wecom_group_chat_snapshots] }
+        source_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        chat_reference: { type: string }
+        display_name: { type: string, nullable: true }
+        owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        owner_name: { type: string, nullable: true }
+        member_count: { type: integer, format: int32, minimum: 0, nullable: true }
+        internal_member_count: { type: integer, format: int32, minimum: 0, nullable: true }
+        external_member_count: { type: integer, format: int32, minimum: 0, nullable: true }
+        original_status: { type: string }
+        recorded_at: { type: string, format: date-time }
+    GroupOpsHistoryDirectoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsHistoryDirectory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    GroupOpsHistoryGroup:
+      type: object
+      additionalProperties: false
+      required: [id, source_group_id, source_plan_id, plan_id, chat_reference, display_name, owner_staff_id, internal_member_count, external_member_count, original_status, created_at, removed_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_group_id: { type: integer, format: int64, minimum: 1 }
+        source_plan_id: { type: integer, format: int64, minimum: 1 }
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        chat_reference: { type: string }
+        display_name: { type: string }
+        owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        internal_member_count: { type: integer, format: int32, minimum: 0 }
+        external_member_count: { type: integer, format: int32, minimum: 0 }
+        original_status: { type: string }
+        created_at: { type: string, format: date-time }
+        removed_at: { type: string, format: date-time, nullable: true }
+    GroupOpsHistoryGroupPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset, plan_id]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsHistoryGroup" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+    GroupOpsHistoryNode:
+      type: object
+      additionalProperties: false
+      required: [id, source_node_id, source_plan_id, plan_id, day_index, trigger_time, sort_order, original_status, content_package, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_node_id: { type: integer, format: int64, minimum: 1 }
+        source_plan_id: { type: integer, format: int64, minimum: 1 }
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        day_index: { type: integer, format: int32, minimum: 0 }
+        trigger_time: { type: string }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+        original_status: { type: string }
+        content_package: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    GroupOpsHistoryNodePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset, plan_id]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsHistoryNode" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
     GroupOpsPlan:
       type: object
       additionalProperties: false

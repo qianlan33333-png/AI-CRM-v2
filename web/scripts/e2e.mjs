@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '' } = {}) {
+async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp);
+      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp);
       if (couponHistoryHttp) {
         window.Headers = Headers;
         const test = window.__couponHistoryHttpTest = { calls: [], fail: couponHistoryHttp.fail || false };
@@ -89,6 +89,34 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
           const offset = Number(url.searchParams.get('offset'));
           const total = couponHistoryHttp.empty ? 0 : rows.length;
           return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: total ? rows.slice(offset, offset + limit) : [], total, limit, offset, ...(url.pathname.endsWith('/coupon-history') ? {} : { coupon_id: 31 }) });
+        };
+        return;
+      }
+      if (groupOpsHistoryHttp) {
+        const calls = [];
+        const failures = {};
+        const planID = '9007199254740993';
+        const date = '2026-08-28T01:02:03.123456Z';
+        const rows = {
+          plans: { plan_id: planID, name: '历史计划 <img src=x onerror=alert(1)>', status: 'archived', revision: 1, source_plan_id: 8, source_code: 'legacy-code', plan_type: 'normal', original_status: 'active', owner_staff_id: null, created_at: date, updated_at: date, archived_at: null },
+          directory: { id: 1, source_kind: 'group_chats', source_id: 9, chat_reference: 'historical-chat', display_name: null, owner_staff_id: null, owner_name: null, member_count: 0, internal_member_count: null, external_member_count: null, original_status: '', recorded_at: date },
+          groups: { id: 2, source_group_id: 10, source_plan_id: 8, plan_id: planID, chat_reference: 'plan-chat', display_name: '历史群', owner_staff_id: null, internal_member_count: 0, external_member_count: 2, original_status: 'removed', created_at: date, removed_at: null },
+          nodes: { id: 3, source_node_id: 11, source_plan_id: 8, plan_id: planID, day_index: 0, trigger_time: '  入群后  ', sort_order: 0, original_status: 'legacy_disabled', content_package: { text: '<script>历史消息</script>' }, created_at: date, updated_at: date },
+        };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers(), text: async () => JSON.stringify(data) });
+        window.Headers = Headers;
+        window.__groupOpsHistoryHttpTest = { calls, failures };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          const kind = url.pathname.split('/').at(-1);
+          if (!url.pathname.startsWith('/api/admin/automation-conversion/group-ops/history/') || !rows[kind]) return json({ code: 'unexpected_history_request' }, 500);
+          if (failures[kind]) return json({ code: 'unavailable', detail: '<b>private database error</b>' }, failures[kind]);
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          const total = groupOpsHistoryHttp.empty ? 0 : 21;
+          const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, index) => kind === 'directory' && (offset + index) % 2 ? { ...rows[kind], source_kind: 'wecom_group_chat_snapshots', source_id: null, member_count: null, internal_member_count: 0, external_member_count: 2 } : rows[kind]);
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items, total, limit, offset, ...(kind === 'groups' || kind === 'nodes' ? { plan_id: planID } : {}) });
         };
         return;
       }
@@ -1119,10 +1147,74 @@ console.log('admin/groupops.html（本地计划与目录边界）');
   const dom = await loadPage('admin/groupops.html');
   const d = dom.window.document;
   ok('群运营计划页显示本地计划和本地队列口径', d.body.textContent.includes('群运营计划') && d.body.textContent.includes('本地队列'));
+  ok('当前计划页保留功能并提供只读历史入口', !!d.querySelector('a[href="groupops.html?history=1"]'));
   ok('运营成员选项展示可信数值 staff_id，群目录能力仍明确阻塞', d.body.textContent.includes('运营成员选项') && d.body.textContent.includes('staff_id=') && !d.body.textContent.includes('S06-028') && ['S06-031', 'S06-032'].every((id) => d.body.textContent.includes(id)));
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录'));
   await sleep(30);
   ok('缺少 owner_staff_id 时不触发目录同步或 Provider 成功提示', d.querySelector('#fb-toast')?.textContent.includes('owner_staff_id'));
+  dom.window.close();
+}
+
+console.log('admin/groupops 历史（真实四 GET，只读独立分页）');
+{
+  const dom = await loadPage('admin/groupops.html', { q: 'history=1', groupOpsHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__groupOpsHistoryHttpTest;
+  const primary = d.querySelector('#group-history-primary');
+  const secondary = d.querySelector('#group-history-secondary');
+  ok('历史列表仅读取计划和目录，不加载当前计划/运营成员', test.calls.length === 2 && test.calls.every((c) => c.method === 'GET' && c.path.includes('/history/') && c.query === '?limit=20&offset=0'));
+  ok('历史计划保留原 active 与归档状态、NULL、微秒时间，文本安全转义', primary.textContent.includes('源状态：active') && primary.textContent.includes('archived / 1') && primary.textContent.includes('NULL') && primary.textContent.includes('2026-08-28T01:02:03.123456Z') && primary.textContent.includes('<img') && !primary.querySelector('img'));
+  ok('历史计划详情链接保留字符串 ID 与 history 模式', primary.querySelector('a')?.getAttribute('href') === 'groupopsDetail.html?history=1&id=9007199254740993');
+  ok('目录两来源逐条保留，空字符串不同于 NULL，且未合成当前目录', secondary.textContent.includes('group_chats（本页）') && secondary.textContent.includes('wecom_group_chat_snapshots（本页）') && secondary.textContent.includes('""（源空字符串）') && secondary.textContent.includes('NULL') && d.querySelector('#stage').textContent.includes('不合并为当前群目录'));
+  click(dom, primary.querySelector('[data-next]'));
+  await sleep(30);
+  ok('计划独立翻页不刷新目录', test.calls.length === 3 && test.calls[2].path.endsWith('/plans') && test.calls[2].query === '?limit=20&offset=20' && secondary.textContent.includes('offset=0'));
+  click(dom, secondary.querySelector('[data-next]'));
+  await sleep(30);
+  ok('目录独立翻页并禁用尾页下一页', test.calls[3].path.endsWith('/directory') && test.calls[3].query === '?limit=20&offset=20' && secondary.querySelector('[data-next]')?.disabled);
+  test.failures.plans = 503;
+  click(dom, primary.querySelector('[data-refresh]'));
+  await sleep(30);
+  ok('读取失败清除旧计划，错误不泄底层信息且保留相邻目录', !primary.querySelector('[data-history-rows]') && primary.textContent.includes('HTTP 503') && !primary.textContent.includes('private database') && !primary.textContent.includes('legacy-code') && !!secondary.querySelector('[data-history-rows]'));
+  delete test.failures.plans;
+  click(dom, primary.querySelector('[data-retry]'));
+  await sleep(30);
+  ok('失败重试同 offset，无 Mock 回退', test.calls.at(-1).query === '?limit=20&offset=20' && primary.textContent.includes('offset=20'));
+  ok('历史列表无创建/同步/激活/发送控件及写请求', ![...d.querySelectorAll('#stage button')].some((b) => /创建|同步|激活|发送/.test(b.textContent)) && test.calls.every((c) => c.method === 'GET'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/groupopsDetail.html', { q: 'history=1&id=9007199254740993', groupOpsHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__groupOpsHistoryHttpTest;
+  const primary = d.querySelector('#group-history-primary');
+  const secondary = d.querySelector('#group-history-secondary');
+  ok('历史详情只读计划下群与节点，字符串 ID 无精度损失', test.calls.length === 2 && test.calls.every((c) => c.path.includes('/history/plans/9007199254740993/')));
+  ok('源节点 day=0、触发标签空格、排序与原状态原样展示，内容不执行', secondary.textContent.includes('源 day_index：0') && secondary.textContent.includes('源触发标签：  入群后  ') && secondary.textContent.includes('源排序：0') && secondary.textContent.includes('legacy_disabled') && secondary.textContent.includes('<script>历史消息</script>') && !secondary.querySelector('script'));
+  ok('历史群保留 removed 原状态及空 removed_at，不推测当前群状态', primary.textContent.includes('源状态：removed') && primary.textContent.includes('移除时间：NULL'));
+  click(dom, primary.querySelector('[data-next]'));
+  await sleep(30);
+  click(dom, secondary.querySelector('[data-next]'));
+  await sleep(30);
+  ok('计划群与节点各自分页', test.calls[2].path.endsWith('/groups') && test.calls[3].path.endsWith('/nodes') && test.calls.slice(2).every((c) => c.query === '?limit=20&offset=20'));
+  test.failures.nodes = 403;
+  click(dom, secondary.querySelector('[data-refresh]'));
+  await sleep(30);
+  ok('节点权限失败清空节点，保留群读取结果且不伪造空态', !!secondary.querySelector('[role="alert"]') && !secondary.querySelector('[data-history-rows]') && primary.textContent.includes('历史群') && !secondary.textContent.includes('暂无历史记录'));
+  delete test.failures.nodes;
+  click(dom, secondary.querySelector('[data-retry]'));
+  await sleep(30);
+  ok('节点同页重试恢复，未接当前节点/消息/Provider 写操作', secondary.textContent.includes('offset=20') && test.calls.at(-1).query === '?limit=20&offset=20' && test.calls.every((c) => c.method === 'GET' && c.path.includes('/history/')) && !d.querySelector('#groupOpsNodes'));
+  dom.window.close();
+}
+for (const rel of ['admin/groupops.html', 'admin/groupopsDetail.html']) {
+  const dom = await loadPage(rel, { q: 'history=1&id=9007199254740993', groupOpsHistoryHttp: { empty: true } });
+  ok(`${rel} 合法空页独立显示真实空态`, dom.window.document.querySelectorAll('[data-history-rows]').length === 2 && [...dom.window.document.querySelectorAll('[data-history-rows]')].every((el) => el.textContent.includes('暂无历史记录')) && [...dom.window.document.querySelectorAll('[data-next]')].every((el) => el.disabled));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/groupopsDetail.html', { q: 'history=1&id=01', groupOpsHistoryHttp: {} });
+  ok('历史计划非法 ID 在 HTTP 前失败关闭', dom.window.document.querySelector('[role="alert"]')?.textContent.includes('ID 无效') && dom.window.__groupOpsHistoryHttpTest.calls.length === 0);
   dom.window.close();
 }
 

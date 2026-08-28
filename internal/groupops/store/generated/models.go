@@ -102,6 +102,60 @@ type GroupOpsRun struct {
 	AcceptedBy      string             `json:"accepted_by"`
 }
 
+type GroupOpsV1HistoryDirectory struct {
+	ID                  int64              `json:"id"`
+	SourceKind          string             `json:"source_kind"`
+	SourceID            pgtype.Int8        `json:"source_id"`
+	ChatReference       string             `json:"chat_reference"`
+	DisplayName         pgtype.Text        `json:"display_name"`
+	OwnerStaffID        pgtype.Int8        `json:"owner_staff_id"`
+	OwnerName           pgtype.Text        `json:"owner_name"`
+	MemberCount         pgtype.Int4        `json:"member_count"`
+	InternalMemberCount pgtype.Int4        `json:"internal_member_count"`
+	ExternalMemberCount pgtype.Int4        `json:"external_member_count"`
+	OriginalStatus      string             `json:"original_status"`
+	RecordedAt          pgtype.Timestamptz `json:"recorded_at"`
+}
+
+type GroupOpsV1HistoryGroup struct {
+	ID                  int64              `json:"id"`
+	SourceGroupID       int64              `json:"source_group_id"`
+	SourcePlanID        int64              `json:"source_plan_id"`
+	PlanID              int64              `json:"plan_id"`
+	ChatReference       string             `json:"chat_reference"`
+	DisplayName         string             `json:"display_name"`
+	OwnerStaffID        pgtype.Int8        `json:"owner_staff_id"`
+	InternalMemberCount int32              `json:"internal_member_count"`
+	ExternalMemberCount int32              `json:"external_member_count"`
+	OriginalStatus      string             `json:"original_status"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	RemovedAt           pgtype.Timestamptz `json:"removed_at"`
+}
+
+type GroupOpsV1HistoryNode struct {
+	ID             int64              `json:"id"`
+	SourceNodeID   int64              `json:"source_node_id"`
+	SourcePlanID   int64              `json:"source_plan_id"`
+	PlanID         int64              `json:"plan_id"`
+	DayIndex       int32              `json:"day_index"`
+	TriggerTime    string             `json:"trigger_time"`
+	SortOrder      int32              `json:"sort_order"`
+	OriginalStatus string             `json:"original_status"`
+	ContentPackage []byte             `json:"content_package"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type GroupOpsV1HistoryPlan struct {
+	PlanID         int64              `json:"plan_id"`
+	SourcePlanID   int64              `json:"source_plan_id"`
+	SourceCode     string             `json:"source_code"`
+	PlanType       string             `json:"plan_type"`
+	OriginalStatus string             `json:"original_status"`
+	OwnerStaffID   pgtype.Int8        `json:"owner_staff_id"`
+	ArchivedAt     pgtype.Timestamptz `json:"archived_at"`
+}
+
 type GroupOpsWecomGroupMessageReceipt struct {
 	ExternalEffectID       int64              `json:"external_effect_id"`
 	ExecutionID            int64              `json:"execution_id"`

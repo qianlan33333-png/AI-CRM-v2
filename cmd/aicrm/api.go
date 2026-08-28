@@ -2165,6 +2165,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.surveyOperations = surveyOperationsHandler
 	legacyHandler.groupOps = groupOpsHandler
+	legacyHandler.groupOpsHistory = newAdminGroupOpsHistory(groupopsstore.NewHistoricalReader(uow))
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	hxcStaffDirectory := audienceOperationMembers
 	hxcSenderRepository := hxcstore.NewSenderConfigRepository(pool)
@@ -3042,6 +3043,21 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			}
 			router.Method(method, pattern, tail)
 			return nil
+		}
+		if legacy.groupOpsHistory != nil {
+			for _, route := range []struct {
+				path    string
+				handler http.HandlerFunc
+			}{
+				{adminGroupOpsHistoryPlansPath, legacy.groupOpsHistory.ListPlans},
+				{adminGroupOpsHistoryDirectoryPath, legacy.groupOpsHistory.ListDirectory},
+				{adminGroupOpsHistoryGroupsPath, legacy.groupOpsHistory.ListGroups},
+				{adminGroupOpsHistoryNodesPath, legacy.groupOpsHistory.ListNodes},
+			} {
+				if err = registerLegacy(http.MethodGet, route.path, authport.CapabilityAdminRead, false, route.handler); err != nil {
+					return nil, err
+				}
+			}
 		}
 		if legacy.groupOps != nil {
 			for _, route := range []struct {
