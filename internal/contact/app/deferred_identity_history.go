@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	contact "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 )
@@ -132,6 +134,7 @@ func importDeferredIdentity[T any](w *DeferredIdentityHistoryWriter, ctx context
 // Each encoding deliberately names every private field. Marshaling a Port
 // value directly would silently omit all json:"-" identity evidence.
 func HistoricalDeferredPersonDigest(v contact.HistoricalDeferredPerson) ([32]byte, error) {
+	v.RedactedRoots = cloneDeferredRoots(v.RedactedRoots)
 	if !validDeferredPerson(v, true) {
 		return [32]byte{}, contact.ErrDeferredIdentityHistoryInvalid
 	}
@@ -145,6 +148,7 @@ func HistoricalDeferredPersonDigest(v contact.HistoricalDeferredPerson) ([32]byt
 }
 
 func HistoricalDeferredIdentityConflictDigest(v contact.HistoricalDeferredIdentityConflict) ([32]byte, error) {
+	v.RedactedRoots = cloneDeferredRoots(v.RedactedRoots)
 	if !validDeferredConflict(v, true) {
 		return [32]byte{}, contact.ErrDeferredIdentityHistoryInvalid
 	}
@@ -161,6 +165,7 @@ func HistoricalDeferredIdentityConflictDigest(v contact.HistoricalDeferredIdenti
 }
 
 func HistoricalMissingRootIdentityDigest(v contact.HistoricalMissingRootIdentity) ([32]byte, error) {
+	v.RedactedRoots = cloneDeferredRoots(v.RedactedRoots)
 	if !validMissingRoot(v, true) {
 		return [32]byte{}, contact.ErrDeferredIdentityHistoryInvalid
 	}
@@ -205,21 +210,35 @@ func validDeferredTime(value time.Time, stored bool) bool {
 	return !value.IsZero() && (!stored || value.Location() == time.UTC && value.Equal(value.UTC().Truncate(time.Microsecond)))
 }
 
+func validDeferredText(value string) bool {
+	return utf8.ValidString(value) && !strings.ContainsRune(value, '\x00')
+}
+
+func validDeferredRoots(values []string) bool {
+	for _, value := range values {
+		if !validDeferredText(value) {
+			return false
+		}
+	}
+	return true
+}
+
 func validDeferredPerson(v contact.HistoricalDeferredPerson, stored bool) bool {
 	return validDeferredIdentity(v.ID, v.SourceKeyDigest, v.SourcePayloadDigest, v.SourceFieldDigest, stored) &&
 		allDeferredDigests(v.MobileDigest, v.ThirdPartyUserIDDigest, v.PrivateDigest) &&
-		validDeferredTime(v.CreatedAt, stored) && validDeferredTime(v.UpdatedAt, stored)
+		validDeferredRoots(v.RedactedRoots) && validDeferredTime(v.CreatedAt, stored) && validDeferredTime(v.UpdatedAt, stored)
 }
 
 func validDeferredConflict(v contact.HistoricalDeferredIdentityConflict, stored bool) bool {
 	return validDeferredIdentity(v.ID, v.SourceKeyDigest, v.SourcePayloadDigest, v.SourceFieldDigest, stored) &&
 		allDeferredDigests(v.UnionIDDigest, v.CandidateUnionIDDigest, v.ExternalUserIDDigest, v.OpenIDDigest, v.MobileDigest, v.LegacySourceKeyDigest, v.PayloadJSONDigest, v.SourcePayloadJSONDigest, v.ResolutionNoteDigest, v.PrivateDigest) &&
+		validDeferredText(v.ConflictType) && validDeferredText(v.SourceType) && validDeferredText(v.Status) && validDeferredText(v.ResolutionStatus) && validDeferredRoots(v.RedactedRoots) &&
 		validDeferredTime(v.CreatedAt, stored) && validDeferredTime(v.UpdatedAt, stored) && (v.ResolvedAt == nil || validDeferredTime(*v.ResolvedAt, stored))
 }
 
 func validMissingRoot(v contact.HistoricalMissingRootIdentity, stored bool) bool {
 	if !validDeferredIdentity(v.ID, v.SourceKeyDigest, v.SourcePayloadDigest, v.SourceFieldDigest, stored) ||
-		v.DM01RunID < 1 || v.DM01SourceHMACKeyVersion == "" || v.QuarantineReason != "missing_customer_root" ||
+		v.DM01RunID < 1 || v.DM01SourceHMACKeyVersion == "" || !validDeferredText(v.DM01SourceHMACKeyVersion) || v.QuarantineReason != "missing_customer_root" || !validDeferredText(v.QuarantineReason) || !validDeferredText(v.Status) || !validDeferredRoots(v.RedactedRoots) ||
 		!allDeferredDigests(v.DM01SourceKeyDigest, v.CorpIDDigest, v.ExternalUserIDDigest, v.UnionIDDigest, v.OpenIDDigest, v.FollowUserIDDigest, v.NameDigest, v.AvatarDigest, v.RawProfileDigest, v.PrivateDigest) {
 		return false
 	}
@@ -250,7 +269,11 @@ func normalizeMissingRoot(v contact.HistoricalMissingRootIdentity) contact.Histo
 	return v
 }
 
-func cloneDeferredRoots(value []string) []string { return append([]string(nil), value...) }
+func cloneDeferredRoots(value []string) []string {
+	cloned := make([]string, len(value))
+	copy(cloned, value)
+	return cloned
+}
 func cloneDeferredTime(value *time.Time) *time.Time {
 	if value == nil {
 		return nil

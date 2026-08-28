@@ -139,6 +139,49 @@ func TestDeferredIdentityWriterRejectsInvalidBeforeWrite(t *testing.T) {
 	}
 }
 
+func TestDeferredIdentityRootsCanonicalizeAndValidate(t *testing.T) {
+	at := time.Date(2026, 8, 29, 1, 2, 3, 0, time.UTC)
+	value := deferredPerson(at)
+	value.ID = 1
+	value.RedactedRoots = nil
+	nilDigest, err := HistoricalDeferredPersonDigest(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value.RedactedRoots = []string{}
+	emptyDigest, err := HistoricalDeferredPersonDigest(value)
+	if err != nil || nilDigest != emptyDigest {
+		t.Fatalf("nil/empty roots digest differs: %v", err)
+	}
+
+	store := &deferredIdentityFakeStore{}
+	journal := &deferredIdentityFakeJournal{receipts: map[string]contact.DeferredIdentityHistoryReceipt{}}
+	writer, err := NewDeferredIdentityHistoryWriter(store, journal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value.ID, value.RedactedRoots = 0, nil
+	source := hex.EncodeToString(value.SourceKeyDigest[:])
+	if _, err := writer.ImportHistoricalDeferredPerson(context.Background(), source, value); err != nil {
+		t.Fatal(err)
+	}
+	if store.person.RedactedRoots == nil || len(store.person.RedactedRoots) != 0 {
+		t.Fatal("empty roots were not made non-nil for storage")
+	}
+	if replay, err := writer.ImportHistoricalDeferredPerson(context.Background(), source, value); err != nil || !replay.Replayed {
+		t.Fatalf("empty roots replay=%+v err=%v", replay, err)
+	}
+	value.RedactedRoots = []string{"bad\x00root"}
+	if _, err := writer.ImportHistoricalDeferredPerson(context.Background(), source, value); !errors.Is(err, contact.ErrDeferredIdentityHistoryInvalid) {
+		t.Fatalf("NUL root err=%v", err)
+	}
+	conflict := deferredConflict(at)
+	conflict.ID, conflict.Status = 1, string([]byte{0xff})
+	if _, err := HistoricalDeferredIdentityConflictDigest(conflict); !errors.Is(err, contact.ErrDeferredIdentityHistoryInvalid) {
+		t.Fatalf("invalid public text err=%v", err)
+	}
+}
+
 type deferredIdentityFakeStore struct {
 	person   contact.HistoricalDeferredPerson
 	conflict contact.HistoricalDeferredIdentityConflict
