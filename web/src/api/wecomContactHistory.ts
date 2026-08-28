@@ -1,6 +1,12 @@
 import {
-  getWeComContactHistoryEvent,
-  getWeComContactHistoryRelation,
+	getContactReferenceHistoryBinding,
+	getContactReferenceHistoryDirectory,
+	getWeComContactHistoryEvent,
+	getWeComContactHistoryRelation,
+	listContactReferenceHistoryBindings,
+	listContactReferenceHistoryDirectory,
+	type ContactReferenceHistoryBinding,
+	type ContactReferenceHistoryDirectory,
   listWeComContactHistoryEvents,
   listWeComContactHistoryRelations,
   type WeComContactHistoryEvent,
@@ -10,7 +16,7 @@ import {
 } from './generated/health';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
-export type { WeComContactHistoryEvent, WeComContactHistoryRelation };
+export type { ContactReferenceHistoryBinding, ContactReferenceHistoryDirectory, WeComContactHistoryEvent, WeComContactHistoryRelation };
 export type WeComContactHistoryPage<T> = { items: T[]; total: number; limit: number; offset: number };
 type Row = Record<string, unknown>;
 const invalid = (): never => { throw new Error('企微联系人历史响应不符合只读契约'); };
@@ -33,6 +39,21 @@ function relation(value: unknown): WeComContactHistoryRelation {
     (row.add_way !== null && !int32(row.add_way)) || (row.create_time !== null && !integer(row.create_time)) ||
     !instant(row.first_seen_at) || !instant(row.last_seen_at) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
   return row as unknown as WeComContactHistoryRelation;
+}
+function binding(value: unknown): ContactReferenceHistoryBinding {
+  const row = object(value, ['id', 'source_person_id', 'person_history_id', 'identity_id', 'identity_assurance', 'created_at', 'updated_at']);
+  if (!integer(row.id, 1) || !integer(row.source_person_id) || (row.person_history_id !== null && !integer(row.person_history_id, 1)) ||
+    (row.identity_id !== null && !integer(row.identity_id, 1)) || !['unresolved', 'declared', 'verified'].includes(String(row.identity_assurance)) ||
+    !instant(row.created_at) || !instant(row.updated_at)) invalid();
+  return row as unknown as ContactReferenceHistoryBinding;
+}
+function directory(value: unknown): ContactReferenceHistoryDirectory {
+  const row = object(value, ['id', 'source_id', 'corp_attribution', 'matched_staff_id', 'display_name', 'department_name', 'position', 'wecom_status', 'is_active', 'synced_at', 'first_seen_at', 'last_synced_at', 'created_at', 'updated_at']);
+  if (!integer(row.id, 1) || !integer(row.source_id) || !['matched', 'unattributable'].includes(String(row.corp_attribution)) ||
+    (row.matched_staff_id !== null && !integer(row.matched_staff_id, 1)) || typeof row.display_name !== 'string' || typeof row.department_name !== 'string' || typeof row.position !== 'string' ||
+    (row.wecom_status !== null && !int32(row.wecom_status)) || typeof row.is_active !== 'boolean' || !instant(row.synced_at) || !instant(row.first_seen_at) || !instant(row.last_synced_at) || !instant(row.created_at) || !instant(row.updated_at) ||
+    (row.corp_attribution === 'unattributable' && row.matched_staff_id !== null)) invalid();
+  return row as unknown as ContactReferenceHistoryDirectory;
 }
 function page<T>(value: unknown, offset: number, limit: number, convert: (item: unknown) => T): WeComContactHistoryPage<T> {
   const row = object(value, ['source', 'read_only', 'real_external_call_executed', 'items', 'total', 'limit', 'offset']);
@@ -67,4 +88,20 @@ export async function readWeComContactHistoryRelations(offset = 0, limit = 20): 
 export async function readWeComContactHistoryRelation(historyID: number): Promise<WeComContactHistoryRelation> {
   if (!integer(historyID, 1)) throw new Error('企微联系人关系历史 ID 无效');
   return detail(unwrapGenerated(await getWeComContactHistoryRelation(historyID, apiRequestOptions())), historyID, relation);
+}
+export async function readContactReferenceHistoryBindings(offset = 0, limit = 20): Promise<WeComContactHistoryPage<ContactReferenceHistoryBinding>> {
+  pagination(offset, limit);
+  return page(unwrapGenerated(await listContactReferenceHistoryBindings({ offset, limit }, apiRequestOptions())), offset, limit, binding);
+}
+export async function readContactReferenceHistoryBinding(historyID: number): Promise<ContactReferenceHistoryBinding> {
+  if (!integer(historyID, 1)) throw new Error('企微联系人引用历史 ID 无效');
+  return detail(unwrapGenerated(await getContactReferenceHistoryBinding(historyID, apiRequestOptions())), historyID, binding);
+}
+export async function readContactReferenceHistoryDirectory(offset = 0, limit = 20): Promise<WeComContactHistoryPage<ContactReferenceHistoryDirectory>> {
+  pagination(offset, limit);
+  return page(unwrapGenerated(await listContactReferenceHistoryDirectory({ offset, limit }, apiRequestOptions())), offset, limit, directory);
+}
+export async function readContactReferenceHistoryDirectoryMember(historyID: number): Promise<ContactReferenceHistoryDirectory> {
+  if (!integer(historyID, 1)) throw new Error('企微目录历史 ID 无效');
+  return detail(unwrapGenerated(await getContactReferenceHistoryDirectory(historyID, apiRequestOptions())), historyID, directory);
 }
