@@ -19,8 +19,8 @@ func TestSelectPreservesSixteenSealedInvalidFacts(t *testing.T) {
 	if err != nil || selected.Summary() != (Summary{UnboundTags: 5, InvalidChannels: 1, Images: 3, Attachments: 1, RadarLinks: 6}) || selected.Summary().Total() != 16 {
 		t.Fatalf("selected=%+v summary=%+v err=%v", selected, selected.Summary(), err)
 	}
-	if selected.UnboundTags[0].Fact.UnionIDDigest != ([sha256.Size]byte{}) || selected.UnboundTags[0].Fact.PrivateDigest == ([sha256.Size]byte{}) || selected.InvalidAssets[0].Fact.ContentDigest == ([sha256.Size]byte{}) || selected.InvalidRadar[0].Fact.DestinationURLDigest == ([sha256.Size]byte{}) {
-		t.Fatal("source-only private evidence missing or unbound tag acquired identity")
+	if selected.UnboundTags[0].Fact.UnionIDDigest == ([sha256.Size]byte{}) || selected.UnboundTags[0].Fact.PrivateDigest == ([sha256.Size]byte{}) || selected.InvalidAssets[0].Fact.ContentDigest == ([sha256.Size]byte{}) || selected.InvalidRadar[0].Fact.DestinationURLDigest == ([sha256.Size]byte{}) {
+		t.Fatal("source-only private evidence missing")
 	}
 	if selected.InvalidChannels[0].Fact.Code != "" || selected.InvalidChannels[0].Fact.QuarantineReason != "invalid_channel_definition" {
 		t.Fatal("invalid channel was normalized or reclassified")

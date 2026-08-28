@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -194,9 +193,9 @@ func appendUnboundTag(result *Selection, row v1archive.ArchivedRow, key []byte) 
 	}
 	fact := contactport.HistoricalUnboundTag{SourceKeyDigest: row.SourceKeyHMAC, SourcePayloadDigest: row.PayloadHMAC, SourceFieldDigest: row.FieldHMAC,
 		PrivateDigest: privateDigest(key, "tag", row.Payload), RedactedRoots: copyRoots(row.RedactedFields), TagSourceID: value.TagID, CreatedAt: value.CreatedAt, QuarantineReason: "invalid_contact_tag"}
-	if value.UnionID != "" {
-		fact.UnionIDDigest = privateDigest(key, "tag-unionid", []byte(value.UnionID))
-	}
+	// Fingerprint the original field, not a resolved identity. Missing, null,
+	// and empty-string sources remain distinct without creating a binding.
+	fact.UnionIDDigest = fieldDigest(key, "tag-unionid", row.Payload, "unionid")
 	result.UnboundTags = append(result.UnboundTags, SelectedUnboundTag{SourceIdentifier: sourceIdentifier(row.SourceKeyHMAC), SourceOrdinal: row.SourceOrdinal, Fact: fact})
 	return nil
 }
@@ -253,12 +252,8 @@ func invalidAsset(row v1archive.ArchivedRow, key []byte, kind string) (mediaport
 	if json.Unmarshal(row.Payload, &value) != nil {
 		return mediaport.HistoricalInvalidAsset{}, ErrSealedDrift
 	}
-	content, err := base64.StdEncoding.Strict().DecodeString(stringOrEmpty(value.DataBase64))
-	if err != nil {
-		return mediaport.HistoricalInvalidAsset{}, ErrSealedDrift
-	}
 	return mediaport.HistoricalInvalidAsset{SourceKeyDigest: row.SourceKeyHMAC, SourcePayloadDigest: row.PayloadHMAC, SourceFieldDigest: row.FieldHMAC,
-		PrivateDigest: privateDigest(key, "asset", row.Payload), RedactedRoots: copyRoots(row.RedactedFields), Kind: kind, SourceID: int64OrZero(value.ID), Name: stringOrEmpty(value.Name), FileName: stringOrEmpty(value.FileName), MIMEType: stringOrEmpty(value.MIMEType), FileSize: int64OrZero(value.FileSize), OriginalEnabled: boolOrFalse(value.Enabled), ContentDigest: privateDigest(key, "asset-content", content), CreatedAt: timeOrZero(value.CreatedAt), UpdatedAt: timeOrZero(value.UpdatedAt), QuarantineReason: "invalid_static_media_definition"}, nil
+		PrivateDigest: privateDigest(key, "asset", row.Payload), RedactedRoots: copyRoots(row.RedactedFields), Kind: kind, SourceID: int64OrZero(value.ID), Name: stringOrEmpty(value.Name), FileName: stringOrEmpty(value.FileName), MIMEType: stringOrEmpty(value.MIMEType), FileSize: int64OrZero(value.FileSize), OriginalEnabled: boolOrFalse(value.Enabled), ContentDigest: fieldDigest(key, "asset-content-source", row.Payload, "data_base64"), CreatedAt: timeOrZero(value.CreatedAt), UpdatedAt: timeOrZero(value.UpdatedAt), QuarantineReason: "invalid_static_media_definition"}, nil
 }
 
 func appendInvalidRadar(result *Selection, row v1archive.ArchivedRow, key []byte) error {
@@ -308,9 +303,21 @@ func privateDigest(key []byte, domain string, value []byte) [sha256.Size]byte {
 }
 
 func copyRoots(values []string) []string {
-	result := append([]string(nil), values...)
+	result := append([]string{}, values...)
 	sort.Strings(result)
 	return result
+}
+
+// The field bytes are evidence, not a usable identity or decoded asset. Invalid
+// content must remain representable in this source-only history package.
+func fieldDigest(key []byte, domain string, payload []byte, field string) [sha256.Size]byte {
+	var fields map[string]json.RawMessage
+	_ = json.Unmarshal(payload, &fields) // The typed adapter already validated JSON.
+	raw, present := fields[field]
+	if !present {
+		return privateDigest(key, domain+"/missing", nil)
+	}
+	return privateDigest(key, domain+"/present", raw)
 }
 
 func sourceIdentifier(value [sha256.Size]byte) string { return hex.EncodeToString(value[:]) }
