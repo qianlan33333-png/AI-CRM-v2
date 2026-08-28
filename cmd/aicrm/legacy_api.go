@@ -211,6 +211,7 @@ type Handler struct {
 	automationHistory           automationport.AutomationHistoryReader
 	outboundTaskHistory         outboundport.OutboundTaskHistoryReader
 	hxcHistory                  hxcport.HXCHistoryReader
+	hxcRuntimeHistory           hxcport.HXCRuntimeHistoryReader
 	staticMediaHistory          mediaport.StaticMediaHistoryReader
 	customerStateHistory        contactport.CustomerStateHistoryReader
 	marketingStateHistory       segmentport.MarketingStateHistoryReader
