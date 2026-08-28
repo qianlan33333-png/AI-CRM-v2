@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	campaigndb "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store/generated"
@@ -23,11 +22,7 @@ var _ campaignport.CampaignHistoryStore = (*CampaignHistoryStore)(nil)
 var _ campaignport.CampaignHistoryReader = (*CampaignHistoryReader)(nil)
 
 func NewCampaignHistoryStore() *CampaignHistoryStore { return &CampaignHistoryStore{} }
-func NewCampaignHistoryReader(db *pgxpool.Pool) *CampaignHistoryReader {
-	return newCampaignHistoryReader(db)
-}
-
-func newCampaignHistoryReader(db campaigndb.DBTX) *CampaignHistoryReader {
+func NewCampaignHistoryReader(db campaigndb.DBTX) *CampaignHistoryReader {
 	return &CampaignHistoryReader{db: db}
 }
 

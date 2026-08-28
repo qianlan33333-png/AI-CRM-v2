@@ -79,7 +79,7 @@ func TestCampaignHistoryPostgresRoundTripRollback(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		store, reader := NewCampaignHistoryStore(), newCampaignHistoryReader(tx)
+		store, reader := NewCampaignHistoryStore(), NewCampaignHistoryReader(tx)
 		segment, member, plan, recipient, message := campaignHistoryFixture(base)
 
 		createdSegment, err := store.CreateHistoricalCampaignSegment(txCtx, segment)
