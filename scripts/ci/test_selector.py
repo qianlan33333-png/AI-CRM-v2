@@ -668,6 +668,12 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn("name: Publish block compatibility status", publisher)
         self.assertIn('"context": "ci / block compatibility"', source)
 
+    def test_full_nightly_checks_all_query_plans(self) -> None:
+        source = (REPO_ROOT / "scripts/ci/run_full_regression.sh").read_text(encoding="utf-8")
+        self.assertIn('QUERY_PLAN_ALL=true \\\nmake --no-print-directory ci-go', source)
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn('-all="$${QUERY_PLAN_ALL:-false}"', makefile)
+
     def test_workflow_script_references_exist(self) -> None:
         references: set[str] = set()
         for relative_name in ACTIVE_WORKFLOWS:

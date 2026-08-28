@@ -57,6 +57,39 @@ func TestPartitionSegmentQueries(t *testing.T) {
 	}
 }
 
+func TestAllQueryPathsIncludesUnchangedSQLcFiles(t *testing.T) {
+	root := t.TempDir()
+	for path, content := range map[string]string{
+		"internal/contact/store/queries/current.sql":            "-- name: Current :one\nSELECT 1;\n",
+		"internal/contact/store/queries/history_acceptance.sql": "-- name: Acceptance :one\nSELECT 1;\n",
+		"internal/contact/store/generated/ignored.sql":          "SELECT 1;\n",
+	} {
+		full := filepath.Join(root, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	paths, err := allQueryPaths(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"internal/contact/store/queries/current.sql",
+		"internal/contact/store/queries/history_acceptance.sql",
+	}
+	if len(paths) != len(want) {
+		t.Fatalf("all query paths = %#v", paths)
+	}
+	for index := range want {
+		if paths[index] != want[index] {
+			t.Fatalf("all query paths = %#v; want %#v", paths, want)
+		}
+	}
+}
+
 func TestTemporaryDatabaseURL(t *testing.T) {
 	const databaseURL = "postgres://postgres:postgres@127.0.0.1:55432/aicrm_test?sslmode=disable"
 	got, err := temporaryDatabaseURL(databaseURL, "aicrm_query_plan_abcdef")

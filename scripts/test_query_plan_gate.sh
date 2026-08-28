@@ -12,7 +12,7 @@ gate_bin="$test_root/query-plan-gate"
 GOWORK=off GOFLAGS=-mod=readonly "$go_bin" -C "$repo_root/tools" build -o "$gate_bin" ./query-plan-gate
 
 make_fixture() {
-  local name="$1" query_sql="$2" fixture
+  local name="$1" query_sql="$2" unchanged_query_sql="${3:-}" fixture
   fixture="$test_root/$name"
   mkdir -p "$fixture/migrations" "$fixture/internal/contact/store/queries"
   printf '%s\n' \
@@ -27,6 +27,9 @@ make_fixture() {
     '-- +goose Down' 'DROP TABLE customer_events;' 'DROP TABLE customers;' \
     >"$fixture/migrations/00001_fixture.sql"
   printf '%s\n' '-- name: Baseline :one' 'SELECT 1;' >"$fixture/internal/contact/store/queries/contact.sql"
+  if [[ -n "$unchanged_query_sql" ]]; then
+    printf '%s\n' "$unchanged_query_sql" >"$fixture/internal/contact/store/queries/unchanged.sql"
+  fi
   git -C "$fixture" init -q
   git -C "$fixture" config user.name fixture
   git -C "$fixture" config user.email fixture@example.invalid
@@ -41,7 +44,7 @@ make_fixture() {
 }
 
 run_gate() {
-  "$gate_bin" -root "$FIXTURE_ROOT" -base "$FIXTURE_BASE" -head "$FIXTURE_HEAD" -database-url "$database_url"
+  "$gate_bin" -root "$FIXTURE_ROOT" -base "$FIXTURE_BASE" -head "$FIXTURE_HEAD" -database-url "$database_url" "$@"
 }
 
 make_fixture indexed $'-- name: CustomerByID :one\nSELECT * FROM customers WHERE id = $1;'
@@ -49,6 +52,17 @@ make_fixture indexed $'-- name: CustomerByID :one\nSELECT * FROM customers WHERE
 
 make_fixture unrelated $'-- name: Health :one\nSELECT 1;'
 [[ "$(run_gate)" = 'query-plan-gate: PASS (checked=0)' ]] || fail "unrelated query was rejected"
+
+make_fixture all $'-- name: Health :one\nSELECT 1;' $'-- name: AllCustomers :many\nSELECT * FROM customers;'
+[[ "$(run_gate)" = 'query-plan-gate: PASS (checked=0)' ]] || fail "unchanged query entered diff mode"
+FIXTURE_BASE="$FIXTURE_HEAD"
+all_log="$test_root/all.log"
+set +e
+/usr/bin/perl -e 'alarm 15; exec @ARGV' "$gate_bin" -root "$FIXTURE_ROOT" -base "$FIXTURE_BASE" -head "$FIXTURE_HEAD" -database-url "$database_url" --all >"$all_log" 2>&1
+status=$?
+set -e
+[[ "$status" -ne 0 && "$status" -ne 142 ]] || fail "all mode accepted an unchanged full-table scan"
+grep -Fq 'Seq Scan on customers' "$all_log" || fail "all mode missed an unchanged full-table scan"
 
 make_fixture truncate $'-- name: ResetCustomers :exec\nTRUNCATE customers;\n\n-- name: CustomerByID :one\nSELECT * FROM customers WHERE id = $1;'
 [[ "$(run_gate)" = 'query-plan-gate: PASS (checked=1)' ]] || fail "non-plannable truncate was not skipped"

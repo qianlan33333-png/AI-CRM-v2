@@ -68,6 +68,7 @@ ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$database_url" \
 QUERY_PLAN_TEST_DATABASE_URL="$database_url" \
 QUERY_PLAN_BASE_SHA="$query_base" \
 QUERY_PLAN_HEAD_SHA="$query_head" \
+QUERY_PLAN_ALL=true \
 make --no-print-directory ci-go
 
 go test ./internal/segment/store -run '^TestLegacyMarketingHistoryPostgresRoundTripRollback$' -legacy-marketing-history-postgres-dsn="$database_url"
