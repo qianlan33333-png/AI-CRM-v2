@@ -67,11 +67,14 @@ func TestAdaptMemberUsageObservationAuthenticatesCanonicalArchiveEnvelope(t *tes
 	}
 
 	wrongOrder := cloneRow(row)
-	var source map[string]any
+	var source sourceJSON
 	if err := json.Unmarshal(wrongOrder.Payload, &source); err != nil {
 		t.Fatal(err)
 	}
-	keyJSON, _ := json.Marshal([]any{source["generation"], source["owner_userid"], source["unionid"]})
+	keyJSON, err := memberUsageSourceKeyJSON(source.Generation, source.OwnerUserID, source.UnionID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	key, err := v1archive.SourceKeyHMAC(adapterTestKey, "ai_audience_hxc_member_usage_projection", keyJSON)
 	if err != nil {
 		t.Fatal(err)
@@ -80,6 +83,31 @@ func TestAdaptMemberUsageObservationAuthenticatesCanonicalArchiveEnvelope(t *tes
 	result := AdaptMemberUsageObservation(wrongOrder, adapterTestKey, 1)
 	if result.Disposition != DispositionQuarantine || result.Reason != ReasonInvalidSourceEnvelope {
 		t.Fatalf("wrong canonical PK order accepted: %#v", result)
+	}
+
+	compact := cloneRow(row)
+	keyJSON, err = json.Marshal([]any{source.Generation, source.UnionID, source.OwnerUserID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err = v1archive.SourceKeyHMAC(adapterTestKey, "ai_audience_hxc_member_usage_projection", keyJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compact.SourceKeyHMAC = key
+	if result = AdaptMemberUsageObservation(compact, adapterTestKey, 1); result.Disposition != DispositionQuarantine || result.Reason != ReasonInvalidSourceEnvelope {
+		t.Fatalf("compact source-key JSON accepted: %#v", result)
+	}
+}
+
+func TestMemberUsageSourceKeyJSONMatchesPostgresJSONBText(t *testing.T) {
+	actual, err := memberUsageSourceKeyJSON(-7, `union "quoted" <tag>\path`, `owner\slash`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `[-7, "union \"quoted\" <tag>\\path", "owner\\slash"]`
+	if string(actual) != want {
+		t.Fatalf("source key JSON = %q, want %q", actual, want)
 	}
 }
 
@@ -176,14 +204,14 @@ func memberUsagePayload() map[string]any {
 
 func authenticateRow(t *testing.T, row v1archive.ArchivedRow) v1archive.ArchivedRow {
 	t.Helper()
-	var value map[string]any
+	var value sourceJSON
 	if json.Unmarshal(row.Payload, &value) != nil {
 		row.SourceKeyHMAC = [32]byte{1}
 		row.PayloadHMAC = [32]byte{2}
 		row.FieldHMAC = [32]byte{3}
 		return row
 	}
-	keyJSON, err := json.Marshal([]any{value["generation"], value["unionid"], value["owner_userid"]})
+	keyJSON, err := memberUsageSourceKeyJSON(value.Generation, value.UnionID, value.OwnerUserID)
 	if err != nil {
 		t.Fatal(err)
 	}

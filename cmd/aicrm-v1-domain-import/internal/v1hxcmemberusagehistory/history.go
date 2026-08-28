@@ -4,8 +4,10 @@
 package v1hxcmemberusagehistory
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -134,7 +136,7 @@ func AdaptMemberUsageObservation(row v1archive.ArchivedRow, sourceHMACKey []byte
 	if json.Unmarshal(row.Payload, &source) != nil || !json.Valid(source.PayloadJSON) || source.ProjectedAt.IsZero() {
 		return quarantine(ReasonInvalidSourcePayload)
 	}
-	sourceKeyJSON, err := json.Marshal([]any{source.Generation, source.UnionID, source.OwnerUserID})
+	sourceKeyJSON, err := memberUsageSourceKeyJSON(source.Generation, source.UnionID, source.OwnerUserID)
 	if err != nil {
 		return quarantine(ReasonInvalidSourceEnvelope)
 	}
@@ -191,6 +193,31 @@ func contains(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// memberUsageSourceKeyJSON exactly mirrors source_postgres.tableRowsSQL's
+// jsonb_build_array(... )::text output. SourceKeyHMAC authenticates those
+// archived bytes; json.Marshal's compact array form is intentionally wrong.
+func memberUsageSourceKeyJSON(generation int64, unionID, ownerUserID string) ([]byte, error) {
+	unionJSON, err := postgresJSONBString(unionID)
+	if err != nil {
+		return nil, err
+	}
+	ownerJSON, err := postgresJSONBString(ownerUserID)
+	if err != nil {
+		return nil, err
+	}
+	return []byte("[" + strconv.FormatInt(generation, 10) + ", " + string(unionJSON) + ", " + string(ownerJSON) + "]"), nil
+}
+
+func postgresJSONBString(value string) ([]byte, error) {
+	var encoded bytes.Buffer
+	encoder := json.NewEncoder(&encoded)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(value); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(encoded.Bytes(), []byte{'\n'}), nil
 }
 
 func utcMicro(value *time.Time) *time.Time {
