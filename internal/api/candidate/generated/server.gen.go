@@ -2010,13 +2010,13 @@ func (e CouponHistoryRedemptionPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for CouponHistoryRedemptionPageSource.
 const (
-	V1History CouponHistoryRedemptionPageSource = "v1_history"
+	CouponHistoryRedemptionPageSourceV1History CouponHistoryRedemptionPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the CouponHistoryRedemptionPageSource enum.
 func (e CouponHistoryRedemptionPageSource) Valid() bool {
 	switch e {
-	case V1History:
+	case CouponHistoryRedemptionPageSourceV1History:
 		return true
 	default:
 		return false
@@ -6558,13 +6558,13 @@ func (e ServicePeriodHistoryEventPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for ServicePeriodHistoryEventPageSource.
 const (
-	ServicePeriodHistoryEventPageSourceV1History ServicePeriodHistoryEventPageSource = "v1_history"
+	V1History ServicePeriodHistoryEventPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageSource enum.
 func (e ServicePeriodHistoryEventPageSource) Valid() bool {
 	switch e {
-	case ServicePeriodHistoryEventPageSourceV1History:
+	case V1History:
 		return true
 	default:
 		return false
