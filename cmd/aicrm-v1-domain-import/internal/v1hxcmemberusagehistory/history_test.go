@@ -71,7 +71,7 @@ func TestAdaptMemberUsageObservationAuthenticatesCanonicalArchiveEnvelope(t *tes
 	if err := json.Unmarshal(wrongOrder.Payload, &source); err != nil {
 		t.Fatal(err)
 	}
-	keyJSON, _ := json.Marshal([]any{source["generation"], source["unionid"], source["owner_userid"]})
+	keyJSON, _ := json.Marshal([]any{source["generation"], source["owner_userid"], source["unionid"]})
 	key, err := v1archive.SourceKeyHMAC(adapterTestKey, "ai_audience_hxc_member_usage_projection", keyJSON)
 	if err != nil {
 		t.Fatal(err)
@@ -183,7 +183,7 @@ func authenticateRow(t *testing.T, row v1archive.ArchivedRow) v1archive.Archived
 		row.FieldHMAC = [32]byte{3}
 		return row
 	}
-	keyJSON, err := json.Marshal([]any{value["generation"], value["owner_userid"], value["unionid"]})
+	keyJSON, err := json.Marshal([]any{value["generation"], value["unionid"], value["owner_userid"]})
 	if err != nil {
 		t.Fatal(err)
 	}

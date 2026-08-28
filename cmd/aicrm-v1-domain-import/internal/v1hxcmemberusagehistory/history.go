@@ -134,7 +134,7 @@ func AdaptMemberUsageObservation(row v1archive.ArchivedRow, sourceHMACKey []byte
 	if json.Unmarshal(row.Payload, &source) != nil || !json.Valid(source.PayloadJSON) || source.ProjectedAt.IsZero() {
 		return quarantine(ReasonInvalidSourcePayload)
 	}
-	sourceKeyJSON, err := json.Marshal([]any{source.Generation, source.OwnerUserID, source.UnionID})
+	sourceKeyJSON, err := json.Marshal([]any{source.Generation, source.UnionID, source.OwnerUserID})
 	if err != nil {
 		return quarantine(ReasonInvalidSourceEnvelope)
 	}
