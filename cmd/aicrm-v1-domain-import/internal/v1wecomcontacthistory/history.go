@@ -26,8 +26,9 @@ const (
 	DispositionQuarantine Disposition = "quarantine"
 )
 
-// OpaqueDigest is non-recoverable and safe to expose. Source text, XML, and
-// JSON remain only in the authenticated archive.
+// OpaqueDigest is a private comparison value, not a public identifier. Short
+// source values may be enumerable; do not expose these unkeyed field digests.
+// Source text, XML, and JSON remain only in the authenticated archive.
 type OpaqueDigest [sha256.Size]byte
 
 // SourceEnvelope binds a fact to its immutable V1 archive record. It is not a
