@@ -18,6 +18,22 @@ const dm01ExternalIdentityArchiveTableID = "public/wecom_external_contact_identi
 
 var errInvalidDM01ExternalIdentityArchiveDiff = errors.New("invalid DM01 external identity archive difference input")
 
+// DM01ExternalIdentityArchiveDiffError exposes only a fixed validation stage.
+// It deliberately never includes an archive ordinal, source key, or identity.
+type DM01ExternalIdentityArchiveDiffError struct{ Stage string }
+
+func (err *DM01ExternalIdentityArchiveDiffError) Error() string {
+	return "DM01 external identity archive difference failed: " + err.Stage
+}
+
+func (*DM01ExternalIdentityArchiveDiffError) Unwrap() error {
+	return errInvalidDM01ExternalIdentityArchiveDiff
+}
+
+func dm01ExternalIdentityArchiveDiffFailure(stage string) error {
+	return &DM01ExternalIdentityArchiveDiffError{Stage: stage}
+}
+
 // DM01ExternalIdentityReceipt is the minimum sealed DM01 receipt evidence
 // needed to compare membership. It intentionally carries no source payload or
 // identity value.
@@ -58,49 +74,57 @@ func DiffDM01ExternalIdentityArchive(
 	dm01SourceHMACKey []byte,
 ) (DM01ExternalIdentityArchiveDiff, error) {
 	if archive == nil || receipts == nil || archiveRunID == "" || dm01RunID < 1 || len(archiveSourceHMACKey) < sha256.Size || len(dm01SourceHMACKey) < sha256.Size {
-		return DM01ExternalIdentityArchiveDiff{}, errInvalidDM01ExternalIdentityArchiveDiff
+		return DM01ExternalIdentityArchiveDiff{}, dm01ExternalIdentityArchiveDiffFailure("scope")
 	}
 
 	archiveKeys := make(map[[sha256.Size]byte]struct{})
 	var nextArchiveOrdinal int64 = 1
 	if err := archive.EachTableRow(ctx, archiveRunID, dm01ExternalIdentityArchiveTableID, func(row v1archive.ArchivedRow) error {
 		if row.AdapterID != v1archive.DefaultAdapterID || row.TableID != dm01ExternalIdentityArchiveTableID || row.SourceOrdinal != nextArchiveOrdinal || zeroDigest(row.SourceKeyHMAC) || zeroDigest(row.PayloadHMAC) || zeroDigest(row.FieldHMAC) {
-			return errInvalidDM01ExternalIdentityArchiveDiff
+			return dm01ExternalIdentityArchiveDiffFailure("archive_envelope")
 		}
 		nextArchiveOrdinal++
-		id, err := verifyExternalIdentityArchiveRow(row, archiveSourceHMACKey)
-		if err != nil {
-			return errInvalidDM01ExternalIdentityArchiveDiff
+		id, stage := verifyExternalIdentityArchiveRow(row, archiveSourceHMACKey)
+		if stage != "" {
+			return dm01ExternalIdentityArchiveDiffFailure(stage)
 		}
 		key, err := contactmigration.SourceKeyHMAC(dm01SourceHMACKey, "wecom_external_contact_identity_map", strconv.FormatInt(id, 10))
 		if err != nil || len(key) != sha256.Size {
-			return errInvalidDM01ExternalIdentityArchiveDiff
+			return dm01ExternalIdentityArchiveDiffFailure("dm01_source_hmac")
 		}
 		var digest [sha256.Size]byte
 		copy(digest[:], key)
 		if _, exists := archiveKeys[digest]; exists {
-			return errInvalidDM01ExternalIdentityArchiveDiff
+			return dm01ExternalIdentityArchiveDiffFailure("archive_duplicate")
 		}
 		archiveKeys[digest] = struct{}{}
 		return nil
 	}); err != nil {
-		return DM01ExternalIdentityArchiveDiff{}, err
+		var failure *DM01ExternalIdentityArchiveDiffError
+		if errors.As(err, &failure) {
+			return DM01ExternalIdentityArchiveDiff{}, failure
+		}
+		return DM01ExternalIdentityArchiveDiff{}, dm01ExternalIdentityArchiveDiffFailure("archive_stream")
 	}
 
 	dm01Keys := make(map[[sha256.Size]byte]struct{})
 	var nextReceiptOrdinal int64 = 1
 	if err := receipts.EachDM01ExternalIdentityReceipt(ctx, dm01RunID, func(receipt DM01ExternalIdentityReceipt) error {
 		if receipt.SourceOrdinal != nextReceiptOrdinal || zeroDigest(receipt.SourceKeyHMAC) || (receipt.Disposition != "imported" && receipt.Disposition != "quarantined") {
-			return errInvalidDM01ExternalIdentityArchiveDiff
+			return dm01ExternalIdentityArchiveDiffFailure("receipt_envelope")
 		}
 		nextReceiptOrdinal++
 		if _, exists := dm01Keys[receipt.SourceKeyHMAC]; exists {
-			return errInvalidDM01ExternalIdentityArchiveDiff
+			return dm01ExternalIdentityArchiveDiffFailure("receipt_duplicate")
 		}
 		dm01Keys[receipt.SourceKeyHMAC] = struct{}{}
 		return nil
 	}); err != nil {
-		return DM01ExternalIdentityArchiveDiff{}, err
+		var failure *DM01ExternalIdentityArchiveDiffError
+		if errors.As(err, &failure) {
+			return DM01ExternalIdentityArchiveDiff{}, failure
+		}
+		return DM01ExternalIdentityArchiveDiff{}, dm01ExternalIdentityArchiveDiffFailure("receipt_stream")
 	}
 
 	intersection := make([][sha256.Size]byte, 0)
@@ -129,49 +153,49 @@ func DiffDM01ExternalIdentityArchive(
 	}, nil
 }
 
-func verifyExternalIdentityArchiveRow(row v1archive.ArchivedRow, sourceHMACKey []byte) (int64, error) {
+func verifyExternalIdentityArchiveRow(row v1archive.ArchivedRow, sourceHMACKey []byte) (int64, string) {
 	if v1archive.IsRedacted(row, "id") || !json.Valid(row.Payload) {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_id"
 	}
 	canonical, paths, err := v1archive.RedactPayload(row.Payload)
 	if err != nil || !bytes.Equal(canonical, row.Payload) {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_payload_hmac"
 	}
 	payloadHMAC, err := v1archive.PayloadHMAC(sourceHMACKey, "wecom_external_contact_identity_map", canonical)
 	if err != nil || payloadHMAC != row.PayloadHMAC {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_payload_hmac"
 	}
 	fieldHMAC, err := v1archive.FieldHMAC(sourceHMACKey, "wecom_external_contact_identity_map", paths)
 	if err != nil || fieldHMAC != row.FieldHMAC {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_field_hmac"
 	}
 
 	decoder := json.NewDecoder(bytes.NewReader(row.Payload))
 	decoder.UseNumber()
 	var payload map[string]any
 	if err = decoder.Decode(&payload); err != nil {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_payload_shape"
 	}
 	if err = decoder.Decode(&struct{}{}); err == nil {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_payload_shape"
 	}
 	idNumber, ok := payload["id"].(json.Number)
 	if !ok {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_payload_shape"
 	}
 	id, err := strconv.ParseInt(string(idNumber), 10, 64)
 	if err != nil || id < 1 || strconv.FormatInt(id, 10) != string(idNumber) {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_id"
 	}
 	keyJSON, err := json.Marshal([]int64{id})
 	if err != nil {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_id"
 	}
 	sourceKey, err := v1archive.SourceKeyHMAC(sourceHMACKey, "wecom_external_contact_identity_map", keyJSON)
 	if err != nil || sourceKey != row.SourceKeyHMAC {
-		return 0, errInvalidDM01ExternalIdentityArchiveDiff
+		return 0, "archive_source_hmac"
 	}
-	return id, nil
+	return id, ""
 }
 
 func dm01ExternalIdentityDiffDigest(intersection, onlyArchive, onlyDM01 [][sha256.Size]byte) [sha256.Size]byte {

@@ -48,21 +48,28 @@ func TestDiffDM01ExternalIdentityArchiveFailsClosed(t *testing.T) {
 	valid := diffArchiveRow(t, archiveKey, 1, 1)
 	validReceipt := diffReceipt(t, dm01Key, 1, 1, "imported")
 
-	for name, change := range map[string]func(*v1archive.ArchivedRow, *DM01ExternalIdentityReceipt){
-		"source digest drift":  func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.SourceKeyHMAC[0]++ },
-		"payload digest drift": func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.PayloadHMAC[0]++ },
-		"field digest drift":   func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.FieldHMAC[0]++ },
-		"redacted id":          func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.RedactedFields = []string{"id"} },
-		"noncanonical id":      func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.Payload = []byte(`{"id":1.0}`) },
-		"receipt ordinal gap":  func(_ *v1archive.ArchivedRow, receipt *DM01ExternalIdentityReceipt) { receipt.SourceOrdinal = 2 },
-		"receipt disposition":  func(_ *v1archive.ArchivedRow, receipt *DM01ExternalIdentityReceipt) { receipt.Disposition = "skipped" },
+	for name, test := range map[string]struct {
+		stage  string
+		change func(*v1archive.ArchivedRow, *DM01ExternalIdentityReceipt)
+	}{
+		"source digest drift":  {"archive_source_hmac", func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.SourceKeyHMAC[0]++ }},
+		"payload digest drift": {"archive_payload_hmac", func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.PayloadHMAC[0]++ }},
+		"field digest drift":   {"archive_field_hmac", func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.FieldHMAC[0]++ }},
+		"redacted id":          {"archive_id", func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.RedactedFields = []string{"id"} }},
+		"noncanonical id":      {"archive_payload_hmac", func(row *v1archive.ArchivedRow, _ *DM01ExternalIdentityReceipt) { row.Payload = []byte(`{"id":1.0}`) }},
+		"receipt ordinal gap":  {"receipt_envelope", func(_ *v1archive.ArchivedRow, receipt *DM01ExternalIdentityReceipt) { receipt.SourceOrdinal = 2 }},
+		"receipt disposition":  {"receipt_envelope", func(_ *v1archive.ArchivedRow, receipt *DM01ExternalIdentityReceipt) { receipt.Disposition = "skipped" }},
 	} {
 		t.Run(name, func(t *testing.T) {
 			row, receipt := valid, validReceipt
-			change(&row, &receipt)
+			test.change(&row, &receipt)
 			_, err := DiffDM01ExternalIdentityArchive(context.Background(), diffArchive{rows: []v1archive.ArchivedRow{row}}, diffReceipts{rows: []DM01ExternalIdentityReceipt{receipt}}, "v1-full-archive", 2, archiveKey, dm01Key)
 			if !errors.Is(err, errInvalidDM01ExternalIdentityArchiveDiff) {
 				t.Fatalf("expected generic invalid-diff error, got %v", err)
+			}
+			var failure *DM01ExternalIdentityArchiveDiffError
+			if !errors.As(err, &failure) || failure.Stage != test.stage {
+				t.Fatalf("stage=%v want=%s", failure, test.stage)
 			}
 		})
 	}

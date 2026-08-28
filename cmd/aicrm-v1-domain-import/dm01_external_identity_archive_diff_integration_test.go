@@ -52,7 +52,12 @@ func TestDM01ExternalIdentityArchiveDiffReadOnly(t *testing.T) {
 	receipts := dm01ExternalIdentityReceiptReader{uow: platformstore.NewUnitOfWork(dm01ReadOnlyBeginner{pool: pool})}
 	result, err := v1domain.DiffDM01ExternalIdentityArchive(ctx, archive, receipts, *dm01ExternalIdentityArchiveDiffArchiveRun, *dm01ExternalIdentityArchiveDiffRun, []byte(archiveEnvironment.SourceHMACKey), []byte(dm01Environment.SourceHMACKey))
 	if err != nil {
-		t.Fatal("read-only DM01/archive difference check failed")
+		stage := "unknown"
+		var failure *v1domain.DM01ExternalIdentityArchiveDiffError
+		if errors.As(err, &failure) {
+			stage = failure.Stage
+		}
+		t.Fatalf("read-only DM01/archive difference check failed: stage=%s", stage)
 	}
 	if result.ArchiveRows != 23936 || result.DM01TerminalRows != 23873 || result.Intersection+result.OnlyArchive != result.ArchiveRows || result.Intersection+result.OnlyDM01 != result.DM01TerminalRows {
 		t.Fatal("DM01/archive difference counts are not conserved")
