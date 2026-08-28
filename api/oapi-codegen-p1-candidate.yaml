@@ -11,6 +11,7 @@ output-options:
     - p4-marketing-state-history
     - p4-broadcast-job-history
     - p4-outbound-task-history
+    - p4-invalid-source-history
     - p4-static-history
     - p4-customer-state-history
     - p4-hxc-history

@@ -5,6 +5,250 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type UnboundTagHistoryQuarantineReason =
+  (typeof UnboundTagHistoryQuarantineReason)[keyof typeof UnboundTagHistoryQuarantineReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UnboundTagHistoryQuarantineReason = {
+  invalid_contact_tag: "invalid_contact_tag",
+} as const;
+
+export interface UnboundTagHistory {
+  /** @minimum 1 */
+  id: number;
+  tag_source_id: string;
+  created_at: string;
+  quarantine_reason: UnboundTagHistoryQuarantineReason;
+}
+
+export type UnboundTagHistoryPageSource =
+  (typeof UnboundTagHistoryPageSource)[keyof typeof UnboundTagHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UnboundTagHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface UnboundTagHistoryPage {
+  source: UnboundTagHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: UnboundTagHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type UnboundTagHistoryDetailSource =
+  (typeof UnboundTagHistoryDetailSource)[keyof typeof UnboundTagHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UnboundTagHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface UnboundTagHistoryDetail {
+  source: UnboundTagHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: UnboundTagHistory;
+}
+
+export type InvalidChannelHistoryQuarantineReason =
+  (typeof InvalidChannelHistoryQuarantineReason)[keyof typeof InvalidChannelHistoryQuarantineReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidChannelHistoryQuarantineReason = {
+  invalid_channel_definition: "invalid_channel_definition",
+} as const;
+
+export interface InvalidChannelHistory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  code: string;
+  name: string;
+  channel_type: string;
+  carrier_type: string;
+  created_at: string;
+  updated_at: string;
+  quarantine_reason: InvalidChannelHistoryQuarantineReason;
+}
+
+export type InvalidChannelHistoryPageSource =
+  (typeof InvalidChannelHistoryPageSource)[keyof typeof InvalidChannelHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidChannelHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface InvalidChannelHistoryPage {
+  source: InvalidChannelHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: InvalidChannelHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type InvalidChannelHistoryDetailSource =
+  (typeof InvalidChannelHistoryDetailSource)[keyof typeof InvalidChannelHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidChannelHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface InvalidChannelHistoryDetail {
+  source: InvalidChannelHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: InvalidChannelHistory;
+}
+
+export type InvalidAssetHistoryKind =
+  (typeof InvalidAssetHistoryKind)[keyof typeof InvalidAssetHistoryKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidAssetHistoryKind = {
+  image: "image",
+  attachment: "attachment",
+} as const;
+
+export type InvalidAssetHistoryQuarantineReason =
+  (typeof InvalidAssetHistoryQuarantineReason)[keyof typeof InvalidAssetHistoryQuarantineReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidAssetHistoryQuarantineReason = {
+  invalid_static_media_definition: "invalid_static_media_definition",
+} as const;
+
+export interface InvalidAssetHistory {
+  /** @minimum 1 */
+  id: number;
+  kind: InvalidAssetHistoryKind;
+  source_id: number;
+  name: string;
+  file_name: string;
+  mime_type: string;
+  file_size: number;
+  original_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  quarantine_reason: InvalidAssetHistoryQuarantineReason;
+}
+
+export type InvalidAssetHistoryPageSource =
+  (typeof InvalidAssetHistoryPageSource)[keyof typeof InvalidAssetHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidAssetHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface InvalidAssetHistoryPage {
+  source: InvalidAssetHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: InvalidAssetHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type InvalidAssetHistoryDetailSource =
+  (typeof InvalidAssetHistoryDetailSource)[keyof typeof InvalidAssetHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidAssetHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface InvalidAssetHistoryDetail {
+  source: InvalidAssetHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: InvalidAssetHistory;
+}
+
+export type InvalidRadarLinkHistoryQuarantineReason =
+  (typeof InvalidRadarLinkHistoryQuarantineReason)[keyof typeof InvalidRadarLinkHistoryQuarantineReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidRadarLinkHistoryQuarantineReason = {
+  invalid_radar_definition: "invalid_radar_definition",
+} as const;
+
+export interface InvalidRadarLinkHistory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  code: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  quarantine_reason: InvalidRadarLinkHistoryQuarantineReason;
+}
+
+export type InvalidRadarLinkHistoryPageSource =
+  (typeof InvalidRadarLinkHistoryPageSource)[keyof typeof InvalidRadarLinkHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidRadarLinkHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface InvalidRadarLinkHistoryPage {
+  source: InvalidRadarLinkHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: InvalidRadarLinkHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type InvalidRadarLinkHistoryDetailSource =
+  (typeof InvalidRadarLinkHistoryDetailSource)[keyof typeof InvalidRadarLinkHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InvalidRadarLinkHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface InvalidRadarLinkHistoryDetail {
+  source: InvalidRadarLinkHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: InvalidRadarLinkHistory;
+}
+
 export interface OutboundTaskHistory {
   /** @minimum 1 */
   id: number;
@@ -20815,6 +21059,54 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListUnboundTagHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListInvalidChannelHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListInvalidAssetHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListInvalidRadarLinkHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListOutboundTaskHistoryParams = {
   /**
    * @minimum 1
@@ -23599,6 +23891,618 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type listUnboundTagHistoryResponse200 = {
+  data: UnboundTagHistoryPage;
+  status: 200;
+};
+
+export type listUnboundTagHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listUnboundTagHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listUnboundTagHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listUnboundTagHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listUnboundTagHistoryResponseSuccess =
+  listUnboundTagHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listUnboundTagHistoryResponseError = (
+  | listUnboundTagHistoryResponse400
+  | listUnboundTagHistoryResponse401
+  | listUnboundTagHistoryResponse403
+  | listUnboundTagHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listUnboundTagHistoryResponse =
+  listUnboundTagHistoryResponseSuccess | listUnboundTagHistoryResponseError;
+
+export const getListUnboundTagHistoryUrl = (
+  params?: ListUnboundTagHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/contact-invalid-history/tags?${stringifiedParams}`
+    : `/api/admin/contact-invalid-history/tags`;
+};
+
+export const listUnboundTagHistory = async (
+  params?: ListUnboundTagHistoryParams,
+  options?: RequestInit,
+): Promise<listUnboundTagHistoryResponse> => {
+  const res = await fetch(getListUnboundTagHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listUnboundTagHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listUnboundTagHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type getUnboundTagHistoryResponse200 = {
+  data: UnboundTagHistoryDetail;
+  status: 200;
+};
+
+export type getUnboundTagHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getUnboundTagHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUnboundTagHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUnboundTagHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getUnboundTagHistoryResponseSuccess =
+  getUnboundTagHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getUnboundTagHistoryResponseError = (
+  | getUnboundTagHistoryResponse400
+  | getUnboundTagHistoryResponse401
+  | getUnboundTagHistoryResponse403
+  | getUnboundTagHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getUnboundTagHistoryResponse =
+  getUnboundTagHistoryResponseSuccess | getUnboundTagHistoryResponseError;
+
+export const getGetUnboundTagHistoryUrl = (historyId: number) => {
+  return `/api/admin/contact-invalid-history/tags/${historyId}`;
+};
+
+export const getUnboundTagHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getUnboundTagHistoryResponse> => {
+  const res = await fetch(getGetUnboundTagHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUnboundTagHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUnboundTagHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type listInvalidChannelHistoryResponse200 = {
+  data: InvalidChannelHistoryPage;
+  status: 200;
+};
+
+export type listInvalidChannelHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listInvalidChannelHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listInvalidChannelHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listInvalidChannelHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listInvalidChannelHistoryResponseSuccess =
+  listInvalidChannelHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listInvalidChannelHistoryResponseError = (
+  | listInvalidChannelHistoryResponse400
+  | listInvalidChannelHistoryResponse401
+  | listInvalidChannelHistoryResponse403
+  | listInvalidChannelHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listInvalidChannelHistoryResponse =
+  | listInvalidChannelHistoryResponseSuccess
+  | listInvalidChannelHistoryResponseError;
+
+export const getListInvalidChannelHistoryUrl = (
+  params?: ListInvalidChannelHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/contact-invalid-history/channels?${stringifiedParams}`
+    : `/api/admin/contact-invalid-history/channels`;
+};
+
+export const listInvalidChannelHistory = async (
+  params?: ListInvalidChannelHistoryParams,
+  options?: RequestInit,
+): Promise<listInvalidChannelHistoryResponse> => {
+  const res = await fetch(getListInvalidChannelHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listInvalidChannelHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listInvalidChannelHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type getInvalidChannelHistoryResponse200 = {
+  data: InvalidChannelHistoryDetail;
+  status: 200;
+};
+
+export type getInvalidChannelHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getInvalidChannelHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getInvalidChannelHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getInvalidChannelHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getInvalidChannelHistoryResponseSuccess =
+  getInvalidChannelHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getInvalidChannelHistoryResponseError = (
+  | getInvalidChannelHistoryResponse400
+  | getInvalidChannelHistoryResponse401
+  | getInvalidChannelHistoryResponse403
+  | getInvalidChannelHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getInvalidChannelHistoryResponse =
+  | getInvalidChannelHistoryResponseSuccess
+  | getInvalidChannelHistoryResponseError;
+
+export const getGetInvalidChannelHistoryUrl = (historyId: number) => {
+  return `/api/admin/contact-invalid-history/channels/${historyId}`;
+};
+
+export const getInvalidChannelHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getInvalidChannelHistoryResponse> => {
+  const res = await fetch(getGetInvalidChannelHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInvalidChannelHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getInvalidChannelHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type listInvalidAssetHistoryResponse200 = {
+  data: InvalidAssetHistoryPage;
+  status: 200;
+};
+
+export type listInvalidAssetHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listInvalidAssetHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listInvalidAssetHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listInvalidAssetHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listInvalidAssetHistoryResponseSuccess =
+  listInvalidAssetHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listInvalidAssetHistoryResponseError = (
+  | listInvalidAssetHistoryResponse400
+  | listInvalidAssetHistoryResponse401
+  | listInvalidAssetHistoryResponse403
+  | listInvalidAssetHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listInvalidAssetHistoryResponse =
+  listInvalidAssetHistoryResponseSuccess | listInvalidAssetHistoryResponseError;
+
+export const getListInvalidAssetHistoryUrl = (
+  params?: ListInvalidAssetHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/media-invalid-history?${stringifiedParams}`
+    : `/api/admin/media-invalid-history`;
+};
+
+export const listInvalidAssetHistory = async (
+  params?: ListInvalidAssetHistoryParams,
+  options?: RequestInit,
+): Promise<listInvalidAssetHistoryResponse> => {
+  const res = await fetch(getListInvalidAssetHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listInvalidAssetHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listInvalidAssetHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type getInvalidAssetHistoryResponse200 = {
+  data: InvalidAssetHistoryDetail;
+  status: 200;
+};
+
+export type getInvalidAssetHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getInvalidAssetHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getInvalidAssetHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getInvalidAssetHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getInvalidAssetHistoryResponseSuccess =
+  getInvalidAssetHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getInvalidAssetHistoryResponseError = (
+  | getInvalidAssetHistoryResponse400
+  | getInvalidAssetHistoryResponse401
+  | getInvalidAssetHistoryResponse403
+  | getInvalidAssetHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getInvalidAssetHistoryResponse =
+  getInvalidAssetHistoryResponseSuccess | getInvalidAssetHistoryResponseError;
+
+export const getGetInvalidAssetHistoryUrl = (historyId: number) => {
+  return `/api/admin/media-invalid-history/${historyId}`;
+};
+
+export const getInvalidAssetHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getInvalidAssetHistoryResponse> => {
+  const res = await fetch(getGetInvalidAssetHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInvalidAssetHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getInvalidAssetHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type listInvalidRadarLinkHistoryResponse200 = {
+  data: InvalidRadarLinkHistoryPage;
+  status: 200;
+};
+
+export type listInvalidRadarLinkHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listInvalidRadarLinkHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listInvalidRadarLinkHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listInvalidRadarLinkHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listInvalidRadarLinkHistoryResponseSuccess =
+  listInvalidRadarLinkHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listInvalidRadarLinkHistoryResponseError = (
+  | listInvalidRadarLinkHistoryResponse400
+  | listInvalidRadarLinkHistoryResponse401
+  | listInvalidRadarLinkHistoryResponse403
+  | listInvalidRadarLinkHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listInvalidRadarLinkHistoryResponse =
+  | listInvalidRadarLinkHistoryResponseSuccess
+  | listInvalidRadarLinkHistoryResponseError;
+
+export const getListInvalidRadarLinkHistoryUrl = (
+  params?: ListInvalidRadarLinkHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/radar-invalid-history?${stringifiedParams}`
+    : `/api/admin/radar-invalid-history`;
+};
+
+export const listInvalidRadarLinkHistory = async (
+  params?: ListInvalidRadarLinkHistoryParams,
+  options?: RequestInit,
+): Promise<listInvalidRadarLinkHistoryResponse> => {
+  const res = await fetch(getListInvalidRadarLinkHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listInvalidRadarLinkHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listInvalidRadarLinkHistoryResponse;
+};
+
+/**
+ * @summary Read inert invalid V1 source history without current business effects
+ */
+export type getInvalidRadarLinkHistoryResponse200 = {
+  data: InvalidRadarLinkHistoryDetail;
+  status: 200;
+};
+
+export type getInvalidRadarLinkHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getInvalidRadarLinkHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getInvalidRadarLinkHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getInvalidRadarLinkHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getInvalidRadarLinkHistoryResponseSuccess =
+  getInvalidRadarLinkHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getInvalidRadarLinkHistoryResponseError = (
+  | getInvalidRadarLinkHistoryResponse400
+  | getInvalidRadarLinkHistoryResponse401
+  | getInvalidRadarLinkHistoryResponse403
+  | getInvalidRadarLinkHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getInvalidRadarLinkHistoryResponse =
+  | getInvalidRadarLinkHistoryResponseSuccess
+  | getInvalidRadarLinkHistoryResponseError;
+
+export const getGetInvalidRadarLinkHistoryUrl = (historyId: number) => {
+  return `/api/admin/radar-invalid-history/${historyId}`;
+};
+
+export const getInvalidRadarLinkHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getInvalidRadarLinkHistoryResponse> => {
+  const res = await fetch(getGetInvalidRadarLinkHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInvalidRadarLinkHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getInvalidRadarLinkHistoryResponse;
 };
 
 /**
