@@ -46,7 +46,7 @@ func TestAdaptHistoryPreservesOriginalFactsWithoutExecution(t *testing.T) {
 	}
 }
 
-func TestAdaptHistoryMarksUnresolvedSourceAndCustomerReferencesPending(t *testing.T) {
+func TestAdaptHistoryQuarantinesMissingOrMismatchedSourceParents(t *testing.T) {
 	at := time.Date(2026, 8, 28, 10, 11, 12, 0, time.UTC)
 	recipient := broadcastRow(t, RecipientsTableID, 1, map[string]any{
 		"id": 2, "plan_id": "missing-plan", "owner_userid": "[REDACTED]", "display_name": "", "planned_message_count": 1, "approval_status": "pending", "send_status": "pending", "approved_by": "", "approved_at": nil,
@@ -57,9 +57,33 @@ func TestAdaptHistoryMarksUnresolvedSourceAndCustomerReferencesPending(t *testin
 		"status": "pending", "sent_at": nil, "last_error": "", "created_at": at, "updated_at": at, "unionid": "",
 	})
 	history := AdaptHistory(nil, []v1archive.ArchivedRow{recipient}, []v1archive.ArchivedRow{message})
-	if history.Recipients[0].Disposition != DispositionCandidate || history.Recipients[0].Fact.PlanReference != SourceParentPending || history.Recipients[0].Fact.OwnerReference != ReferenceUnavailable || history.Recipients[0].Fact.CustomerReference != ReferenceUnavailable ||
-		history.Messages[0].Disposition != DispositionCandidate || history.Messages[0].Fact.PlanReference != SourceParentPending || history.Messages[0].Fact.RecipientReference != SourceParentPending || history.Messages[0].Fact.CustomerReference != ReferenceUnavailable {
-		t.Fatal("unresolved_reference_was_guessed_or_lost")
+	if history.Recipients[0].Disposition != DispositionQuarantine || history.Recipients[0].Reason != "broadcast_recipient_plan_unresolved" || history.Recipients[0].Fact != nil ||
+		history.Messages[0].Disposition != DispositionQuarantine || history.Messages[0].Reason != "broadcast_message_plan_unresolved" || history.Messages[0].Fact != nil {
+		t.Fatal("missing_source_parent_was_not_quarantined")
+	}
+
+	plans := []v1archive.ArchivedRow{broadcastRow(t, PlansTableID, 2, map[string]any{
+		"id": 4, "plan_id": "plan-a", "trace_id": "", "session_id": "", "operator": "", "intent": "", "segment_id": nil, "campaign_id": nil,
+		"selection_json": map[string]any{}, "content_strategy": "", "content_template": "", "personalization_json": map[string]any{}, "max_recipients": 0, "candidate_count": 0, "skipped_count": 0,
+		"explanation_json": map[string]any{}, "variants_json": map[string]any{}, "copy_workorder_run_ids": map[string]any{}, "requires_manual_copy": false, "simulate_summary_json": map[string]any{}, "commit_batch_id": "", "commit_send_record_id": nil,
+		"committed_at": nil, "committed_by": "", "approval_token_hash": "", "status": "", "error_message": "", "expires_at": nil, "created_at": at, "updated_at": at, "display_name": "", "owner_userid": "", "review_status": "", "run_status": "",
+	}), broadcastRow(t, PlansTableID, 3, map[string]any{
+		"id": 7, "plan_id": "plan-b", "trace_id": "", "session_id": "", "operator": "", "intent": "", "segment_id": nil, "campaign_id": nil,
+		"selection_json": map[string]any{}, "content_strategy": "", "content_template": "", "personalization_json": map[string]any{}, "max_recipients": 0, "candidate_count": 0, "skipped_count": 0,
+		"explanation_json": map[string]any{}, "variants_json": map[string]any{}, "copy_workorder_run_ids": map[string]any{}, "requires_manual_copy": false, "simulate_summary_json": map[string]any{}, "commit_batch_id": "", "commit_send_record_id": nil,
+		"committed_at": nil, "committed_by": "", "approval_token_hash": "", "status": "", "error_message": "", "expires_at": nil, "created_at": at, "updated_at": at, "display_name": "", "owner_userid": "", "review_status": "", "run_status": "",
+	})}
+	recipients := []v1archive.ArchivedRow{broadcastRow(t, RecipientsTableID, 2, map[string]any{
+		"id": 5, "plan_id": "plan-a", "owner_userid": "", "display_name": "", "planned_message_count": 0, "approval_status": "", "send_status": "", "approved_by": "", "approved_at": nil,
+		"rejected_by": "", "rejected_at": nil, "reject_reason": "", "broadcast_job_id": nil, "last_error": "", "created_at": at, "updated_at": at, "unionid": "",
+	})}
+	mismatchedMessage := broadcastRow(t, MessagesTableID, 2, map[string]any{
+		"id": 6, "plan_id": "plan-b", "recipient_id": 5, "sequence_index": 0, "day_offset": 0, "send_time": "", "content_text": "", "content_payload_json": map[string]any{}, "attachments_json": map[string]any{},
+		"status": "", "sent_at": nil, "last_error": "", "created_at": at, "updated_at": at, "unionid": "",
+	})
+	history = AdaptHistory(plans, recipients, []v1archive.ArchivedRow{mismatchedMessage})
+	if history.Messages[0].Disposition != DispositionQuarantine || history.Messages[0].Reason != "broadcast_message_recipient_plan_mismatch" || history.Messages[0].Fact != nil {
+		t.Fatal("message_with_mismatched_recipient_was_not_quarantined")
 	}
 }
 

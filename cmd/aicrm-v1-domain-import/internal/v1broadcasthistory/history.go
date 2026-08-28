@@ -223,12 +223,13 @@ func AdaptHistory(plans, recipients, messages []v1archive.ArchivedRow) History {
 		}
 		if _, found := knownPlans[value.PlanID]; found {
 			value.PlanReference = SourceParentObserved
-		} else {
-			value.PlanReference = SourceParentPending
-		}
-		if result.Recipients[index].Disposition == DispositionCandidate {
 			knownRecipients[value.SourceID] = *value
+			continue
 		}
+		// A recipient cannot be written without its immutable historical plan.
+		// Keep the sealed source archive intact, but do not turn an absent V1
+		// parent into a dangling formal relation.
+		result.Recipients[index] = RecipientResult{Disposition: DispositionQuarantine, Reason: "broadcast_recipient_plan_unresolved"}
 	}
 	for index, row := range messages {
 		result.Messages[index] = adaptMessage(row)
@@ -236,16 +237,21 @@ func AdaptHistory(plans, recipients, messages []v1archive.ArchivedRow) History {
 		if value == nil || result.Messages[index].Disposition != DispositionCandidate {
 			continue
 		}
-		if _, found := knownPlans[value.PlanID]; found {
-			value.PlanReference = SourceParentObserved
-		} else {
-			value.PlanReference = SourceParentPending
+		if _, found := knownPlans[value.PlanID]; !found {
+			result.Messages[index] = MessageResult{Disposition: DispositionQuarantine, Reason: "broadcast_message_plan_unresolved"}
+			continue
 		}
-		if recipient, found := knownRecipients[value.RecipientSourceID]; found && recipient.PlanID == value.PlanID {
-			value.RecipientReference = SourceParentObserved
-		} else {
-			value.RecipientReference = SourceParentPending
+		recipient, found := knownRecipients[value.RecipientSourceID]
+		if !found {
+			result.Messages[index] = MessageResult{Disposition: DispositionQuarantine, Reason: "broadcast_message_recipient_unresolved"}
+			continue
 		}
+		if recipient.PlanID != value.PlanID {
+			result.Messages[index] = MessageResult{Disposition: DispositionQuarantine, Reason: "broadcast_message_recipient_plan_mismatch"}
+			continue
+		}
+		value.PlanReference = SourceParentObserved
+		value.RecipientReference = SourceParentObserved
 	}
 	return result
 }
