@@ -12,21 +12,19 @@ import (
 )
 
 const countArchiveIdentityRootFixtureRows = `-- name: CountArchiveIdentityRootFixtureRows :one
-SELECT (SELECT count(*) FROM customers)::bigint AS customers,
-  (SELECT count(*) FROM legacy_contact_identity_source_mappings)::bigint AS mappings,
+SELECT (SELECT count(*) FROM legacy_contact_identity_source_mappings)::bigint AS mappings,
   (SELECT count(*) FROM legacy_contact_identity_import_row_receipts)::bigint AS receipts
 `
 
 type CountArchiveIdentityRootFixtureRowsRow struct {
-	Customers int64 `json:"customers"`
-	Mappings  int64 `json:"mappings"`
-	Receipts  int64 `json:"receipts"`
+	Mappings int64 `json:"mappings"`
+	Receipts int64 `json:"receipts"`
 }
 
 func (q *Queries) CountArchiveIdentityRootFixtureRows(ctx context.Context) (CountArchiveIdentityRootFixtureRowsRow, error) {
 	row := q.db.QueryRow(ctx, countArchiveIdentityRootFixtureRows)
 	var i CountArchiveIdentityRootFixtureRowsRow
-	err := row.Scan(&i.Customers, &i.Mappings, &i.Receipts)
+	err := row.Scan(&i.Mappings, &i.Receipts)
 	return i, err
 }
 
