@@ -114,7 +114,7 @@ func readAutomationHistoryTable(ctx context.Context, archive *v1archive.Postgres
 			material.original++
 		}
 		for _, column := range row.RedactedFields {
-			redactedColumns[table+"."+column]++
+			redactedColumns[automationRedactedColumn(table, column)]++
 		}
 		result = append(result, append(json.RawMessage(nil), row.Payload...))
 		return nil
@@ -160,6 +160,48 @@ func automationMaterialRedacted(table string, paths []string) bool {
 			if path == root || strings.HasPrefix(path, root+".") || strings.HasPrefix(path, root+"[") {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// automationRedactedColumn intentionally exposes only a manifest-defined
+// top-level field. Archive metadata can contain dynamic nested JSON keys, so
+// those keys must never become test logs.
+func automationRedactedColumn(table, path string) string {
+	root := redactedRoot(path)
+	if !automationManifestRoot(table, root) {
+		root = "unknown"
+	}
+	return table + "." + root
+}
+
+func redactedRoot(path string) string {
+	for index := 0; index < len(path); index++ {
+		if path[index] == '.' || path[index] == '[' {
+			return path[:index]
+		}
+	}
+	return path
+}
+
+func automationManifestRoot(table, root string) bool {
+	var roots []string
+	switch table {
+	case SOPTemplateTableID:
+		roots = []string{"id", "pool_key", "day_index", "content", "images_json", "enabled", "created_at", "updated_at"}
+	case AgentConfigTableID:
+		roots = []string{"id", "agent_code", "display_name", "pool_keys_json", "enabled", "draft_role_prompt", "draft_task_prompt", "draft_variables_json", "draft_output_schema_json", "published_role_prompt", "published_task_prompt", "published_variables_json", "published_output_schema_json", "draft_version", "published_version", "published_at", "published_by", "last_modified_at", "last_modified_by", "last_modified_source", "last_change_summary", "created_at", "updated_at", "submitted_for_publish", "submitted_at", "submitted_by", "scenario_code"}
+	case PromptRegistryTableID:
+		roots = []string{"id", "agent_code", "display_name", "prompt_text", "enabled", "version", "created_at", "updated_at"}
+	case AgentsTableID:
+		roots = []string{"id", "program_id", "workflow_id", "node_id", "task_id", "agent_code", "agent_name", "agent_type", "status", "sort_order", "metadata_json", "config_json", "enabled", "created_by", "updated_by", "created_at", "updated_at", "archived_at"}
+	default:
+		return false
+	}
+	for _, value := range roots {
+		if root == value {
+			return true
 		}
 	}
 	return false
@@ -223,6 +265,21 @@ func TestAutomationArchiveRowIdentityAndMaterialRedaction(t *testing.T) {
 	}
 	if !automationMaterialRedacted(PromptRegistryTableID, []string{"prompt_text"}) {
 		t.Fatal("redacted prompt placeholder was classified as original")
+	}
+	for _, test := range []struct {
+		table string
+		path  string
+		want  string
+	}{
+		{AgentConfigTableID, "draft_variables_json.api_key", AgentConfigTableID + ".draft_variables_json"},
+		{AgentsTableID, "config_json[0].secret", AgentsTableID + ".config_json"},
+		{PromptRegistryTableID, "prompt_text", PromptRegistryTableID + ".prompt_text"},
+		{AgentConfigTableID, "runtime_secret.dynamic", AgentConfigTableID + ".unknown"},
+		{SOPTemplateTableID, "", SOPTemplateTableID + ".unknown"},
+	} {
+		if got := automationRedactedColumn(test.table, test.path); got != test.want {
+			t.Fatal("redacted column log root was not allowlisted")
+		}
 	}
 	for _, mutate := range []func(*v1archive.ArchivedRow){
 		func(value *v1archive.ArchivedRow) { value.AdapterID = "wrong" },
