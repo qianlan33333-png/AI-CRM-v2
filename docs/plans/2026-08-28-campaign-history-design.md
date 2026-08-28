@@ -10,4 +10,5 @@
 - Writer与journal在同一UoW事务；重放和对账比较完整typed目标摘要，包含生成ID。只读API/admin.read、有限分页、真实空/失败态，不回退Mock。
 - 最小入口为7个GET：segments/list+detail、members/list、broadcast plans/list+detail、plan recipients、recipient messages。前端是现有Campaign页的独立历史模式，无启动/审核/重发按钮。
 - 先完成114/115/116/117串行集中PR的候选与exact-main门禁，再发布本包；Schema118只在隔离验证完成后正式部署。不改V1、旧80/443/域名/回调或现有流量。
-- 实际PG五表导入、全量重放、逐行对账、部署和用户人工验收仍待完成，不能以本设计或代码存在销项。
+- V2网络隔离PG演练已完成五表25,480首次导入、全量重放和双次逐行对账，0隔离；seal0c5bebf5fc94154120c3bb3941cae4d3e299a7ab68d813a0562bc0041552f273。effects/event_log/river_job前后0。正式118、部署和普通用户人工验收尚未执行。
+- 2026-08-28，前序Member Grid合并ff74127的exact-main33151096698已绿；本包以内容一致的父树对齐该主线，候选业务树未改。Go/race/vet、生成/契约/ownership及前端373/0已通过，本集中PR仍须精确候选Full绿后才能合并。
