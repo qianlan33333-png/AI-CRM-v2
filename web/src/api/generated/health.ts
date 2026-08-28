@@ -17796,6 +17796,161 @@ export interface AudienceHistoryMemberPage {
   offset: number;
 }
 
+export interface SidebarProfileHistoryItem {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_key_digest: number[];
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  source: string;
+  industry: string;
+  industry_description: string;
+  needs_blockers_followup: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type SidebarProfileHistoryPageSource =
+  (typeof SidebarProfileHistoryPageSource)[keyof typeof SidebarProfileHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarProfileHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface SidebarProfileHistoryPage {
+  source: SidebarProfileHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: SidebarProfileHistoryItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type SidebarProfileHistoryDetailSource =
+  (typeof SidebarProfileHistoryDetailSource)[keyof typeof SidebarProfileHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarProfileHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface SidebarProfileHistoryDetail {
+  source: SidebarProfileHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: SidebarProfileHistoryItem;
+}
+
+export type OwnerMigrationResultHistoryItemSessionRelation =
+  (typeof OwnerMigrationResultHistoryItemSessionRelation)[keyof typeof OwnerMigrationResultHistoryItemSessionRelation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OwnerMigrationResultHistoryItemSessionRelation = {
+  resolved: "resolved",
+  unresolved: "unresolved",
+} as const;
+
+export type OwnerMigrationResultHistoryItemPreviewRelation =
+  (typeof OwnerMigrationResultHistoryItemPreviewRelation)[keyof typeof OwnerMigrationResultHistoryItemPreviewRelation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OwnerMigrationResultHistoryItemPreviewRelation = {
+  resolved: "resolved",
+  unresolved: "unresolved",
+} as const;
+
+export interface OwnerMigrationResultHistoryItem {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_key_digest: number[];
+  scope_type: string;
+  file_hash: string;
+  preview_hash: string;
+  transfer_welcome_message: string;
+  /** @minimum 0 */
+  total_rows: number;
+  /** @minimum 0 */
+  eligible_count: number;
+  /** @minimum 0 */
+  wecom_success: number;
+  /** @minimum 0 */
+  wecom_failed: number;
+  /** @minimum 0 */
+  crm_updated: number;
+  include_wecom_transfer: boolean;
+  session_relation: OwnerMigrationResultHistoryItemSessionRelation;
+  preview_relation: OwnerMigrationResultHistoryItemPreviewRelation;
+  created_at: string;
+  executed_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type OwnerMigrationResultHistoryPageSource =
+  (typeof OwnerMigrationResultHistoryPageSource)[keyof typeof OwnerMigrationResultHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OwnerMigrationResultHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface OwnerMigrationResultHistoryPage {
+  source: OwnerMigrationResultHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: OwnerMigrationResultHistoryItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type OwnerMigrationResultHistoryDetailSource =
+  (typeof OwnerMigrationResultHistoryDetailSource)[keyof typeof OwnerMigrationResultHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OwnerMigrationResultHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface OwnerMigrationResultHistoryDetail {
+  source: OwnerMigrationResultHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: OwnerMigrationResultHistoryItem;
+}
+
 /**
  * Closed CRM-local safe projection; no provider or external call was executed.
  */
@@ -20185,6 +20340,34 @@ export type ListAudienceHistoryDefinitionsParams = {
 };
 
 export type ListAudienceHistoryMembersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListSidebarProfileHistoryParams = {
+  /**
+   * @minimum 1
+   */
+  customer_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListOwnerMigrationResultHistoryParams = {
   /**
    * @minimum 1
    * @maximum 100
@@ -64791,4 +64974,312 @@ export const getAudienceHistoryDefinition = async (
     status: res.status,
     headers: res.headers,
   } as getAudienceHistoryDefinitionResponse;
+};
+
+/**
+ * @summary Read immutable V1 contact history without current mutations
+ */
+export type listSidebarProfileHistoryResponse200 = {
+  data: SidebarProfileHistoryPage;
+  status: 200;
+};
+
+export type listSidebarProfileHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarProfileHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarProfileHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarProfileHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarProfileHistoryResponseSuccess =
+  listSidebarProfileHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarProfileHistoryResponseError = (
+  | listSidebarProfileHistoryResponse400
+  | listSidebarProfileHistoryResponse401
+  | listSidebarProfileHistoryResponse403
+  | listSidebarProfileHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarProfileHistoryResponse =
+  | listSidebarProfileHistoryResponseSuccess
+  | listSidebarProfileHistoryResponseError;
+
+export const getListSidebarProfileHistoryUrl = (
+  params?: ListSidebarProfileHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/contact-history/sidebar-profiles?${stringifiedParams}`
+    : `/api/admin/contact-history/sidebar-profiles`;
+};
+
+export const listSidebarProfileHistory = async (
+  params?: ListSidebarProfileHistoryParams,
+  options?: RequestInit,
+): Promise<listSidebarProfileHistoryResponse> => {
+  const res = await fetch(getListSidebarProfileHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarProfileHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarProfileHistoryResponse;
+};
+
+/**
+ * @summary Read immutable V1 contact history without current mutations
+ */
+export type getSidebarProfileHistoryResponse200 = {
+  data: SidebarProfileHistoryDetail;
+  status: 200;
+};
+
+export type getSidebarProfileHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSidebarProfileHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSidebarProfileHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSidebarProfileHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSidebarProfileHistoryResponseSuccess =
+  getSidebarProfileHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getSidebarProfileHistoryResponseError = (
+  | getSidebarProfileHistoryResponse400
+  | getSidebarProfileHistoryResponse401
+  | getSidebarProfileHistoryResponse403
+  | getSidebarProfileHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSidebarProfileHistoryResponse =
+  | getSidebarProfileHistoryResponseSuccess
+  | getSidebarProfileHistoryResponseError;
+
+export const getGetSidebarProfileHistoryUrl = (historyId: number) => {
+  return `/api/admin/contact-history/sidebar-profiles/${historyId}`;
+};
+
+export const getSidebarProfileHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getSidebarProfileHistoryResponse> => {
+  const res = await fetch(getGetSidebarProfileHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSidebarProfileHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSidebarProfileHistoryResponse;
+};
+
+/**
+ * @summary Read immutable V1 contact history without current mutations
+ */
+export type listOwnerMigrationResultHistoryResponse200 = {
+  data: OwnerMigrationResultHistoryPage;
+  status: 200;
+};
+
+export type listOwnerMigrationResultHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listOwnerMigrationResultHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listOwnerMigrationResultHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listOwnerMigrationResultHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listOwnerMigrationResultHistoryResponseSuccess =
+  listOwnerMigrationResultHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listOwnerMigrationResultHistoryResponseError = (
+  | listOwnerMigrationResultHistoryResponse400
+  | listOwnerMigrationResultHistoryResponse401
+  | listOwnerMigrationResultHistoryResponse403
+  | listOwnerMigrationResultHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listOwnerMigrationResultHistoryResponse =
+  | listOwnerMigrationResultHistoryResponseSuccess
+  | listOwnerMigrationResultHistoryResponseError;
+
+export const getListOwnerMigrationResultHistoryUrl = (
+  params?: ListOwnerMigrationResultHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/contact-history/owner-migration-results?${stringifiedParams}`
+    : `/api/admin/contact-history/owner-migration-results`;
+};
+
+export const listOwnerMigrationResultHistory = async (
+  params?: ListOwnerMigrationResultHistoryParams,
+  options?: RequestInit,
+): Promise<listOwnerMigrationResultHistoryResponse> => {
+  const res = await fetch(getListOwnerMigrationResultHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listOwnerMigrationResultHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listOwnerMigrationResultHistoryResponse;
+};
+
+/**
+ * @summary Read immutable V1 contact history without current mutations
+ */
+export type getOwnerMigrationResultHistoryResponse200 = {
+  data: OwnerMigrationResultHistoryDetail;
+  status: 200;
+};
+
+export type getOwnerMigrationResultHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getOwnerMigrationResultHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getOwnerMigrationResultHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getOwnerMigrationResultHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getOwnerMigrationResultHistoryResponseSuccess =
+  getOwnerMigrationResultHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getOwnerMigrationResultHistoryResponseError = (
+  | getOwnerMigrationResultHistoryResponse400
+  | getOwnerMigrationResultHistoryResponse401
+  | getOwnerMigrationResultHistoryResponse403
+  | getOwnerMigrationResultHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getOwnerMigrationResultHistoryResponse =
+  | getOwnerMigrationResultHistoryResponseSuccess
+  | getOwnerMigrationResultHistoryResponseError;
+
+export const getGetOwnerMigrationResultHistoryUrl = (historyId: number) => {
+  return `/api/admin/contact-history/owner-migration-results/${historyId}`;
+};
+
+export const getOwnerMigrationResultHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getOwnerMigrationResultHistoryResponse> => {
+  const res = await fetch(getGetOwnerMigrationResultHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getOwnerMigrationResultHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getOwnerMigrationResultHistoryResponse;
 };

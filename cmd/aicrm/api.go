@@ -2152,6 +2152,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
 	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
+	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
@@ -3663,6 +3664,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/wecom/tag-effects/{effect_id}/reconcile", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.ReconcileWeComTagEffect)},
 			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
 			{http.MethodGet, "/api/admin/coupon-history", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryDefinitions)},
+			{http.MethodGet, "/api/admin/contact-history/sidebar-profiles", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListSidebarProfileHistory)},
+			{http.MethodGet, "/api/admin/contact-history/sidebar-profiles/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetSidebarProfileHistory)},
+			{http.MethodGet, "/api/admin/contact-history/owner-migration-results", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListOwnerMigrationResultHistory)},
+			{http.MethodGet, "/api/admin/contact-history/owner-migration-results/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetOwnerMigrationResultHistory)},
 			{http.MethodGet, "/api/admin/message-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMessageHistory)},
 			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryClaims)},

@@ -229,6 +229,7 @@ type Handler struct {
 	coupons                 legacyCouponApplication
 	couponBoard             couponBoardApplication
 	couponHistory           couponport.HistoricalReader
+	contactHistory          contactport.ContactHistoryReader
 	settings                legacySettingsApplication
 	setupWizard             http.Handler
 	adminAccess             http.Handler

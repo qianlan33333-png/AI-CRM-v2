@@ -91,6 +91,8 @@ var targetBySourceTable = map[string]struct {
 	"public/audience_rule_version":            {"segment", "segment_v1_audience_rule_versions"},
 	"public/segments":                         {"segment", "segment_v1_definitions"},
 	"public/ai_audience_member_current":       {"segment", "segment_v1_audience_members"},
+	"public/sidebar_customer_profile_fields":  {"contact", "contact_v1_sidebar_profile_history"},
+	"public/owner_migration_results":          {"contact", "contact_v1_owner_migration_result_history"},
 }
 
 type ReconciliationResult struct {
@@ -231,7 +233,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || row.TableID == messageHistoryTableID || isAudienceHistorySource(row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -306,6 +308,8 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 		return verifyAudienceHistoryTarget(ctx, tx, row, importedTargets)
 	}
 	switch expected.table {
+	case "contact_v1_sidebar_profile_history", "contact_v1_owner_migration_result_history":
+		return verifyContactHistoryTarget(ctx, tx, row)
 	case "wecom_v1_message_history":
 		return verifyMessageHistoryTarget(ctx, tx, row)
 	case "product_service_period_history", "product_service_period_entitlement_history", "product_service_period_event_history":
