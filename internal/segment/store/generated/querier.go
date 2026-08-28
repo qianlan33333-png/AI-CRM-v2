@@ -24,6 +24,8 @@ type Querier interface {
 	CountHistoricalAudienceRules(ctx context.Context) (int64, error)
 	CountHistoricalAudienceSenders(ctx context.Context, packageHistoryID int64) (int64, error)
 	CountHistoricalAudienceVersions(ctx context.Context, packageHistoryID int64) (int64, error)
+	CountHistoricalLegacyMarketingState(ctx context.Context) (int64, error)
+	CountHistoricalLegacyMarketingValue(ctx context.Context) (int64, error)
 	CreateAIAudienceInboundWebhookReceipt(ctx context.Context, arg CreateAIAudienceInboundWebhookReceiptParams) (CreateAIAudienceInboundWebhookReceiptRow, error)
 	CreateAIAudienceInboundWebhookTransportReplay(ctx context.Context, arg CreateAIAudienceInboundWebhookTransportReplayParams) (CreateAIAudienceInboundWebhookTransportReplayRow, error)
 	CreateHistoricalAudienceDefinition(ctx context.Context, arg CreateHistoricalAudienceDefinitionParams) (SegmentV1Definition, error)
@@ -34,6 +36,8 @@ type Querier interface {
 	CreateHistoricalAudienceRuleVersion(ctx context.Context, arg CreateHistoricalAudienceRuleVersionParams) (SegmentV1AudienceRuleVersion, error)
 	CreateHistoricalAudienceSender(ctx context.Context, arg CreateHistoricalAudienceSenderParams) (SegmentV1AudienceSender, error)
 	CreateHistoricalAudienceVersion(ctx context.Context, arg CreateHistoricalAudienceVersionParams) (SegmentV1AudienceVersion, error)
+	CreateHistoricalLegacyMarketingState(ctx context.Context, arg CreateHistoricalLegacyMarketingStateParams) (SegmentV1LegacyMarketingState, error)
+	CreateHistoricalLegacyMarketingValue(ctx context.Context, arg CreateHistoricalLegacyMarketingValueParams) (SegmentV1LegacyMarketingValue, error)
 	CreateSegment(ctx context.Context, arg CreateSegmentParams) (CreateSegmentRow, error)
 	DeleteAIAudienceOperationMembers(ctx context.Context) error
 	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
@@ -48,6 +52,8 @@ type Querier interface {
 	GetHistoricalAudienceRuleVersion(ctx context.Context, id int64) (SegmentV1AudienceRuleVersion, error)
 	GetHistoricalAudienceSender(ctx context.Context, id int64) (SegmentV1AudienceSender, error)
 	GetHistoricalAudienceVersion(ctx context.Context, id int64) (SegmentV1AudienceVersion, error)
+	GetHistoricalLegacyMarketingState(ctx context.Context, id int64) (SegmentV1LegacyMarketingState, error)
+	GetHistoricalLegacyMarketingValue(ctx context.Context, id int64) (SegmentV1LegacyMarketingValue, error)
 	GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error)
 	GetSegmentOperationReceipt(ctx context.Context, arg GetSegmentOperationReceiptParams) (GetSegmentOperationReceiptRow, error)
 	InsertAIAudienceOperationMember(ctx context.Context, arg InsertAIAudienceOperationMemberParams) error
@@ -62,6 +68,8 @@ type Querier interface {
 	ListHistoricalAudienceRules(ctx context.Context, arg ListHistoricalAudienceRulesParams) ([]SegmentV1AudienceRule, error)
 	ListHistoricalAudienceSenders(ctx context.Context, arg ListHistoricalAudienceSendersParams) ([]SegmentV1AudienceSender, error)
 	ListHistoricalAudienceVersions(ctx context.Context, arg ListHistoricalAudienceVersionsParams) ([]SegmentV1AudienceVersion, error)
+	ListHistoricalLegacyMarketingState(ctx context.Context, arg ListHistoricalLegacyMarketingStateParams) ([]SegmentV1LegacyMarketingState, error)
+	ListHistoricalLegacyMarketingValue(ctx context.Context, arg ListHistoricalLegacyMarketingValueParams) ([]SegmentV1LegacyMarketingValue, error)
 	ListLegacyAudienceMembers(ctx context.Context, arg ListLegacyAudienceMembersParams) ([]ListLegacyAudienceMembersRow, error)
 	ListScheduledSegmentRefreshes(ctx context.Context) ([]ListScheduledSegmentRefreshesRow, error)
 	ListSegmentMemberRecords(ctx context.Context, arg ListSegmentMemberRecordsParams) ([]Customer, error)
