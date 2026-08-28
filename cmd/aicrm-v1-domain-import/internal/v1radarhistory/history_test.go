@@ -20,7 +20,7 @@ func TestAdaptClickPreservesOnlyInertFacts(t *testing.T) {
 	if fact.CreatedAt.Format(time.RFC3339Nano) != "2026-08-28T08:09:10.123456+08:00" {
 		t.Fatal("source time changed")
 	}
-	if fact.Source.UnionID != "unionid-private" || fact.Sensitive.OpenID == (OpaqueDigest{}) || fact.Sensitive.QueryParams == (OpaqueDigest{}) {
+	if fact.Source.UnionID != "unionid-private" || fact.Sensitive.OpenID == (OpaqueDigest{}) || fact.Sensitive.UnionID == (OpaqueDigest{}) || fact.Sensitive.QueryParams == (OpaqueDigest{}) {
 		t.Fatal("private identity or field digests missing")
 	}
 	encoded, err := json.Marshal(result)

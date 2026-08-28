@@ -145,6 +145,47 @@ type AutomationV1AgentHistory struct {
 	ConfigurationDigest []byte             `json:"configuration_digest"`
 }
 
+type AutomationV1MarketingConfigHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	SourceID            int64              `json:"source_id"`
+	AutomationKey       string             `json:"automation_key"`
+	AutomationName      string             `json:"automation_name"`
+	TargetEvent         string             `json:"target_event"`
+	ChannelType         string             `json:"channel_type"`
+	OriginalStatus      string             `json:"original_status"`
+	DoNotStartAfterHour int32              `json:"do_not_start_after_hour"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	ConfigPayloadDigest []byte             `json:"config_payload_digest"`
+}
+
+type AutomationV1MarketingRuleHistory struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+	SourceFieldDigest      []byte             `json:"source_field_digest"`
+	SourceID               int64              `json:"source_id"`
+	ConfigID               int64              `json:"config_id"`
+	ConfigSourceID         int64              `json:"config_source_id"`
+	QuestionnaireSourceID  pgtype.Int8        `json:"questionnaire_source_id"`
+	QuestionSourceID       pgtype.Int8        `json:"question_source_id"`
+	RuleCode               string             `json:"rule_code"`
+	RuleName               string             `json:"rule_name"`
+	AnswerMatchType        string             `json:"answer_match_type"`
+	ScoreDelta             int32              `json:"score_delta"`
+	SegmentHint            string             `json:"segment_hint"`
+	StageHint              string             `json:"stage_hint"`
+	OriginalActive         bool               `json:"original_active"`
+	SortOrder              int32              `json:"sort_order"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	AnswerMatchValueDigest []byte             `json:"answer_match_value_digest"`
+	RulePayloadDigest      []byte             `json:"rule_payload_digest"`
+}
+
 type AutomationV1PromptHistory struct {
 	ID                  int64              `json:"id"`
 	SourceID            int64              `json:"source_id"`

@@ -36,6 +36,7 @@ type ClickSource struct {
 // current Radar tracking projection.
 type SensitiveDigests struct {
 	OpenID           OpaqueDigest `json:"openid_digest"`
+	UnionID          OpaqueDigest `json:"unionid_digest"`
 	ExternalUserID   OpaqueDigest `json:"external_userid_digest"`
 	CampaignID       OpaqueDigest `json:"campaign_id_digest"`
 	StaffID          OpaqueDigest `json:"staff_id_digest"`
@@ -156,7 +157,7 @@ func quarantineDuplicateSourceIDs(rows []Result) {
 }
 
 func clickSensitiveDigests(source clickFields) (SensitiveDigests, bool) {
-	values := make([]OpaqueDigest, 0, 12)
+	values := make([]OpaqueDigest, 0, 13)
 	for _, name := range []string{"openid", "external_userid", "campaign_id", "staff_id", "user_agent", "ip", "person_id", "ip_hash", "campaign_id_snapshot", "staff_id_snapshot", "referer", "query_params_json"} {
 		digest, ok := clickFieldDigest(source, name)
 		if !ok {
@@ -164,7 +165,11 @@ func clickSensitiveDigests(source clickFields) (SensitiveDigests, bool) {
 		}
 		values = append(values, digest)
 	}
-	return SensitiveDigests{OpenID: values[0], ExternalUserID: values[1], CampaignID: values[2], StaffID: values[3], UserAgent: values[4], IP: values[5], PersonID: values[6], IPHash: values[7], CampaignSnapshot: values[8], StaffSnapshot: values[9], Referer: values[10], QueryParams: values[11]}, true
+	unionID, ok := clickFieldDigest(source, "unionid")
+	if !ok {
+		return SensitiveDigests{}, false
+	}
+	return SensitiveDigests{OpenID: values[0], UnionID: unionID, ExternalUserID: values[1], CampaignID: values[2], StaffID: values[3], UserAgent: values[4], IP: values[5], PersonID: values[6], IPHash: values[7], CampaignSnapshot: values[8], StaffSnapshot: values[9], Referer: values[10], QueryParams: values[11]}, true
 }
 
 func clickFieldDigest(source clickFields, name string) (OpaqueDigest, bool) {
