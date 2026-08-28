@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, groupDirectoryHttp = false, messageHistoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, groupDirectoryHttp = false, messageHistoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, messageHistory
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || messageHistoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || messageHistoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (groupDirectoryHttp) {
         window.Headers = Headers;
         window.document.cookie = 'aicrm_csrf=group-directory-csrf';
@@ -178,6 +178,43 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, messageHistory
           const total = groupOpsHistoryHttp.empty ? 0 : 21;
           const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, index) => kind === 'directory' && (offset + index) % 2 ? { ...rows[kind], source_kind: 'wecom_group_chat_snapshots', source_id: null, member_count: null, internal_member_count: 0, external_member_count: 2 } : rows[kind]);
           return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items, total, limit, offset, ...(kind === 'groups' || kind === 'nodes' ? { plan_id: planID } : {}) });
+        };
+        return;
+      }
+      if (audienceHistoryHttp) {
+        const state = { calls: [], fail: false, empty: !!audienceHistoryHttp.empty };
+        const date = '2026-08-28T01:02:03.123456Z';
+        const common = { id: 7, source_id: 107, original_status: ' active ', created_at: date, updated_at: date };
+        const digest = Array.from({ length: 32 }, (_, i) => i);
+        const fixtures = {
+          groups: { ...common, name: '历史分组' },
+          packages: { ...common, id: 42, name: '历史包', package_key: 'history-package', group_history_id: null, current_version_source_id: null, natural_language_definition: '历史自然语言定义', query_mode: 'legacy', identity_policy: 'legacy', incremental_enabled: true, daily_enabled: false, incremental_interval_seconds: -7, daily_refresh_time: '12:00', timezone: '源时区', lookback_seconds: 0, last_incremental_at: null, last_daily_refreshed_at: null, next_incremental_at: null, next_daily_at: null, paused_reason: '', runtime_digest: digest, sql_definition: 'RAW_SQL_MUST_NOT_RENDER' },
+          versions: { ...common, package_history_id: 42, version_number: -2, template_key: '模板', template_version: 0, template_fingerprint: 'fingerprint', natural_language_explanation: '历史说明', published_at: null, definition_digest: digest, ai_prompt: 'RAW_EXECUTABLE_MUST_NOT_RENDER' },
+          senders: { ...common, package_history_id: 42, staff_id: null, display_name: '历史发送人', priority: -3 },
+          rules: { ...common, id: 8, rule_key: 'rule', display_name: '历史规则', description: '历史规则说明', rule_type: 'legacy', owner_staff_id: null },
+          rule_versions: { ...common, rule_history_id: 8, version: 0, executor_type: 'legacy', published_at: null, definition_digest: digest },
+          definitions: { ...common, id: 9, code: 'definition', display_name: '历史定义', description: '历史定义说明', source_type: 'legacy', sql_dialect: 'postgresql', version: -1, cached_headcount: -4, usage_count: 0, last_refreshed_at: null, definition_digest: digest },
+          members: { ...common, package_history_id: 42, customer_id: null, identity_kind: 'legacy_unionid', first_entered_at: date, last_seen_at: date, last_updated_at: date, exited_at: null, payload_digest: digest, unionid: 'RAW_UNION_MUST_NOT_RENDER' },
+        };
+        window.Headers = Headers;
+        window.__audienceHistoryHttpTest = state;
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          state.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body });
+          if (!url.pathname.startsWith('/api/admin/audience-history/')) return json({ code: 'unexpected_current_audience_request' }, 500);
+          if (state.fail) return json({ code: 'unavailable', message: 'RAW_ERROR_MUST_NOT_RENDER' }, 503);
+          const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+          if (url.pathname === '/api/admin/audience-history/packages/42') return json({ ...safety, item: fixtures.packages });
+          if (url.pathname === '/api/admin/audience-history/definitions/9') return json({ ...safety, item: fixtures.definitions });
+          const kind = url.pathname.includes('/rules/8/') ? 'rule_versions' : url.pathname.split('/').pop();
+          if (!fixtures[kind]) return json({ code: 'unexpected_history_path' }, 500);
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          const total = state.empty ? 0 : 21;
+          const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, i) => ({ ...fixtures[kind], id: fixtures[kind].id + offset + i, source_id: 1000 + offset + i, ...(kind === 'packages' ? { name: `历史包${offset + i + 1}` } : {}), ...(i === 1 && kind === 'members' ? { customer_id: 123 } : {}), ...(i === 1 && kind === 'senders' ? { staff_id: 234 } : {}), ...(i === 1 && kind === 'rules' ? { owner_staff_id: 345 } : {}) }));
+          const parent = ['versions', 'senders', 'members'].includes(kind) ? { package_id: 42 } : kind === 'rule_versions' ? { rule_id: 8 } : {};
+          return json({ ...safety, ...parent, items, total, limit, offset });
         };
         return;
       }
@@ -1248,6 +1285,56 @@ console.log('admin/audienceEdit.html（active 人群包拒绝配置保存与预�
     d.body.textContent.includes('请先停止后再保存或预览本地配置') &&
     !dom.window.__audienceHttpTest.calls.some((call) => call.method !== 'GET' || call.path.includes('activate') || call.path.includes('materialize')));
   dom.window.close();
+}
+
+console.log('admin/automation.html?history=1（真实 Audience 历史只读入口）');
+{
+  const dom = await loadPage('admin/automation.html', { q: 'history=1', audienceHistoryHttp: true });
+  const doc = dom.window.document;
+  const state = dom.window.__audienceHistoryHttpTest;
+  const stage = doc.querySelector('#stage');
+  ok('历史入口直接读取四个历史列表，不加载当前人群编辑器', !!stage.querySelector('[data-audience-history]') && stage.querySelectorAll('[data-history-kind]').length === 4 && state.calls.length === 4 && state.calls.every((c) => c.path.startsWith('/api/admin/audience-history/') && c.method === 'GET' && c.body === undefined));
+  ok('历史包链接使用实际 V2 ID，不使用源 ID', stage.querySelector('[data-history-kind="packages"] a')?.getAttribute('href') === 'automation.html?history=1&history_package_id=42');
+  ok('历史页面无保存、预览、物化或启动按钮', !stage.querySelector('input,textarea') && !Array.from(stage.querySelectorAll('button')).some((b) => /保存|预览|物化|刷新|activate|启用|群发/.test(b.textContent)) && !stage.querySelector('a[href*="audienceEdit"]'));
+  state.fail = true;
+  stage.querySelector('[data-history-kind="packages"] [data-next]').click();
+  await sleep(20);
+  const pkg = stage.querySelector('[data-history-kind="packages"]');
+  ok('下一页失败清掉旧包数据，保留失败页 offset', !!pkg.querySelector('[role="alert"]') && !pkg.querySelector('[data-history-rows]') && pkg.textContent.includes('offset=20') && !pkg.textContent.includes('RAW_ERROR_MUST_NOT_RENDER'));
+  state.fail = false;
+  pkg.querySelector('[data-retry]').click();
+  await sleep(20);
+  const packageCalls = state.calls.filter((c) => c.path.endsWith('/packages'));
+  ok('重试仍读取同一历史页，其他列表分页独立', packageCalls.map((c) => c.query).join('|') === '?limit=20&offset=0|?limit=20&offset=20|?limit=20&offset=20' && pkg.textContent.includes('历史包21') && !pkg.textContent.includes('历史包1') && state.calls.filter((c) => c.path.endsWith('/groups')).length === 1);
+  dom.window.close();
+
+  const detail = await loadPage('admin/automation.html', { q: 'history=1&history_package_id=42', audienceHistoryHttp: true });
+  const details = detail.window.document.querySelector('#stage');
+  const detailState = detail.window.__audienceHistoryHttpTest;
+  ok('包详情使用真实详情与三类父绑定 GET', detailState.calls.length === 4 && detailState.calls.some((c) => c.path === '/api/admin/audience-history/packages/42') && ['versions', 'senders', 'members'].every((kind) => detailState.calls.some((c) => c.path === '/api/admin/audience-history/packages/42/' + kind && c.query === '?limit=20&offset=0')));
+  ok('源状态、0、负数、NULL 和配置 flags 仅按历史事实展示', details.textContent.includes(' active ') && details.textContent.includes('-7') && details.textContent.includes('-3') && details.textContent.includes('NULL（历史关联未确认）') && details.textContent.includes('true') && details.textContent.includes('false') && details.textContent.includes('2026-08-28T01:02:03.123456Z'));
+  ok('客户与员工仅标为 DM01 历史映射，NULL 明确未解析', details.textContent.includes('123（DM01 历史映射）') && details.textContent.includes('234（DM01 历史映射）') && details.textContent.includes('NULL（未解析）'));
+  ok('不渲染原SQL、代码或外部身份，不开放当前写操作', !/RAW_SQL_MUST_NOT_RENDER|RAW_EXECUTABLE_MUST_NOT_RENDER|RAW_UNION_MUST_NOT_RENDER/.test(details.textContent) && !details.querySelector('input,textarea') && detailState.calls.every((c) => c.method === 'GET'));
+  details.querySelector('[data-history-kind="members"] [data-next]').click();
+  await sleep(20);
+  ok('历史成员分页绑定原 V2 包 ID，版本与发送人保持本页', detailState.calls.filter((c) => c.path.endsWith('/members')).map((c) => c.query).join('|') === '?limit=20&offset=0|?limit=20&offset=20' && detailState.calls.filter((c) => c.path.endsWith('/versions')).length === 1 && detailState.calls.filter((c) => c.path.endsWith('/senders')).length === 1);
+  detail.window.close();
+
+  for (const [q, expected] of [
+    ['history=1&history_rule_id=8', '/api/admin/audience-history/rules/8/versions'],
+    ['history=1&history_definition_id=9', '/api/admin/audience-history/definitions/9'],
+  ]) {
+    const page = await loadPage('admin/automation.html', { q, audienceHistoryHttp: true });
+    ok('独立历史入口只读取对应真实接口：' + expected, page.window.__audienceHistoryHttpTest.calls.length === 1 && page.window.__audienceHistoryHttpTest.calls[0].path === expected && !page.window.document.querySelector('#stage [role="alert"]'));
+    page.window.close();
+  }
+
+  const empty = await loadPage('admin/automation.html', { q: 'history=1', audienceHistoryHttp: { empty: true } });
+  ok('空历史保持真实空态，无Seed补位', empty.window.document.querySelectorAll('[data-history-rows]').length === 4 && Array.from(empty.window.document.querySelectorAll('[data-history-rows]')).every((node) => node.textContent === '暂无历史记录') && Array.from(empty.window.document.querySelectorAll('[data-next]')).every((button) => button.disabled));
+  empty.window.close();
+  const invalid = await loadPage('admin/automation.html', { q: 'history=1&history_package_id=0', audienceHistoryHttp: true });
+  ok('非法历史 ID 失败关闭，零请求且不进入当前模式', invalid.window.__audienceHistoryHttpTest.calls.length === 0 && !!invalid.window.document.querySelector('[data-audience-history] [role="alert"]') && !invalid.window.document.querySelector('a[href*="audienceEdit"]'));
+  invalid.window.close();
 }
 
 console.log('admin/cyclesDetail.html?id=1（8 章运行档案）');

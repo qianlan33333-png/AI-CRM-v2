@@ -21,6 +21,14 @@ type contentPDFPartRequest struct {
 	SHA256  string `json:"sha256"`
 	Content []byte `json:"content"`
 }
+type contentPDFInitiateRequest struct {
+	FileName    string `json:"file_name"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	SHA256      string `json:"sha256"`
+	Size        int64  `json:"size"`
+	Enabled     bool   `json:"enabled"`
+}
 type contentBindingRequest struct {
 	PackageID       int64 `json:"package_id"`
 	GroupInviteID   int64 `json:"group_invite_id"`
@@ -72,8 +80,8 @@ func (h *Handler) contentPackageMutate(w http.ResponseWriter, r *http.Request, u
 }
 
 func (h *Handler) PDFMultipartInitiate(w http.ResponseWriter, r *http.Request) {
-	var command mediaport.AttachmentUploadInitiateCommand
-	if h == nil || h.contentDelivery == nil || json.NewDecoder(r.Body).Decode(&command) != nil {
+	var body contentPDFInitiateRequest
+	if h == nil || h.contentDelivery == nil || json.NewDecoder(r.Body).Decode(&body) != nil {
 		platformhttp.WriteError(w, r, platformhttp.NewError(platformhttp.CodeMalformedRequest, mediaapp.ErrContentDeliveryInvalid))
 		return
 	}
@@ -83,7 +91,10 @@ func (h *Handler) PDFMultipartInitiate(w http.ResponseWriter, r *http.Request) {
 		platformhttp.WriteError(w, r, platformhttp.NewError(platformhttp.CodeMalformedRequest, mediaapp.ErrContentDeliveryInvalid))
 		return
 	}
-	command.Actor, command.IdempotencyKey = actor, key
+	command := mediaport.AttachmentUploadInitiateCommand{
+		FileName: body.FileName, Name: body.Name, Description: body.Description,
+		SHA256: body.SHA256, Size: body.Size, Enabled: body.Enabled, Actor: actor, IdempotencyKey: key,
+	}
 	id, err := h.contentDelivery.InitiatePDF(r.Context(), command)
 	if err != nil {
 		platformhttp.WriteError(w, r, platformhttp.NewError(platformhttp.CodeConflict, err))

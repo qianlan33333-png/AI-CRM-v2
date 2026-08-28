@@ -23,3 +23,126 @@ type Customer struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
+
+type SegmentV1AudienceGroup struct {
+	ID        int64              `json:"id"`
+	SourceID  int64              `json:"source_id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1AudienceMember struct {
+	ID               int64              `json:"id"`
+	SourceID         int64              `json:"source_id"`
+	PackageHistoryID int64              `json:"package_history_id"`
+	CustomerID       pgtype.Int8        `json:"customer_id"`
+	IdentityKind     string             `json:"identity_kind"`
+	OriginalStatus   string             `json:"original_status"`
+	FirstEnteredAt   pgtype.Timestamptz `json:"first_entered_at"`
+	LastSeenAt       pgtype.Timestamptz `json:"last_seen_at"`
+	LastUpdatedAt    pgtype.Timestamptz `json:"last_updated_at"`
+	ExitedAt         pgtype.Timestamptz `json:"exited_at"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	PayloadDigest    []byte             `json:"payload_digest"`
+}
+
+type SegmentV1AudiencePackage struct {
+	ID                         int64              `json:"id"`
+	SourceID                   int64              `json:"source_id"`
+	GroupHistoryID             pgtype.Int8        `json:"group_history_id"`
+	CurrentVersionSourceID     pgtype.Int8        `json:"current_version_source_id"`
+	PackageKey                 string             `json:"package_key"`
+	Name                       string             `json:"name"`
+	NaturalLanguageDefinition  string             `json:"natural_language_definition"`
+	OriginalStatus             string             `json:"original_status"`
+	QueryMode                  string             `json:"query_mode"`
+	IdentityPolicy             string             `json:"identity_policy"`
+	IncrementalEnabled         bool               `json:"incremental_enabled"`
+	DailyEnabled               bool               `json:"daily_enabled"`
+	IncrementalIntervalSeconds int64              `json:"incremental_interval_seconds"`
+	DailyRefreshTime           string             `json:"daily_refresh_time"`
+	Timezone                   string             `json:"timezone"`
+	LookbackSeconds            int64              `json:"lookback_seconds"`
+	LastIncrementalAt          pgtype.Timestamptz `json:"last_incremental_at"`
+	LastDailyRefreshedAt       pgtype.Timestamptz `json:"last_daily_refreshed_at"`
+	NextIncrementalAt          pgtype.Timestamptz `json:"next_incremental_at"`
+	NextDailyAt                pgtype.Timestamptz `json:"next_daily_at"`
+	PausedReason               string             `json:"paused_reason"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	RuntimeDigest              []byte             `json:"runtime_digest"`
+}
+
+type SegmentV1AudienceRule struct {
+	ID             int64              `json:"id"`
+	SourceID       int64              `json:"source_id"`
+	RuleKey        string             `json:"rule_key"`
+	DisplayName    string             `json:"display_name"`
+	Description    string             `json:"description"`
+	RuleType       string             `json:"rule_type"`
+	OwnerStaffID   pgtype.Int8        `json:"owner_staff_id"`
+	OriginalStatus string             `json:"original_status"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1AudienceRuleVersion struct {
+	ID               int64              `json:"id"`
+	SourceID         int64              `json:"source_id"`
+	RuleHistoryID    int64              `json:"rule_history_id"`
+	Version          int64              `json:"version"`
+	ExecutorType     string             `json:"executor_type"`
+	OriginalStatus   string             `json:"original_status"`
+	PublishedAt      pgtype.Timestamptz `json:"published_at"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	DefinitionDigest []byte             `json:"definition_digest"`
+}
+
+type SegmentV1AudienceSender struct {
+	ID               int64              `json:"id"`
+	SourceID         int64              `json:"source_id"`
+	PackageHistoryID int64              `json:"package_history_id"`
+	StaffID          pgtype.Int8        `json:"staff_id"`
+	DisplayName      string             `json:"display_name"`
+	Priority         int64              `json:"priority"`
+	OriginalStatus   string             `json:"original_status"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1AudienceVersion struct {
+	ID                         int64              `json:"id"`
+	SourceID                   int64              `json:"source_id"`
+	PackageHistoryID           int64              `json:"package_history_id"`
+	VersionNumber              int64              `json:"version_number"`
+	OriginalStatus             string             `json:"original_status"`
+	AiPrompt                   string             `json:"ai_prompt"`
+	AiRationale                string             `json:"ai_rationale"`
+	NaturalLanguageExplanation string             `json:"natural_language_explanation"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	PublishedAt                pgtype.Timestamptz `json:"published_at"`
+	TemplateKey                string             `json:"template_key"`
+	TemplateVersion            pgtype.Int8        `json:"template_version"`
+	TemplateFingerprint        string             `json:"template_fingerprint"`
+	DefinitionDigest           []byte             `json:"definition_digest"`
+}
+
+type SegmentV1Definition struct {
+	ID               int64              `json:"id"`
+	SourceID         int64              `json:"source_id"`
+	Code             string             `json:"code"`
+	DisplayName      string             `json:"display_name"`
+	Description      string             `json:"description"`
+	SourceType       string             `json:"source_type"`
+	SqlDialect       string             `json:"sql_dialect"`
+	OriginalStatus   string             `json:"original_status"`
+	Version          int64              `json:"version"`
+	CachedHeadcount  int64              `json:"cached_headcount"`
+	LastRefreshedAt  pgtype.Timestamptz `json:"last_refreshed_at"`
+	UsageCount       int64              `json:"usage_count"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	DefinitionDigest []byte             `json:"definition_digest"`
+}

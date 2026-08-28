@@ -1,0 +1,29 @@
+# Audience 历史正式落表最小包
+
+冻结源8表37048行已在V2只读预检通过：group1、package38、version83、sender33、rule1、ruleVersion1、segments7680、ai_audience_member_current29211。
+
+新增8张Segment-owned typed历史业务表，不写当前segments/segment_members或当前Audience配置。原始状态、自然语言、版本、发送人显示名、所有时点及成员快照可浏览；flags只是源事实，不恢复刷新、SQL/代码执行、群发、Provider、事件或队列。旧SQL/代码/参数/样本和私有身份仍完整留在既有00107加密归档，以摘要和00108来源回执关联，不用空DSL冒充转换。
+
+所有target ID由V2生成。子表引用V2历史父表ID；package仅保留nullable current_version_source_id，候选与导入器校验该版本属于同一源package，避免循环目标FK和中途header更新。原时间和可空事实不增加运行时排序约束。
+
+CustomerID/StaffID仅可来自冻结DM01 receipt、lineage及实际根记录核对；这证明历史crosswalk，不是当前Provider verified。无可信映射保留NULL；API以nullable ID表达是否存在历史映射，页面标注“DM01历史映射/未解析”，不把unionid或旧数字当OneID。成员不进入当前Segment成员表。
+
+主线串行维护114迁移、Port、SQLc查询/生成、OpenAPI与路由。owner writer与journal共用caller事务，8类记录均校验实际全字段摘要与重放；对账要求来源守恒和实表一致。114须在112/113及本包候选/精确main门禁之后才能正式部署，现阶段只做隔离开发。
+
+读入口复用Audience列表的历史入口，新增只读详情与成员分页；另提供旧Segment定义列表/详情。详情不加载当前audienceEdit写逻辑，不显示保存/预览/物化/激活按钮。8个typed列表GET（groups/packages/versions/senders/rules/rule_versions/definitions/members）与package/definition两个详情GET，子列表独立真实分页，不把不同子表挤入一个无界详情响应；所有入口仅admin.read。
+
+Segment created_by_agent/created_by_session/last_refresh_error与sender/rule/member私有源身份只在加密归档保留，通过每行完整PayloadDigest回执绑定；不公开执行定义或旧凭证。其他9张共974955行的Audience运行态/派生表继续既有加密归档，不重复生成百万条日志或恢复任务。
+
+不修改V1、现网入口或回调；用户人工确认前不切流、不触发任何真实外部效果。
+
+## 隔离演练证据（2026-08-28）
+
+V2的network=none演练库执行114，八表真实PG写读/强制回滚PASS。导入器SHA256 `a479140655b958c980455f5a8734572b447e3837ebff9cacab42c7780b35d952` 在同批冻结归档首次导入37048、quarantine0；第二次37048全量重放。实表逐行对账37048/37048，seal `8e4b6ca7883149eee3fececfef1d796ddedd6fefa76b126f4ac2ffb2a2d6ae15`。三轮外围验证external_effects/event_log/river_job均0不变。
+
+此处是隔离库证据，不代表本包正式114部署。旧运行态974955行未复活。此前集成9ae4439的导入器SHA256385b0221b3fc10b8c9010e26b5ae03b3fb3688a2a6e1caae4fb764d537e302b0在同库再次37048全回放、两次对账37048/37048通过，seal不变；前端独立只读页已完成。
+
+2026-08-28 12:01 GroupOps合并SHA b83f96ced154900f9bd9f82c88c1b047dfea1fc2 的exact-main33139541593通过，随后正式库升到113。本包从该已验证SHA独立建树，保留GroupOps所有CLI/对账/API/前端测试并重新生成公共客户端；集成typecheck、adapter、transport、e2e309/0通过。当前仍待本包集中PR候选门禁，不提前正式114迁移。
+
+## 同批兼容修复
+
+113独立V2真实验收发现canonical PDF分片initiate返回409：现有HTTP handler直接解码未带JSON标签的Port，OpenAPI字段file_name未进入FileName，触发数据库非空CHECK，upload与part均无残留。补最小HTTP DTO映射与先红后绿的命令内容回归；不改变OpenAPI、Port、上传生命周期、Provider开关或删除策略。部署后需重跑真实分片及下载SHA256，当前不销项S07-135。

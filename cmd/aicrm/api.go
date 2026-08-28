@@ -2117,6 +2117,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.radar = radarFragment
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
+	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
 	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
 		webhook: inboundWebhookHandler, retiredSubscriptions: retiredOutboundSubscriptionHandler,
 	}
@@ -3222,6 +3223,25 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.campaign); err != nil {
 					return nil, err
 				}
+			}
+		}
+		for _, route := range []struct {
+			path    string
+			handler http.HandlerFunc
+		}{
+			{"/api/admin/audience-history/groups", legacy.ListAudienceHistoryGroups},
+			{"/api/admin/audience-history/packages", legacy.ListAudienceHistoryPackages},
+			{"/api/admin/audience-history/packages/{package_id}/versions", legacy.ListAudienceHistoryVersions},
+			{"/api/admin/audience-history/packages/{package_id}/senders", legacy.ListAudienceHistorySenders},
+			{"/api/admin/audience-history/rules", legacy.ListAudienceHistoryRules},
+			{"/api/admin/audience-history/rules/{rule_id}/versions", legacy.ListAudienceHistoryRuleVersions},
+			{"/api/admin/audience-history/definitions", legacy.ListAudienceHistoryDefinitions},
+			{"/api/admin/audience-history/packages/{package_id}/members", legacy.ListAudienceHistoryMembers},
+			{"/api/admin/audience-history/packages/{package_id}", legacy.GetAudienceHistoryPackage},
+			{"/api/admin/audience-history/definitions/{definition_id}", legacy.GetAudienceHistoryDefinition},
+		} {
+			if err = registerLegacy(http.MethodGet, route.path, authport.CapabilityAdminRead, false, route.handler); err != nil {
+				return nil, err
 			}
 		}
 		if legacy.aiAudience != nil {

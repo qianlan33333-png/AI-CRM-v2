@@ -20,6 +20,7 @@ import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from '
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
+import { mountAudienceHistory } from './sections/audienceHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -61,6 +62,18 @@ function boot(): void {
         return;
       }
       break;
+    case 'automation': {
+      const query = new URLSearchParams(location.search);
+      if (query.get('history') === '1') {
+        void mountAudienceHistory(stage, {
+          packageID: query.get('history_package_id') ?? undefined,
+          definitionID: query.get('history_definition_id') ?? undefined,
+          ruleID: query.get('history_rule_id') ?? undefined,
+        }).catch(() => { stage.innerHTML = '<section data-audience-history><h1>V1 历史（只读）</h1><p role="alert">历史数据读取失败；未进入当前人群管理。</p></section>'; });
+        return;
+      }
+      break;
+    }
     case 'radar':
       void mountRadar(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
       return;

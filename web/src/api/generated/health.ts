@@ -17374,6 +17374,428 @@ export interface MessageHistoryDetail {
   item: MessageHistoryItem;
 }
 
+export interface AudienceHistoryGroup {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AudienceHistoryGroupPageSource =
+  (typeof AudienceHistoryGroupPageSource)[keyof typeof AudienceHistoryGroupPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryGroupPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryGroupPage {
+  source: AudienceHistoryGroupPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AudienceHistoryGroup[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface AudienceHistoryPackage {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_history_id: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  current_version_source_id: number | null;
+  package_key: string;
+  name: string;
+  natural_language_definition: string;
+  original_status: string;
+  query_mode: string;
+  identity_policy: string;
+  incremental_enabled: boolean;
+  daily_enabled: boolean;
+  incremental_interval_seconds: number;
+  daily_refresh_time: string;
+  timezone: string;
+  lookback_seconds: number;
+  /** @nullable */
+  last_incremental_at: string | null;
+  /** @nullable */
+  last_daily_refreshed_at: string | null;
+  /** @nullable */
+  next_incremental_at: string | null;
+  /** @nullable */
+  next_daily_at: string | null;
+  paused_reason: string;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  runtime_digest: number[];
+}
+
+export type AudienceHistoryPackagePageSource =
+  (typeof AudienceHistoryPackagePageSource)[keyof typeof AudienceHistoryPackagePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryPackagePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryPackagePage {
+  source: AudienceHistoryPackagePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AudienceHistoryPackage[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type AudienceHistoryPackageDetailSource =
+  (typeof AudienceHistoryPackageDetailSource)[keyof typeof AudienceHistoryPackageDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryPackageDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryPackageDetail {
+  source: AudienceHistoryPackageDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: AudienceHistoryPackage;
+}
+
+export interface AudienceHistoryVersion {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @minimum 1 */
+  package_history_id: number;
+  version_number: number;
+  original_status: string;
+  ai_prompt: string;
+  ai_rationale: string;
+  natural_language_explanation: string;
+  created_at: string;
+  /** @nullable */
+  published_at: string | null;
+  template_key: string;
+  /** @nullable */
+  template_version: number | null;
+  template_fingerprint: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  definition_digest: number[];
+}
+
+export type AudienceHistoryVersionPageSource =
+  (typeof AudienceHistoryVersionPageSource)[keyof typeof AudienceHistoryVersionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryVersionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryVersionPage {
+  source: AudienceHistoryVersionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  package_id: number;
+  items: AudienceHistoryVersion[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface AudienceHistorySender {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @minimum 1 */
+  package_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  staff_id: number | null;
+  display_name: string;
+  priority: number;
+  original_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AudienceHistorySenderPageSource =
+  (typeof AudienceHistorySenderPageSource)[keyof typeof AudienceHistorySenderPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistorySenderPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistorySenderPage {
+  source: AudienceHistorySenderPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  package_id: number;
+  items: AudienceHistorySender[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface AudienceHistoryRule {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  rule_key: string;
+  display_name: string;
+  description: string;
+  rule_type: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id: number | null;
+  original_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AudienceHistoryRulePageSource =
+  (typeof AudienceHistoryRulePageSource)[keyof typeof AudienceHistoryRulePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryRulePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryRulePage {
+  source: AudienceHistoryRulePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AudienceHistoryRule[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface AudienceHistoryRuleVersion {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @minimum 1 */
+  rule_history_id: number;
+  version: number;
+  executor_type: string;
+  original_status: string;
+  /** @nullable */
+  published_at: string | null;
+  created_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  definition_digest: number[];
+}
+
+export type AudienceHistoryRuleVersionPageSource =
+  (typeof AudienceHistoryRuleVersionPageSource)[keyof typeof AudienceHistoryRuleVersionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryRuleVersionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryRuleVersionPage {
+  source: AudienceHistoryRuleVersionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  rule_id: number;
+  items: AudienceHistoryRuleVersion[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface AudienceHistoryDefinition {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  code: string;
+  display_name: string;
+  description: string;
+  source_type: string;
+  sql_dialect: string;
+  original_status: string;
+  version: number;
+  cached_headcount: number;
+  /** @nullable */
+  last_refreshed_at: string | null;
+  usage_count: number;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  definition_digest: number[];
+}
+
+export type AudienceHistoryDefinitionPageSource =
+  (typeof AudienceHistoryDefinitionPageSource)[keyof typeof AudienceHistoryDefinitionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryDefinitionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryDefinitionPage {
+  source: AudienceHistoryDefinitionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AudienceHistoryDefinition[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type AudienceHistoryDefinitionDetailSource =
+  (typeof AudienceHistoryDefinitionDetailSource)[keyof typeof AudienceHistoryDefinitionDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryDefinitionDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryDefinitionDetail {
+  source: AudienceHistoryDefinitionDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: AudienceHistoryDefinition;
+}
+
+export interface AudienceHistoryMember {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @minimum 1 */
+  package_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  identity_kind: string;
+  original_status: string;
+  first_entered_at: string;
+  last_seen_at: string;
+  last_updated_at: string;
+  /** @nullable */
+  exited_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  payload_digest: number[];
+}
+
+export type AudienceHistoryMemberPageSource =
+  (typeof AudienceHistoryMemberPageSource)[keyof typeof AudienceHistoryMemberPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceHistoryMemberPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceHistoryMemberPage {
+  source: AudienceHistoryMemberPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  package_id: number;
+  items: AudienceHistoryMember[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
 /**
  * Closed CRM-local safe projection; no provider or external call was executed.
  */
@@ -19677,6 +20099,102 @@ export const ListMessageHistoryChatType = {
   private: "private",
   group: "group",
 } as const;
+
+export type ListAudienceHistoryGroupsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryPackagesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryVersionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistorySendersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryRulesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryRuleVersionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryDefinitionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryMembersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
 
 /**
  * @summary Issue one short-lived API-client JWT through client credentials
@@ -63447,4 +63965,830 @@ export const getMessageHistory = async (
     status: res.status,
     headers: res.headers,
   } as getMessageHistoryResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryGroupsResponse200 = {
+  data: AudienceHistoryGroupPage;
+  status: 200;
+};
+
+export type listAudienceHistoryGroupsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryGroupsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryGroupsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryGroupsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryGroupsResponseSuccess =
+  listAudienceHistoryGroupsResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryGroupsResponseError = (
+  | listAudienceHistoryGroupsResponse400
+  | listAudienceHistoryGroupsResponse401
+  | listAudienceHistoryGroupsResponse403
+  | listAudienceHistoryGroupsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryGroupsResponse =
+  | listAudienceHistoryGroupsResponseSuccess
+  | listAudienceHistoryGroupsResponseError;
+
+export const getListAudienceHistoryGroupsUrl = (
+  params?: ListAudienceHistoryGroupsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/groups?${stringifiedParams}`
+    : `/api/admin/audience-history/groups`;
+};
+
+export const listAudienceHistoryGroups = async (
+  params?: ListAudienceHistoryGroupsParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryGroupsResponse> => {
+  const res = await fetch(getListAudienceHistoryGroupsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryGroupsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryGroupsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryPackagesResponse200 = {
+  data: AudienceHistoryPackagePage;
+  status: 200;
+};
+
+export type listAudienceHistoryPackagesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryPackagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryPackagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryPackagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryPackagesResponseSuccess =
+  listAudienceHistoryPackagesResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryPackagesResponseError = (
+  | listAudienceHistoryPackagesResponse400
+  | listAudienceHistoryPackagesResponse401
+  | listAudienceHistoryPackagesResponse403
+  | listAudienceHistoryPackagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryPackagesResponse =
+  | listAudienceHistoryPackagesResponseSuccess
+  | listAudienceHistoryPackagesResponseError;
+
+export const getListAudienceHistoryPackagesUrl = (
+  params?: ListAudienceHistoryPackagesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/packages?${stringifiedParams}`
+    : `/api/admin/audience-history/packages`;
+};
+
+export const listAudienceHistoryPackages = async (
+  params?: ListAudienceHistoryPackagesParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryPackagesResponse> => {
+  const res = await fetch(getListAudienceHistoryPackagesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryPackagesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryPackagesResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryVersionsResponse200 = {
+  data: AudienceHistoryVersionPage;
+  status: 200;
+};
+
+export type listAudienceHistoryVersionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryVersionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryVersionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryVersionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryVersionsResponseSuccess =
+  listAudienceHistoryVersionsResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryVersionsResponseError = (
+  | listAudienceHistoryVersionsResponse400
+  | listAudienceHistoryVersionsResponse401
+  | listAudienceHistoryVersionsResponse403
+  | listAudienceHistoryVersionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryVersionsResponse =
+  | listAudienceHistoryVersionsResponseSuccess
+  | listAudienceHistoryVersionsResponseError;
+
+export const getListAudienceHistoryVersionsUrl = (
+  packageId: number,
+  params?: ListAudienceHistoryVersionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/packages/${packageId}/versions?${stringifiedParams}`
+    : `/api/admin/audience-history/packages/${packageId}/versions`;
+};
+
+export const listAudienceHistoryVersions = async (
+  packageId: number,
+  params?: ListAudienceHistoryVersionsParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryVersionsResponse> => {
+  const res = await fetch(
+    getListAudienceHistoryVersionsUrl(packageId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryVersionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryVersionsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistorySendersResponse200 = {
+  data: AudienceHistorySenderPage;
+  status: 200;
+};
+
+export type listAudienceHistorySendersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistorySendersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistorySendersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistorySendersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistorySendersResponseSuccess =
+  listAudienceHistorySendersResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistorySendersResponseError = (
+  | listAudienceHistorySendersResponse400
+  | listAudienceHistorySendersResponse401
+  | listAudienceHistorySendersResponse403
+  | listAudienceHistorySendersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistorySendersResponse =
+  | listAudienceHistorySendersResponseSuccess
+  | listAudienceHistorySendersResponseError;
+
+export const getListAudienceHistorySendersUrl = (
+  packageId: number,
+  params?: ListAudienceHistorySendersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/packages/${packageId}/senders?${stringifiedParams}`
+    : `/api/admin/audience-history/packages/${packageId}/senders`;
+};
+
+export const listAudienceHistorySenders = async (
+  packageId: number,
+  params?: ListAudienceHistorySendersParams,
+  options?: RequestInit,
+): Promise<listAudienceHistorySendersResponse> => {
+  const res = await fetch(getListAudienceHistorySendersUrl(packageId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistorySendersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistorySendersResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryRulesResponse200 = {
+  data: AudienceHistoryRulePage;
+  status: 200;
+};
+
+export type listAudienceHistoryRulesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryRulesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryRulesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryRulesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryRulesResponseSuccess =
+  listAudienceHistoryRulesResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryRulesResponseError = (
+  | listAudienceHistoryRulesResponse400
+  | listAudienceHistoryRulesResponse401
+  | listAudienceHistoryRulesResponse403
+  | listAudienceHistoryRulesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryRulesResponse =
+  | listAudienceHistoryRulesResponseSuccess
+  | listAudienceHistoryRulesResponseError;
+
+export const getListAudienceHistoryRulesUrl = (
+  params?: ListAudienceHistoryRulesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/rules?${stringifiedParams}`
+    : `/api/admin/audience-history/rules`;
+};
+
+export const listAudienceHistoryRules = async (
+  params?: ListAudienceHistoryRulesParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryRulesResponse> => {
+  const res = await fetch(getListAudienceHistoryRulesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryRulesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryRulesResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryRuleVersionsResponse200 = {
+  data: AudienceHistoryRuleVersionPage;
+  status: 200;
+};
+
+export type listAudienceHistoryRuleVersionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryRuleVersionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryRuleVersionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryRuleVersionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryRuleVersionsResponseSuccess =
+  listAudienceHistoryRuleVersionsResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryRuleVersionsResponseError = (
+  | listAudienceHistoryRuleVersionsResponse400
+  | listAudienceHistoryRuleVersionsResponse401
+  | listAudienceHistoryRuleVersionsResponse403
+  | listAudienceHistoryRuleVersionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryRuleVersionsResponse =
+  | listAudienceHistoryRuleVersionsResponseSuccess
+  | listAudienceHistoryRuleVersionsResponseError;
+
+export const getListAudienceHistoryRuleVersionsUrl = (
+  ruleId: number,
+  params?: ListAudienceHistoryRuleVersionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/rules/${ruleId}/versions?${stringifiedParams}`
+    : `/api/admin/audience-history/rules/${ruleId}/versions`;
+};
+
+export const listAudienceHistoryRuleVersions = async (
+  ruleId: number,
+  params?: ListAudienceHistoryRuleVersionsParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryRuleVersionsResponse> => {
+  const res = await fetch(
+    getListAudienceHistoryRuleVersionsUrl(ruleId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryRuleVersionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryRuleVersionsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryDefinitionsResponse200 = {
+  data: AudienceHistoryDefinitionPage;
+  status: 200;
+};
+
+export type listAudienceHistoryDefinitionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryDefinitionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryDefinitionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryDefinitionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryDefinitionsResponseSuccess =
+  listAudienceHistoryDefinitionsResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryDefinitionsResponseError = (
+  | listAudienceHistoryDefinitionsResponse400
+  | listAudienceHistoryDefinitionsResponse401
+  | listAudienceHistoryDefinitionsResponse403
+  | listAudienceHistoryDefinitionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryDefinitionsResponse =
+  | listAudienceHistoryDefinitionsResponseSuccess
+  | listAudienceHistoryDefinitionsResponseError;
+
+export const getListAudienceHistoryDefinitionsUrl = (
+  params?: ListAudienceHistoryDefinitionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/definitions?${stringifiedParams}`
+    : `/api/admin/audience-history/definitions`;
+};
+
+export const listAudienceHistoryDefinitions = async (
+  params?: ListAudienceHistoryDefinitionsParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryDefinitionsResponse> => {
+  const res = await fetch(getListAudienceHistoryDefinitionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryDefinitionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryDefinitionsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type listAudienceHistoryMembersResponse200 = {
+  data: AudienceHistoryMemberPage;
+  status: 200;
+};
+
+export type listAudienceHistoryMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryMembersResponseSuccess =
+  listAudienceHistoryMembersResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryMembersResponseError = (
+  | listAudienceHistoryMembersResponse400
+  | listAudienceHistoryMembersResponse401
+  | listAudienceHistoryMembersResponse403
+  | listAudienceHistoryMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryMembersResponse =
+  | listAudienceHistoryMembersResponseSuccess
+  | listAudienceHistoryMembersResponseError;
+
+export const getListAudienceHistoryMembersUrl = (
+  packageId: number,
+  params?: ListAudienceHistoryMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/packages/${packageId}/members?${stringifiedParams}`
+    : `/api/admin/audience-history/packages/${packageId}/members`;
+};
+
+export const listAudienceHistoryMembers = async (
+  packageId: number,
+  params?: ListAudienceHistoryMembersParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryMembersResponse> => {
+  const res = await fetch(getListAudienceHistoryMembersUrl(packageId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryMembersResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type getAudienceHistoryPackageResponse200 = {
+  data: AudienceHistoryPackageDetail;
+  status: 200;
+};
+
+export type getAudienceHistoryPackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAudienceHistoryPackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAudienceHistoryPackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAudienceHistoryPackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAudienceHistoryPackageResponseSuccess =
+  getAudienceHistoryPackageResponse200 & {
+    headers: Headers;
+  };
+export type getAudienceHistoryPackageResponseError = (
+  | getAudienceHistoryPackageResponse400
+  | getAudienceHistoryPackageResponse401
+  | getAudienceHistoryPackageResponse403
+  | getAudienceHistoryPackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAudienceHistoryPackageResponse =
+  | getAudienceHistoryPackageResponseSuccess
+  | getAudienceHistoryPackageResponseError;
+
+export const getGetAudienceHistoryPackageUrl = (packageId: number) => {
+  return `/api/admin/audience-history/packages/${packageId}`;
+};
+
+export const getAudienceHistoryPackage = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<getAudienceHistoryPackageResponse> => {
+  const res = await fetch(getGetAudienceHistoryPackageUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAudienceHistoryPackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAudienceHistoryPackageResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience facts without activating queries or members
+ */
+export type getAudienceHistoryDefinitionResponse200 = {
+  data: AudienceHistoryDefinitionDetail;
+  status: 200;
+};
+
+export type getAudienceHistoryDefinitionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAudienceHistoryDefinitionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAudienceHistoryDefinitionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAudienceHistoryDefinitionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAudienceHistoryDefinitionResponseSuccess =
+  getAudienceHistoryDefinitionResponse200 & {
+    headers: Headers;
+  };
+export type getAudienceHistoryDefinitionResponseError = (
+  | getAudienceHistoryDefinitionResponse400
+  | getAudienceHistoryDefinitionResponse401
+  | getAudienceHistoryDefinitionResponse403
+  | getAudienceHistoryDefinitionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAudienceHistoryDefinitionResponse =
+  | getAudienceHistoryDefinitionResponseSuccess
+  | getAudienceHistoryDefinitionResponseError;
+
+export const getGetAudienceHistoryDefinitionUrl = (definitionId: number) => {
+  return `/api/admin/audience-history/definitions/${definitionId}`;
+};
+
+export const getAudienceHistoryDefinition = async (
+  definitionId: number,
+  options?: RequestInit,
+): Promise<getAudienceHistoryDefinitionResponse> => {
+  const res = await fetch(getGetAudienceHistoryDefinitionUrl(definitionId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAudienceHistoryDefinitionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAudienceHistoryDefinitionResponse;
 };
