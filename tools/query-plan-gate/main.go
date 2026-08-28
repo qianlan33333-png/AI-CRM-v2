@@ -44,15 +44,16 @@ func main() {
 	root := flag.String("root", ".", "repository root")
 	base := flag.String("base", "", "base commit")
 	head := flag.String("head", "", "head commit")
+	all := flag.Bool("all", false, "inspect all current SQLc query files instead of only changed queries")
 	databaseURL := flag.String("database-url", "", "safe literal-loopback PostgreSQL URL")
 	flag.Parse()
-	if err := run(context.Background(), *root, *base, *head, *databaseURL); err != nil {
+	if err := run(context.Background(), *root, *base, *head, *databaseURL, *all); err != nil {
 		fmt.Fprintln(os.Stderr, "query-plan-gate:", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, root, base, head, databaseURL string) error {
+func run(ctx context.Context, root, base, head, databaseURL string, all bool) error {
 	if err := validateAcceptanceDatabaseURL(databaseURL); err != nil {
 		return err
 	}
@@ -67,17 +68,26 @@ func run(ctx context.Context, root, base, head, databaseURL string) error {
 	if err != nil {
 		return fmt.Errorf("make repository root absolute: %w", err)
 	}
-	paths, migrationChanged, err := changedQueryPaths(physical, base, head)
-	if err != nil {
-		return err
-	}
-	if migrationChanged {
-		paths, err = filepath.Glob(filepath.Join(physical, "internal", "*", "store", "queries", "*.sql"))
-		if err != nil {
-			return fmt.Errorf("enumerate SQLc queries: %w", err)
+	var paths []string
+	if all {
+		if err := validateCommitRange(physical, base, head); err != nil {
+			return err
 		}
-		for i := range paths {
-			paths[i], _ = filepath.Rel(physical, paths[i])
+		paths, err = allQueryPaths(physical)
+		if err != nil {
+			return err
+		}
+	} else {
+		var migrationChanged bool
+		paths, migrationChanged, err = changedQueryPaths(physical, base, head)
+		if err != nil {
+			return err
+		}
+		if migrationChanged {
+			paths, err = allQueryPaths(physical)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	sort.Strings(paths)
@@ -108,6 +118,17 @@ func run(ctx context.Context, root, base, head, databaseURL string) error {
 	}
 	fmt.Printf("query-plan-gate: PASS (checked=%d)\n", len(queries))
 	return nil
+}
+
+func allQueryPaths(root string) ([]string, error) {
+	paths, err := filepath.Glob(filepath.Join(root, "internal", "*", "store", "queries", "*.sql"))
+	if err != nil {
+		return nil, fmt.Errorf("enumerate SQLc queries: %w", err)
+	}
+	for i := range paths {
+		paths[i], _ = filepath.Rel(root, paths[i])
+	}
+	return paths, nil
 }
 
 func partitionSegmentQueries(queries []query) (regular, segment []query) {
@@ -142,10 +163,8 @@ func validateAcceptanceDatabaseURL(databaseURL string) error {
 }
 
 func changedQueryPaths(root, base, head string) ([]string, bool, error) {
-	for _, sha := range []string{base, head} {
-		if err := exec.Command("git", "-C", root, "cat-file", "-e", sha+"^{commit}").Run(); err != nil {
-			return nil, false, fmt.Errorf("Git commit is unavailable: %s", sha)
-		}
+	if err := validateCommitRange(root, base, head); err != nil {
+		return nil, false, err
 	}
 	out, err := exec.Command("git", "-C", root, "diff", "--name-only", "--diff-filter=ACMRTD", base, head, "--").Output()
 	if err != nil {
@@ -168,6 +187,15 @@ func changedQueryPaths(root, base, head string) ([]string, bool, error) {
 		paths = append(paths, path)
 	}
 	return paths, migrationChanged, nil
+}
+
+func validateCommitRange(root, base, head string) error {
+	for _, sha := range []string{base, head} {
+		if err := exec.Command("git", "-C", root, "cat-file", "-e", sha+"^{commit}").Run(); err != nil {
+			return fmt.Errorf("Git commit is unavailable: %s", sha)
+		}
+	}
+	return nil
 }
 
 func loadRelevantQueries(root string, paths []string) ([]query, error) {
