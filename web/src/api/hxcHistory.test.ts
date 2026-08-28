@@ -34,6 +34,14 @@ export async function runHxcHistoryAdapterTests(): Promise<void> {
     body = { ...safety, item: record };
     assert((await getHxcHistory('send_record', 7)).id === 7 && calls[calls.length - 1].url === '/api/admin/hxc-history/send-records/7', 'send record detail uses generated GET');
     for (const patch of [{ target_source_id: 1.5 }, { last_status_sync_at: '' }, { selected_count: 1.5 }, { source_payload_digest: digest }]) { body = { ...safety, item: { ...record, ...patch } }; await rejects(() => getHxcHistory('send_record', 7)); }
+    const chat = { id: 8, source_id: -9, queue_source_id: -3, member_source_id: null, original_status: '', send_channel: '', send_record_source_id: 0, created_at: stamp, updated_at: stamp, finished_at_source: 'not-a-timestamp' };
+    body = { ...safety, items: [chat], total: 1, limit: 20, offset: 0 };
+    assert((await readHxcHistory('chat_job')).items[0].source_id === -9 && calls[calls.length - 1].url === '/api/admin/hxc-history/chat-jobs?limit=20&offset=0', 'chat job uses generated GET and preserves signed source IDs');
+    body = { ...safety, item: chat };
+    assert((await getHxcHistory('chat_job', 8)).id === 8 && calls[calls.length - 1].url === '/api/admin/hxc-history/chat-jobs/8', 'chat job detail uses generated GET');
+    for (const patch of [{ queue_source_id: 1.5 }, { member_source_id: '1' }, { created_at: '' }, { finished_at_source: null }, { phone: 'private' }, { request_payload: '{}' }, { source_key_digest: digest }]) { body = { ...safety, item: { ...chat, ...patch } }; await rejects(() => getHxcHistory('chat_job', 8)); }
+    body = { ...safety, items: [], total: 0, limit: 20, offset: 0 };
+    assert((await readHxcHistory('chat_job')).items.length === 0, 'chat job accepts an empty page');
     status = 503; await rejects(() => readHxcHistory('meta')); assert(calls[calls.length - 1]?.init?.method === 'GET' && calls.every((call) => call.init?.credentials === 'include' && call.init?.body === undefined), 'history is same-origin GET only');
   } finally { globalThis.fetch = previous; }
 }
