@@ -218,6 +218,7 @@ type Handler struct {
 	marketingStateHistory       segmentport.MarketingStateHistoryReader
 	staticProductHistory        productport.StaticProductHistoryReader
 	staticCycleHistory          cycleport.StaticCycleHistoryReader
+	cycleObservationHistory     cycleport.CycleObservationReader
 	radarClickHistory           radarport.RadarClickHistoryReader
 	marketingConfigHistory      automationport.MarketingConfigHistoryReader
 	aiAudienceInbound           *aiAudienceInboundRoutes

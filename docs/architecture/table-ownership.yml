@@ -393,6 +393,8 @@ owners:
   operationcycle:
     package: internal/operationcycle
     tables:
+      - operation_cycle_v1_metric_history
+      - operation_cycle_v1_reference_history
       - operation_cycle_v1_strategy_history
       - operation_cycle_v1_version_history
       - operation_cycle_v1_document_history
