@@ -50,6 +50,7 @@ var targetBySourceTable = map[string]struct {
 	domain string
 	table  string
 }{
+	broadcastJobHistoryTableID:                         {"outbound", broadcastJobHistoryTargetTable},
 	marketingStateSnapshotTable:                        {"segment", marketingStateSnapshotTarget},
 	marketingStateChangeTable:                          {"segment", marketingStateChangeTarget},
 	valueSegmentSnapshotTable:                          {"segment", valueSegmentSnapshotTarget},
@@ -280,7 +281,7 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			}
 		}
 		proof := "terminal:" + row.Disposition
-		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) {
+		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || row.TableID == broadcastJobHistoryTableID {
 			if err = tx.QueryRow(ctx, `SELECT field_digest FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`,
 				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
@@ -340,6 +341,9 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 }
 
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
+	if row.TableID == broadcastJobHistoryTableID {
+		return verifyBroadcastJobHistoryTarget(ctx, tx, row)
+	}
 	if isCampaignHistorySource(row.TableID) {
 		return verifyCampaignHistoryTarget(ctx, tx, row)
 	}
