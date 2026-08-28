@@ -5863,6 +5863,186 @@ func (e LegacyHealthMethodNotAllowedDetail) Valid() bool {
 	}
 }
 
+// Defines values for LegacyMarketingHistoryStateDetailReadOnly.
+const (
+	LegacyMarketingHistoryStateDetailReadOnlyTrue LegacyMarketingHistoryStateDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStateDetailReadOnly enum.
+func (e LegacyMarketingHistoryStateDetailReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStateDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStateDetailRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryStateDetailRealExternalCallExecutedFalse LegacyMarketingHistoryStateDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStateDetailRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryStateDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStateDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStateDetailSource.
+const (
+	LegacyMarketingHistoryStateDetailSourceV1History LegacyMarketingHistoryStateDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStateDetailSource enum.
+func (e LegacyMarketingHistoryStateDetailSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStateDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStatePageReadOnly.
+const (
+	LegacyMarketingHistoryStatePageReadOnlyTrue LegacyMarketingHistoryStatePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStatePageReadOnly enum.
+func (e LegacyMarketingHistoryStatePageReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStatePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStatePageRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryStatePageRealExternalCallExecutedFalse LegacyMarketingHistoryStatePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStatePageRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryStatePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStatePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStatePageSource.
+const (
+	LegacyMarketingHistoryStatePageSourceV1History LegacyMarketingHistoryStatePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStatePageSource enum.
+func (e LegacyMarketingHistoryStatePageSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStatePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValueDetailReadOnly.
+const (
+	LegacyMarketingHistoryValueDetailReadOnlyTrue LegacyMarketingHistoryValueDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValueDetailReadOnly enum.
+func (e LegacyMarketingHistoryValueDetailReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValueDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValueDetailRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryValueDetailRealExternalCallExecutedFalse LegacyMarketingHistoryValueDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValueDetailRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryValueDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValueDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValueDetailSource.
+const (
+	LegacyMarketingHistoryValueDetailSourceV1History LegacyMarketingHistoryValueDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValueDetailSource enum.
+func (e LegacyMarketingHistoryValueDetailSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValueDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValuePageReadOnly.
+const (
+	LegacyMarketingHistoryValuePageReadOnlyTrue LegacyMarketingHistoryValuePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValuePageReadOnly enum.
+func (e LegacyMarketingHistoryValuePageReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValuePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValuePageRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryValuePageRealExternalCallExecutedFalse LegacyMarketingHistoryValuePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValuePageRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryValuePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValuePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValuePageSource.
+const (
+	LegacyMarketingHistoryValuePageSourceV1History LegacyMarketingHistoryValuePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValuePageSource enum.
+func (e LegacyMarketingHistoryValuePageSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValuePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyOutboundAttemptDeliveryProven.
 const (
 	LegacyOutboundAttemptDeliveryProvenFalse LegacyOutboundAttemptDeliveryProven = false
@@ -16163,6 +16343,112 @@ type LegacyHealthMethodNotAllowed struct {
 // LegacyHealthMethodNotAllowedDetail defines model for LegacyHealthMethodNotAllowed.Detail.
 type LegacyHealthMethodNotAllowedDetail string
 
+// LegacyMarketingHistoryState defines model for LegacyMarketingHistoryState.
+type LegacyMarketingHistoryState struct {
+	CreatedAt            time.Time  `json:"created_at"`
+	EnteredAt            *time.Time `json:"entered_at"`
+	ExitReason           string     `json:"exit_reason"`
+	ExitedAt             *time.Time `json:"exited_at"`
+	Id                   int64      `json:"id"`
+	LastBatchStatus      string     `json:"last_batch_status"`
+	LastBatchWindowEnd   string     `json:"last_batch_window_end"`
+	LastBatchWindowStart string     `json:"last_batch_window_start"`
+	LastTriggerMessageAt string     `json:"last_trigger_message_at"`
+	LifecycleStatus      string     `json:"lifecycle_status"`
+	MarketingPhase       string     `json:"marketing_phase"`
+	PhaseLabel           string     `json:"phase_label"`
+	PhaseReason          string     `json:"phase_reason"`
+	ScenarioKey          string     `json:"scenario_key"`
+	SourceId             int64      `json:"source_id"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+}
+
+// LegacyMarketingHistoryStateDetail defines model for LegacyMarketingHistoryStateDetail.
+type LegacyMarketingHistoryStateDetail struct {
+	Item                     LegacyMarketingHistoryState                               `json:"item"`
+	ReadOnly                 LegacyMarketingHistoryStateDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryStateDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryStateDetailSource                   `json:"source"`
+}
+
+// LegacyMarketingHistoryStateDetailReadOnly defines model for LegacyMarketingHistoryStateDetail.ReadOnly.
+type LegacyMarketingHistoryStateDetailReadOnly bool
+
+// LegacyMarketingHistoryStateDetailRealExternalCallExecuted defines model for LegacyMarketingHistoryStateDetail.RealExternalCallExecuted.
+type LegacyMarketingHistoryStateDetailRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryStateDetailSource defines model for LegacyMarketingHistoryStateDetail.Source.
+type LegacyMarketingHistoryStateDetailSource string
+
+// LegacyMarketingHistoryStatePage defines model for LegacyMarketingHistoryStatePage.
+type LegacyMarketingHistoryStatePage struct {
+	Items                    []LegacyMarketingHistoryState                           `json:"items"`
+	Limit                    int                                                     `json:"limit"`
+	Offset                   int                                                     `json:"offset"`
+	ReadOnly                 LegacyMarketingHistoryStatePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryStatePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryStatePageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// LegacyMarketingHistoryStatePageReadOnly defines model for LegacyMarketingHistoryStatePage.ReadOnly.
+type LegacyMarketingHistoryStatePageReadOnly bool
+
+// LegacyMarketingHistoryStatePageRealExternalCallExecuted defines model for LegacyMarketingHistoryStatePage.RealExternalCallExecuted.
+type LegacyMarketingHistoryStatePageRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryStatePageSource defines model for LegacyMarketingHistoryStatePage.Source.
+type LegacyMarketingHistoryStatePageSource string
+
+// LegacyMarketingHistoryValue defines model for LegacyMarketingHistoryValue.
+type LegacyMarketingHistoryValue struct {
+	CreatedAt    time.Time `json:"created_at"`
+	Id           int64     `json:"id"`
+	ScenarioKey  string    `json:"scenario_key"`
+	Score        int64     `json:"score"`
+	SegmentLabel string    `json:"segment_label"`
+	SourceId     int64     `json:"source_id"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	ValueSegment string    `json:"value_segment"`
+}
+
+// LegacyMarketingHistoryValueDetail defines model for LegacyMarketingHistoryValueDetail.
+type LegacyMarketingHistoryValueDetail struct {
+	Item                     LegacyMarketingHistoryValue                               `json:"item"`
+	ReadOnly                 LegacyMarketingHistoryValueDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryValueDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryValueDetailSource                   `json:"source"`
+}
+
+// LegacyMarketingHistoryValueDetailReadOnly defines model for LegacyMarketingHistoryValueDetail.ReadOnly.
+type LegacyMarketingHistoryValueDetailReadOnly bool
+
+// LegacyMarketingHistoryValueDetailRealExternalCallExecuted defines model for LegacyMarketingHistoryValueDetail.RealExternalCallExecuted.
+type LegacyMarketingHistoryValueDetailRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryValueDetailSource defines model for LegacyMarketingHistoryValueDetail.Source.
+type LegacyMarketingHistoryValueDetailSource string
+
+// LegacyMarketingHistoryValuePage defines model for LegacyMarketingHistoryValuePage.
+type LegacyMarketingHistoryValuePage struct {
+	Items                    []LegacyMarketingHistoryValue                           `json:"items"`
+	Limit                    int                                                     `json:"limit"`
+	Offset                   int                                                     `json:"offset"`
+	ReadOnly                 LegacyMarketingHistoryValuePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryValuePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryValuePageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// LegacyMarketingHistoryValuePageReadOnly defines model for LegacyMarketingHistoryValuePage.ReadOnly.
+type LegacyMarketingHistoryValuePageReadOnly bool
+
+// LegacyMarketingHistoryValuePageRealExternalCallExecuted defines model for LegacyMarketingHistoryValuePage.RealExternalCallExecuted.
+type LegacyMarketingHistoryValuePageRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryValuePageSource defines model for LegacyMarketingHistoryValuePage.Source.
+type LegacyMarketingHistoryValuePageSource string
+
 // LegacyOutboundAttempt defines model for LegacyOutboundAttempt.
 type LegacyOutboundAttempt struct {
 	Attempt                  int32                                         `json:"attempt"`
@@ -20984,6 +21270,18 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
+// ListLegacyMarketingHistoryStatesParams defines parameters for ListLegacyMarketingHistoryStates.
+type ListLegacyMarketingHistoryStatesParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListLegacyMarketingHistoryValuesParams defines parameters for ListLegacyMarketingHistoryValues.
+type ListLegacyMarketingHistoryValuesParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListMarketingStateHistoryChangeParams defines parameters for ListMarketingStateHistoryChange.
 type ListMarketingStateHistoryChangeParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -24103,6 +24401,18 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states)
+	ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryStatesParams)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states/{history_id})
+	GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values)
+	ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryValuesParams)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values/{history_id})
+	GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable V1 marketing observations without changing scores or membership
 	// (GET /api/admin/marketing-state-history/state-changes)
 	ListMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryChangeParams)
@@ -25507,6 +25817,30 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/states)
+func (_ Unimplemented) ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryStatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/states/{history_id})
+func (_ Unimplemented) GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/values)
+func (_ Unimplemented) ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryValuesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/values/{history_id})
+func (_ Unimplemented) GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -32927,6 +33261,150 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyMarketingHistoryStates operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyMarketingHistoryStatesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyMarketingHistoryStates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyMarketingHistoryState operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyMarketingHistoryState(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyMarketingHistoryValues operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyMarketingHistoryValuesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyMarketingHistoryValues(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyMarketingHistoryValue operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyMarketingHistoryValue(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45749,6 +46227,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/states", wrapper.ListLegacyMarketingHistoryStates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/states/{history_id}", wrapper.GetLegacyMarketingHistoryState)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/values", wrapper.ListLegacyMarketingHistoryValues)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/values/{history_id}", wrapper.GetLegacyMarketingHistoryValue)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/marketing-state-history/state-changes", wrapper.ListMarketingStateHistoryChange)
 	})
 	r.Group(func(r chi.Router) {
@@ -53746,6 +54236,218 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStatesRequestObject struct {
+	Params ListLegacyMarketingHistoryStatesParams
+}
+
+type ListLegacyMarketingHistoryStatesResponseObject interface {
+	VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyMarketingHistoryStates200JSONResponse LegacyMarketingHistoryStatePage
+
+func (response ListLegacyMarketingHistoryStates200JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates400JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates401JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates403JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates503JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryStateRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetLegacyMarketingHistoryStateResponseObject interface {
+	VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyMarketingHistoryState200JSONResponse LegacyMarketingHistoryStateDetail
+
+func (response GetLegacyMarketingHistoryState200JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyMarketingHistoryState400JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyMarketingHistoryState401JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyMarketingHistoryState403JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyMarketingHistoryState503JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValuesRequestObject struct {
+	Params ListLegacyMarketingHistoryValuesParams
+}
+
+type ListLegacyMarketingHistoryValuesResponseObject interface {
+	VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyMarketingHistoryValues200JSONResponse LegacyMarketingHistoryValuePage
+
+func (response ListLegacyMarketingHistoryValues200JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues400JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues401JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues403JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues503JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValueRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetLegacyMarketingHistoryValueResponseObject interface {
+	VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyMarketingHistoryValue200JSONResponse LegacyMarketingHistoryValueDetail
+
+func (response GetLegacyMarketingHistoryValue200JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue400JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue401JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue403JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue503JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -67399,6 +68101,18 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states)
+	ListLegacyMarketingHistoryStates(ctx context.Context, request ListLegacyMarketingHistoryStatesRequestObject) (ListLegacyMarketingHistoryStatesResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states/{history_id})
+	GetLegacyMarketingHistoryState(ctx context.Context, request GetLegacyMarketingHistoryStateRequestObject) (GetLegacyMarketingHistoryStateResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values)
+	ListLegacyMarketingHistoryValues(ctx context.Context, request ListLegacyMarketingHistoryValuesRequestObject) (ListLegacyMarketingHistoryValuesResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values/{history_id})
+	GetLegacyMarketingHistoryValue(ctx context.Context, request GetLegacyMarketingHistoryValueRequestObject) (GetLegacyMarketingHistoryValueResponseObject, error)
 	// Read immutable V1 marketing observations without changing scores or membership
 	// (GET /api/admin/marketing-state-history/state-changes)
 	ListMarketingStateHistoryChange(ctx context.Context, request ListMarketingStateHistoryChangeRequestObject) (ListMarketingStateHistoryChangeResponseObject, error)
@@ -71642,6 +72356,110 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegacyMarketingHistoryStates operation middleware
+func (sh *strictHandler) ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryStatesParams) {
+	var request ListLegacyMarketingHistoryStatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyMarketingHistoryStates(ctx, request.(ListLegacyMarketingHistoryStatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyMarketingHistoryStates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyMarketingHistoryStatesResponseObject); ok {
+		if err := validResponse.VisitListLegacyMarketingHistoryStatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyMarketingHistoryState operation middleware
+func (sh *strictHandler) GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetLegacyMarketingHistoryStateRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyMarketingHistoryState(ctx, request.(GetLegacyMarketingHistoryStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyMarketingHistoryState")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyMarketingHistoryStateResponseObject); ok {
+		if err := validResponse.VisitGetLegacyMarketingHistoryStateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegacyMarketingHistoryValues operation middleware
+func (sh *strictHandler) ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryValuesParams) {
+	var request ListLegacyMarketingHistoryValuesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyMarketingHistoryValues(ctx, request.(ListLegacyMarketingHistoryValuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyMarketingHistoryValues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyMarketingHistoryValuesResponseObject); ok {
+		if err := validResponse.VisitListLegacyMarketingHistoryValuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyMarketingHistoryValue operation middleware
+func (sh *strictHandler) GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetLegacyMarketingHistoryValueRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyMarketingHistoryValue(ctx, request.(GetLegacyMarketingHistoryValueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyMarketingHistoryValue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyMarketingHistoryValueResponseObject); ok {
+		if err := validResponse.VisitGetLegacyMarketingHistoryValueResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

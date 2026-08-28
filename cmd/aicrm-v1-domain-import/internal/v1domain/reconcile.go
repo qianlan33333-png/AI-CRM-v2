@@ -50,6 +50,8 @@ var targetBySourceTable = map[string]struct {
 	domain string
 	table  string
 }{
+	legacyMarketingStateTable:                          {"segment", legacyMarketingStateTarget},
+	legacyMarketingValueTable:                          {"segment", legacyMarketingValueTarget},
 	marketingStateSnapshotTable:                        {"segment", marketingStateSnapshotTarget},
 	marketingStateChangeTable:                          {"segment", marketingStateChangeTarget},
 	valueSegmentSnapshotTable:                          {"segment", valueSegmentSnapshotTarget},
@@ -280,7 +282,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) || isProfileCatalogHistorySource(row.TableID) || isHXCHistorySource(row.TableID) || isStaticTailHistorySource(row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) || isProfileCatalogHistorySource(row.TableID) || isHXCHistorySource(row.TableID) || isStaticTailHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -292,7 +294,7 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			}
 		}
 		proof := "terminal:" + row.Disposition
-		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) {
+		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) {
 			if err = tx.QueryRow(ctx, `SELECT field_digest FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`,
 				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
@@ -397,6 +399,9 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	}
 	if isAutomationHistorySource(row.TableID) {
 		return verifyAutomationHistoryTarget(ctx, tx, row, importedTargets)
+	}
+	if isLegacyMarketingHistorySource(row.TableID) {
+		return verifyLegacyMarketingHistoryTarget(ctx, tx, row, importedTargets)
 	}
 	if isAudienceHistorySource(row.TableID) {
 		return verifyAudienceHistoryTarget(ctx, tx, row, importedTargets)

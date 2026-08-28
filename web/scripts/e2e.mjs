@@ -2579,6 +2579,7 @@ console.log('member-grid-share/index.html（公开会员网格 token fragment）
 await import('./automation-history-e2e.mjs');
 await import('./survey-unresolved-history-contract.mjs');
 await import('./survey-unresolved-history-http-e2e.mjs');
+await import('./legacy-marketing-history-e2e.mjs');
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);

@@ -2118,6 +2118,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
+	legacyHandler.legacyMarketingHistory = segmentstore.NewLegacyMarketingHistoryReader(pool)
 	legacyHandler.profileCatalogHistory = segmentstore.NewProfileCatalogHistoryReader(pool)
 	legacyHandler.signupTagHistory = contactstore.NewSignupTagHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
@@ -3058,6 +3059,19 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			}
 			router.Method(method, pattern, tail)
 			return nil
+		}
+		for _, route := range []struct {
+			path    string
+			handler http.HandlerFunc
+		}{
+			{"/api/admin/legacy-marketing-history/states", legacy.ListLegacyMarketingHistoryStates},
+			{"/api/admin/legacy-marketing-history/states/{history_id}", legacy.GetLegacyMarketingHistoryState},
+			{"/api/admin/legacy-marketing-history/values", legacy.ListLegacyMarketingHistoryValues},
+			{"/api/admin/legacy-marketing-history/values/{history_id}", legacy.GetLegacyMarketingHistoryValue},
+		} {
+			if err = registerLegacy(http.MethodGet, route.path, authport.CapabilityAdminRead, false, route.handler); err != nil {
+				return nil, err
+			}
 		}
 		if legacy.groupOpsHistory != nil {
 			for _, route := range []struct {
