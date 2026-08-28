@@ -43,13 +43,14 @@ function relation(value: unknown): WeComContactHistoryRelation {
 function binding(value: unknown): ContactReferenceHistoryBinding {
   const row = object(value, ['id', 'source_person_id', 'person_history_id', 'identity_id', 'identity_assurance', 'created_at', 'updated_at']);
   if (!integer(row.id, 1) || !integer(row.source_person_id) || (row.person_history_id !== null && !integer(row.person_history_id, 1)) ||
-    (row.identity_id !== null && !integer(row.identity_id, 1)) || !['unresolved', 'declared', 'verified'].includes(String(row.identity_assurance)) ||
+    (row.identity_id !== null && !integer(row.identity_id, 1)) || typeof row.identity_assurance !== 'string' || !['unresolved', 'declared', 'verified'].includes(row.identity_assurance) ||
+    ((row.identity_id === null) !== (row.identity_assurance === 'unresolved')) ||
     !instant(row.created_at) || !instant(row.updated_at)) invalid();
   return row as unknown as ContactReferenceHistoryBinding;
 }
 function directory(value: unknown): ContactReferenceHistoryDirectory {
   const row = object(value, ['id', 'source_id', 'corp_attribution', 'matched_staff_id', 'display_name', 'department_name', 'position', 'wecom_status', 'is_active', 'synced_at', 'first_seen_at', 'last_synced_at', 'created_at', 'updated_at']);
-  if (!integer(row.id, 1) || !integer(row.source_id) || !['matched', 'unattributable'].includes(String(row.corp_attribution)) ||
+  if (!integer(row.id, 1) || !integer(row.source_id) || typeof row.corp_attribution !== 'string' || !['matched', 'unattributable'].includes(row.corp_attribution) ||
     (row.matched_staff_id !== null && !integer(row.matched_staff_id, 1)) || typeof row.display_name !== 'string' || typeof row.department_name !== 'string' || typeof row.position !== 'string' ||
     (row.wecom_status !== null && !int32(row.wecom_status)) || typeof row.is_active !== 'boolean' || !instant(row.synced_at) || !instant(row.first_seen_at) || !instant(row.last_synced_at) || !instant(row.created_at) || !instant(row.updated_at) ||
     (row.corp_attribution === 'unattributable' && row.matched_staff_id !== null)) invalid();
