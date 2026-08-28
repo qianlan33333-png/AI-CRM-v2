@@ -744,6 +744,145 @@ export interface WeComContactHistoryRelationDetail {
   item: WeComContactHistoryRelation;
 }
 
+export type ContactReferenceHistoryBindingIdentityAssurance =
+  (typeof ContactReferenceHistoryBindingIdentityAssurance)[keyof typeof ContactReferenceHistoryBindingIdentityAssurance];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactReferenceHistoryBindingIdentityAssurance = {
+  unresolved: "unresolved",
+  declared: "declared",
+  verified: "verified",
+} as const;
+
+export interface ContactReferenceHistoryBinding {
+  /** @minimum 1 */
+  id: number;
+  source_person_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  person_history_id: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  identity_id: number | null;
+  identity_assurance: ContactReferenceHistoryBindingIdentityAssurance;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ContactReferenceHistoryBindingPageSource =
+  (typeof ContactReferenceHistoryBindingPageSource)[keyof typeof ContactReferenceHistoryBindingPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactReferenceHistoryBindingPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ContactReferenceHistoryBindingPage {
+  source: ContactReferenceHistoryBindingPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ContactReferenceHistoryBinding[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type ContactReferenceHistoryBindingDetailSource =
+  (typeof ContactReferenceHistoryBindingDetailSource)[keyof typeof ContactReferenceHistoryBindingDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactReferenceHistoryBindingDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ContactReferenceHistoryBindingDetail {
+  source: ContactReferenceHistoryBindingDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: ContactReferenceHistoryBinding;
+}
+
+export type ContactReferenceHistoryDirectoryCorpAttribution =
+  (typeof ContactReferenceHistoryDirectoryCorpAttribution)[keyof typeof ContactReferenceHistoryDirectoryCorpAttribution];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactReferenceHistoryDirectoryCorpAttribution = {
+  matched: "matched",
+  unattributable: "unattributable",
+} as const;
+
+export interface ContactReferenceHistoryDirectory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  corp_attribution: ContactReferenceHistoryDirectoryCorpAttribution;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  matched_staff_id: number | null;
+  display_name: string;
+  department_name: string;
+  position: string;
+  /** @nullable */
+  wecom_status: number | null;
+  is_active: boolean;
+  synced_at: string;
+  first_seen_at: string;
+  last_synced_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ContactReferenceHistoryDirectoryPageSource =
+  (typeof ContactReferenceHistoryDirectoryPageSource)[keyof typeof ContactReferenceHistoryDirectoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactReferenceHistoryDirectoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ContactReferenceHistoryDirectoryPage {
+  source: ContactReferenceHistoryDirectoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ContactReferenceHistoryDirectory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type ContactReferenceHistoryDirectoryDetailSource =
+  (typeof ContactReferenceHistoryDirectoryDetailSource)[keyof typeof ContactReferenceHistoryDirectoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactReferenceHistoryDirectoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ContactReferenceHistoryDirectoryDetail {
+  source: ContactReferenceHistoryDirectoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: ContactReferenceHistoryDirectory;
+}
+
 export interface BroadcastJobHistory {
   /** @minimum 1 */
   id: number;
@@ -1777,6 +1916,127 @@ export interface StaticHistoryCycleDocumentDetail {
   read_only: boolean;
   real_external_call_executed: boolean;
   item: StaticHistoryCycleDocument;
+}
+
+export interface StaticHistoryCycleMetric {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  run_source_id: number;
+  metric_key: string;
+  label: string;
+  /** @nullable */
+  numerator: number | null;
+  /** @nullable */
+  denominator: number | null;
+  /** @nullable */
+  value: number | null;
+  unit: string;
+  observation_window: string;
+  data_source: string;
+  data_quality: string;
+  /** Original JSON value including literal null */
+  limitations: unknown;
+  is_causal: boolean;
+  value_status: string;
+  last_snapshot_source_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type StaticHistoryCycleMetricPageSource =
+  (typeof StaticHistoryCycleMetricPageSource)[keyof typeof StaticHistoryCycleMetricPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StaticHistoryCycleMetricPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface StaticHistoryCycleMetricPage {
+  source: StaticHistoryCycleMetricPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: StaticHistoryCycleMetric[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type StaticHistoryCycleMetricDetailSource =
+  (typeof StaticHistoryCycleMetricDetailSource)[keyof typeof StaticHistoryCycleMetricDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StaticHistoryCycleMetricDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface StaticHistoryCycleMetricDetail {
+  source: StaticHistoryCycleMetricDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: StaticHistoryCycleMetric;
+}
+
+export interface StaticHistoryCycleReference {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  run_source_id: number;
+  reference_key: string;
+  reference_type: string;
+  label: string;
+  source_system: string;
+  reference_source_id: string;
+  evidence_hash: string;
+  data_status: string;
+  last_snapshot_source_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type StaticHistoryCycleReferencePageSource =
+  (typeof StaticHistoryCycleReferencePageSource)[keyof typeof StaticHistoryCycleReferencePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StaticHistoryCycleReferencePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface StaticHistoryCycleReferencePage {
+  source: StaticHistoryCycleReferencePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: StaticHistoryCycleReference[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type StaticHistoryCycleReferenceDetailSource =
+  (typeof StaticHistoryCycleReferenceDetailSource)[keyof typeof StaticHistoryCycleReferenceDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StaticHistoryCycleReferenceDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface StaticHistoryCycleReferenceDetail {
+  source: StaticHistoryCycleReferenceDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: StaticHistoryCycleReference;
 }
 
 /**
@@ -21696,6 +21956,30 @@ export type ListWeComContactHistoryRelationsParams = {
   offset?: number;
 };
 
+export type ListContactReferenceHistoryBindingsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListContactReferenceHistoryDirectoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListBroadcastJobHistoryParams = {
   /**
    * @minimum 1
@@ -21910,6 +22194,30 @@ export type ListStaticHistoryCycleDocumentParams = {
    * @minimum 1
    */
   version_history_id?: number;
+};
+
+export type ListStaticHistoryCycleMetricParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListStaticHistoryCycleReferenceParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
 };
 
 export type ListHXCHistoryMetaParams = {
@@ -26456,6 +26764,319 @@ export const getWeComContactHistoryRelation = async (
 };
 
 /**
+ * @summary Read immutable V1 references without identity binding or staff permission changes
+ */
+export type listContactReferenceHistoryBindingsResponse200 = {
+  data: ContactReferenceHistoryBindingPage;
+  status: 200;
+};
+
+export type listContactReferenceHistoryBindingsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listContactReferenceHistoryBindingsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listContactReferenceHistoryBindingsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listContactReferenceHistoryBindingsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listContactReferenceHistoryBindingsResponseSuccess =
+  listContactReferenceHistoryBindingsResponse200 & {
+    headers: Headers;
+  };
+export type listContactReferenceHistoryBindingsResponseError = (
+  | listContactReferenceHistoryBindingsResponse400
+  | listContactReferenceHistoryBindingsResponse401
+  | listContactReferenceHistoryBindingsResponse403
+  | listContactReferenceHistoryBindingsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listContactReferenceHistoryBindingsResponse =
+  | listContactReferenceHistoryBindingsResponseSuccess
+  | listContactReferenceHistoryBindingsResponseError;
+
+export const getListContactReferenceHistoryBindingsUrl = (
+  params?: ListContactReferenceHistoryBindingsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-contact-history/bindings?${stringifiedParams}`
+    : `/api/admin/wecom-contact-history/bindings`;
+};
+
+export const listContactReferenceHistoryBindings = async (
+  params?: ListContactReferenceHistoryBindingsParams,
+  options?: RequestInit,
+): Promise<listContactReferenceHistoryBindingsResponse> => {
+  const res = await fetch(getListContactReferenceHistoryBindingsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listContactReferenceHistoryBindingsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listContactReferenceHistoryBindingsResponse;
+};
+
+/**
+ * @summary Read immutable V1 references without identity binding or staff permission changes
+ */
+export type getContactReferenceHistoryBindingResponse200 = {
+  data: ContactReferenceHistoryBindingDetail;
+  status: 200;
+};
+
+export type getContactReferenceHistoryBindingResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getContactReferenceHistoryBindingResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getContactReferenceHistoryBindingResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getContactReferenceHistoryBindingResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getContactReferenceHistoryBindingResponseSuccess =
+  getContactReferenceHistoryBindingResponse200 & {
+    headers: Headers;
+  };
+export type getContactReferenceHistoryBindingResponseError = (
+  | getContactReferenceHistoryBindingResponse400
+  | getContactReferenceHistoryBindingResponse401
+  | getContactReferenceHistoryBindingResponse403
+  | getContactReferenceHistoryBindingResponse503
+) & {
+  headers: Headers;
+};
+
+export type getContactReferenceHistoryBindingResponse =
+  | getContactReferenceHistoryBindingResponseSuccess
+  | getContactReferenceHistoryBindingResponseError;
+
+export const getGetContactReferenceHistoryBindingUrl = (historyId: number) => {
+  return `/api/admin/wecom-contact-history/bindings/${historyId}`;
+};
+
+export const getContactReferenceHistoryBinding = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getContactReferenceHistoryBindingResponse> => {
+  const res = await fetch(getGetContactReferenceHistoryBindingUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getContactReferenceHistoryBindingResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getContactReferenceHistoryBindingResponse;
+};
+
+/**
+ * @summary Read immutable V1 references without identity binding or staff permission changes
+ */
+export type listContactReferenceHistoryDirectoryResponse200 = {
+  data: ContactReferenceHistoryDirectoryPage;
+  status: 200;
+};
+
+export type listContactReferenceHistoryDirectoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listContactReferenceHistoryDirectoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listContactReferenceHistoryDirectoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listContactReferenceHistoryDirectoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listContactReferenceHistoryDirectoryResponseSuccess =
+  listContactReferenceHistoryDirectoryResponse200 & {
+    headers: Headers;
+  };
+export type listContactReferenceHistoryDirectoryResponseError = (
+  | listContactReferenceHistoryDirectoryResponse400
+  | listContactReferenceHistoryDirectoryResponse401
+  | listContactReferenceHistoryDirectoryResponse403
+  | listContactReferenceHistoryDirectoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listContactReferenceHistoryDirectoryResponse =
+  | listContactReferenceHistoryDirectoryResponseSuccess
+  | listContactReferenceHistoryDirectoryResponseError;
+
+export const getListContactReferenceHistoryDirectoryUrl = (
+  params?: ListContactReferenceHistoryDirectoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-contact-history/directory?${stringifiedParams}`
+    : `/api/admin/wecom-contact-history/directory`;
+};
+
+export const listContactReferenceHistoryDirectory = async (
+  params?: ListContactReferenceHistoryDirectoryParams,
+  options?: RequestInit,
+): Promise<listContactReferenceHistoryDirectoryResponse> => {
+  const res = await fetch(getListContactReferenceHistoryDirectoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listContactReferenceHistoryDirectoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listContactReferenceHistoryDirectoryResponse;
+};
+
+/**
+ * @summary Read immutable V1 references without identity binding or staff permission changes
+ */
+export type getContactReferenceHistoryDirectoryResponse200 = {
+  data: ContactReferenceHistoryDirectoryDetail;
+  status: 200;
+};
+
+export type getContactReferenceHistoryDirectoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getContactReferenceHistoryDirectoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getContactReferenceHistoryDirectoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getContactReferenceHistoryDirectoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getContactReferenceHistoryDirectoryResponseSuccess =
+  getContactReferenceHistoryDirectoryResponse200 & {
+    headers: Headers;
+  };
+export type getContactReferenceHistoryDirectoryResponseError = (
+  | getContactReferenceHistoryDirectoryResponse400
+  | getContactReferenceHistoryDirectoryResponse401
+  | getContactReferenceHistoryDirectoryResponse403
+  | getContactReferenceHistoryDirectoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getContactReferenceHistoryDirectoryResponse =
+  | getContactReferenceHistoryDirectoryResponseSuccess
+  | getContactReferenceHistoryDirectoryResponseError;
+
+export const getGetContactReferenceHistoryDirectoryUrl = (
+  historyId: number,
+) => {
+  return `/api/admin/wecom-contact-history/directory/${historyId}`;
+};
+
+export const getContactReferenceHistoryDirectory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getContactReferenceHistoryDirectoryResponse> => {
+  const res = await fetch(
+    getGetContactReferenceHistoryDirectoryUrl(historyId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getContactReferenceHistoryDirectoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getContactReferenceHistoryDirectoryResponse;
+};
+
+/**
  * @summary Read inert V1 job observations without rescheduling or Provider calls
  */
 export type listBroadcastJobHistoryResponse200 = {
@@ -29033,6 +29654,314 @@ export const getStaticHistoryCycleDocument = async (
     status: res.status,
     headers: res.headers,
   } as getStaticHistoryCycleDocumentResponse;
+};
+
+/**
+ * @summary Read immutable V1 cycle observations without executing a cycle
+ */
+export type listStaticHistoryCycleMetricResponse200 = {
+  data: StaticHistoryCycleMetricPage;
+  status: 200;
+};
+
+export type listStaticHistoryCycleMetricResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listStaticHistoryCycleMetricResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listStaticHistoryCycleMetricResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listStaticHistoryCycleMetricResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listStaticHistoryCycleMetricResponseSuccess =
+  listStaticHistoryCycleMetricResponse200 & {
+    headers: Headers;
+  };
+export type listStaticHistoryCycleMetricResponseError = (
+  | listStaticHistoryCycleMetricResponse400
+  | listStaticHistoryCycleMetricResponse401
+  | listStaticHistoryCycleMetricResponse403
+  | listStaticHistoryCycleMetricResponse503
+) & {
+  headers: Headers;
+};
+
+export type listStaticHistoryCycleMetricResponse =
+  | listStaticHistoryCycleMetricResponseSuccess
+  | listStaticHistoryCycleMetricResponseError;
+
+export const getListStaticHistoryCycleMetricUrl = (
+  params?: ListStaticHistoryCycleMetricParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/static-history/cycle-metrics?${stringifiedParams}`
+    : `/api/admin/static-history/cycle-metrics`;
+};
+
+export const listStaticHistoryCycleMetric = async (
+  params?: ListStaticHistoryCycleMetricParams,
+  options?: RequestInit,
+): Promise<listStaticHistoryCycleMetricResponse> => {
+  const res = await fetch(getListStaticHistoryCycleMetricUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStaticHistoryCycleMetricResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listStaticHistoryCycleMetricResponse;
+};
+
+/**
+ * @summary Read immutable V1 cycle observations without executing a cycle
+ */
+export type getStaticHistoryCycleMetricResponse200 = {
+  data: StaticHistoryCycleMetricDetail;
+  status: 200;
+};
+
+export type getStaticHistoryCycleMetricResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getStaticHistoryCycleMetricResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getStaticHistoryCycleMetricResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getStaticHistoryCycleMetricResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getStaticHistoryCycleMetricResponseSuccess =
+  getStaticHistoryCycleMetricResponse200 & {
+    headers: Headers;
+  };
+export type getStaticHistoryCycleMetricResponseError = (
+  | getStaticHistoryCycleMetricResponse400
+  | getStaticHistoryCycleMetricResponse401
+  | getStaticHistoryCycleMetricResponse403
+  | getStaticHistoryCycleMetricResponse503
+) & {
+  headers: Headers;
+};
+
+export type getStaticHistoryCycleMetricResponse =
+  | getStaticHistoryCycleMetricResponseSuccess
+  | getStaticHistoryCycleMetricResponseError;
+
+export const getGetStaticHistoryCycleMetricUrl = (historyId: number) => {
+  return `/api/admin/static-history/cycle-metrics/${historyId}`;
+};
+
+export const getStaticHistoryCycleMetric = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getStaticHistoryCycleMetricResponse> => {
+  const res = await fetch(getGetStaticHistoryCycleMetricUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getStaticHistoryCycleMetricResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getStaticHistoryCycleMetricResponse;
+};
+
+/**
+ * @summary Read immutable V1 cycle observations without executing a cycle
+ */
+export type listStaticHistoryCycleReferenceResponse200 = {
+  data: StaticHistoryCycleReferencePage;
+  status: 200;
+};
+
+export type listStaticHistoryCycleReferenceResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listStaticHistoryCycleReferenceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listStaticHistoryCycleReferenceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listStaticHistoryCycleReferenceResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listStaticHistoryCycleReferenceResponseSuccess =
+  listStaticHistoryCycleReferenceResponse200 & {
+    headers: Headers;
+  };
+export type listStaticHistoryCycleReferenceResponseError = (
+  | listStaticHistoryCycleReferenceResponse400
+  | listStaticHistoryCycleReferenceResponse401
+  | listStaticHistoryCycleReferenceResponse403
+  | listStaticHistoryCycleReferenceResponse503
+) & {
+  headers: Headers;
+};
+
+export type listStaticHistoryCycleReferenceResponse =
+  | listStaticHistoryCycleReferenceResponseSuccess
+  | listStaticHistoryCycleReferenceResponseError;
+
+export const getListStaticHistoryCycleReferenceUrl = (
+  params?: ListStaticHistoryCycleReferenceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/static-history/cycle-references?${stringifiedParams}`
+    : `/api/admin/static-history/cycle-references`;
+};
+
+export const listStaticHistoryCycleReference = async (
+  params?: ListStaticHistoryCycleReferenceParams,
+  options?: RequestInit,
+): Promise<listStaticHistoryCycleReferenceResponse> => {
+  const res = await fetch(getListStaticHistoryCycleReferenceUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStaticHistoryCycleReferenceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listStaticHistoryCycleReferenceResponse;
+};
+
+/**
+ * @summary Read immutable V1 cycle observations without executing a cycle
+ */
+export type getStaticHistoryCycleReferenceResponse200 = {
+  data: StaticHistoryCycleReferenceDetail;
+  status: 200;
+};
+
+export type getStaticHistoryCycleReferenceResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getStaticHistoryCycleReferenceResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getStaticHistoryCycleReferenceResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getStaticHistoryCycleReferenceResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getStaticHistoryCycleReferenceResponseSuccess =
+  getStaticHistoryCycleReferenceResponse200 & {
+    headers: Headers;
+  };
+export type getStaticHistoryCycleReferenceResponseError = (
+  | getStaticHistoryCycleReferenceResponse400
+  | getStaticHistoryCycleReferenceResponse401
+  | getStaticHistoryCycleReferenceResponse403
+  | getStaticHistoryCycleReferenceResponse503
+) & {
+  headers: Headers;
+};
+
+export type getStaticHistoryCycleReferenceResponse =
+  | getStaticHistoryCycleReferenceResponseSuccess
+  | getStaticHistoryCycleReferenceResponseError;
+
+export const getGetStaticHistoryCycleReferenceUrl = (historyId: number) => {
+  return `/api/admin/static-history/cycle-references/${historyId}`;
+};
+
+export const getStaticHistoryCycleReference = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getStaticHistoryCycleReferenceResponse> => {
+  const res = await fetch(getGetStaticHistoryCycleReferenceUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getStaticHistoryCycleReferenceResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getStaticHistoryCycleReferenceResponse;
 };
 
 /**

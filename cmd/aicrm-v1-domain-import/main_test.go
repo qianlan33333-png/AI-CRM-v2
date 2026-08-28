@@ -42,6 +42,26 @@ func TestHXCChatJobHistoryRequiresLocalArchiveKeys(t *testing.T) {
 	}
 }
 
+func TestCycleObservationRequiresLocalArchiveKeysBeforeConnecting(t *testing.T) {
+	if !validDomain("cycle-observation-history") {
+		t.Fatal("cycle observation domain missing")
+	}
+	for _, mode := range []string{"import", "reconcile"} {
+		for _, change := range []func(*appconfig.V1ArchiveRuntime){
+			func(v *appconfig.V1ArchiveRuntime) { v.SourceDatabaseURL = "postgres:///never-read-v1" },
+			func(v *appconfig.V1ArchiveRuntime) { v.SourceHMACKey = "" },
+			func(v *appconfig.V1ArchiveRuntime) { v.ArchiveKey = "" },
+		} {
+			env := appconfig.V1ArchiveRuntime{TargetDatabaseURL: "invalid-target-must-not-connect", SourceHMACKey: strings.Repeat("h", 32), ArchiveKey: strings.Repeat("k", 32)}
+			change(&env)
+			err := run([]string{"--domain=cycle-observation-history", "--mode=" + mode, "--archive-run-id=archive"}, env)
+			if err == nil || (!strings.Contains(err.Error(), "local-only archive keys") && !strings.Contains(err.Error(), "32-byte archive key")) {
+				t.Fatalf("guard failed before connection: %v", err)
+			}
+		}
+	}
+}
+
 func TestStaticAndChannelPackagesRequireExplicitDM01BeforeConnecting(t *testing.T) {
 	t.Setenv("AICRM_DM01_SOURCE_HMAC_KEY", "")
 	for _, domain := range []string{"static", "channel"} {

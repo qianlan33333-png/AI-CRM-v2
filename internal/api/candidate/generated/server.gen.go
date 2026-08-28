@@ -2698,6 +2698,225 @@ func (e ContactOwnerReassignmentIssueCode) Valid() bool {
 	}
 }
 
+// Defines values for ContactReferenceHistoryBindingIdentityAssurance.
+const (
+	ContactReferenceHistoryBindingIdentityAssuranceDeclared   ContactReferenceHistoryBindingIdentityAssurance = "declared"
+	ContactReferenceHistoryBindingIdentityAssuranceUnresolved ContactReferenceHistoryBindingIdentityAssurance = "unresolved"
+	ContactReferenceHistoryBindingIdentityAssuranceVerified   ContactReferenceHistoryBindingIdentityAssurance = "verified"
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingIdentityAssurance enum.
+func (e ContactReferenceHistoryBindingIdentityAssurance) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingIdentityAssuranceDeclared:
+		return true
+	case ContactReferenceHistoryBindingIdentityAssuranceUnresolved:
+		return true
+	case ContactReferenceHistoryBindingIdentityAssuranceVerified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryBindingDetailReadOnly.
+const (
+	ContactReferenceHistoryBindingDetailReadOnlyTrue ContactReferenceHistoryBindingDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingDetailReadOnly enum.
+func (e ContactReferenceHistoryBindingDetailReadOnly) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryBindingDetailRealExternalCallExecuted.
+const (
+	ContactReferenceHistoryBindingDetailRealExternalCallExecutedFalse ContactReferenceHistoryBindingDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingDetailRealExternalCallExecuted enum.
+func (e ContactReferenceHistoryBindingDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryBindingDetailSource.
+const (
+	ContactReferenceHistoryBindingDetailSourceV1History ContactReferenceHistoryBindingDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingDetailSource enum.
+func (e ContactReferenceHistoryBindingDetailSource) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryBindingPageReadOnly.
+const (
+	ContactReferenceHistoryBindingPageReadOnlyTrue ContactReferenceHistoryBindingPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingPageReadOnly enum.
+func (e ContactReferenceHistoryBindingPageReadOnly) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryBindingPageRealExternalCallExecuted.
+const (
+	ContactReferenceHistoryBindingPageRealExternalCallExecutedFalse ContactReferenceHistoryBindingPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingPageRealExternalCallExecuted enum.
+func (e ContactReferenceHistoryBindingPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryBindingPageSource.
+const (
+	ContactReferenceHistoryBindingPageSourceV1History ContactReferenceHistoryBindingPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryBindingPageSource enum.
+func (e ContactReferenceHistoryBindingPageSource) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryBindingPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryCorpAttribution.
+const (
+	Matched        ContactReferenceHistoryDirectoryCorpAttribution = "matched"
+	Unattributable ContactReferenceHistoryDirectoryCorpAttribution = "unattributable"
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryCorpAttribution enum.
+func (e ContactReferenceHistoryDirectoryCorpAttribution) Valid() bool {
+	switch e {
+	case Matched:
+		return true
+	case Unattributable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryDetailReadOnly.
+const (
+	ContactReferenceHistoryDirectoryDetailReadOnlyTrue ContactReferenceHistoryDirectoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryDetailReadOnly enum.
+func (e ContactReferenceHistoryDirectoryDetailReadOnly) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryDirectoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted.
+const (
+	ContactReferenceHistoryDirectoryDetailRealExternalCallExecutedFalse ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted enum.
+func (e ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryDirectoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryDetailSource.
+const (
+	ContactReferenceHistoryDirectoryDetailSourceV1History ContactReferenceHistoryDirectoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryDetailSource enum.
+func (e ContactReferenceHistoryDirectoryDetailSource) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryDirectoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryPageReadOnly.
+const (
+	ContactReferenceHistoryDirectoryPageReadOnlyTrue ContactReferenceHistoryDirectoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryPageReadOnly enum.
+func (e ContactReferenceHistoryDirectoryPageReadOnly) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryDirectoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryPageRealExternalCallExecuted.
+const (
+	ContactReferenceHistoryDirectoryPageRealExternalCallExecutedFalse ContactReferenceHistoryDirectoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryPageRealExternalCallExecuted enum.
+func (e ContactReferenceHistoryDirectoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryDirectoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactReferenceHistoryDirectoryPageSource.
+const (
+	ContactReferenceHistoryDirectoryPageSourceV1History ContactReferenceHistoryDirectoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ContactReferenceHistoryDirectoryPageSource enum.
+func (e ContactReferenceHistoryDirectoryPageSource) Valid() bool {
+	switch e {
+	case ContactReferenceHistoryDirectoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CouponHistoryClaimCurrency.
 const (
 	CouponHistoryClaimCurrencyCNY CouponHistoryClaimCurrency = "CNY"
@@ -10521,16 +10740,16 @@ func (e OwnerMigrationResultHistoryItemPreviewRelation) Valid() bool {
 
 // Defines values for OwnerMigrationResultHistoryItemSessionRelation.
 const (
-	OwnerMigrationResultHistoryItemSessionRelationResolved   OwnerMigrationResultHistoryItemSessionRelation = "resolved"
-	OwnerMigrationResultHistoryItemSessionRelationUnresolved OwnerMigrationResultHistoryItemSessionRelation = "unresolved"
+	Resolved   OwnerMigrationResultHistoryItemSessionRelation = "resolved"
+	Unresolved OwnerMigrationResultHistoryItemSessionRelation = "unresolved"
 )
 
 // Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryItemSessionRelation enum.
 func (e OwnerMigrationResultHistoryItemSessionRelation) Valid() bool {
 	switch e {
-	case OwnerMigrationResultHistoryItemSessionRelationResolved:
+	case Resolved:
 		return true
-	case OwnerMigrationResultHistoryItemSessionRelationUnresolved:
+	case Unresolved:
 		return true
 	default:
 		return false
@@ -13189,6 +13408,186 @@ const (
 func (e StaticHistoryCycleDocumentPageSource) Valid() bool {
 	switch e {
 	case StaticHistoryCycleDocumentPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleMetricDetailReadOnly.
+const (
+	StaticHistoryCycleMetricDetailReadOnlyTrue StaticHistoryCycleMetricDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleMetricDetailReadOnly enum.
+func (e StaticHistoryCycleMetricDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleMetricDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleMetricDetailRealExternalCallExecuted.
+const (
+	StaticHistoryCycleMetricDetailRealExternalCallExecutedFalse StaticHistoryCycleMetricDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleMetricDetailRealExternalCallExecuted enum.
+func (e StaticHistoryCycleMetricDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleMetricDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleMetricDetailSource.
+const (
+	StaticHistoryCycleMetricDetailSourceV1History StaticHistoryCycleMetricDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleMetricDetailSource enum.
+func (e StaticHistoryCycleMetricDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleMetricDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleMetricPageReadOnly.
+const (
+	StaticHistoryCycleMetricPageReadOnlyTrue StaticHistoryCycleMetricPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleMetricPageReadOnly enum.
+func (e StaticHistoryCycleMetricPageReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleMetricPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleMetricPageRealExternalCallExecuted.
+const (
+	StaticHistoryCycleMetricPageRealExternalCallExecutedFalse StaticHistoryCycleMetricPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleMetricPageRealExternalCallExecuted enum.
+func (e StaticHistoryCycleMetricPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleMetricPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleMetricPageSource.
+const (
+	StaticHistoryCycleMetricPageSourceV1History StaticHistoryCycleMetricPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleMetricPageSource enum.
+func (e StaticHistoryCycleMetricPageSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleMetricPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleReferenceDetailReadOnly.
+const (
+	StaticHistoryCycleReferenceDetailReadOnlyTrue StaticHistoryCycleReferenceDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleReferenceDetailReadOnly enum.
+func (e StaticHistoryCycleReferenceDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleReferenceDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleReferenceDetailRealExternalCallExecuted.
+const (
+	StaticHistoryCycleReferenceDetailRealExternalCallExecutedFalse StaticHistoryCycleReferenceDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleReferenceDetailRealExternalCallExecuted enum.
+func (e StaticHistoryCycleReferenceDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleReferenceDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleReferenceDetailSource.
+const (
+	StaticHistoryCycleReferenceDetailSourceV1History StaticHistoryCycleReferenceDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleReferenceDetailSource enum.
+func (e StaticHistoryCycleReferenceDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleReferenceDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleReferencePageReadOnly.
+const (
+	StaticHistoryCycleReferencePageReadOnlyTrue StaticHistoryCycleReferencePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleReferencePageReadOnly enum.
+func (e StaticHistoryCycleReferencePageReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleReferencePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleReferencePageRealExternalCallExecuted.
+const (
+	StaticHistoryCycleReferencePageRealExternalCallExecutedFalse StaticHistoryCycleReferencePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleReferencePageRealExternalCallExecuted enum.
+func (e StaticHistoryCycleReferencePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleReferencePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleReferencePageSource.
+const (
+	StaticHistoryCycleReferencePageSourceV1History StaticHistoryCycleReferencePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleReferencePageSource enum.
+func (e StaticHistoryCycleReferencePageSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleReferencePageSourceV1History:
 		return true
 	default:
 		return false
@@ -16237,6 +16636,115 @@ type ContactOwnerReassignmentRow struct {
 	ExpectedUpdatedAt    time.Time `json:"expected_updated_at"`
 	TargetOwnerStaffId   int64     `json:"target_owner_staff_id"`
 }
+
+// ContactReferenceHistoryBinding defines model for ContactReferenceHistoryBinding.
+type ContactReferenceHistoryBinding struct {
+	CreatedAt         time.Time                                       `json:"created_at"`
+	Id                int64                                           `json:"id"`
+	IdentityAssurance ContactReferenceHistoryBindingIdentityAssurance `json:"identity_assurance"`
+	IdentityId        *int64                                          `json:"identity_id"`
+	PersonHistoryId   *int64                                          `json:"person_history_id"`
+	SourcePersonId    int64                                           `json:"source_person_id"`
+	UpdatedAt         time.Time                                       `json:"updated_at"`
+}
+
+// ContactReferenceHistoryBindingIdentityAssurance defines model for ContactReferenceHistoryBinding.IdentityAssurance.
+type ContactReferenceHistoryBindingIdentityAssurance string
+
+// ContactReferenceHistoryBindingDetail defines model for ContactReferenceHistoryBindingDetail.
+type ContactReferenceHistoryBindingDetail struct {
+	Item                     ContactReferenceHistoryBinding                               `json:"item"`
+	ReadOnly                 ContactReferenceHistoryBindingDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ContactReferenceHistoryBindingDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ContactReferenceHistoryBindingDetailSource                   `json:"source"`
+}
+
+// ContactReferenceHistoryBindingDetailReadOnly defines model for ContactReferenceHistoryBindingDetail.ReadOnly.
+type ContactReferenceHistoryBindingDetailReadOnly bool
+
+// ContactReferenceHistoryBindingDetailRealExternalCallExecuted defines model for ContactReferenceHistoryBindingDetail.RealExternalCallExecuted.
+type ContactReferenceHistoryBindingDetailRealExternalCallExecuted bool
+
+// ContactReferenceHistoryBindingDetailSource defines model for ContactReferenceHistoryBindingDetail.Source.
+type ContactReferenceHistoryBindingDetailSource string
+
+// ContactReferenceHistoryBindingPage defines model for ContactReferenceHistoryBindingPage.
+type ContactReferenceHistoryBindingPage struct {
+	Items                    []ContactReferenceHistoryBinding                           `json:"items"`
+	Limit                    int32                                                      `json:"limit"`
+	Offset                   int32                                                      `json:"offset"`
+	ReadOnly                 ContactReferenceHistoryBindingPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ContactReferenceHistoryBindingPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ContactReferenceHistoryBindingPageSource                   `json:"source"`
+	Total                    int64                                                      `json:"total"`
+}
+
+// ContactReferenceHistoryBindingPageReadOnly defines model for ContactReferenceHistoryBindingPage.ReadOnly.
+type ContactReferenceHistoryBindingPageReadOnly bool
+
+// ContactReferenceHistoryBindingPageRealExternalCallExecuted defines model for ContactReferenceHistoryBindingPage.RealExternalCallExecuted.
+type ContactReferenceHistoryBindingPageRealExternalCallExecuted bool
+
+// ContactReferenceHistoryBindingPageSource defines model for ContactReferenceHistoryBindingPage.Source.
+type ContactReferenceHistoryBindingPageSource string
+
+// ContactReferenceHistoryDirectory defines model for ContactReferenceHistoryDirectory.
+type ContactReferenceHistoryDirectory struct {
+	CorpAttribution ContactReferenceHistoryDirectoryCorpAttribution `json:"corp_attribution"`
+	CreatedAt       time.Time                                       `json:"created_at"`
+	DepartmentName  string                                          `json:"department_name"`
+	DisplayName     string                                          `json:"display_name"`
+	FirstSeenAt     time.Time                                       `json:"first_seen_at"`
+	Id              int64                                           `json:"id"`
+	IsActive        bool                                            `json:"is_active"`
+	LastSyncedAt    time.Time                                       `json:"last_synced_at"`
+	MatchedStaffId  *int64                                          `json:"matched_staff_id"`
+	Position        string                                          `json:"position"`
+	SourceId        int64                                           `json:"source_id"`
+	SyncedAt        time.Time                                       `json:"synced_at"`
+	UpdatedAt       time.Time                                       `json:"updated_at"`
+	WecomStatus     *int32                                          `json:"wecom_status"`
+}
+
+// ContactReferenceHistoryDirectoryCorpAttribution defines model for ContactReferenceHistoryDirectory.CorpAttribution.
+type ContactReferenceHistoryDirectoryCorpAttribution string
+
+// ContactReferenceHistoryDirectoryDetail defines model for ContactReferenceHistoryDirectoryDetail.
+type ContactReferenceHistoryDirectoryDetail struct {
+	Item                     ContactReferenceHistoryDirectory                               `json:"item"`
+	ReadOnly                 ContactReferenceHistoryDirectoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ContactReferenceHistoryDirectoryDetailSource                   `json:"source"`
+}
+
+// ContactReferenceHistoryDirectoryDetailReadOnly defines model for ContactReferenceHistoryDirectoryDetail.ReadOnly.
+type ContactReferenceHistoryDirectoryDetailReadOnly bool
+
+// ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted defines model for ContactReferenceHistoryDirectoryDetail.RealExternalCallExecuted.
+type ContactReferenceHistoryDirectoryDetailRealExternalCallExecuted bool
+
+// ContactReferenceHistoryDirectoryDetailSource defines model for ContactReferenceHistoryDirectoryDetail.Source.
+type ContactReferenceHistoryDirectoryDetailSource string
+
+// ContactReferenceHistoryDirectoryPage defines model for ContactReferenceHistoryDirectoryPage.
+type ContactReferenceHistoryDirectoryPage struct {
+	Items                    []ContactReferenceHistoryDirectory                           `json:"items"`
+	Limit                    int32                                                        `json:"limit"`
+	Offset                   int32                                                        `json:"offset"`
+	ReadOnly                 ContactReferenceHistoryDirectoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ContactReferenceHistoryDirectoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ContactReferenceHistoryDirectoryPageSource                   `json:"source"`
+	Total                    int64                                                        `json:"total"`
+}
+
+// ContactReferenceHistoryDirectoryPageReadOnly defines model for ContactReferenceHistoryDirectoryPage.ReadOnly.
+type ContactReferenceHistoryDirectoryPageReadOnly bool
+
+// ContactReferenceHistoryDirectoryPageRealExternalCallExecuted defines model for ContactReferenceHistoryDirectoryPage.RealExternalCallExecuted.
+type ContactReferenceHistoryDirectoryPageRealExternalCallExecuted bool
+
+// ContactReferenceHistoryDirectoryPageSource defines model for ContactReferenceHistoryDirectoryPage.Source.
+type ContactReferenceHistoryDirectoryPageSource string
 
 // CouponHistoryClaim defines model for CouponHistoryClaim.
 type CouponHistoryClaim struct {
@@ -22575,6 +23083,121 @@ type StaticHistoryCycleDocumentPageRealExternalCallExecuted bool
 // StaticHistoryCycleDocumentPageSource defines model for StaticHistoryCycleDocumentPage.Source.
 type StaticHistoryCycleDocumentPageSource string
 
+// StaticHistoryCycleMetric defines model for StaticHistoryCycleMetric.
+type StaticHistoryCycleMetric struct {
+	CreatedAt            time.Time `json:"created_at"`
+	DataQuality          string    `json:"data_quality"`
+	DataSource           string    `json:"data_source"`
+	Denominator          *float64  `json:"denominator"`
+	Id                   int64     `json:"id"`
+	IsCausal             bool      `json:"is_causal"`
+	Label                string    `json:"label"`
+	LastSnapshotSourceId int64     `json:"last_snapshot_source_id"`
+
+	// Limitations Original JSON value including literal null
+	Limitations       interface{} `json:"limitations"`
+	MetricKey         string      `json:"metric_key"`
+	Numerator         *float64    `json:"numerator"`
+	ObservationWindow string      `json:"observation_window"`
+	RunSourceId       int64       `json:"run_source_id"`
+	SourceId          int64       `json:"source_id"`
+	Unit              string      `json:"unit"`
+	UpdatedAt         time.Time   `json:"updated_at"`
+	Value             *float64    `json:"value"`
+	ValueStatus       string      `json:"value_status"`
+}
+
+// StaticHistoryCycleMetricDetail defines model for StaticHistoryCycleMetricDetail.
+type StaticHistoryCycleMetricDetail struct {
+	Item                     StaticHistoryCycleMetric                               `json:"item"`
+	ReadOnly                 StaticHistoryCycleMetricDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleMetricDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleMetricDetailSource                   `json:"source"`
+}
+
+// StaticHistoryCycleMetricDetailReadOnly defines model for StaticHistoryCycleMetricDetail.ReadOnly.
+type StaticHistoryCycleMetricDetailReadOnly bool
+
+// StaticHistoryCycleMetricDetailRealExternalCallExecuted defines model for StaticHistoryCycleMetricDetail.RealExternalCallExecuted.
+type StaticHistoryCycleMetricDetailRealExternalCallExecuted bool
+
+// StaticHistoryCycleMetricDetailSource defines model for StaticHistoryCycleMetricDetail.Source.
+type StaticHistoryCycleMetricDetailSource string
+
+// StaticHistoryCycleMetricPage defines model for StaticHistoryCycleMetricPage.
+type StaticHistoryCycleMetricPage struct {
+	Items                    []StaticHistoryCycleMetric                           `json:"items"`
+	Limit                    int                                                  `json:"limit"`
+	Offset                   int                                                  `json:"offset"`
+	ReadOnly                 StaticHistoryCycleMetricPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleMetricPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleMetricPageSource                   `json:"source"`
+	Total                    int64                                                `json:"total"`
+}
+
+// StaticHistoryCycleMetricPageReadOnly defines model for StaticHistoryCycleMetricPage.ReadOnly.
+type StaticHistoryCycleMetricPageReadOnly bool
+
+// StaticHistoryCycleMetricPageRealExternalCallExecuted defines model for StaticHistoryCycleMetricPage.RealExternalCallExecuted.
+type StaticHistoryCycleMetricPageRealExternalCallExecuted bool
+
+// StaticHistoryCycleMetricPageSource defines model for StaticHistoryCycleMetricPage.Source.
+type StaticHistoryCycleMetricPageSource string
+
+// StaticHistoryCycleReference defines model for StaticHistoryCycleReference.
+type StaticHistoryCycleReference struct {
+	CreatedAt            time.Time `json:"created_at"`
+	DataStatus           string    `json:"data_status"`
+	EvidenceHash         string    `json:"evidence_hash"`
+	Id                   int64     `json:"id"`
+	Label                string    `json:"label"`
+	LastSnapshotSourceId int64     `json:"last_snapshot_source_id"`
+	ReferenceKey         string    `json:"reference_key"`
+	ReferenceSourceId    string    `json:"reference_source_id"`
+	ReferenceType        string    `json:"reference_type"`
+	RunSourceId          int64     `json:"run_source_id"`
+	SourceId             int64     `json:"source_id"`
+	SourceSystem         string    `json:"source_system"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+// StaticHistoryCycleReferenceDetail defines model for StaticHistoryCycleReferenceDetail.
+type StaticHistoryCycleReferenceDetail struct {
+	Item                     StaticHistoryCycleReference                               `json:"item"`
+	ReadOnly                 StaticHistoryCycleReferenceDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleReferenceDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleReferenceDetailSource                   `json:"source"`
+}
+
+// StaticHistoryCycleReferenceDetailReadOnly defines model for StaticHistoryCycleReferenceDetail.ReadOnly.
+type StaticHistoryCycleReferenceDetailReadOnly bool
+
+// StaticHistoryCycleReferenceDetailRealExternalCallExecuted defines model for StaticHistoryCycleReferenceDetail.RealExternalCallExecuted.
+type StaticHistoryCycleReferenceDetailRealExternalCallExecuted bool
+
+// StaticHistoryCycleReferenceDetailSource defines model for StaticHistoryCycleReferenceDetail.Source.
+type StaticHistoryCycleReferenceDetailSource string
+
+// StaticHistoryCycleReferencePage defines model for StaticHistoryCycleReferencePage.
+type StaticHistoryCycleReferencePage struct {
+	Items                    []StaticHistoryCycleReference                           `json:"items"`
+	Limit                    int                                                     `json:"limit"`
+	Offset                   int                                                     `json:"offset"`
+	ReadOnly                 StaticHistoryCycleReferencePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleReferencePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleReferencePageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// StaticHistoryCycleReferencePageReadOnly defines model for StaticHistoryCycleReferencePage.ReadOnly.
+type StaticHistoryCycleReferencePageReadOnly bool
+
+// StaticHistoryCycleReferencePageRealExternalCallExecuted defines model for StaticHistoryCycleReferencePage.RealExternalCallExecuted.
+type StaticHistoryCycleReferencePageRealExternalCallExecuted bool
+
+// StaticHistoryCycleReferencePageSource defines model for StaticHistoryCycleReferencePage.Source.
+type StaticHistoryCycleReferencePageSource string
+
 // StaticHistoryCycleStrategy defines model for StaticHistoryCycleStrategy.
 type StaticHistoryCycleStrategy struct {
 	Cadence             string              `json:"cadence"`
@@ -24658,6 +25281,18 @@ type ListStaticHistoryCycleDocumentParams struct {
 	VersionHistoryId *int64 `form:"version_history_id,omitempty" json:"version_history_id,omitempty"`
 }
 
+// ListStaticHistoryCycleMetricParams defines parameters for ListStaticHistoryCycleMetric.
+type ListStaticHistoryCycleMetricParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListStaticHistoryCycleReferenceParams defines parameters for ListStaticHistoryCycleReference.
+type ListStaticHistoryCycleReferenceParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListStaticHistoryCycleStrategyParams defines parameters for ListStaticHistoryCycleStrategy.
 type ListStaticHistoryCycleStrategyParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -24754,6 +25389,18 @@ type QueueWechatPayProductExternalPushTestParams struct {
 type ReconcileWechatShopRefundParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// ListContactReferenceHistoryBindingsParams defines parameters for ListContactReferenceHistoryBindings.
+type ListContactReferenceHistoryBindingsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListContactReferenceHistoryDirectoryParams defines parameters for ListContactReferenceHistoryDirectory.
+type ListContactReferenceHistoryDirectoryParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListWeComContactHistoryEventsParams defines parameters for ListWeComContactHistoryEvents.
@@ -27690,6 +28337,18 @@ type ServerInterface interface {
 	// Read immutable V1 static metadata without executing source configuration
 	// (GET /api/admin/static-history/cycle-documents/{history_id})
 	GetStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-metrics)
+	ListStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleMetricParams)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-metrics/{history_id})
+	GetStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-references)
+	ListStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleReferenceParams)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-references/{history_id})
+	GetStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable V1 static metadata without executing source configuration
 	// (GET /api/admin/static-history/cycle-strategies)
 	ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleStrategyParams)
@@ -27750,6 +28409,18 @@ type ServerInterface interface {
 	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 	// (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 	ReconcileWechatShopRefund(w http.ResponseWriter, r *http.Request, refundId int64, params ReconcileWechatShopRefundParams)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/bindings)
+	ListContactReferenceHistoryBindings(w http.ResponseWriter, r *http.Request, params ListContactReferenceHistoryBindingsParams)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/bindings/{history_id})
+	GetContactReferenceHistoryBinding(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/directory)
+	ListContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request, params ListContactReferenceHistoryDirectoryParams)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/directory/{history_id})
+	GetContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable V1 WeCom contact history without current owner or callback effects
 	// (GET /api/admin/wecom-contact-history/events)
 	ListWeComContactHistoryEvents(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryEventsParams)
@@ -29565,6 +30236,30 @@ func (_ Unimplemented) GetStaticHistoryCycleDocument(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read immutable V1 cycle observations without executing a cycle
+// (GET /api/admin/static-history/cycle-metrics)
+func (_ Unimplemented) ListStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleMetricParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 cycle observations without executing a cycle
+// (GET /api/admin/static-history/cycle-metrics/{history_id})
+func (_ Unimplemented) GetStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 cycle observations without executing a cycle
+// (GET /api/admin/static-history/cycle-references)
+func (_ Unimplemented) ListStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleReferenceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 cycle observations without executing a cycle
+// (GET /api/admin/static-history/cycle-references/{history_id})
+func (_ Unimplemented) GetStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read immutable V1 static metadata without executing source configuration
 // (GET /api/admin/static-history/cycle-strategies)
 func (_ Unimplemented) ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleStrategyParams) {
@@ -29682,6 +30377,30 @@ func (_ Unimplemented) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *
 // Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 // (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 func (_ Unimplemented) ReconcileWechatShopRefund(w http.ResponseWriter, r *http.Request, refundId int64, params ReconcileWechatShopRefundParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 references without identity binding or staff permission changes
+// (GET /api/admin/wecom-contact-history/bindings)
+func (_ Unimplemented) ListContactReferenceHistoryBindings(w http.ResponseWriter, r *http.Request, params ListContactReferenceHistoryBindingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 references without identity binding or staff permission changes
+// (GET /api/admin/wecom-contact-history/bindings/{history_id})
+func (_ Unimplemented) GetContactReferenceHistoryBinding(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 references without identity binding or staff permission changes
+// (GET /api/admin/wecom-contact-history/directory)
+func (_ Unimplemented) ListContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request, params ListContactReferenceHistoryDirectoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 references without identity binding or staff permission changes
+// (GET /api/admin/wecom-contact-history/directory/{history_id})
+func (_ Unimplemented) GetContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -42554,6 +43273,150 @@ func (siw *ServerInterfaceWrapper) GetStaticHistoryCycleDocument(w http.Response
 	handler.ServeHTTP(w, r)
 }
 
+// ListStaticHistoryCycleMetric operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryCycleMetricParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryCycleMetric(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryCycleMetric operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryCycleMetric(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStaticHistoryCycleReference operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryCycleReferenceParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryCycleReference(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryCycleReference operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryCycleReference(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListStaticHistoryCycleStrategy operation middleware
 func (siw *ServerInterfaceWrapper) ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request) {
 
@@ -43584,6 +44447,150 @@ func (siw *ServerInterfaceWrapper) ReconcileWechatShopRefund(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReconcileWechatShopRefund(w, r, refundId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListContactReferenceHistoryBindings operation middleware
+func (siw *ServerInterfaceWrapper) ListContactReferenceHistoryBindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListContactReferenceHistoryBindingsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListContactReferenceHistoryBindings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetContactReferenceHistoryBinding operation middleware
+func (siw *ServerInterfaceWrapper) GetContactReferenceHistoryBinding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetContactReferenceHistoryBinding(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListContactReferenceHistoryDirectory operation middleware
+func (siw *ServerInterfaceWrapper) ListContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListContactReferenceHistoryDirectoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListContactReferenceHistoryDirectory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetContactReferenceHistoryDirectory operation middleware
+func (siw *ServerInterfaceWrapper) GetContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetContactReferenceHistoryDirectory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -51194,6 +52201,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/static-history/cycle-documents/{history_id}", wrapper.GetStaticHistoryCycleDocument)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-metrics", wrapper.ListStaticHistoryCycleMetric)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-metrics/{history_id}", wrapper.GetStaticHistoryCycleMetric)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-references", wrapper.ListStaticHistoryCycleReference)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-references/{history_id}", wrapper.GetStaticHistoryCycleReference)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/static-history/cycle-strategies", wrapper.ListStaticHistoryCycleStrategy)
 	})
 	r.Group(func(r chi.Router) {
@@ -51252,6 +52271,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/wechat-shop/refunds/{refund_id}/reconcile", wrapper.ReconcileWechatShopRefund)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/bindings", wrapper.ListContactReferenceHistoryBindings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/bindings/{history_id}", wrapper.GetContactReferenceHistoryBinding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/directory", wrapper.ListContactReferenceHistoryDirectory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/directory/{history_id}", wrapper.GetContactReferenceHistoryDirectory)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/events", wrapper.ListWeComContactHistoryEvents)
@@ -65886,6 +66917,218 @@ func (response GetStaticHistoryCycleDocument503JSONResponse) VisitGetStaticHisto
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListStaticHistoryCycleMetricRequestObject struct {
+	Params ListStaticHistoryCycleMetricParams
+}
+
+type ListStaticHistoryCycleMetricResponseObject interface {
+	VisitListStaticHistoryCycleMetricResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryCycleMetric200JSONResponse StaticHistoryCycleMetricPage
+
+func (response ListStaticHistoryCycleMetric200JSONResponse) VisitListStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleMetric400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryCycleMetric400JSONResponse) VisitListStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleMetric401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryCycleMetric401JSONResponse) VisitListStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleMetric403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryCycleMetric403JSONResponse) VisitListStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleMetric503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryCycleMetric503JSONResponse) VisitListStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleMetricRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryCycleMetricResponseObject interface {
+	VisitGetStaticHistoryCycleMetricResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryCycleMetric200JSONResponse StaticHistoryCycleMetricDetail
+
+func (response GetStaticHistoryCycleMetric200JSONResponse) VisitGetStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleMetric400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryCycleMetric400JSONResponse) VisitGetStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleMetric401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryCycleMetric401JSONResponse) VisitGetStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleMetric403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryCycleMetric403JSONResponse) VisitGetStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleMetric503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryCycleMetric503JSONResponse) VisitGetStaticHistoryCycleMetricResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleReferenceRequestObject struct {
+	Params ListStaticHistoryCycleReferenceParams
+}
+
+type ListStaticHistoryCycleReferenceResponseObject interface {
+	VisitListStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryCycleReference200JSONResponse StaticHistoryCycleReferencePage
+
+func (response ListStaticHistoryCycleReference200JSONResponse) VisitListStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleReference400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryCycleReference400JSONResponse) VisitListStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleReference401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryCycleReference401JSONResponse) VisitListStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleReference403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryCycleReference403JSONResponse) VisitListStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleReference503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryCycleReference503JSONResponse) VisitListStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleReferenceRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryCycleReferenceResponseObject interface {
+	VisitGetStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryCycleReference200JSONResponse StaticHistoryCycleReferenceDetail
+
+func (response GetStaticHistoryCycleReference200JSONResponse) VisitGetStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleReference400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryCycleReference400JSONResponse) VisitGetStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleReference401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryCycleReference401JSONResponse) VisitGetStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleReference403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryCycleReference403JSONResponse) VisitGetStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleReference503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryCycleReference503JSONResponse) VisitGetStaticHistoryCycleReferenceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListStaticHistoryCycleStrategyRequestObject struct {
 	Params ListStaticHistoryCycleStrategyParams
 }
@@ -67142,6 +68385,218 @@ func (response ReconcileWechatShopRefund409JSONResponse) VisitReconcileWechatSho
 type ReconcileWechatShopRefund503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ReconcileWechatShopRefund503JSONResponse) VisitReconcileWechatShopRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryBindingsRequestObject struct {
+	Params ListContactReferenceHistoryBindingsParams
+}
+
+type ListContactReferenceHistoryBindingsResponseObject interface {
+	VisitListContactReferenceHistoryBindingsResponse(w http.ResponseWriter) error
+}
+
+type ListContactReferenceHistoryBindings200JSONResponse ContactReferenceHistoryBindingPage
+
+func (response ListContactReferenceHistoryBindings200JSONResponse) VisitListContactReferenceHistoryBindingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryBindings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListContactReferenceHistoryBindings400JSONResponse) VisitListContactReferenceHistoryBindingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryBindings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListContactReferenceHistoryBindings401JSONResponse) VisitListContactReferenceHistoryBindingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryBindings403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListContactReferenceHistoryBindings403JSONResponse) VisitListContactReferenceHistoryBindingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryBindings503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListContactReferenceHistoryBindings503JSONResponse) VisitListContactReferenceHistoryBindingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryBindingRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetContactReferenceHistoryBindingResponseObject interface {
+	VisitGetContactReferenceHistoryBindingResponse(w http.ResponseWriter) error
+}
+
+type GetContactReferenceHistoryBinding200JSONResponse ContactReferenceHistoryBindingDetail
+
+func (response GetContactReferenceHistoryBinding200JSONResponse) VisitGetContactReferenceHistoryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryBinding400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetContactReferenceHistoryBinding400JSONResponse) VisitGetContactReferenceHistoryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryBinding401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetContactReferenceHistoryBinding401JSONResponse) VisitGetContactReferenceHistoryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryBinding403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetContactReferenceHistoryBinding403JSONResponse) VisitGetContactReferenceHistoryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryBinding503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetContactReferenceHistoryBinding503JSONResponse) VisitGetContactReferenceHistoryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryDirectoryRequestObject struct {
+	Params ListContactReferenceHistoryDirectoryParams
+}
+
+type ListContactReferenceHistoryDirectoryResponseObject interface {
+	VisitListContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error
+}
+
+type ListContactReferenceHistoryDirectory200JSONResponse ContactReferenceHistoryDirectoryPage
+
+func (response ListContactReferenceHistoryDirectory200JSONResponse) VisitListContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryDirectory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListContactReferenceHistoryDirectory400JSONResponse) VisitListContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryDirectory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListContactReferenceHistoryDirectory401JSONResponse) VisitListContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryDirectory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListContactReferenceHistoryDirectory403JSONResponse) VisitListContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListContactReferenceHistoryDirectory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListContactReferenceHistoryDirectory503JSONResponse) VisitListContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryDirectoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetContactReferenceHistoryDirectoryResponseObject interface {
+	VisitGetContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error
+}
+
+type GetContactReferenceHistoryDirectory200JSONResponse ContactReferenceHistoryDirectoryDetail
+
+func (response GetContactReferenceHistoryDirectory200JSONResponse) VisitGetContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryDirectory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetContactReferenceHistoryDirectory400JSONResponse) VisitGetContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryDirectory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetContactReferenceHistoryDirectory401JSONResponse) VisitGetContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryDirectory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetContactReferenceHistoryDirectory403JSONResponse) VisitGetContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactReferenceHistoryDirectory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetContactReferenceHistoryDirectory503JSONResponse) VisitGetContactReferenceHistoryDirectoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -75116,6 +76571,18 @@ type StrictServerInterface interface {
 	// Read immutable V1 static metadata without executing source configuration
 	// (GET /api/admin/static-history/cycle-documents/{history_id})
 	GetStaticHistoryCycleDocument(ctx context.Context, request GetStaticHistoryCycleDocumentRequestObject) (GetStaticHistoryCycleDocumentResponseObject, error)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-metrics)
+	ListStaticHistoryCycleMetric(ctx context.Context, request ListStaticHistoryCycleMetricRequestObject) (ListStaticHistoryCycleMetricResponseObject, error)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-metrics/{history_id})
+	GetStaticHistoryCycleMetric(ctx context.Context, request GetStaticHistoryCycleMetricRequestObject) (GetStaticHistoryCycleMetricResponseObject, error)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-references)
+	ListStaticHistoryCycleReference(ctx context.Context, request ListStaticHistoryCycleReferenceRequestObject) (ListStaticHistoryCycleReferenceResponseObject, error)
+	// Read immutable V1 cycle observations without executing a cycle
+	// (GET /api/admin/static-history/cycle-references/{history_id})
+	GetStaticHistoryCycleReference(ctx context.Context, request GetStaticHistoryCycleReferenceRequestObject) (GetStaticHistoryCycleReferenceResponseObject, error)
 	// Read immutable V1 static metadata without executing source configuration
 	// (GET /api/admin/static-history/cycle-strategies)
 	ListStaticHistoryCycleStrategy(ctx context.Context, request ListStaticHistoryCycleStrategyRequestObject) (ListStaticHistoryCycleStrategyResponseObject, error)
@@ -75176,6 +76643,18 @@ type StrictServerInterface interface {
 	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 	// (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 	ReconcileWechatShopRefund(ctx context.Context, request ReconcileWechatShopRefundRequestObject) (ReconcileWechatShopRefundResponseObject, error)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/bindings)
+	ListContactReferenceHistoryBindings(ctx context.Context, request ListContactReferenceHistoryBindingsRequestObject) (ListContactReferenceHistoryBindingsResponseObject, error)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/bindings/{history_id})
+	GetContactReferenceHistoryBinding(ctx context.Context, request GetContactReferenceHistoryBindingRequestObject) (GetContactReferenceHistoryBindingResponseObject, error)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/directory)
+	ListContactReferenceHistoryDirectory(ctx context.Context, request ListContactReferenceHistoryDirectoryRequestObject) (ListContactReferenceHistoryDirectoryResponseObject, error)
+	// Read immutable V1 references without identity binding or staff permission changes
+	// (GET /api/admin/wecom-contact-history/directory/{history_id})
+	GetContactReferenceHistoryDirectory(ctx context.Context, request GetContactReferenceHistoryDirectoryRequestObject) (GetContactReferenceHistoryDirectoryResponseObject, error)
 	// Read immutable V1 WeCom contact history without current owner or callback effects
 	// (GET /api/admin/wecom-contact-history/events)
 	ListWeComContactHistoryEvents(ctx context.Context, request ListWeComContactHistoryEventsRequestObject) (ListWeComContactHistoryEventsResponseObject, error)
@@ -82389,6 +83868,110 @@ func (sh *strictHandler) GetStaticHistoryCycleDocument(w http.ResponseWriter, r 
 	}
 }
 
+// ListStaticHistoryCycleMetric operation middleware
+func (sh *strictHandler) ListStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleMetricParams) {
+	var request ListStaticHistoryCycleMetricRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryCycleMetric(ctx, request.(ListStaticHistoryCycleMetricRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryCycleMetric")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryCycleMetricResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryCycleMetricResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryCycleMetric operation middleware
+func (sh *strictHandler) GetStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryCycleMetricRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryCycleMetric(ctx, request.(GetStaticHistoryCycleMetricRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryCycleMetric")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryCycleMetricResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryCycleMetricResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStaticHistoryCycleReference operation middleware
+func (sh *strictHandler) ListStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleReferenceParams) {
+	var request ListStaticHistoryCycleReferenceRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryCycleReference(ctx, request.(ListStaticHistoryCycleReferenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryCycleReference")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryCycleReferenceResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryCycleReferenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryCycleReference operation middleware
+func (sh *strictHandler) GetStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryCycleReferenceRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryCycleReference(ctx, request.(GetStaticHistoryCycleReferenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryCycleReference")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryCycleReferenceResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryCycleReferenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListStaticHistoryCycleStrategy operation middleware
 func (sh *strictHandler) ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleStrategyParams) {
 	var request ListStaticHistoryCycleStrategyRequestObject
@@ -82952,6 +84535,110 @@ func (sh *strictHandler) ReconcileWechatShopRefund(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileWechatShopRefundResponseObject); ok {
 		if err := validResponse.VisitReconcileWechatShopRefundResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListContactReferenceHistoryBindings operation middleware
+func (sh *strictHandler) ListContactReferenceHistoryBindings(w http.ResponseWriter, r *http.Request, params ListContactReferenceHistoryBindingsParams) {
+	var request ListContactReferenceHistoryBindingsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListContactReferenceHistoryBindings(ctx, request.(ListContactReferenceHistoryBindingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListContactReferenceHistoryBindings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListContactReferenceHistoryBindingsResponseObject); ok {
+		if err := validResponse.VisitListContactReferenceHistoryBindingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetContactReferenceHistoryBinding operation middleware
+func (sh *strictHandler) GetContactReferenceHistoryBinding(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetContactReferenceHistoryBindingRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetContactReferenceHistoryBinding(ctx, request.(GetContactReferenceHistoryBindingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetContactReferenceHistoryBinding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetContactReferenceHistoryBindingResponseObject); ok {
+		if err := validResponse.VisitGetContactReferenceHistoryBindingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListContactReferenceHistoryDirectory operation middleware
+func (sh *strictHandler) ListContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request, params ListContactReferenceHistoryDirectoryParams) {
+	var request ListContactReferenceHistoryDirectoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListContactReferenceHistoryDirectory(ctx, request.(ListContactReferenceHistoryDirectoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListContactReferenceHistoryDirectory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListContactReferenceHistoryDirectoryResponseObject); ok {
+		if err := validResponse.VisitListContactReferenceHistoryDirectoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetContactReferenceHistoryDirectory operation middleware
+func (sh *strictHandler) GetContactReferenceHistoryDirectory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetContactReferenceHistoryDirectoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetContactReferenceHistoryDirectory(ctx, request.(GetContactReferenceHistoryDirectoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetContactReferenceHistoryDirectory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetContactReferenceHistoryDirectoryResponseObject); ok {
+		if err := validResponse.VisitGetContactReferenceHistoryDirectoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

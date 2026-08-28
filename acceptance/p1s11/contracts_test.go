@@ -215,6 +215,8 @@ func TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet(t *testing.T) 
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
+		"ListHXCHistoryChatJob", "GetHXCHistoryChatJob",
+		"ListContactReferenceHistoryBindings", "GetContactReferenceHistoryBinding", "ListContactReferenceHistoryDirectory", "GetContactReferenceHistoryDirectory",
 		"ListUnboundTagHistory", "GetUnboundTagHistory", "ListInvalidChannelHistory", "GetInvalidChannelHistory",
 		"ListInvalidAssetHistory", "GetInvalidAssetHistory", "ListInvalidRadarLinkHistory", "GetInvalidRadarLinkHistory",
 		"ListCampaignHistoryDefinitions", "GetCampaignHistoryDefinition", "ListCampaignHistoryDefinitionSteps",
@@ -253,6 +255,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListHXCHistorySenderConfig", "GetHXCHistorySenderConfig", "ListHXCHistorySendRecord", "GetHXCHistorySendRecord",
 		"ListCustomerStateHistorySnapshot", "GetCustomerStateHistorySnapshot", "ListCustomerStateHistoryChange", "GetCustomerStateHistoryChange", "ListCustomerStateHistoryClassTermTagMapping", "GetCustomerStateHistoryClassTermTagMapping",
 		"ListStaticHistoryGroupInvite", "GetStaticHistoryGroupInvite", "ListStaticHistoryProductPageSlice", "GetStaticHistoryProductPageSlice", "ListStaticHistoryCycleStrategy", "GetStaticHistoryCycleStrategy", "ListStaticHistoryCycleVersion", "GetStaticHistoryCycleVersion", "ListStaticHistoryCycleDocument", "GetStaticHistoryCycleDocument",
+		"ListStaticHistoryCycleMetric", "GetStaticHistoryCycleMetric", "ListStaticHistoryCycleReference", "GetStaticHistoryCycleReference",
 		"ListRadarClickHistory", "GetRadarClickHistory", "ListMarketingConfigHistoryConfigs", "GetMarketingConfigHistoryConfig", "ListMarketingConfigHistoryRules", "GetMarketingConfigHistoryRule",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",
 		"ListMemberViewHistory", "GetMemberViewHistory", "ListMemberUsageHistory", "GetMemberUsageHistory",

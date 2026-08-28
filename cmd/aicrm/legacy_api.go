@@ -184,6 +184,7 @@ type Handler struct {
 	mediaInvalidSourceHistory   mediaport.InvalidSourceHistoryReader
 	radarInvalidSourceHistory   radarport.InvalidSourceHistoryReader
 	wecomContactHistory         contactport.WeComContactHistoryReader
+	contactReferenceHistory     contactport.ReferenceHistoryReader
 	campaignHistory             campaignport.CampaignHistoryReader
 	auth                        authport.Service
 	customers                   customerListApplication
@@ -218,6 +219,7 @@ type Handler struct {
 	marketingStateHistory       segmentport.MarketingStateHistoryReader
 	staticProductHistory        productport.StaticProductHistoryReader
 	staticCycleHistory          cycleport.StaticCycleHistoryReader
+	cycleObservationHistory     cycleport.CycleObservationReader
 	radarClickHistory           radarport.RadarClickHistoryReader
 	marketingConfigHistory      automationport.MarketingConfigHistoryReader
 	aiAudienceInbound           *aiAudienceInboundRoutes

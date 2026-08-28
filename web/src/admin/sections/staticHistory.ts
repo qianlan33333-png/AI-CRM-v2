@@ -3,8 +3,8 @@ import { esc } from './util';
 
 type Options = { kind?: string; historyID?: string; parentID?: string };
 type Row = Record<string, unknown>;
-const kinds: StaticHistoryKind[] = ['GroupInvite', 'ProductPageSlice', 'CycleStrategy', 'CycleVersion', 'CycleDocument'];
-const labels: Record<StaticHistoryKind, string> = { GroupInvite: '群邀请元数据', ProductPageSlice: '商品页切片', CycleStrategy: '周期策略', CycleVersion: '周期版本', CycleDocument: '周期文档' };
+const kinds: StaticHistoryKind[] = ['GroupInvite', 'ProductPageSlice', 'CycleStrategy', 'CycleVersion', 'CycleDocument', 'CycleMetric', 'CycleReference'];
+const labels: Record<StaticHistoryKind, string> = { GroupInvite: '群邀请元数据', ProductPageSlice: '商品页切片', CycleStrategy: '周期策略', CycleVersion: '周期版本', CycleDocument: '周期文档', CycleMetric: '周期指标观察', CycleReference: '周期引用观察' };
 const button = 'padding:7px 12px;border:1px solid #D0D5DD;border-radius:6px;background:#fff;color:#344054;cursor:pointer';
 const cell = 'padding:9px 11px;border-bottom:1px solid #EEF0F3;text-align:left;vertical-align:top;white-space:pre-wrap';
 
@@ -41,13 +41,20 @@ function digest(item: StaticHistoryItem): string {
   const value = row(item).source_payload_digest;
   return Array.isArray(value) ? `摘要 ${value.slice(0, 4).map((part) => Number(part).toString(16).padStart(2, '0')).join('')}…` : '摘要无效';
 }
+function source(item: StaticHistoryItem, kind: StaticHistoryKind): string {
+ const value = row(item);
+ return `历史 #${text(value.id)} · 源行 #${text(value.source_id)}${['CycleMetric', 'CycleReference'].includes(kind) ? '' : ` · ${digest(item)}`}`;
+}
+function json(value: unknown): string { return esc(JSON.stringify(value)); }
 function summary(kind: StaticHistoryKind, item: StaticHistoryItem): string {
-  const value = row(item), source = `历史 #${text(value.id)} · 源行 #${text(value.source_id)} · ${digest(item)}`;
-  if (kind === 'GroupInvite') return `${source}<br>名称/标题：${text(value.name)} / ${text(value.title)}<br>原状态/启用：${text(value.original_state)} / ${text(value.original_enabled)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
-  if (kind === 'ProductPageSlice') return `${source}<br>商品/图片源引用：${text(value.product_source_id)} / ${text(value.image_source_id)} · 排序：${text(value.sort_order)}<br>原启用：${text(value.original_enabled)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
-  if (kind === 'CycleStrategy') return `${source}<br>策略：${text(value.strategy_key)} · ${text(value.title)}<br>节奏/时区/状态：${text(value.cadence)} / ${text(value.timezone)} / ${text(value.original_status)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
-  if (kind === 'CycleVersion') return `${source}<br>策略历史 #${text(value.strategy_history_id)} · 版本：${text(value.version)} · ${text(value.label)}<br>原治理状态：${text(value.original_governance)} · 生效：${text(value.effective_from)}<br>创建：${text(value.created_at)}`;
-  return `${source}<br>版本历史 #${text(value.version_history_id)} · schema：${text(value.schema_version)}<br>文档包摘要：${text(value.document_pack_hash)}<br>创建：${text(value.created_at)}`;
+ const value = row(item), summarySource = source(item, kind);
+ if (kind === 'GroupInvite') return `${summarySource}<br>名称/标题：${text(value.name)} / ${text(value.title)}<br>原状态/启用：${text(value.original_state)} / ${text(value.original_enabled)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
+ if (kind === 'ProductPageSlice') return `${summarySource}<br>商品/图片源引用：${text(value.product_source_id)} / ${text(value.image_source_id)} · 排序：${text(value.sort_order)}<br>原启用：${text(value.original_enabled)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
+ if (kind === 'CycleStrategy') return `${summarySource}<br>策略：${text(value.strategy_key)} · ${text(value.title)}<br>节奏/时区/状态：${text(value.cadence)} / ${text(value.timezone)} / ${text(value.original_status)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
+ if (kind === 'CycleVersion') return `${summarySource}<br>策略历史 #${text(value.strategy_history_id)} · 版本：${text(value.version)} · ${text(value.label)}<br>原治理状态：${text(value.original_governance)} · 生效：${text(value.effective_from)}<br>创建：${text(value.created_at)}`;
+ if (kind === 'CycleDocument') return `${summarySource}<br>版本历史 #${text(value.version_history_id)} · schema：${text(value.schema_version)}<br>文档包摘要：${text(value.document_pack_hash)}<br>创建：${text(value.created_at)}`;
+ if (kind === 'CycleMetric') return `${summarySource}<br>指标：${text(value.metric_key)} · ${text(value.label)}<br>源 run/snapshot：${text(value.run_source_id)} / ${text(value.last_snapshot_source_id)} · 数值：${text(value.numerator)} / ${text(value.denominator)} / ${text(value.value)}<br>限制：${json(value.limitations)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
+ return `${summarySource}<br>引用：${text(value.reference_key)} · ${text(value.reference_type)} · ${text(value.label)}<br>源 run/snapshot：${text(value.run_source_id)} / ${text(value.last_snapshot_source_id)} · 来源：${text(value.source_system)} / ${text(value.reference_source_id)}<br>证据摘要/状态：${text(value.evidence_hash)} / ${text(value.data_status)}<br>创建/更新：${text(value.created_at)} / ${text(value.updated_at)}`;
 }
 function children(kind: StaticHistoryKind, item: StaticHistoryItem): string {
   if (kind === 'CycleStrategy') return `<a data-static-history-child="CycleVersion" href="${url('CycleVersion', undefined, item.id)}" style="color:#245BDB">查看该策略的历史版本</a>`;
@@ -56,7 +63,7 @@ function children(kind: StaticHistoryKind, item: StaticHistoryItem): string {
 }
 function detail(item: StaticHistoryItem): string {
   return `<dl>${Object.entries(item).map(([key, value]) => {
-    const shown = Array.isArray(value) ? value.map((part) => Number(part).toString(16).padStart(2, '0')).join('') : value;
+    const shown = key === 'source_key_digest' || key === 'source_payload_digest' ? (value as number[]).map((part) => Number(part).toString(16).padStart(2, '0')).join('') : key === 'limitations' ? JSON.stringify(value) : value;
     return `<dt>${esc(key)}</dt><dd style="white-space:pre-wrap;overflow-wrap:anywhere">${text(shown)}</dd>`;
   }).join('')}</dl>`;
 }
