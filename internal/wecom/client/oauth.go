@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -13,6 +14,7 @@ import (
 const (
 	ProductionBaseURL      = "https://qyapi.weixin.qq.com"
 	ProductionAuthorizeURL = "https://open.weixin.qq.com/connect/oauth2/authorize"
+	ProductionDesktopURL   = "https://login.work.weixin.qq.com/wwlogin/sso/login"
 )
 
 type HumanOAuthConfig struct {
@@ -32,12 +34,13 @@ type HumanOAuthConfig struct {
 // login. It exchanges a one-time provider code for one enterprise member
 // userid; it owns no session, RBAC, redirect, or persistence behavior.
 type HumanOAuthClient struct {
-	baseURL       *url.URL
-	authorizeURL  *url.URL
-	callbackURL   string
-	corpID        CorpID
-	httpClient    *http.Client
-	tokenProvider TokenProvider
+	baseURL        *url.URL
+	authorizeURL   *url.URL
+	callbackURL    string
+	corpID         CorpID
+	desktopAgentID int64
+	httpClient     *http.Client
+	tokenProvider  TokenProvider
 }
 
 type HumanIdentity struct {
@@ -47,7 +50,7 @@ type HumanIdentity struct {
 
 func NewHumanOAuthClient(config HumanOAuthConfig) (*HumanOAuthClient, error) {
 	baseURL, err := parseBaseURL(config.BaseURL)
-	if err != nil || config.HTTPClient == nil || config.TokenProvider == nil || !validCorpID(string(config.CorpID)) {
+	if err != nil || config.HTTPClient == nil || config.TokenProvider == nil || !validCorpID(string(config.CorpID)) || config.DesktopAgentID < 0 {
 		return nil, ErrInvalidConfig
 	}
 	authorizeURL, err := url.Parse(config.AuthorizeURL)
@@ -62,8 +65,11 @@ func NewHumanOAuthClient(config HumanOAuthConfig) (*HumanOAuthClient, error) {
 	if err != nil || callbackURL.Scheme != "https" || callbackURL.Host == "" || callbackURL.User != nil || callbackURL.RawQuery != "" || callbackURL.Fragment != "" || callbackURL.Path != callbackPath || !validCallbackPath(callbackPath) {
 		return nil, ErrInvalidConfig
 	}
+	if config.DesktopAgentID > 0 && callbackPath != "/auth/wecom/callback" {
+		return nil, ErrInvalidConfig
+	}
 	return &HumanOAuthClient{
-		baseURL: baseURL, authorizeURL: authorizeURL, callbackURL: callbackURL.String(), corpID: config.CorpID,
+		baseURL: baseURL, authorizeURL: authorizeURL, callbackURL: callbackURL.String(), corpID: config.CorpID, desktopAgentID: config.DesktopAgentID,
 		httpClient: config.HTTPClient, tokenProvider: config.TokenProvider,
 	}, nil
 }
@@ -82,6 +88,20 @@ func (client *HumanOAuthClient) CorpID() string {
 func (client *HumanOAuthClient) AuthorizationURL(state string) (string, error) {
 	if client == nil || !validOAuthState(state) {
 		return "", ErrInvalidConfig
+	}
+	if client.desktopAgentID > 0 {
+		endpoint, err := url.Parse(ProductionDesktopURL)
+		if err != nil {
+			return "", ErrInvalidConfig
+		}
+		query := url.Values{}
+		query.Set("login_type", "CorpApp")
+		query.Set("appid", string(client.corpID))
+		query.Set("agentid", strconv.FormatInt(client.desktopAgentID, 10))
+		query.Set("redirect_uri", client.callbackURL)
+		query.Set("state", state)
+		endpoint.RawQuery = query.Encode()
+		return endpoint.String(), nil
 	}
 	endpoint := *client.authorizeURL
 	query := url.Values{}
