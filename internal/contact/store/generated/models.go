@@ -120,6 +120,56 @@ type ContactV1SidebarProfileHistory struct {
 	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
 }
 
+type ContactV1WecomEventLogHistory struct {
+	ID                             int64              `json:"id"`
+	SourceKeyDigest                []byte             `json:"source_key_digest"`
+	SourcePayloadDigest            []byte             `json:"source_payload_digest"`
+	SourceFieldDigest              []byte             `json:"source_field_digest"`
+	SourceID                       int64              `json:"source_id"`
+	CorpIDDigest                   []byte             `json:"corp_id_digest"`
+	EventType                      string             `json:"event_type"`
+	ChangeType                     string             `json:"change_type"`
+	ExternalUserIDDigest           []byte             `json:"external_user_id_digest"`
+	UserIDDigest                   []byte             `json:"user_id_digest"`
+	EventTime                      pgtype.Int8        `json:"event_time"`
+	EventKeyDigest                 []byte             `json:"event_key_digest"`
+	PayloadXmlDigest               []byte             `json:"payload_xml_digest"`
+	PayloadJsonDigest              []byte             `json:"payload_json_digest"`
+	ProcessStatus                  string             `json:"process_status"`
+	RetryCount                     int32              `json:"retry_count"`
+	ErrorMessageDigest             []byte             `json:"error_message_digest"`
+	CreatedAt                      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                      pgtype.Timestamptz `json:"updated_at"`
+	IdentitySyncStatus             string             `json:"identity_sync_status"`
+	IdentitySyncErrorCodeDigest    []byte             `json:"identity_sync_error_code_digest"`
+	IdentitySyncErrorMessageDigest []byte             `json:"identity_sync_error_message_digest"`
+	IdentitySyncResponseDigest     []byte             `json:"identity_sync_response_digest"`
+}
+
+type ContactV1WecomFollowUserHistory struct {
+	ID                   int64              `json:"id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	SourceFieldDigest    []byte             `json:"source_field_digest"`
+	SourceID             int64              `json:"source_id"`
+	CorpIDDigest         []byte             `json:"corp_id_digest"`
+	ExternalUserIDDigest []byte             `json:"external_user_id_digest"`
+	UserIDDigest         []byte             `json:"user_id_digest"`
+	RelationStatus       string             `json:"relation_status"`
+	IsPrimary            bool               `json:"is_primary"`
+	RemarkDigest         []byte             `json:"remark_digest"`
+	DescriptionDigest    []byte             `json:"description_digest"`
+	AddWay               pgtype.Int4        `json:"add_way"`
+	State                string             `json:"state"`
+	OperUserIDDigest     []byte             `json:"oper_user_id_digest"`
+	CreateTime           pgtype.Int8        `json:"create_time"`
+	RawFollowUserDigest  []byte             `json:"raw_follow_user_digest"`
+	FirstSeenAt          pgtype.Timestamptz `json:"first_seen_at"`
+	LastSeenAt           pgtype.Timestamptz `json:"last_seen_at"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Customer struct {
 	ID             int64              `json:"id"`
 	Name           string             `json:"name"`

@@ -56,6 +56,8 @@ owners:
       - channel_historical_assignees
       - contact_v1_sidebar_profile_history
       - contact_v1_owner_migration_result_history
+      - contact_v1_wecom_event_log_history
+      - contact_v1_wecom_follow_user_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
