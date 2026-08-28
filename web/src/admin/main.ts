@@ -19,6 +19,7 @@ import { esc } from './sections/util';
 import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from './sections/commerce';
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
+import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
@@ -32,6 +33,15 @@ function boot(): void {
 
   const rawId = Number(new URLSearchParams(location.search).get('id') || '');
   const id = rawId || undefined;
+
+  const qs = new URLSearchParams(location.search);
+  if (page === 'customers' && qs.get('message_history') === '1') {
+    void mountMessageHistory(stage, {
+      historyID: qs.get('history_message_id') ?? undefined,
+      customerID: qs.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
 
   if (['coupons', 'couponData'].includes(page) && new URLSearchParams(location.search).get('history') === '1') {
     const historyID = page === 'couponData' ? new URLSearchParams(location.search).get('id') || '' : undefined;

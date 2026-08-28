@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, groupDirectoryHttp = false, messageHistoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || messageHistoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (groupDirectoryHttp) {
         window.Headers = Headers;
         window.document.cookie = 'aicrm_csrf=group-directory-csrf';
@@ -109,6 +109,27 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = 
           }
           if (url.pathname.endsWith('/plans/10')) return json(detail);
           return json({ code: 'unexpected_test_route' }, 404);
+        };
+      } else if (messageHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__messageHistoryTest = { calls: [], fail: false, empty: false, unsafe: false };
+        const rows = Array.from({ length: 21 }, (_, i) => ({ id: 71 + i, source_id: i + 1, sequence: i === 0 ? null : -i, customer_id: i === 0 ? null : 9, chat_type: i % 2 ? 'group' : 'private', message_type: 'text', content_masked: i === 0 ? null : i === 1 ? '' : '<img src=x onerror=alert(1)> 脱敏正文\n第二行', original_send_time: i === 1 ? '2024-01-02T03:04:05+08:00' : '2024-01-02 03:04:05', send_time_basis: i === 1 ? 'explicit_offset' : 'civil_unzoned', sent_at: i === 1 ? '2024-01-01T19:04:05Z' : null, created_at: '2026-08-28T00:00:00.123456Z', source_payload_digest: Array(32).fill(i) }));
+        const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+        const json = (body, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(body) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials, body: init.body });
+          if (test.fail) return json({ code: 'unavailable' }, 503);
+          if (url.pathname === '/api/admin/message-history') {
+            const limit = Number(url.searchParams.get('limit')), offset = Number(url.searchParams.get('offset'));
+            const filtered = test.empty ? [] : rows.filter((row) => (!url.searchParams.has('customer_id') || row.customer_id === Number(url.searchParams.get('customer_id'))) && (!url.searchParams.has('chat_type') || row.chat_type === url.searchParams.get('chat_type')));
+            return json({ ...safety, items: filtered.slice(offset, offset + limit).map((row) => test.unsafe ? { ...row, sender: 'forbidden-identity' } : row), total: filtered.length, limit, offset });
+          }
+          if (url.pathname.startsWith('/api/admin/message-history/')) {
+            const item = rows.find((row) => row.id === Number(url.pathname.split('/').pop()));
+            return item ? json({ ...safety, item }) : json({ code: 'unavailable' }, 503);
+          }
+          return json({ code: 'unexpected_current_or_provider_route' }, 404);
         };
       } else if (couponHistoryHttp) {
         window.Headers = Headers;
@@ -1017,6 +1038,55 @@ console.log('admin/questionnaireDetail.html（新建/编辑路由）');
   const editDoc = editDom.window.document;
   ok('问卷编辑路由保持编辑态', editDoc.body.textContent.includes('编辑问卷') && !!editDoc.querySelector('#questionnaireName') && !!editDoc.querySelector('#questionnaireQuestions'));
   editDom.window.close();
+}
+
+console.log('admin/customers.html（独立 V1 聊天历史）');
+{
+  const dom = await loadPage('admin/customers.html', { q: 'message_history=1', messageHistoryHttp: true });
+  const d = dom.window.document, test = dom.window.__messageHistoryTest;
+  const submit = () => d.querySelector('[data-message-filter]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  ok('聊天历史提前挂载且首屏仅请求真实20条GET', d.body.textContent.includes('V1 聊天历史（只读）') && d.querySelectorAll('[data-message-id]').length === 20 && test.calls.length === 1 && test.calls[0].query === '?limit=20&offset=0' && !d.querySelector('#fCustomerKeyword'));
+  ok('历史正文 NULL 与空字符串明确区分', d.querySelector('[data-message-id="71"] [data-message-body]').textContent === '未记录（NULL）' && d.querySelector('[data-message-id="72"] [data-message-body]').textContent === '（空字符串）');
+  const body = d.querySelector('[data-message-id="73"] [data-message-body]');
+  ok('脱敏正文转义且保留换行，不执行 HTML', body.textContent.includes('<img src=x onerror=alert(1)>') && body.textContent.includes('\n第二行') && body.style.whiteSpace === 'pre-wrap' && !body.querySelector('img'));
+  ok('civil 时刻保留原文且不造 UTC，NULL 客户不猜归因', d.querySelector('[data-message-id="71"]').textContent.includes('客户关联：未解析') && d.querySelector('[data-message-id="71"] [data-message-time]').textContent.includes('2024-01-02 03:04:05 · 未定时区') && !d.querySelector('[data-message-id="71"] [data-message-time]').textContent.includes('2024-01-02T'));
+  ok('已关联客户仅标 DM01 历史映射，单条链接用真实历史 ID', d.querySelector('[data-message-id="72"]').textContent.includes('DM01 历史映射 · customer_id=9') && d.querySelector('[data-message-id="72"] a').getAttribute('href') === 'customers.html?message_history=1&history_message_id=72');
+  test.fail = true; click(dom, d.querySelector('[data-message-next]')); await sleep(30);
+  ok('翻页失败清旧数据且无 Mock 回退', !d.querySelector('[data-message-id]') && d.querySelector('[role="alert"]').textContent.includes('HTTP 503'));
+  test.fail = false; click(dom, d.querySelector('[data-message-retry]')); await sleep(30);
+  ok('失败重试保留 offset20，只显示真实最后一条', test.calls.at(-1).query === '?limit=20&offset=20' && d.querySelectorAll('[data-message-id]').length === 1 && !!d.querySelector('[data-message-id="91"]'));
+  click(dom, d.querySelector('[data-message-prev]')); await sleep(30);
+  d.querySelector('[data-message-customer]').value = '9'; d.querySelector('[data-message-chat]').value = 'group'; submit(); await sleep(30);
+  ok('客户与群聊筛选仅发送 canonical customer_id，分页归零', test.calls.at(-1).query === '?customer_id=9&chat_type=group&limit=20&offset=0' && d.querySelectorAll('[data-message-id]').length === 10);
+  const count = test.calls.length;
+  d.querySelector('[data-message-customer]').value = 'unionid-not-a-customer'; submit(); await sleep(20);
+  ok('外部身份不能充当 customer_id，非法筛选无请求', test.calls.length === count && !d.querySelector('[data-message-id]') && d.querySelector('[role="alert"]').textContent.includes('canonical'));
+  d.querySelector('[data-message-customer]').value = ''; d.querySelector('[data-message-chat]').value = 'private'; submit(); await sleep(30);
+  ok('私聊筛选保留未解析客户记录，不强行归因', test.calls.at(-1).query === '?chat_type=private&limit=20&offset=0' && !!d.querySelector('[data-message-id="71"]'));
+  test.empty = true; submit(); await sleep(30);
+  ok('历史合法空页明确为空且不能翻页', d.body.textContent.includes('暂无符合筛选的聊天历史记录') && d.querySelector('[data-message-next]').disabled && d.querySelector('[data-message-prev]').disabled);
+  test.empty = false; test.unsafe = true; submit(); await sleep(30);
+  ok('契约外身份字段被拒绝，不渲染身份或旧正文', !d.querySelector('[data-message-id]') && !d.body.textContent.includes('forbidden-identity') && !!d.querySelector('[role="alert"]'));
+  ok('历史模式只有历史GET，没有当前客户/同步/发送', test.calls.every((call) => call.path === '/api/admin/message-history' && call.method === 'GET' && call.credentials === 'include' && call.body === undefined) && ![...d.querySelectorAll('button')].some((button) => /发送|同步/.test(button.textContent)));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/customers.html', { q: 'message_history=1&history_message_id=72&customer_id=9', messageHistoryHttp: true });
+  const d = dom.window.document, test = dom.window.__messageHistoryTest;
+  ok('单条历史仅GET所选V2历史ID，不加载当前客户或列表', test.calls.length === 1 && test.calls[0].path === '/api/admin/message-history/72' && !d.querySelector('[data-message-filter]') && d.querySelectorAll('[data-message-id]').length === 1);
+  ok('明确时区时刻按真实响应原样显示', d.querySelector('[data-message-time]').textContent.includes('2024-01-02T03:04:05+08:00') && d.querySelector('[data-message-time]').textContent.includes('2024-01-01T19:04:05Z'));
+  ok('单条返回历史链接保留客户筛选', !!d.querySelector('a[href="customers.html?message_history=1&customer_id=9"]'));
+  dom.window.close();
+}
+for (const query of ['message_history=1&history_message_id=bad', 'message_history=1&customer_id=unionid-test']) {
+  const dom = await loadPage('admin/customers.html', { q: query, messageHistoryHttp: true });
+  ok('无效历史入口保持只读壳且不读取任何数据', dom.window.document.querySelector('[data-message-history]') && dom.window.__messageHistoryTest.calls.length === 0 && !!dom.window.document.querySelector('[role="alert"]'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/customers.html', { q: 'message_history=1&history_message_id=72&customer_id=8', messageHistoryHttp: true });
+  ok('单条历史与显式客户筛选不符时失败关闭', !dom.window.document.querySelector('[data-message-id]') && !!dom.window.document.querySelector('[role="alert"]') && dom.window.__messageHistoryTest.calls.length === 1);
+  dom.window.close();
 }
 
 console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航）');

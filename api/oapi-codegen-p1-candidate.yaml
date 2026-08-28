@@ -18,6 +18,7 @@ output-options:
     - p4-channel-compat
     - p4-service-period-products
     - p4-coupon-history
+    - p4-message-history
     - p4-service-period-member-grid
     - p4-classification
     - p4-customer-360

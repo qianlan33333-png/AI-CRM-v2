@@ -69,3 +69,18 @@ type WecomTagEffect struct {
 	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
 	CreatedAt               pgtype.Timestamptz `json:"created_at"`
 }
+
+type WecomV1MessageHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	Sequence            pgtype.Int8        `json:"sequence"`
+	CustomerID          pgtype.Int8        `json:"customer_id"`
+	ChatType            string             `json:"chat_type"`
+	MessageType         string             `json:"message_type"`
+	ContentMasked       pgtype.Text        `json:"content_masked"`
+	OriginalSendTime    string             `json:"original_send_time"`
+	SendTimeBasis       string             `json:"send_time_basis"`
+	SentAt              pgtype.Timestamptz `json:"sent_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+}
