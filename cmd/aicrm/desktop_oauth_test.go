@@ -28,7 +28,8 @@ func TestDesktopOAuthHandlerUsesDesktopURLAndCompletesCallback(t *testing.T) {
 			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"desktop-access-token","expires_in":7200}`))
 		case "/cgi-bin/auth/getuserinfo":
 			identityCalls++
-			if request.URL.Query().Get("access_token") != "desktop-access-token" || request.URL.Query().Get("code") != "desktop-code" {
+			query, err := url.ParseQuery(request.URL.RawQuery)
+			if err != nil || query.Get("access_token") != "desktop-access-token" || query.Get("code") != "desktop-code" {
 				t.Fatalf("identity query = %q", request.URL.RawQuery)
 			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"userid":"desktop-member"}`))
@@ -52,8 +53,8 @@ func TestDesktopOAuthHandlerUsesDesktopURLAndCompletesCallback(t *testing.T) {
 	if err != nil || desktopURL.Scheme != "https" || desktopURL.Host != "login.work.weixin.qq.com" || desktopURL.Path != "/wwlogin/sso/login" || desktopURL.Fragment != "" {
 		t.Fatalf("desktop redirect = %q err=%v", startResponse.Header().Get("Location"), err)
 	}
-	query := desktopURL.Query()
-	if len(query) != 5 || query.Get("login_type") != "CorpApp" || query.Get("appid") != "corp-fixture" || query.Get("agentid") != "1000025" ||
+	query, err := url.ParseQuery(desktopURL.RawQuery)
+	if err != nil || len(query) != 5 || query.Get("login_type") != "CorpApp" || query.Get("appid") != "corp-fixture" || query.Get("agentid") != "1000025" ||
 		query.Get("redirect_uri") != "https://crm.example.test/auth/wecom/callback" || query.Get("state") != state {
 		t.Fatalf("desktop redirect query = %q", desktopURL.RawQuery)
 	}
