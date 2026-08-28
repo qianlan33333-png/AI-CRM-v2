@@ -46,6 +46,7 @@ func (reader *CampaignDefinitionReceiptReader) EachCampaignDefinitionPriorReceip
 source_key_digest,payload_digest,disposition,reason
 FROM public.v1_domain_import_receipts
 WHERE import_version='v1-domain-a1' AND archive_run_id=$1 AND table_id=$2
+AND (disposition='import' OR (target_domain IS NULL AND target_table IS NULL AND target_id IS NULL AND target_digest IS NULL))
 ORDER BY source_key_digest`, run, table)
 	if err != nil {
 		return err
