@@ -17298,6 +17298,82 @@ export interface AutomationTriggerRunListResponse {
   visibility: AutomationTriggerRunListResponseVisibility;
 }
 
+export type MessageHistoryItemSendTimeBasis =
+  (typeof MessageHistoryItemSendTimeBasis)[keyof typeof MessageHistoryItemSendTimeBasis];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MessageHistoryItemSendTimeBasis = {
+  civil_unzoned: "civil_unzoned",
+  explicit_offset: "explicit_offset",
+} as const;
+
+export interface MessageHistoryItem {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @nullable */
+  sequence: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  chat_type: string;
+  message_type: string;
+  /** @nullable */
+  content_masked: string | null;
+  original_send_time: string;
+  send_time_basis: MessageHistoryItemSendTimeBasis;
+  /** @nullable */
+  sent_at: string | null;
+  created_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type MessageHistoryPageSource =
+  (typeof MessageHistoryPageSource)[keyof typeof MessageHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MessageHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MessageHistoryPage {
+  source: MessageHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: MessageHistoryItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type MessageHistoryDetailSource =
+  (typeof MessageHistoryDetailSource)[keyof typeof MessageHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MessageHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MessageHistoryDetail {
+  source: MessageHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: MessageHistoryItem;
+}
+
 export interface AudienceHistoryGroup {
   /** @minimum 1 */
   id: number;
@@ -20152,6 +20228,32 @@ export type InitiateMediaAttachmentMultipartUpload201 = {
 export type CompleteMediaAttachmentMultipartUpload200 = {
   attachment_id: number;
 };
+
+export type ListMessageHistoryParams = {
+  /**
+   * @minimum 1
+   */
+  customer_id?: number;
+  chat_type?: ListMessageHistoryChatType;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListMessageHistoryChatType =
+  (typeof ListMessageHistoryChatType)[keyof typeof ListMessageHistoryChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListMessageHistoryChatType = {
+  private: "private",
+  group: "group",
+} as const;
 
 export type ListAudienceHistoryGroupsParams = {
   /**
@@ -63901,6 +64003,151 @@ export const updateMediaContentDeliveryBinding = async (
     status: res.status,
     headers: res.headers,
   } as updateMediaContentDeliveryBindingResponse;
+};
+
+/**
+ * @summary Read masked historical messages without current sync or dispatch
+ */
+export type listMessageHistoryResponse200 = {
+  data: MessageHistoryPage;
+  status: 200;
+};
+
+export type listMessageHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listMessageHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listMessageHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listMessageHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listMessageHistoryResponseSuccess =
+  listMessageHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listMessageHistoryResponseError = (
+  | listMessageHistoryResponse400
+  | listMessageHistoryResponse401
+  | listMessageHistoryResponse403
+  | listMessageHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listMessageHistoryResponse =
+  listMessageHistoryResponseSuccess | listMessageHistoryResponseError;
+
+export const getListMessageHistoryUrl = (params?: ListMessageHistoryParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/message-history?${stringifiedParams}`
+    : `/api/admin/message-history`;
+};
+
+export const listMessageHistory = async (
+  params?: ListMessageHistoryParams,
+  options?: RequestInit,
+): Promise<listMessageHistoryResponse> => {
+  const res = await fetch(getListMessageHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMessageHistoryResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listMessageHistoryResponse;
+};
+
+/**
+ * @summary Read one masked historical message by actual V2 history ID
+ */
+export type getMessageHistoryResponse200 = {
+  data: MessageHistoryDetail;
+  status: 200;
+};
+
+export type getMessageHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getMessageHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getMessageHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getMessageHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getMessageHistoryResponseSuccess = getMessageHistoryResponse200 & {
+  headers: Headers;
+};
+export type getMessageHistoryResponseError = (
+  | getMessageHistoryResponse400
+  | getMessageHistoryResponse401
+  | getMessageHistoryResponse403
+  | getMessageHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getMessageHistoryResponse =
+  getMessageHistoryResponseSuccess | getMessageHistoryResponseError;
+
+export const getGetMessageHistoryUrl = (historyId: number) => {
+  return `/api/admin/message-history/${historyId}`;
+};
+
+export const getMessageHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getMessageHistoryResponse> => {
+  const res = await fetch(getGetMessageHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMessageHistoryResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getMessageHistoryResponse;
 };
 
 /**

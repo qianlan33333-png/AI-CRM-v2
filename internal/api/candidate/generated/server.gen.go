@@ -6622,6 +6622,114 @@ func (e MediaContentRefKind) Valid() bool {
 	}
 }
 
+// Defines values for MessageHistoryDetailReadOnly.
+const (
+	MessageHistoryDetailReadOnlyTrue MessageHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryDetailReadOnly enum.
+func (e MessageHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case MessageHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageHistoryDetailRealExternalCallExecuted.
+const (
+	MessageHistoryDetailRealExternalCallExecutedFalse MessageHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryDetailRealExternalCallExecuted enum.
+func (e MessageHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MessageHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageHistoryDetailSource.
+const (
+	MessageHistoryDetailSourceV1History MessageHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryDetailSource enum.
+func (e MessageHistoryDetailSource) Valid() bool {
+	switch e {
+	case MessageHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageHistoryItemSendTimeBasis.
+const (
+	CivilUnzoned   MessageHistoryItemSendTimeBasis = "civil_unzoned"
+	ExplicitOffset MessageHistoryItemSendTimeBasis = "explicit_offset"
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryItemSendTimeBasis enum.
+func (e MessageHistoryItemSendTimeBasis) Valid() bool {
+	switch e {
+	case CivilUnzoned:
+		return true
+	case ExplicitOffset:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageHistoryPageReadOnly.
+const (
+	MessageHistoryPageReadOnlyTrue MessageHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryPageReadOnly enum.
+func (e MessageHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case MessageHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageHistoryPageRealExternalCallExecuted.
+const (
+	MessageHistoryPageRealExternalCallExecutedFalse MessageHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryPageRealExternalCallExecuted enum.
+func (e MessageHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MessageHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageHistoryPageSource.
+const (
+	MessageHistoryPageSourceV1History MessageHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MessageHistoryPageSource enum.
+func (e MessageHistoryPageSource) Valid() bool {
+	switch e {
+	case MessageHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OutboundCampaignDispatchReconciliationDeliveryProven.
 const (
 	OutboundCampaignDispatchReconciliationDeliveryProvenFalse OutboundCampaignDispatchReconciliationDeliveryProven = false
@@ -9442,6 +9550,24 @@ func (e ListCloudCampaignPlansParamsReviewStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListMessageHistoryParamsChatType.
+const (
+	ListMessageHistoryParamsChatTypeGroup   ListMessageHistoryParamsChatType = "group"
+	ListMessageHistoryParamsChatTypePrivate ListMessageHistoryParamsChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the ListMessageHistoryParamsChatType enum.
+func (e ListMessageHistoryParamsChatType) Valid() bool {
+	switch e {
+	case ListMessageHistoryParamsChatTypeGroup:
+		return true
+	case ListMessageHistoryParamsChatTypePrivate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListLegacyOutboundJobsParamsStatus.
 const (
 	Cancelled       ListLegacyOutboundJobsParamsStatus = "cancelled"
@@ -9516,16 +9642,16 @@ func (e GetCustomerActivityAnalyticsParamsWindowDays) Valid() bool {
 
 // Defines values for ListCustomerChatActivityParamsChatType.
 const (
-	ListCustomerChatActivityParamsChatTypeGroup   ListCustomerChatActivityParamsChatType = "group"
-	ListCustomerChatActivityParamsChatTypePrivate ListCustomerChatActivityParamsChatType = "private"
+	Group   ListCustomerChatActivityParamsChatType = "group"
+	Private ListCustomerChatActivityParamsChatType = "private"
 )
 
 // Valid indicates whether the value is a known member of the ListCustomerChatActivityParamsChatType enum.
 func (e ListCustomerChatActivityParamsChatType) Valid() bool {
 	switch e {
-	case ListCustomerChatActivityParamsChatTypeGroup:
+	case Group:
 		return true
-	case ListCustomerChatActivityParamsChatTypePrivate:
+	case Private:
 		return true
 	default:
 		return false
@@ -13230,6 +13356,62 @@ type MediaContentRef struct {
 // MediaContentRefKind defines model for MediaContentRef.Kind.
 type MediaContentRefKind string
 
+// MessageHistoryDetail defines model for MessageHistoryDetail.
+type MessageHistoryDetail struct {
+	Item                     MessageHistoryItem                           `json:"item"`
+	ReadOnly                 MessageHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MessageHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MessageHistoryDetailSource                   `json:"source"`
+}
+
+// MessageHistoryDetailReadOnly defines model for MessageHistoryDetail.ReadOnly.
+type MessageHistoryDetailReadOnly bool
+
+// MessageHistoryDetailRealExternalCallExecuted defines model for MessageHistoryDetail.RealExternalCallExecuted.
+type MessageHistoryDetailRealExternalCallExecuted bool
+
+// MessageHistoryDetailSource defines model for MessageHistoryDetail.Source.
+type MessageHistoryDetailSource string
+
+// MessageHistoryItem defines model for MessageHistoryItem.
+type MessageHistoryItem struct {
+	ChatType            string                          `json:"chat_type"`
+	ContentMasked       *string                         `json:"content_masked"`
+	CreatedAt           time.Time                       `json:"created_at"`
+	CustomerId          *int64                          `json:"customer_id"`
+	Id                  int64                           `json:"id"`
+	MessageType         string                          `json:"message_type"`
+	OriginalSendTime    string                          `json:"original_send_time"`
+	SendTimeBasis       MessageHistoryItemSendTimeBasis `json:"send_time_basis"`
+	SentAt              *time.Time                      `json:"sent_at"`
+	Sequence            *int64                          `json:"sequence"`
+	SourceId            int64                           `json:"source_id"`
+	SourcePayloadDigest []int                           `json:"source_payload_digest"`
+}
+
+// MessageHistoryItemSendTimeBasis defines model for MessageHistoryItem.SendTimeBasis.
+type MessageHistoryItemSendTimeBasis string
+
+// MessageHistoryPage defines model for MessageHistoryPage.
+type MessageHistoryPage struct {
+	Items                    []MessageHistoryItem                       `json:"items"`
+	Limit                    int32                                      `json:"limit"`
+	Offset                   int32                                      `json:"offset"`
+	ReadOnly                 MessageHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MessageHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MessageHistoryPageSource                   `json:"source"`
+	Total                    int64                                      `json:"total"`
+}
+
+// MessageHistoryPageReadOnly defines model for MessageHistoryPage.ReadOnly.
+type MessageHistoryPageReadOnly bool
+
+// MessageHistoryPageRealExternalCallExecuted defines model for MessageHistoryPage.RealExternalCallExecuted.
+type MessageHistoryPageRealExternalCallExecuted bool
+
+// MessageHistoryPageSource defines model for MessageHistoryPage.Source.
+type MessageHistoryPageSource string
+
 // OutboundCampaignDispatchReconcileRequest defines model for OutboundCampaignDispatchReconcileRequest.
 type OutboundCampaignDispatchReconcileRequest struct {
 	EvidenceDigest string    `json:"evidence_digest"`
@@ -16037,6 +16219,17 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
+
+// ListMessageHistoryParams defines parameters for ListMessageHistory.
+type ListMessageHistoryParams struct {
+	CustomerId *int64                            `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	ChatType   *ListMessageHistoryParamsChatType `form:"chat_type,omitempty" json:"chat_type,omitempty"`
+	Limit      *int                              `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset     *int                              `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMessageHistoryParamsChatType defines parameters for ListMessageHistory.
+type ListMessageHistoryParamsChatType string
 
 // AcceptOutboundMediaContentPackageParams defines parameters for AcceptOutboundMediaContentPackage.
 type AcceptOutboundMediaContentPackageParams struct {
@@ -18946,6 +19139,12 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read masked historical messages without current sync or dispatch
+	// (GET /api/admin/message-history)
+	ListMessageHistory(w http.ResponseWriter, r *http.Request, params ListMessageHistoryParams)
+	// Read one masked historical message by actual V2 history ID
+	// (GET /api/admin/message-history/{history_id})
+	GetMessageHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Atomically accept one published content package into local outbound-media records
 	// (POST /api/admin/outbound-media/accept)
 	AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams)
@@ -20068,6 +20267,18 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read masked historical messages without current sync or dispatch
+// (GET /api/admin/message-history)
+func (_ Unimplemented) ListMessageHistory(w http.ResponseWriter, r *http.Request, params ListMessageHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one masked historical message by actual V2 history ID
+// (GET /api/admin/message-history/{history_id})
+func (_ Unimplemented) GetMessageHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -26107,6 +26318,94 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMessageHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListMessageHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMessageHistoryParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "chat_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "chat_type", r.URL.Query(), &params.ChatType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chat_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMessageHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMessageHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetMessageHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMessageHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -37572,6 +37871,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/message-history", wrapper.ListMessageHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/message-history/{history_id}", wrapper.GetMessageHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/outbound-media/accept", wrapper.AcceptOutboundMediaContentPackage)
 	})
 	r.Group(func(r chi.Router) {
@@ -43828,6 +44133,112 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMessageHistoryRequestObject struct {
+	Params ListMessageHistoryParams
+}
+
+type ListMessageHistoryResponseObject interface {
+	VisitListMessageHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListMessageHistory200JSONResponse MessageHistoryPage
+
+func (response ListMessageHistory200JSONResponse) VisitListMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMessageHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMessageHistory400JSONResponse) VisitListMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMessageHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMessageHistory401JSONResponse) VisitListMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMessageHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMessageHistory403JSONResponse) VisitListMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMessageHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMessageHistory503JSONResponse) VisitListMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMessageHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMessageHistoryResponseObject interface {
+	VisitGetMessageHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetMessageHistory200JSONResponse MessageHistoryDetail
+
+func (response GetMessageHistory200JSONResponse) VisitGetMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMessageHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMessageHistory400JSONResponse) VisitGetMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMessageHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMessageHistory401JSONResponse) VisitGetMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMessageHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMessageHistory403JSONResponse) VisitGetMessageHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMessageHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMessageHistory503JSONResponse) VisitGetMessageHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -55688,6 +56099,12 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read masked historical messages without current sync or dispatch
+	// (GET /api/admin/message-history)
+	ListMessageHistory(ctx context.Context, request ListMessageHistoryRequestObject) (ListMessageHistoryResponseObject, error)
+	// Read one masked historical message by actual V2 history ID
+	// (GET /api/admin/message-history/{history_id})
+	GetMessageHistory(ctx context.Context, request GetMessageHistoryRequestObject) (GetMessageHistoryResponseObject, error)
 	// Atomically accept one published content package into local outbound-media records
 	// (POST /api/admin/outbound-media/accept)
 	AcceptOutboundMediaContentPackage(ctx context.Context, request AcceptOutboundMediaContentPackageRequestObject) (AcceptOutboundMediaContentPackageResponseObject, error)
@@ -59027,6 +59444,58 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMessageHistory operation middleware
+func (sh *strictHandler) ListMessageHistory(w http.ResponseWriter, r *http.Request, params ListMessageHistoryParams) {
+	var request ListMessageHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMessageHistory(ctx, request.(ListMessageHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMessageHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMessageHistoryResponseObject); ok {
+		if err := validResponse.VisitListMessageHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMessageHistory operation middleware
+func (sh *strictHandler) GetMessageHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMessageHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMessageHistory(ctx, request.(GetMessageHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMessageHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMessageHistoryResponseObject); ok {
+		if err := validResponse.VisitGetMessageHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

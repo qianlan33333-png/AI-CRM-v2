@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+2 {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+3 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -29,6 +29,7 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 	all = append(all, servicePeriodReconciledTables...)
 	all = append(all, couponReconciledTables...)
 	all = append(all, groupOpsReconciledTables[:5]...)
+	all = append(all, messageHistoryTableID)
 	for _, scope := range audienceHistoryScopes {
 		all = append(all, scope.source)
 		mapping := targetBySourceTable[scope.source]
