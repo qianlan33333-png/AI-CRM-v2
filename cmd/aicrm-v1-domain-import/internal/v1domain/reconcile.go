@@ -16,6 +16,7 @@ import (
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 )
@@ -51,6 +52,28 @@ var targetBySourceTable = map[string]struct {
 }{
 	legacyMarketingStateTable:                          {"segment", legacyMarketingStateTarget},
 	legacyMarketingValueTable:                          {"segment", legacyMarketingValueTarget},
+	marketingStateSnapshotTable:                        {"segment", marketingStateSnapshotTarget},
+	marketingStateChangeTable:                          {"segment", marketingStateChangeTarget},
+	valueSegmentSnapshotTable:                          {"segment", valueSegmentSnapshotTarget},
+	valueSegmentChangeTable:                            {"segment", valueSegmentChangeTarget},
+	customerStateHistorySnapshotTable:                  {"contact", customerStateHistorySnapshotTarget},
+	customerStateHistoryChangeTable:                    {"contact", customerStateHistoryChangeTarget},
+	customerStateHistoryTermTable:                      {"contact", customerStateHistoryTermTarget},
+	staticTailGroupInviteTable:                         {"media", staticTailGroupInviteTarget},
+	staticTailPageSliceTable:                           {"product", staticTailPageSliceTarget},
+	staticTailStrategyTable:                            {"operationcycle", staticTailStrategyTarget},
+	staticTailVersionTable:                             {"operationcycle", staticTailVersionTarget},
+	staticTailDocumentTable:                            {"operationcycle", staticTailDocumentTarget},
+	"public/user_ops_hxc_dashboard_meta":               {"hxc", "hxc_v1_dashboard_refresh_history"},
+	"public/user_ops_hxc_dashboard_snapshot":           {"hxc", "hxc_v1_dashboard_observations"},
+	"public/user_ops_activation_status_source":         {"hxc", "hxc_v1_activation_observations"},
+	"public/user_ops_huangxiaocan_activation_source":   {"hxc", "hxc_v1_activation_observations"},
+	"public/user_ops_experience_leads":                 {"hxc", "hxc_v1_experience_lead_history"},
+	"public/user_ops_import_batches":                   {"hxc", "hxc_v1_import_batch_history"},
+	"public/automation_profile_segment_template":       {"segment", "segment_v1_profile_templates"},
+	"public/automation_profile_segment_category":       {"segment", "segment_v1_profile_categories"},
+	"public/automation_profile_segment_option_mapping": {"segment", "segment_v1_profile_option_mappings"},
+	"public/signup_tag_rules":                          {"contact", "contact_v1_signup_tag_rules"},
 	"public/campaigns":                                 {"campaign", "cloud_campaigns"},
 	"public/campaign_steps":                            {"campaign", "cloud_campaign_steps"},
 	"public/questionnaires":                            {"survey", "questionnaires"},
@@ -123,6 +146,7 @@ type reconciliationRow struct {
 	TableID         string
 	SourceKeyDigest []byte
 	PayloadDigest   []byte
+	FieldDigest     []byte
 	Disposition     string
 	Reason          string
 	TargetDomain    *string
@@ -246,7 +270,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) || isProfileCatalogHistorySource(row.TableID) || isHXCHistorySource(row.TableID) || isStaticTailHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -258,6 +282,13 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			}
 		}
 		proof := "terminal:" + row.Disposition
+		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) {
+			if err = tx.QueryRow(ctx, `SELECT field_digest FROM public.v1_archive_records
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`,
+				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
+				return ReconciliationResult{}, ErrConflict
+			}
+		}
 		switch row.Disposition {
 		case "import":
 			result.ImportedCount++
@@ -320,6 +351,21 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 		return "", fmt.Errorf("invalid imported target for %s", row.TableID)
 	}
 	var proof string
+	if isMarketingStateHistorySource(row.TableID) {
+		return verifyMarketingStateHistoryTarget(ctx, tx, row, importedTargets)
+	}
+	if isCustomerStateHistorySource(row.TableID) {
+		return verifyCustomerStateHistoryTarget(ctx, tx, row, importedTargets)
+	}
+	if isStaticTailHistorySource(row.TableID) {
+		return verifyStaticTailHistoryTarget(ctx, tx, row, importedTargets)
+	}
+	if isHXCHistorySource(row.TableID) {
+		return verifyHXCHistoryRow(ctx, hxcstore.NewHXCHistoryReader(tx), row)
+	}
+	if isProfileCatalogHistorySource(row.TableID) {
+		return verifyProfileCatalogHistoryTarget(ctx, tx, row, importedTargets)
+	}
 	if isAutomationHistorySource(row.TableID) {
 		return verifyAutomationHistoryTarget(ctx, tx, row, importedTargets)
 	}

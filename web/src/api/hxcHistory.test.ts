@@ -1,0 +1,28 @@
+import { getHxcHistory, readHxcHistory } from './hxcHistory';
+import { ApiError } from './transport';
+
+const assert = (value: unknown, message: string): void => { if (!value) throw new Error(message); };
+const digest = Array(32).fill(1);
+const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+const stamp = '2026-08-28T01:02:03.123456Z';
+const snapshot = { id: 4, source_id: -7, source_key_digest: digest, source_payload_digest: digest, customer_id: null, observation: 'observed_snapshot', observed_at: stamp, in_lead_pool: false, in_people: false, in_questionnaire: false, class_term_no: null, class_term_label: '', crm_hxc_state: '', crm_created_at: '2024-02-29', last_questionnaire_at: null, hxc_member_hit: false, hxc_user_hit: false, funnel_state: '', hxc_member_status: '', hxc_registered_at: null, hxc_last_login_at: null, membership_type: '', membership_status: '', membership_end_at: null, membership_days_left: null, consultation_used: null, consultation_limit: null, conversation_chat: 0, conversation_consult: 0, conversation_lesson: 0, messages_user: 0, messages_ai: 0, consult_completed: 0, last_message_at: null, subscription_tier: '', subscription_expires: null, subscription_quota: null, subscription_used: null, subscription_period_start: null };
+export async function runHxcHistoryAdapterTests(): Promise<void> {
+  const previous = globalThis.fetch; const calls: Array<{ url: string; init?: RequestInit }> = []; let body: unknown = { ...safety, items: [snapshot], total: 1, limit: 20, offset: 0 }; let status = 200;
+  globalThis.fetch = async (input, init) => { calls.push({ url: String(input), init }); return new Response(JSON.stringify(body), { status }); };
+  const rejects = async (fn: () => Promise<unknown>): Promise<void> => { try { await fn(); } catch { return; } throw new Error('invalid HXC history accepted'); };
+  try {
+    const page = await readHxcHistory('snapshot');
+    assert(page.items[0].source_id === -7 && calls[0].url === '/api/admin/hxc-history/snapshots?limit=20&offset=0', 'snapshot uses generated GET and preserves source ID');
+    body = { ...safety, item: { ...snapshot, subscription_period_start: null } };
+    assert((await getHxcHistory('snapshot', 4)).id === 4 && calls[1].url === '/api/admin/hxc-history/snapshots/4', 'detail uses generated GET and nullable date');
+    for (const patch of [{ observation: '' }, { observation: 'current' }, { crm_created_at: '2024-02-30' }, { source_payload_digest: [1] }, { raw_payload: 'no' }, { customer_id: 0 }]) { body = { ...safety, item: { ...snapshot, ...patch } }; await rejects(() => getHxcHistory('snapshot', 4)); }
+    body = { ...safety, items: [{ ...snapshot, subscription_period_start: '' }], total: 1, limit: 20, offset: 0 }; await rejects(() => readHxcHistory('snapshot'));
+    body = { ...safety, item: { ...snapshot, source_payload_digest: Array(32).fill(0) } }; await rejects(() => getHxcHistory('snapshot', 4));
+    const before = calls.length; await rejects(() => getHxcHistory('batch', 0)); await rejects(() => readHxcHistory('activation', -1)); assert(calls.length === before, 'invalid ID or pagination fails before transport');
+    await rejects(() => readHxcHistory('meta', 0, 20, 9)); await rejects(() => readHxcHistory('lead', 0, 20, undefined, 'public/user_ops_activation_status_source')); assert(calls.length === before, 'filters for the wrong history kind fail before transport');
+    body = { ...safety, items: [{ ...snapshot, customer_id: 8 }], total: 1, limit: 20, offset: 0 }; await rejects(() => readHxcHistory('snapshot', 0, 20, 9));
+    const activation = { id: 5, source_id: 0, source_key_digest: digest, source_payload_digest: digest, source_table: 'public/user_ops_huangxiaocan_activation_source', original_state: '', is_active: false, legacy_import_batch_ref: null, created_at: stamp, updated_at: stamp };
+    body = { ...safety, items: [activation], total: 1, limit: 20, offset: 0 }; await rejects(() => readHxcHistory('activation', 0, 20, undefined, 'public/user_ops_activation_status_source'));
+    status = 503; await rejects(() => readHxcHistory('meta')); assert(calls[calls.length - 1]?.init?.method === 'GET' && calls.every((call) => call.init?.credentials === 'include' && call.init?.body === undefined), 'history is same-origin GET only');
+  } finally { globalThis.fetch = previous; }
+}

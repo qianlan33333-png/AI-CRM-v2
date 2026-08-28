@@ -94,3 +94,16 @@ type ProductV1MemberViewHistory struct {
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
 }
+
+type ProductV1PageSliceHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	ProductSourceID     int64              `json:"product_source_id"`
+	ImageSourceID       int64              `json:"image_source_id"`
+	SortOrder           int64              `json:"sort_order"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}

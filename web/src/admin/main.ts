@@ -11,6 +11,7 @@ import { AdminController } from './controller';
 import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
+import { mountHXCHistory } from './sections/hxcHistory';
 import { mountCampaignWorkspace } from './sections/campaigns';
 import { mountCampaignHistory } from './sections/campaignHistory';
 import { mountAdminAccess } from './sections/adminAccess';
@@ -23,9 +24,13 @@ import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
 import { renderLegacyMarketingHistory } from './sections/legacyMarketingHistory';
+import { mountProfileCatalogHistory } from './sections/profileCatalogHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
+import { mountStaticHistory } from './sections/staticHistory';
+import { mountCustomerStateHistory } from './sections/customerStateHistory';
+import { mountMarketingStateHistory } from './sections/marketingStateHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -39,6 +44,25 @@ function boot(): void {
   const historyQuery = new URLSearchParams(location.search);
   if (page === 'automation' && historyQuery.get('legacy_marketing_history') === '1') {
     void renderLegacyMarketingHistory(stage).catch(() => { stage.innerHTML = '<section data-legacy-marketing-history><h1>V1 旧版营销历史（只读）</h1><p role="alert">历史数据读取失败；未更改当前分层。</p></section>'; });
+    return;
+  }
+  if (page === 'config' && historyQuery.get('marketing_state_history') === '1') {
+    void mountMarketingStateHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">营销状态历史读取失败；未进入当前配置。</p>'; });
+    return;
+  }
+  if (page === 'config' && historyQuery.get('customer_state_history') === '1') {
+    void mountCustomerStateHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">客户状态历史读取失败；未进入当前配置。</p>'; });
+    return;
+  }
+  if (page === 'config' && historyQuery.get('static_history') === '1') {
+    void mountStaticHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">静态历史读取失败；未进入当前配置。</p>'; });
+    return;
+  }
+  if (page === 'funnel' && historyQuery.get('hxc_history') === '1') {
+    void mountHXCHistory(stage, {
+      kind: historyQuery.get('history_kind') ?? undefined,
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
     return;
   }
   if (page === 'config' && historyQuery.get('automation_history') === '1') {
@@ -77,6 +101,15 @@ function boot(): void {
     void mountMessageHistory(stage, {
       historyID: qs.get('history_message_id') ?? undefined,
       customerID: qs.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+
+  if (page === 'config' && qs.get('profile_catalog_history') === '1') {
+    void mountProfileCatalogHistory(stage, {
+      templateID: qs.get('history_template_id') ?? undefined,
+      categoryID: qs.get('history_category_id') ?? undefined,
+      view: qs.get('history_view') ?? undefined,
     }).catch((error) => showLoadError(stage, error));
     return;
   }
@@ -133,7 +166,8 @@ function boot(): void {
       void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'funnel':
-      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error));
+      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error))
+        .finally(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="funnel.html?hxc_history=1">V1 HXC历史观察（只读）</a></p>'); });
       return;
     case 'campaigns':
       void mountCampaignWorkspace(stage).catch((error) => showLoadError(stage, error));
@@ -188,6 +222,9 @@ function boot(): void {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
       }
       if (page === 'config') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?marketing_state_history=1">V1 营销状态历史（只读）</a></p>');
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?customer_state_history=1">V1 客户状态历史（只读）</a></p>');
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?static_history=1">V1 静态历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?automation_history=1">V1 自动化历史（只读）</a></p>');
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);

@@ -54,11 +54,16 @@ owners:
       - channel_acquisition_entrant_receipts
       - channel_historical_contacts
       - channel_historical_assignees
+      - contact_v1_signup_tag_rules
       - contact_v1_sidebar_profile_history
       - contact_v1_owner_migration_result_history
+      - contact_v1_customer_status_snapshots
+      - contact_v1_customer_status_changes
+      - contact_v1_class_term_tag_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
+      contact_v1_signup_tag_rules: immutable_history_without_current_tag_sync_or_rule_activation
       customer_merge_lineage: contact_owned_effective_customer_projection
       customer_event_idempotency: external_event_fact_registry
       customer_contact_policies: canonical_OneID_local_contact_suppression_policy_without_provider_or_outbound_execution
@@ -110,8 +115,11 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts, ai_audience_package_configuration_versions, ai_audience_operation_member_projection, ai_audience_inbound_webhook_receipts, ai_audience_webhook_transport_replays, segment_v1_audience_groups, segment_v1_audience_packages, segment_v1_audience_versions, segment_v1_audience_senders, segment_v1_audience_rules, segment_v1_audience_rule_versions, segment_v1_definitions, segment_v1_audience_members, segment_v1_legacy_marketing_states, segment_v1_legacy_marketing_values]
+    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts, ai_audience_package_configuration_versions, ai_audience_operation_member_projection, ai_audience_inbound_webhook_receipts, ai_audience_webhook_transport_replays, segment_v1_audience_groups, segment_v1_audience_packages, segment_v1_audience_versions, segment_v1_audience_senders, segment_v1_audience_rules, segment_v1_audience_rule_versions, segment_v1_definitions, segment_v1_audience_members, segment_v1_profile_templates, segment_v1_profile_categories, segment_v1_profile_option_mappings, segment_v1_marketing_state_snapshots, segment_v1_marketing_state_changes, segment_v1_value_segment_snapshots, segment_v1_value_segment_changes, segment_v1_legacy_marketing_states, segment_v1_legacy_marketing_values]
     constraints:
+      segment_v1_profile_templates: immutable_nonexecutable_source_profile_template
+      segment_v1_profile_categories: immutable_history_with_verified_template_history_parent
+      segment_v1_profile_option_mappings: immutable_history_with_same_template_category_parent_no_live_survey_mapping
       segment_operation_receipts: transaction_scoped_crud_idempotency_receipts
       ai_audience_package_metadata: local_package_lifecycle_and_version_over_authoritative_segment_members
       ai_audience_package_groups: local_package_group_metadata_without_provider_or_send_execution
@@ -267,7 +275,7 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings, product_service_period_history, product_service_period_entitlement_history, product_service_period_event_history, product_v1_member_view_history, product_v1_member_usage_history]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings, product_service_period_history, product_service_period_entitlement_history, product_service_period_event_history, product_v1_member_view_history, product_v1_member_usage_history, product_v1_page_slice_history]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
@@ -283,6 +291,7 @@ owners:
       product_service_period_event_history: historical_events_not_replayed_to_runtime_or_provider
       product_v1_member_view_history: immutable_source_view_metadata_not_executable_saved_views_or_grants
       product_v1_member_usage_history: immutable_usage_snapshot_not_current_login_entitlement_or_refresh
+      product_v1_page_slice_history: immutable_source_product_image_references_not_current_page_composition
       entitlement_operation_receipts: actor_scoped_transactional_entitlement_mutation_idempotency_receipts
       service_period_member_views: local_saved_member_grid_views_without_arbitrary_SQL_or_member_mutation
       service_period_member_grid_collaborators: local_staff_metadata_without_invitation_or_permission_escalation
@@ -335,13 +344,14 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, media_wecom_upload_preparations, media_wecom_upload_receipts, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, media_wecom_upload_preparations, media_wecom_upload_receipts, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts, media_v1_group_invite_history]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
       media_image_upload_receipts: actor_scoped_transactional_upload_idempotency_receipts
       media_image_delete_receipts: actor_scoped_transactional_delete_idempotency_receipts
       media_group_invites: local_only_group_invite_metadata_with_read_only_media_image_reference
+      media_v1_group_invite_history: immutable_source_metadata_without_live_group_binding_or_join_url
       media_group_invite_operation_receipts: actor_operation_business_key_scoped_transactional_mutation_receipts
       media_thumbnail_cache_entries: media_owned_local_thumbnail_cache_with_outcome_unknown_no_retry
       media_miniprograms: stable_single_instance_miniprogram_metadata_with_legacy_source_lineage
@@ -374,6 +384,9 @@ owners:
   operationcycle:
     package: internal/operationcycle
     tables:
+      - operation_cycle_v1_strategy_history
+      - operation_cycle_v1_version_history
+      - operation_cycle_v1_document_history
       - operation_cycle_strategies
       - operation_cycle_runs
       - operation_cycle_report_receipts
@@ -383,6 +396,9 @@ owners:
       - operation_cycle_strategy_proposals
     constraints:
       operation_cycle_strategies: single_instance_local_strategy_snapshot_without_tenant_or_provider_credentials
+      operation_cycle_v1_strategy_history: immutable_source_strategy_metadata_without_current_cycle_state
+      operation_cycle_v1_version_history: immutable_version_metadata_bound_only_to_historical_strategy
+      operation_cycle_v1_document_history: immutable_document_metadata_without_executable_content
       operation_cycle_report_receipts: actor_scoped_semantic_json_idempotency_receipts
       operation_cycle_runners: service_authenticated_local_runner_compatibility_facts
       operation_cycle_action_requests: queued_claimed_thread_bound_turn_started_terminal_state_machine_without_external_effect_execution
@@ -458,7 +474,7 @@ owners:
 
   hxc:
     package: internal/hxc
-    tables: [hxc_sender_configs, hxc_sender_config_receipts]
+    tables: [hxc_sender_configs, hxc_sender_config_receipts, hxc_v1_dashboard_refresh_history, hxc_v1_dashboard_observations, hxc_v1_activation_observations, hxc_v1_experience_lead_history, hxc_v1_import_batch_history]
     constraints:
       hxc_sender_configs: single_instance_local_sender_configuration_without_provider_directory_or_broadcast_execution
       hxc_sender_config_receipts: actor_scoped_transactional_sender_configuration_idempotency_receipts
