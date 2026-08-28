@@ -35,6 +35,7 @@ import { mountStaticHistory } from './sections/staticHistory';
 import { mountCustomerStateHistory } from './sections/customerStateHistory';
 import { mountMarketingStateHistory } from './sections/marketingStateHistory';
 import { mountBroadcastJobHistory } from './sections/broadcastJobHistory';
+import { mountOutboundTaskHistory } from './sections/outboundTaskHistory';
 import { mountWeComContactHistory } from './sections/wecomContactHistory';
 import { mountDeferredIdentityHistory } from './sections/deferredIdentityHistory';
 
@@ -50,6 +51,10 @@ function boot(): void {
   const historyQuery = new URLSearchParams(location.search);
   if (page === 'config' && historyQuery.get('deferred_identity_history') === '1') {
     void mountDeferredIdentityHistory(stage, { kind: historyQuery.get('history_kind') ?? undefined, historyID: historyQuery.get('history_id') ?? undefined }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+  if (page === 'automation' && historyQuery.get('outbound_task_history') === '1') {
+    void mountOutboundTaskHistory(stage, { historyID: historyQuery.get('history_id') ?? undefined }).catch(() => { stage.innerHTML = '<p role="alert">外发任务历史读取失败；未创建或发送任务。</p>'; });
     return;
   }
   if (page === 'questionnaires' && historyQuery.get('unresolved_history') === '1') {
@@ -250,6 +255,7 @@ function boot(): void {
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
       if (page === 'automation') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?outbound_task_history=1">V1 外发任务历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?legacy_marketing_history=1">V1 旧版营销快照（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?broadcast_job_history=1">V1 群发任务历史（只读）</a></p>');
       }

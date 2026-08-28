@@ -269,6 +269,29 @@ AND old.verified AND old.disposition='quarantine' AND old.reason='survey_definit
 	return nil
 }
 
+// VerifyOutboundTaskHistoryPrerequisite prevents import order from turning a
+// not-yet-imported broadcast parent into a permanently unresolved relation.
+func VerifyOutboundTaskHistoryPrerequisite(ctx context.Context, run string) error {
+	if run == "" {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	var ready bool
+	err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts
+WHERE archive_run_id=$1 AND import_version='v1-broadcast-job-history-a1'
+AND selected_source_count=receipt_count AND imported_count=receipt_count
+AND verified_count=receipt_count AND archived_count=0 AND quarantined_count=0)`, run).Scan(&ready)
+	if err != nil {
+		return err
+	}
+	if !ready {
+		return ErrConflict
+	}
+	return nil
+}
 func NewJournal(scope Scope) (*Journal, error) {
 	if !scope.valid() {
 		return nil, ErrInvalidScope

@@ -6,6 +6,49 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/outbound-task-history:
+    get:
+      tags: [p4-outbound-task-history]
+      operationId: listOutboundTaskHistory
+      summary: Read immutable V1 task observations without retrying or sending
+      x-p4-decision-evidence: P4-V1-OUTBOUND-TASK-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound.read_only_v1_task_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable task history, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundTaskHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound-task-history/{history_id}:
+    get:
+      tags: [p4-outbound-task-history]
+      operationId: getOutboundTaskHistory
+      summary: Read one immutable V1 task without executing Provider effects
+      x-p4-decision-evidence: P4-V1-OUTBOUND-TASK-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound.read_only_v1_task_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable task history, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundTaskHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/radar-click-history:
     get:
       tags: [p4-radar-click-history]
@@ -15514,6 +15557,38 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    OutboundTaskHistory:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, task_type, status, created_at, broadcast_job_history_id]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        task_type: { type: string }
+        status: { type: string, description: "Original V1 observation, not current executable state" }
+        created_at: { type: string, format: date-time }
+        broadcast_job_history_id: { type: integer, format: int64, minimum: 1, nullable: true }
+    OutboundTaskHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/OutboundTaskHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    OutboundTaskHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/OutboundTaskHistory" }
     RadarClickHistory:
       type: object
       additionalProperties: false

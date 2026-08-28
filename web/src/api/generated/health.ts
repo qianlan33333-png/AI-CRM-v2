@@ -5,6 +5,60 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface OutboundTaskHistory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  task_type: string;
+  /** Original V1 observation, not current executable state */
+  status: string;
+  created_at: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  broadcast_job_history_id: number | null;
+}
+
+export type OutboundTaskHistoryPageSource =
+  (typeof OutboundTaskHistoryPageSource)[keyof typeof OutboundTaskHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OutboundTaskHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface OutboundTaskHistoryPage {
+  source: OutboundTaskHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: OutboundTaskHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type OutboundTaskHistoryDetailSource =
+  (typeof OutboundTaskHistoryDetailSource)[keyof typeof OutboundTaskHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OutboundTaskHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface OutboundTaskHistoryDetail {
+  source: OutboundTaskHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: OutboundTaskHistory;
+}
+
 export interface RadarClickHistory {
   /** @minimum 1 */
   id: number;
@@ -20922,6 +20976,18 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListOutboundTaskHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListRadarClickHistoryParams = {
   /**
    * @minimum 1
@@ -23730,6 +23796,158 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable V1 task observations without retrying or sending
+ */
+export type listOutboundTaskHistoryResponse200 = {
+  data: OutboundTaskHistoryPage;
+  status: 200;
+};
+
+export type listOutboundTaskHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listOutboundTaskHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listOutboundTaskHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listOutboundTaskHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listOutboundTaskHistoryResponseSuccess =
+  listOutboundTaskHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listOutboundTaskHistoryResponseError = (
+  | listOutboundTaskHistoryResponse400
+  | listOutboundTaskHistoryResponse401
+  | listOutboundTaskHistoryResponse403
+  | listOutboundTaskHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listOutboundTaskHistoryResponse =
+  listOutboundTaskHistoryResponseSuccess | listOutboundTaskHistoryResponseError;
+
+export const getListOutboundTaskHistoryUrl = (
+  params?: ListOutboundTaskHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/outbound-task-history?${stringifiedParams}`
+    : `/api/admin/outbound-task-history`;
+};
+
+export const listOutboundTaskHistory = async (
+  params?: ListOutboundTaskHistoryParams,
+  options?: RequestInit,
+): Promise<listOutboundTaskHistoryResponse> => {
+  const res = await fetch(getListOutboundTaskHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listOutboundTaskHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listOutboundTaskHistoryResponse;
+};
+
+/**
+ * @summary Read one immutable V1 task without executing Provider effects
+ */
+export type getOutboundTaskHistoryResponse200 = {
+  data: OutboundTaskHistoryDetail;
+  status: 200;
+};
+
+export type getOutboundTaskHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getOutboundTaskHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getOutboundTaskHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getOutboundTaskHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getOutboundTaskHistoryResponseSuccess =
+  getOutboundTaskHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getOutboundTaskHistoryResponseError = (
+  | getOutboundTaskHistoryResponse400
+  | getOutboundTaskHistoryResponse401
+  | getOutboundTaskHistoryResponse403
+  | getOutboundTaskHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getOutboundTaskHistoryResponse =
+  getOutboundTaskHistoryResponseSuccess | getOutboundTaskHistoryResponseError;
+
+export const getGetOutboundTaskHistoryUrl = (historyId: number) => {
+  return `/api/admin/outbound-task-history/${historyId}`;
+};
+
+export const getOutboundTaskHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getOutboundTaskHistoryResponse> => {
+  const res = await fetch(getGetOutboundTaskHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getOutboundTaskHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getOutboundTaskHistoryResponse;
 };
 
 /**

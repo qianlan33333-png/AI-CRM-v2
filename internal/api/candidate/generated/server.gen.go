@@ -9571,6 +9571,96 @@ func (e OutboundCampaignHandoffSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for OutboundTaskHistoryDetailReadOnly.
+const (
+	OutboundTaskHistoryDetailReadOnlyTrue OutboundTaskHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the OutboundTaskHistoryDetailReadOnly enum.
+func (e OutboundTaskHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case OutboundTaskHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundTaskHistoryDetailRealExternalCallExecuted.
+const (
+	OutboundTaskHistoryDetailRealExternalCallExecutedFalse OutboundTaskHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the OutboundTaskHistoryDetailRealExternalCallExecuted enum.
+func (e OutboundTaskHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case OutboundTaskHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundTaskHistoryDetailSource.
+const (
+	OutboundTaskHistoryDetailSourceV1History OutboundTaskHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the OutboundTaskHistoryDetailSource enum.
+func (e OutboundTaskHistoryDetailSource) Valid() bool {
+	switch e {
+	case OutboundTaskHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundTaskHistoryPageReadOnly.
+const (
+	OutboundTaskHistoryPageReadOnlyTrue OutboundTaskHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the OutboundTaskHistoryPageReadOnly enum.
+func (e OutboundTaskHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case OutboundTaskHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundTaskHistoryPageRealExternalCallExecuted.
+const (
+	OutboundTaskHistoryPageRealExternalCallExecutedFalse OutboundTaskHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the OutboundTaskHistoryPageRealExternalCallExecuted enum.
+func (e OutboundTaskHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case OutboundTaskHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundTaskHistoryPageSource.
+const (
+	OutboundTaskHistoryPageSourceV1History OutboundTaskHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the OutboundTaskHistoryPageSource enum.
+func (e OutboundTaskHistoryPageSource) Valid() bool {
+	switch e {
+	case OutboundTaskHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OwnerMigrationResultHistoryDetailReadOnly.
 const (
 	OwnerMigrationResultHistoryDetailReadOnlyTrue OwnerMigrationResultHistoryDetailReadOnly = true
@@ -19135,6 +19225,55 @@ type OutboundMediaReconcileResponse struct {
 	State            string `json:"state"`
 }
 
+// OutboundTaskHistory defines model for OutboundTaskHistory.
+type OutboundTaskHistory struct {
+	BroadcastJobHistoryId *int64    `json:"broadcast_job_history_id"`
+	CreatedAt             time.Time `json:"created_at"`
+	Id                    int64     `json:"id"`
+	SourceId              int64     `json:"source_id"`
+
+	// Status Original V1 observation, not current executable state
+	Status   string `json:"status"`
+	TaskType string `json:"task_type"`
+}
+
+// OutboundTaskHistoryDetail defines model for OutboundTaskHistoryDetail.
+type OutboundTaskHistoryDetail struct {
+	Item                     OutboundTaskHistory                               `json:"item"`
+	ReadOnly                 OutboundTaskHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted OutboundTaskHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   OutboundTaskHistoryDetailSource                   `json:"source"`
+}
+
+// OutboundTaskHistoryDetailReadOnly defines model for OutboundTaskHistoryDetail.ReadOnly.
+type OutboundTaskHistoryDetailReadOnly bool
+
+// OutboundTaskHistoryDetailRealExternalCallExecuted defines model for OutboundTaskHistoryDetail.RealExternalCallExecuted.
+type OutboundTaskHistoryDetailRealExternalCallExecuted bool
+
+// OutboundTaskHistoryDetailSource defines model for OutboundTaskHistoryDetail.Source.
+type OutboundTaskHistoryDetailSource string
+
+// OutboundTaskHistoryPage defines model for OutboundTaskHistoryPage.
+type OutboundTaskHistoryPage struct {
+	Items                    []OutboundTaskHistory                           `json:"items"`
+	Limit                    int32                                           `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 OutboundTaskHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted OutboundTaskHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   OutboundTaskHistoryPageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// OutboundTaskHistoryPageReadOnly defines model for OutboundTaskHistoryPage.ReadOnly.
+type OutboundTaskHistoryPageReadOnly bool
+
+// OutboundTaskHistoryPageRealExternalCallExecuted defines model for OutboundTaskHistoryPage.RealExternalCallExecuted.
+type OutboundTaskHistoryPageRealExternalCallExecuted bool
+
+// OutboundTaskHistoryPageSource defines model for OutboundTaskHistoryPage.Source.
+type OutboundTaskHistoryPageSource string
+
 // OwnerMigrationResultHistoryDetail defines model for OwnerMigrationResultHistoryDetail.
 type OwnerMigrationResultHistoryDetail struct {
 	Item                     OwnerMigrationResultHistoryItem                           `json:"item"`
@@ -22694,6 +22833,12 @@ type ReconcileOutboundMediaEffectParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListOutboundTaskHistoryParams defines parameters for ListOutboundTaskHistory.
+type ListOutboundTaskHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // AcceptOutboundCampaignHandoffParams defines parameters for AcceptOutboundCampaignHandoff.
 type AcceptOutboundCampaignHandoffParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -25863,6 +26008,12 @@ type ServerInterface interface {
 	// Manually reconcile one outcome-unknown local outbound-media effect
 	// (POST /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile)
 	ReconcileOutboundMediaEffect(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string, params ReconcileOutboundMediaEffectParams)
+	// Read immutable V1 task observations without retrying or sending
+	// (GET /api/admin/outbound-task-history)
+	ListOutboundTaskHistory(w http.ResponseWriter, r *http.Request, params ListOutboundTaskHistoryParams)
+	// Read one immutable V1 task without executing Provider effects
+	// (GET /api/admin/outbound-task-history/{history_id})
+	GetOutboundTaskHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read a recipient-safe local accepted Campaign handoff summary
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
 	GetOutboundCampaignHandoffSummary(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
@@ -27432,6 +27583,18 @@ func (_ Unimplemented) GetOutboundMediaEffectDetail(w http.ResponseWriter, r *ht
 // Manually reconcile one outcome-unknown local outbound-media effect
 // (POST /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile)
 func (_ Unimplemented) ReconcileOutboundMediaEffect(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string, params ReconcileOutboundMediaEffectParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 task observations without retrying or sending
+// (GET /api/admin/outbound-task-history)
+func (_ Unimplemented) ListOutboundTaskHistory(w http.ResponseWriter, r *http.Request, params ListOutboundTaskHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one immutable V1 task without executing Provider effects
+// (GET /api/admin/outbound-task-history/{history_id})
+func (_ Unimplemented) GetOutboundTaskHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -36102,6 +36265,78 @@ func (siw *ServerInterfaceWrapper) ReconcileOutboundMediaEffect(w http.ResponseW
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReconcileOutboundMediaEffect(w, r, contentPackageId, targetRef, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOutboundTaskHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListOutboundTaskHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOutboundTaskHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOutboundTaskHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOutboundTaskHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetOutboundTaskHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOutboundTaskHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -48499,6 +48734,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile", wrapper.ReconcileOutboundMediaEffect)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/outbound-task-history", wrapper.ListOutboundTaskHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/outbound-task-history/{history_id}", wrapper.GetOutboundTaskHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", wrapper.GetOutboundCampaignHandoffSummary)
 	})
 	r.Group(func(r chi.Router) {
@@ -58237,6 +58478,112 @@ func (response ReconcileOutboundMediaEffect409JSONResponse) VisitReconcileOutbou
 type ReconcileOutboundMediaEffect503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ReconcileOutboundMediaEffect503JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOutboundTaskHistoryRequestObject struct {
+	Params ListOutboundTaskHistoryParams
+}
+
+type ListOutboundTaskHistoryResponseObject interface {
+	VisitListOutboundTaskHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListOutboundTaskHistory200JSONResponse OutboundTaskHistoryPage
+
+func (response ListOutboundTaskHistory200JSONResponse) VisitListOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOutboundTaskHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListOutboundTaskHistory400JSONResponse) VisitListOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOutboundTaskHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListOutboundTaskHistory401JSONResponse) VisitListOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOutboundTaskHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListOutboundTaskHistory403JSONResponse) VisitListOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOutboundTaskHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListOutboundTaskHistory503JSONResponse) VisitListOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundTaskHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetOutboundTaskHistoryResponseObject interface {
+	VisitGetOutboundTaskHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetOutboundTaskHistory200JSONResponse OutboundTaskHistoryDetail
+
+func (response GetOutboundTaskHistory200JSONResponse) VisitGetOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundTaskHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetOutboundTaskHistory400JSONResponse) VisitGetOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundTaskHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOutboundTaskHistory401JSONResponse) VisitGetOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundTaskHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetOutboundTaskHistory403JSONResponse) VisitGetOutboundTaskHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundTaskHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetOutboundTaskHistory503JSONResponse) VisitGetOutboundTaskHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -71357,6 +71704,12 @@ type StrictServerInterface interface {
 	// Manually reconcile one outcome-unknown local outbound-media effect
 	// (POST /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile)
 	ReconcileOutboundMediaEffect(ctx context.Context, request ReconcileOutboundMediaEffectRequestObject) (ReconcileOutboundMediaEffectResponseObject, error)
+	// Read immutable V1 task observations without retrying or sending
+	// (GET /api/admin/outbound-task-history)
+	ListOutboundTaskHistory(ctx context.Context, request ListOutboundTaskHistoryRequestObject) (ListOutboundTaskHistoryResponseObject, error)
+	// Read one immutable V1 task without executing Provider effects
+	// (GET /api/admin/outbound-task-history/{history_id})
+	GetOutboundTaskHistory(ctx context.Context, request GetOutboundTaskHistoryRequestObject) (GetOutboundTaskHistoryResponseObject, error)
 	// Read a recipient-safe local accepted Campaign handoff summary
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
 	GetOutboundCampaignHandoffSummary(ctx context.Context, request GetOutboundCampaignHandoffSummaryRequestObject) (GetOutboundCampaignHandoffSummaryResponseObject, error)
@@ -76442,6 +76795,58 @@ func (sh *strictHandler) ReconcileOutboundMediaEffect(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileOutboundMediaEffectResponseObject); ok {
 		if err := validResponse.VisitReconcileOutboundMediaEffectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOutboundTaskHistory operation middleware
+func (sh *strictHandler) ListOutboundTaskHistory(w http.ResponseWriter, r *http.Request, params ListOutboundTaskHistoryParams) {
+	var request ListOutboundTaskHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOutboundTaskHistory(ctx, request.(ListOutboundTaskHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOutboundTaskHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOutboundTaskHistoryResponseObject); ok {
+		if err := validResponse.VisitListOutboundTaskHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOutboundTaskHistory operation middleware
+func (sh *strictHandler) GetOutboundTaskHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetOutboundTaskHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOutboundTaskHistory(ctx, request.(GetOutboundTaskHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOutboundTaskHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOutboundTaskHistoryResponseObject); ok {
+		if err := validResponse.VisitGetOutboundTaskHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

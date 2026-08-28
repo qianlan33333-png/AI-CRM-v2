@@ -206,6 +206,7 @@ type Handler struct {
 	profileCatalogHistory   segmentport.ProfileCatalogHistoryReader
 	signupTagHistory        contactport.SignupTagHistoryReader
 	automationHistory       automationport.AutomationHistoryReader
+	outboundTaskHistory     outboundport.OutboundTaskHistoryReader
 	hxcHistory              hxcport.HXCHistoryReader
 	staticMediaHistory      mediaport.StaticMediaHistoryReader
 	customerStateHistory    contactport.CustomerStateHistoryReader
