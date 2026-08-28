@@ -2135,6 +2135,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.marketingStateHistory = segmentstore.NewMarketingStateHistoryReader(pool)
 	legacyHandler.staticProductHistory = productstore.NewStaticProductHistoryReader(pool)
 	legacyHandler.staticCycleHistory = operationstore.NewStaticCycleHistoryReader(pool)
+	legacyHandler.cycleObservationHistory = operationstore.NewCycleObservationReader(pool)
 	legacyHandler.radarClickHistory = radarstore.NewRadarClickHistoryReader(pool)
 	legacyHandler.marketingConfigHistory = automationstore.NewMarketingConfigHistoryReader(pool)
 	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
@@ -3742,6 +3743,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/static-history/cycle-versions/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetStaticHistoryCycleVersion)},
 			{http.MethodGet, "/api/admin/static-history/cycle-documents", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListStaticHistoryCycleDocument)},
 			{http.MethodGet, "/api/admin/static-history/cycle-documents/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetStaticHistoryCycleDocument)},
+			{http.MethodGet, "/api/admin/static-history/cycle-metrics", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListStaticHistoryCycleMetric)},
+			{http.MethodGet, "/api/admin/static-history/cycle-metrics/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetStaticHistoryCycleMetric)},
+			{http.MethodGet, "/api/admin/static-history/cycle-references", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListStaticHistoryCycleReference)},
+			{http.MethodGet, "/api/admin/static-history/cycle-references/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetStaticHistoryCycleReference)},
 			{http.MethodGet, "/api/admin/hxc-history/refreshes/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryMeta)},
 			{http.MethodGet, "/api/admin/hxc-history/snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistorySnapshot)},
 			{http.MethodGet, "/api/admin/hxc-history/snapshots/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistorySnapshot)},

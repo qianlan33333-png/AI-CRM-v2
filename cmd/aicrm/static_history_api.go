@@ -47,6 +47,19 @@ func (h *Handler) GetStaticHistoryCycleDocument(w http.ResponseWriter, r *http.R
 	h.serveStaticHistory(w, r, "CycleDocument", true)
 }
 
+func (h *Handler) ListStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request) {
+	h.serveStaticHistory(w, r, "CycleMetric", false)
+}
+func (h *Handler) GetStaticHistoryCycleMetric(w http.ResponseWriter, r *http.Request) {
+	h.serveStaticHistory(w, r, "CycleMetric", true)
+}
+func (h *Handler) ListStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request) {
+	h.serveStaticHistory(w, r, "CycleReference", false)
+}
+func (h *Handler) GetStaticHistoryCycleReference(w http.ResponseWriter, r *http.Request) {
+	h.serveStaticHistory(w, r, "CycleReference", true)
+}
+
 func (h *Handler) serveStaticHistory(w http.ResponseWriter, r *http.Request, kind string, detail bool) {
 	w.Header().Set("Cache-Control", "no-store")
 	if h == nil || r == nil {
@@ -133,6 +146,34 @@ func (h *Handler) serveStaticHistory(w http.ResponseWriter, r *http.Request, kin
 				if err == nil && parent != nil && v.VersionHistoryID != *parent {
 					err = errStaticHistoryResponse
 				}
+				return v.ID, err
+			})
+	case "CycleMetric":
+		if nilLegacyDependency(h.cycleObservationHistory) {
+			staticHistoryUnavailable(w)
+			return
+		}
+		query := cycleport.CycleObservationQuery{Limit: limit, Offset: offset}
+		writeStaticHistory(w, r, detail, id, limit, offset, h.cycleObservationHistory.GetHistoricalCycleMetric,
+			func(ctx context.Context) ([]cycleport.HistoricalCycleMetric, int64, error) {
+				return h.cycleObservationHistory.ListHistoricalCycleMetric(ctx, query)
+			},
+			func(v cycleport.HistoricalCycleMetric) (int64, error) {
+				_, err := cycleapp.HistoricalCycleMetricDigest(v)
+				return v.ID, err
+			})
+	case "CycleReference":
+		if nilLegacyDependency(h.cycleObservationHistory) {
+			staticHistoryUnavailable(w)
+			return
+		}
+		query := cycleport.CycleObservationQuery{Limit: limit, Offset: offset}
+		writeStaticHistory(w, r, detail, id, limit, offset, h.cycleObservationHistory.GetHistoricalCycleReference,
+			func(ctx context.Context) ([]cycleport.HistoricalCycleReference, int64, error) {
+				return h.cycleObservationHistory.ListHistoricalCycleReference(ctx, query)
+			},
+			func(v cycleport.HistoricalCycleReference) (int64, error) {
+				_, err := cycleapp.HistoricalCycleReferenceDigest(v)
 				return v.ID, err
 			})
 	default:
