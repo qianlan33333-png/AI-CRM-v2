@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp } = {}) {
+async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp);
+      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (couponHistoryHttp) {
         window.Headers = Headers;
         const test = window.__couponHistoryHttpTest = { calls: [], fail: couponHistoryHttp.fail || false };
@@ -180,6 +180,26 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
           if (url.pathname === '/api/admin/refunds') return json({ items: [], total: 0, limit: 20, has_more: false });
           if (url.pathname === '/api/admin/wechat-pay/orders/V1-H-12/external-push-deliveries') return json({ items: [], total: 0 });
           return json({ code: 'unexpected_order_history_request' }, 500);
+        };
+        return;
+      }
+      if (miniProgramHttp) {
+        const calls = [];
+        window.__miniProgramHttpTest = { calls };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          if (url.pathname !== '/api/admin/miniprogram-library') return json({ code: 'unexpected_mini_program_request' }, 500);
+          if (url.searchParams.get('q') === '网络失败') return json({ code: 'unavailable' }, 503);
+          const offset = Number(url.searchParams.get('offset'));
+          const shrunk = url.searchParams.get('q') === '已收缩';
+          return json({
+            items: shrunk && offset === 50 ? [] : [{ id: offset + 1, name: `历史卡片-${offset + 1}`, appid: 'wx-history', pagepath: 'pages/history', title: '历史素材', thumbnail_status: 'ready', enabled: false }],
+            total: shrunk ? 50 : 120,
+            limit: Number(url.searchParams.get('limit')),
+            offset,
+          });
         };
         return;
       }
@@ -622,6 +642,35 @@ const input = (dom, el, v) => {
   el.value = v;
   el.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
 };
+
+console.log('admin/mpLib.html（停用历史素材分页）');
+{
+  const dom = await loadPage('admin/mpLib.html', { miniProgramHttp: true });
+  const d = dom.window.document;
+  const test = dom.window.__miniProgramHttpTest;
+  ok('素材库管理页仅读取首个有限分页并请求停用历史素材', test.calls.length === 1 && test.calls[0].path === '/api/admin/miniprogram-library' && test.calls[0].query.includes('limit=50') && test.calls[0].query.includes('offset=0') && test.calls[0].query.includes('enabled_only=false'));
+  ok('停用素材明确展示为停用，页面说明仅包含历史素材而不自动启用', d.body.textContent.includes('历史卡片-1') && d.body.textContent.includes('已停用') && d.body.textContent.includes('包含已停用的历史素材；不会自动启用或发送'));
+  click(dom, d.querySelector('#mpNext'));
+  await sleep(40);
+  ok('下一页保持停用筛选并使用 offset=50', test.calls.at(-1).query.includes('offset=50') && test.calls.at(-1).query.includes('enabled_only=false') && d.body.textContent.includes('历史卡片-51'));
+  input(dom, d.querySelector('#fMpQuery'), '已收缩');
+  click(dom, d.querySelector('#mpSearch'));
+  await sleep(40);
+  click(dom, d.querySelector('#mpNext'));
+  await sleep(40);
+  ok('服务端总数收缩时空页显示 0-0 且仍可返回上一页', d.body.textContent.includes('显示 0-0 / 50') && test.calls.at(-1).query.includes('offset=50'));
+  click(dom, d.querySelector('#mpPrevious'));
+  await sleep(40);
+  ok('总数收缩后的上一页仍用同一查询读取 offset=0', test.calls.at(-1).query.includes('offset=0') && test.calls.at(-1).query.includes('q=%E5%B7%B2%E6%94%B6%E7%BC%A9'));
+  input(dom, d.querySelector('#fMpQuery'), '网络失败');
+  click(dom, d.querySelector('#mpSearch'));
+  await sleep(40);
+  ok('查询失败清除旧页并显示当前页重试入口', !d.body.textContent.includes('历史卡片-51') && d.body.textContent.includes('重试当前页'));
+  click(dom, d.querySelector('#mpRetry'));
+  await sleep(40);
+  ok('重试沿用失败查询的同页请求而不回退 Mock', test.calls.at(-1).query.includes('offset=0') && test.calls.at(-1).query.includes('q=%E7%BD%91%E7%BB%9C%E5%A4%B1%E8%B4%A5'));
+  dom.window.close();
+}
 
 /* ================= 后台 · 内容雷达 ================= */
 console.log('admin/radar.html（列表）');

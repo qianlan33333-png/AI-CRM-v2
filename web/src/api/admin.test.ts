@@ -660,6 +660,33 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(groupOpsMaterialReadCalls.length === 3 && groupOpsMaterialReadCalls.includes('/api/admin/image-library') && groupOpsMaterialReadCalls.includes('/api/admin/miniprogram-library') && groupOpsMaterialReadCalls.includes('/api/admin/attachment-library') && images.rows.images[0].resourceId === '7' && minis.rows.mpItems[0].resourceId === 8 && attachments.rows.attachItems[0].resourceId === '9', 'group ops material picker scopes image, Mini Program and attachment reads to their real APIs');
   } finally { globalThis.fetch = savedFetch; }
 
+  const miniProgramManagementCalls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input), 'http://localhost');
+    miniProgramManagementCalls.push(url.toString());
+    const offset = Number(url.searchParams.get('offset'));
+    const shrunk = offset === 100;
+    return new Response(JSON.stringify({
+      items: shrunk ? [] : [{ id: offset + 1, name: `历史卡片-${offset + 1}`, appid: 'wx-history', pagepath: 'pages/history', title: '历史素材', thumbnail_status: 'ready', enabled: false }],
+      total: shrunk ? 50 : 120,
+      limit: 50,
+      offset,
+    }), { status: 200 });
+  };
+  try {
+    const first = await readAdminPage({ page: 'mpLib', miniProgramList: { limit: 50, offset: 0, q: '历史' } });
+    const second = await readAdminPage({ page: 'mpLib', miniProgramList: { limit: 50, offset: 50, q: '历史' } });
+    const shrunk = await readAdminPage({ page: 'mpLib', miniProgramList: { limit: 50, offset: 100, q: '历史' } });
+    const firstMeta = (first as typeof first & { miniProgramList?: { total: number; limit: number; offset: number; q: string } }).miniProgramList;
+    const secondMeta = (second as typeof second & { miniProgramList?: { total: number; limit: number; offset: number; q: string } }).miniProgramList;
+    const firstURL = new URL(miniProgramManagementCalls[0]);
+    const secondURL = new URL(miniProgramManagementCalls[1]);
+    assert(miniProgramManagementCalls.length === 3 && firstURL.pathname === '/api/admin/miniprogram-library' && firstURL.searchParams.get('limit') === '50' && firstURL.searchParams.get('offset') === '0' && firstURL.searchParams.get('enabled_only') === 'false' && firstURL.searchParams.get('q') === '历史', 'Mini Program management list requests disabled historical assets with its bounded first page');
+    assert(secondURL.searchParams.get('offset') === '50' && second.rows.mpItems[0].resourceId === 51 && secondMeta?.total === 120 && secondMeta.limit === 50 && secondMeta.offset === 50 && secondMeta.q === '历史', 'Mini Program management list requests the next bounded page and maps server pagination metadata');
+    assert(first.rows.mpItems[0].enabled === false && firstMeta?.offset === 0, 'Mini Program management preserves disabled historical state without enabling it');
+    assert(shrunk.rows.mpItems.length === 0 && (shrunk as typeof shrunk & { miniProgramList?: { total: number; offset: number } }).miniProgramList?.total === 50, 'Mini Program management accepts an empty stale offset after the server total shrinks so the view can return to the previous page');
+  } finally { globalThis.fetch = savedFetch; }
+
   let productWrite: RequestInit | undefined;
   globalThis.fetch = async (_input, init) => { productWrite = init; return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程', description: '说明', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: [], created_by: 1, created_at: '', updated_at: '', version: 1 }), { status: 201 }); };
   try {

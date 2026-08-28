@@ -8,9 +8,14 @@
           </div>
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <input placeholder="搜索卡片标题" style="height:32px;flex:1 1 240px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px">
-              <button style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">重置</button>
+              <input id="fMpQuery" value="{{ mpPage.query }}" placeholder="搜索卡片标题" style="height:32px;flex:1 1 240px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px">
+              <button id="mpSearch" onClick="{{ mpPage.search }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">查询</button>
+              <button id="mpReset" onClick="{{ mpPage.clear }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">重置</button>
+              <span style="font-size:12px;color:#646A73">包含已停用的历史素材；不会自动启用或发送</span>
             </div>
+            <sc-if value="{{ mpPage.error }}"><div style="padding:10px 12px;border:1px solid #FBC4C2;border-radius:6px;background:#FFF5F5;color:#B42318;font-size:13px">{{ mpPage.error }} <button id="mpRetry" onClick="{{ mpPage.retry }}" style="height:26px;margin-left:8px;padding:0 8px;border:1px solid #FBC4C2;border-radius:4px;background:#fff;color:#B42318;font-size:12px;cursor:pointer">重试当前页</button></div></sc-if>
+            <sc-if value="{{ mpPage.loading }}"><div style="padding:10px 0;color:#646A73;font-size:13px">正在读取小程序素材…</div></sc-if>
+            <sc-if value="{{ mpPage.empty }}"><div style="padding:10px 0;color:#646A73;font-size:13px">当前条件下没有小程序素材。</div></sc-if>
             <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
               <sc-for list="{{ rows.mpItems }}" as="m" hint-placeholder-count="4">
                 <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
@@ -19,11 +24,17 @@
                   <div style="padding:10px 12px;display:grid;gap:6px">
                     <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}</div>
                     <div style="font-size:12px;color:{{ m.statusColor }}">● {{ m.thumbStatus }}</div>
+                    <div style="font-size:12px;color:#646A73">{{ m.enabledLabel }}</div>
                     <div style="display:flex;gap:2px"><button onClick="{{ m.edit }}" style="height:24px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:#245BDB;font-size:12px;cursor:pointer;white-space:nowrap">编辑</button><button onClick="{{ m.del }}" style="height:24px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:#D83931;font-size:12px;cursor:pointer;white-space:nowrap">删除</button></div>
                   </div>
                  </div>
                 </div>
               </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;color:#646A73;font-size:12px">
+              <span>{{ mpPage.rangeLabel }}</span>
+              <button id="mpPrevious" onClick="{{ mpPage.previous }}" style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:5px;background:#fff;color:#344054;font-size:12px;cursor:pointer">上一页</button>
+              <button id="mpNext" onClick="{{ mpPage.next }}" style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:5px;background:#fff;color:#344054;font-size:12px;cursor:pointer">下一页</button>
             </div>
           </div>
 

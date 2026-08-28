@@ -1137,13 +1137,43 @@ export interface CustomerListQuery {
   ownerStaffId?: number;
   tagId?: number;
 }
-export interface AdminReadContext { page?: string; id?: string; customerList?: CustomerListQuery }
+export interface MiniProgramListQuery {
+  limit: 20 | 50;
+  offset: number;
+  q?: string;
+}
+export interface MiniProgramListPage {
+  total: number;
+  limit: number;
+  offset: number;
+  q: string;
+}
+export type AdminDbWithMiniProgramList = AdminDb & { miniProgramList?: MiniProgramListPage };
+export interface AdminReadContext { page?: string; id?: string; customerList?: CustomerListQuery; miniProgramList?: MiniProgramListQuery }
+
+const miniProgramListParams = (query?: MiniProgramListQuery): { limit: number; offset: number; enabled_only: false; q?: string } | undefined => {
+  if (!query) return undefined;
+  if ((query.limit !== 20 && query.limit !== 50) || !Number.isSafeInteger(query.offset) || query.offset < 0) throw new Error('小程序素材分页参数无效');
+  const q = query.q?.trim() || '';
+  return { limit: query.limit, offset: query.offset, enabled_only: false, ...(q ? { q } : {}) };
+};
+
+const miniProgramListPage = (value: unknown, query: MiniProgramListQuery): MiniProgramListPage => {
+  const source = obj(value);
+  const total = Number(source.total);
+  const limit = Number(source.limit);
+  const offset = Number(source.offset);
+  const items = list(value, 'items', 'mini_programs');
+  if (!Number.isSafeInteger(total) || total < 0 || limit !== query.limit || offset !== query.offset || items.length > limit || (items.length > 0 && offset + items.length > total)) throw new Error('小程序素材分页响应无效');
+  return { total, limit, offset, q: query.q?.trim() || '' };
+};
 
 /** Shared lists are loaded from current operations only. A rejected request reaches the page error state. */
-export async function readAdminRows(page?: string, customerList?: CustomerListQuery): Promise<AdminDb> {
+export async function readAdminRows(page?: string, customerList?: CustomerListQuery, miniProgramList?: MiniProgramListQuery): Promise<AdminDbWithMiniProgramList> {
   const opt = apiRequestOptions();
   const needs = (...screens: string[]) => !page || screens.includes(page);
   const skip = Promise.resolve({});
+  const miniProgramParams = miniProgramListParams(miniProgramList);
   const customerParams = {
     limit: 50,
     ...(customerList?.cursor ? { cursor: customerList.cursor } : {}),
@@ -1162,7 +1192,7 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     needs('coupons', 'couponForm', 'couponData') ? call(listLegacyCoupons(undefined, opt)) : skip,
     needs('images') ? call(getLegacyImageList(undefined, opt)) : skip,
     needs('attach') ? call(listLegacyAttachments(undefined, opt)) : skip,
-    needs('mpLib') ? call(listLegacyMiniPrograms(undefined, opt)) : skip,
+    needs('mpLib') ? call(listLegacyMiniPrograms(miniProgramParams, opt)) : skip,
     needs('tags', 'channelForm') ? call(listLegacyWecomTagGroups(opt)) : skip,
     needs('tags', 'channelForm') ? call(listLegacyWecomTags(opt)) : skip,
     needs('radar', 'radarDetail', 'radarForm') ? call(listRadarLinks(undefined, opt)) : skip,
@@ -1177,12 +1207,12 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     needs('config', 'configDetail') ? call(listAdminOpsReleases(opt)) : skip,
   ]);
   const [customers, questionnaires, channels, orders, products, spProducts, coupons, images, attachments, minis, tagGroups, tags, radar, audienceGroups, audiencePackages, groupOps, groupOpsMembers, config, hxc, appSettings, pushCapabilities, releases] = responses; const db = emptyAdminDb();
-  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); const customerSource = obj(customers); db.customerList = { total: typeof customerSource.total === 'number' ? customerSource.total : db.rows.customers.length, totalIsEstimate: customerSource.total_is_estimate === true, nextCursor: typeof customerSource.next_cursor === 'string' ? customerSource.next_cursor : null }; db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map(productPageDto); db.rows.spProducts = list(spProducts, 'items').map(serviceProductPageDto); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items', 'attachments').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items', 'groups').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.groupOpsPlans = list(groupOps, 'items').map(groupOpsPlanDto); if (needs('groupops', 'groupopsDetail')) db.staff = groupOpsOperationMembersDto(groupOpsMembers); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); if (obj(appSettings).config) db.configCategories.push(appSettingsPageDto(appSettings)); if (obj(pushCapabilities).capabilities) db.configCategories.push(readOnlyConfigPageDto('push-capabilities', pushCapabilities)); if (Array.isArray(obj(releases).releases)) db.configCategories.push(readOnlyConfigPageDto('releases', releases)); db.rows.agents = list(hxc, 'send_configs').map((x) => hxcSenderPageDto(x as LegacyHXCSenderConfig)); return db;
+  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); const customerSource = obj(customers); db.customerList = { total: typeof customerSource.total === 'number' ? customerSource.total : db.rows.customers.length, totalIsEstimate: customerSource.total_is_estimate === true, nextCursor: typeof customerSource.next_cursor === 'string' ? customerSource.next_cursor : null }; db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map(productPageDto); db.rows.spProducts = list(spProducts, 'items').map(serviceProductPageDto); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); if (miniProgramList) Object.assign(db, { miniProgramList: miniProgramListPage(minis, miniProgramList) }); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.groupOpsPlans = list(groupOps, 'items').map(groupOpsPlanDto); if (needs('groupops', 'groupopsDetail')) db.staff = groupOpsOperationMembersDto(groupOpsMembers); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); if (obj(appSettings).config) db.configCategories.push(appSettingsPageDto(appSettings)); if (obj(pushCapabilities).capabilities) db.configCategories.push(readOnlyConfigPageDto('push-capabilities', pushCapabilities)); if (Array.isArray(obj(releases).releases)) db.configCategories.push(readOnlyConfigPageDto('releases', releases)); db.rows.agents = list(hxc, 'send_configs').map((x) => hxcSenderPageDto(x as LegacyHXCSenderConfig)); return db;
 }
 
 /** Detail page reads are deliberately page-scoped and never synthesize demo records. */
-export async function readAdminPage(context: AdminReadContext = {}): Promise<AdminDb> {
-  const db = await readAdminRows(context.page, context.customerList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
+export async function readAdminPage(context: AdminReadContext = {}): Promise<AdminDbWithMiniProgramList> {
+  const db = await readAdminRows(context.page, context.customerList, context.miniProgramList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
   if (context.page === 'customerDetail') {
     if (!id || !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(numeric)) {
       db.customerDetail = { status: 'not_found', context: null, survey: null, error: '客户档案不存在或 OneID 无效' };
