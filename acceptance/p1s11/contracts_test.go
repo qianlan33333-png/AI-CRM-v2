@@ -218,6 +218,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListCampaignHistoryDefinitions", "GetCampaignHistoryDefinition", "ListCampaignHistoryDefinitionSteps",
 		"ListMarketingStateHistorySnapshot", "GetMarketingStateHistorySnapshot", "ListMarketingStateHistoryChange", "GetMarketingStateHistoryChange", "ListMarketingStateHistoryValueSnapshot", "GetMarketingStateHistoryValueSnapshot", "ListMarketingStateHistoryValueChange", "GetMarketingStateHistoryValueChange",
 		"ListBroadcastJobHistory", "GetBroadcastJobHistory",
+		"ListOutboundTaskHistory", "GetOutboundTaskHistory",
 		"ListAudienceHistoryGroups", "ListAudienceHistoryPackages", "ListAudienceHistoryVersions", "ListAudienceHistorySenders", "ListAudienceHistoryRules", "ListAudienceHistoryRuleVersions", "ListAudienceHistoryDefinitions", "ListAudienceHistoryMembers", "GetAudienceHistoryPackage", "GetAudienceHistoryDefinition",
 		"ListProfileHistoryTemplates", "GetProfileHistoryTemplate", "ListProfileHistoryCategories", "ListProfileHistoryOptionMappings", "ListSignupTagHistoryRules",
 		"GetChannelHistory",

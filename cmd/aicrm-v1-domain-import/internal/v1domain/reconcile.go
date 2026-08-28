@@ -162,6 +162,7 @@ var targetBySourceTable = map[string]struct {
 	legacyMarketingStateTable:                          {"segment", legacyMarketingStateTarget},
 	legacyMarketingValueTable:                          {"segment", legacyMarketingValueTarget},
 	broadcastJobHistoryTableID:                         {"outbound", broadcastJobHistoryTargetTable},
+	outboundTaskHistoryTableID:                         {"outbound", outboundTaskHistoryTargetTable},
 	marketingStateSnapshotTable:                        {"segment", marketingStateSnapshotTarget},
 	marketingStateChangeTable:                          {"segment", marketingStateChangeTarget},
 	valueSegmentSnapshotTable:                          {"segment", valueSegmentSnapshotTarget},
@@ -442,7 +443,7 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			}
 		}
 		proof := "terminal:" + row.Disposition
-		if isLegacyMarketingHistorySource(row.TableID) || row.TableID == broadcastJobHistoryTableID || isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isWeComContactHistorySource(row.TableID) || isRadarClickHistorySource(row.TableID) || isMarketingConfigHistorySource(row.TableID) {
+		if isLegacyMarketingHistorySource(row.TableID) || row.TableID == broadcastJobHistoryTableID || row.TableID == outboundTaskHistoryTableID || isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isWeComContactHistorySource(row.TableID) || isRadarClickHistorySource(row.TableID) || isMarketingConfigHistorySource(row.TableID) {
 			if err = tx.QueryRow(ctx, archiveFieldDigestSQL,
 				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
 				return ReconciliationResult{}, ErrConflict
@@ -550,6 +551,9 @@ WHERE p.import_version='v1-domain-a1' AND p.archive_run_id=$1 AND p.adapter_id=$
 }
 
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
+	if row.TableID == outboundTaskHistoryTableID {
+		return verifyOutboundTaskHistoryTarget(ctx, tx, row)
+	}
 	if row.TableID == broadcastJobHistoryTableID {
 		return verifyBroadcastJobHistoryTarget(ctx, tx, row)
 	}

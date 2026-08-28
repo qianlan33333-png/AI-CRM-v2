@@ -181,6 +181,7 @@ type runtimeConfigDeclaration struct {
 type Handler struct {
 	wecomContactHistory       contactport.WeComContactHistoryReader
 	campaignHistory           campaignport.CampaignHistoryReader
+	outboundTaskHistory       outboundport.OutboundTaskHistoryReader
 	campaignDefinitionHistory campaignport.CampaignDefinitionHistoryReader
 	auth                      authport.Service
 	customers                 customerListApplication
