@@ -2118,6 +2118,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
+	legacyHandler.broadcastJobHistory = outboundstore.NewBroadcastJobHistoryReader(pool)
 	legacyHandler.profileCatalogHistory = segmentstore.NewProfileCatalogHistoryReader(pool)
 	legacyHandler.signupTagHistory = contactstore.NewSignupTagHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
@@ -3688,6 +3689,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/hxc-history/refreshes", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryMeta)},
 			{http.MethodGet, "/api/admin/customer-state-history/snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCustomerStateHistorySnapshot)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingStateHistorySnapshot)},
+			{http.MethodGet, "/api/admin/broadcast-job-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListBroadcastJobHistory)},
+			{http.MethodGet, "/api/admin/broadcast-job-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetBroadcastJobHistory)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-snapshots/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingStateHistorySnapshot)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-changes", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingStateHistoryChange)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-changes/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingStateHistoryChange)},

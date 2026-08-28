@@ -5,6 +5,95 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface BroadcastJobHistory {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  original_source_type: string;
+  source_table: string;
+  scheduled_for: string;
+  priority: number;
+  original_status: string;
+  requires_approval: boolean;
+  /** @nullable */
+  approved_at: string | null;
+  /** @nullable */
+  cancelled_at: string | null;
+  target_count: number;
+  content_type: string;
+  attempt_count: number;
+  sent_count: number;
+  failed_count: number;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  claimed_at: string | null;
+  /** @nullable */
+  sent_at: string | null;
+  /** @nullable */
+  lease_expires_at: string | null;
+  /** @nullable */
+  business_domain: string | null;
+  /** @nullable */
+  channel: string | null;
+  /** @nullable */
+  target_kind: string | null;
+  /** @nullable */
+  failure_type: string | null;
+  max_attempts: number;
+  /** @nullable */
+  next_retry_at: string | null;
+  /** @nullable */
+  dispatch_started_at: string | null;
+  original_side_effect_executed: boolean;
+  original_provider_result_received: boolean;
+  original_reconciliation_required: boolean;
+  /** @nullable */
+  completed_at: string | null;
+  /** @nullable */
+  hold_at: string | null;
+}
+
+export type BroadcastJobHistoryPageSource =
+  (typeof BroadcastJobHistoryPageSource)[keyof typeof BroadcastJobHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BroadcastJobHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface BroadcastJobHistoryPage {
+  source: BroadcastJobHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: BroadcastJobHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type BroadcastJobHistoryDetailSource =
+  (typeof BroadcastJobHistoryDetailSource)[keyof typeof BroadcastJobHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BroadcastJobHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface BroadcastJobHistoryDetail {
+  source: BroadcastJobHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: BroadcastJobHistory;
+}
+
 export type MarketingStateHistorySnapshotDetailSource =
   (typeof MarketingStateHistorySnapshotDetailSource)[keyof typeof MarketingStateHistorySnapshotDetailSource];
 
@@ -20150,6 +20239,18 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListBroadcastJobHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListMarketingStateHistorySnapshotParams = {
   /**
    * @minimum 1
@@ -22798,6 +22899,158 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read inert V1 job observations without rescheduling or Provider calls
+ */
+export type listBroadcastJobHistoryResponse200 = {
+  data: BroadcastJobHistoryPage;
+  status: 200;
+};
+
+export type listBroadcastJobHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listBroadcastJobHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listBroadcastJobHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listBroadcastJobHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listBroadcastJobHistoryResponseSuccess =
+  listBroadcastJobHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listBroadcastJobHistoryResponseError = (
+  | listBroadcastJobHistoryResponse400
+  | listBroadcastJobHistoryResponse401
+  | listBroadcastJobHistoryResponse403
+  | listBroadcastJobHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listBroadcastJobHistoryResponse =
+  listBroadcastJobHistoryResponseSuccess | listBroadcastJobHistoryResponseError;
+
+export const getListBroadcastJobHistoryUrl = (
+  params?: ListBroadcastJobHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/broadcast-job-history?${stringifiedParams}`
+    : `/api/admin/broadcast-job-history`;
+};
+
+export const listBroadcastJobHistory = async (
+  params?: ListBroadcastJobHistoryParams,
+  options?: RequestInit,
+): Promise<listBroadcastJobHistoryResponse> => {
+  const res = await fetch(getListBroadcastJobHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listBroadcastJobHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listBroadcastJobHistoryResponse;
+};
+
+/**
+ * @summary Read inert V1 job observations without rescheduling or Provider calls
+ */
+export type getBroadcastJobHistoryResponse200 = {
+  data: BroadcastJobHistoryDetail;
+  status: 200;
+};
+
+export type getBroadcastJobHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getBroadcastJobHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getBroadcastJobHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getBroadcastJobHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getBroadcastJobHistoryResponseSuccess =
+  getBroadcastJobHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getBroadcastJobHistoryResponseError = (
+  | getBroadcastJobHistoryResponse400
+  | getBroadcastJobHistoryResponse401
+  | getBroadcastJobHistoryResponse403
+  | getBroadcastJobHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getBroadcastJobHistoryResponse =
+  getBroadcastJobHistoryResponseSuccess | getBroadcastJobHistoryResponseError;
+
+export const getGetBroadcastJobHistoryUrl = (historyId: number) => {
+  return `/api/admin/broadcast-job-history/${historyId}`;
+};
+
+export const getBroadcastJobHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getBroadcastJobHistoryResponse> => {
+  const res = await fetch(getGetBroadcastJobHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getBroadcastJobHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getBroadcastJobHistoryResponse;
 };
 
 /**

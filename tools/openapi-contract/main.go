@@ -139,6 +139,8 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"listBroadcastJobHistory":                {"/api/admin/broadcast-job-history", "GET", "P4-V1-BROADCAST-JOB-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "outbound.read_only_v1_broadcast_job_history", "none", map[string]string{"admin": "global"}},
+	"getBroadcastJobHistory":                 {"/api/admin/broadcast-job-history/{history_id}", "GET", "P4-V1-BROADCAST-JOB-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "outbound.read_only_v1_broadcast_job_history", "none", map[string]string{"admin": "global"}},
 	"listMarketingStateHistorySnapshot":      {"/api/admin/marketing-state-history/state-snapshots", "GET", "P4-V1-MARKETING-STATE-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_marketing_state_history", "none", map[string]string{"admin": "global"}},
 	"getMarketingStateHistorySnapshot":       {"/api/admin/marketing-state-history/state-snapshots/{history_id}", "GET", "P4-V1-MARKETING-STATE-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_marketing_state_history", "none", map[string]string{"admin": "global"}},
 	"listMarketingStateHistoryChange":        {"/api/admin/marketing-state-history/state-changes", "GET", "P4-V1-MARKETING-STATE-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_marketing_state_history", "none", map[string]string{"admin": "global"}},

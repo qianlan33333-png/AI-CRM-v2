@@ -30,6 +30,7 @@ import { mountContactHistory } from './sections/contactHistory';
 import { mountStaticHistory } from './sections/staticHistory';
 import { mountCustomerStateHistory } from './sections/customerStateHistory';
 import { mountMarketingStateHistory } from './sections/marketingStateHistory';
+import { mountBroadcastJobHistory } from './sections/broadcastJobHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -41,6 +42,10 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'automation' && historyQuery.get('broadcast_job_history') === '1') {
+    void mountBroadcastJobHistory(stage, { historyID: historyQuery.get('history_id') ?? undefined }).catch(() => { stage.innerHTML = '<p role="alert">群发任务历史读取失败；未创建或发送任务。</p>'; });
+    return;
+  }
   if (page === 'config' && historyQuery.get('marketing_state_history') === '1') {
     void mountMarketingStateHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">营销状态历史读取失败；未进入当前配置。</p>'; });
     return;
@@ -210,6 +215,9 @@ function boot(): void {
   void controller.init()
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
+      if (page === 'automation') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?broadcast_job_history=1">V1 群发任务历史（只读）</a></p>');
+      }
       if (page === 'groupops') {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
       }

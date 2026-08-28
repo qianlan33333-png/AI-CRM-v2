@@ -2577,6 +2577,7 @@ console.log('member-grid-share/index.html（公开会员网格 token fragment）
   failed.window.close();
 }
 await import('./automation-history-e2e.mjs');
+await import('./broadcast-job-history-e2e.mjs');
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);

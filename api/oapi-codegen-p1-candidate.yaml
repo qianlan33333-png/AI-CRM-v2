@@ -7,6 +7,7 @@ generate:
 output-options:
   include-tags:
     - p4-marketing-state-history
+    - p4-broadcast-job-history
     - p4-static-history
     - p4-customer-state-history
     - p4-hxc-history
