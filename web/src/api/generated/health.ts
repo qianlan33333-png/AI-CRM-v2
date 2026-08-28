@@ -11,6 +11,346 @@
  */
 export type AutomationHistoryDigest = number[];
 
+/**
+ * @minItems 32
+ * @maxItems 32
+ */
+export type HXCHistoryDigest = number[];
+
+export interface HXCHistoryMeta {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  source_key_digest: HXCHistoryDigest;
+  source_payload_digest: HXCHistoryDigest;
+  started_at: string;
+  /** @nullable */
+  finished_at: string | null;
+  status: string;
+  row_count: number;
+  member_hit: number;
+  user_hit: number;
+  only_member: number;
+  trigger_source: string;
+}
+
+export type HXCHistoryMetaPageSource =
+  (typeof HXCHistoryMetaPageSource)[keyof typeof HXCHistoryMetaPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryMetaPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryMetaPage {
+  source: HXCHistoryMetaPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistoryMeta[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistoryMetaDetailSource =
+  (typeof HXCHistoryMetaDetailSource)[keyof typeof HXCHistoryMetaDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryMetaDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryMetaDetail {
+  source: HXCHistoryMetaDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistoryMeta;
+}
+
+export type HXCHistorySnapshotObservation =
+  (typeof HXCHistorySnapshotObservation)[keyof typeof HXCHistorySnapshotObservation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySnapshotObservation = {
+  observed_snapshot: "observed_snapshot",
+} as const;
+
+export interface HXCHistorySnapshot {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  source_key_digest: HXCHistoryDigest;
+  source_payload_digest: HXCHistoryDigest;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  observation: HXCHistorySnapshotObservation;
+  observed_at: string;
+  in_lead_pool: boolean;
+  in_people: boolean;
+  in_questionnaire: boolean;
+  /** @nullable */
+  class_term_no: number | null;
+  class_term_label: string;
+  crm_hxc_state: string;
+  /** @nullable */
+  crm_created_at: string | null;
+  /** @nullable */
+  last_questionnaire_at: string | null;
+  hxc_member_hit: boolean;
+  hxc_user_hit: boolean;
+  funnel_state: string;
+  hxc_member_status: string;
+  /** @nullable */
+  hxc_registered_at: string | null;
+  /** @nullable */
+  hxc_last_login_at: string | null;
+  membership_type: string;
+  membership_status: string;
+  /** @nullable */
+  membership_end_at: string | null;
+  /** @nullable */
+  membership_days_left: number | null;
+  /** @nullable */
+  consultation_used: number | null;
+  /** @nullable */
+  consultation_limit: number | null;
+  conversation_chat: number;
+  conversation_consult: number;
+  conversation_lesson: number;
+  messages_user: number;
+  messages_ai: number;
+  consult_completed: number;
+  /** @nullable */
+  last_message_at: string | null;
+  subscription_tier: string;
+  /** @nullable */
+  subscription_expires: string | null;
+  /** @nullable */
+  subscription_quota: number | null;
+  /** @nullable */
+  subscription_used: number | null;
+  /** @nullable */
+  subscription_period_start: string | null;
+}
+
+export type HXCHistorySnapshotPageSource =
+  (typeof HXCHistorySnapshotPageSource)[keyof typeof HXCHistorySnapshotPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySnapshotPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistorySnapshotPage {
+  source: HXCHistorySnapshotPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistorySnapshot[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistorySnapshotDetailSource =
+  (typeof HXCHistorySnapshotDetailSource)[keyof typeof HXCHistorySnapshotDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistorySnapshotDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistorySnapshotDetail {
+  source: HXCHistorySnapshotDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistorySnapshot;
+}
+
+export type HXCHistoryActivationSourceTable =
+  (typeof HXCHistoryActivationSourceTable)[keyof typeof HXCHistoryActivationSourceTable];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryActivationSourceTable = {
+  "public/user_ops_activation_status_source":
+    "public/user_ops_activation_status_source",
+  "public/user_ops_huangxiaocan_activation_source":
+    "public/user_ops_huangxiaocan_activation_source",
+} as const;
+
+export interface HXCHistoryActivation {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  source_key_digest: HXCHistoryDigest;
+  source_payload_digest: HXCHistoryDigest;
+  source_table: HXCHistoryActivationSourceTable;
+  original_state: string;
+  is_active: boolean;
+  /** @nullable */
+  legacy_import_batch_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HXCHistoryActivationPageSource =
+  (typeof HXCHistoryActivationPageSource)[keyof typeof HXCHistoryActivationPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryActivationPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryActivationPage {
+  source: HXCHistoryActivationPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistoryActivation[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistoryActivationDetailSource =
+  (typeof HXCHistoryActivationDetailSource)[keyof typeof HXCHistoryActivationDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryActivationDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryActivationDetail {
+  source: HXCHistoryActivationDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistoryActivation;
+}
+
+export interface HXCHistoryLead {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  source_key_digest: HXCHistoryDigest;
+  source_payload_digest: HXCHistoryDigest;
+  original_type: string;
+  is_active: boolean;
+  /** @nullable */
+  legacy_import_batch_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HXCHistoryLeadPageSource =
+  (typeof HXCHistoryLeadPageSource)[keyof typeof HXCHistoryLeadPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryLeadPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryLeadPage {
+  source: HXCHistoryLeadPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistoryLead[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistoryLeadDetailSource =
+  (typeof HXCHistoryLeadDetailSource)[keyof typeof HXCHistoryLeadDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryLeadDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryLeadDetail {
+  source: HXCHistoryLeadDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistoryLead;
+}
+
+export interface HXCHistoryBatch {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  source_key_digest: HXCHistoryDigest;
+  source_payload_digest: HXCHistoryDigest;
+  import_type: string;
+  total_rows: number;
+  success_rows: number;
+  failed_rows: number;
+  created_at: string;
+}
+
+export type HXCHistoryBatchPageSource =
+  (typeof HXCHistoryBatchPageSource)[keyof typeof HXCHistoryBatchPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryBatchPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryBatchPage {
+  source: HXCHistoryBatchPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistoryBatch[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistoryBatchDetailSource =
+  (typeof HXCHistoryBatchDetailSource)[keyof typeof HXCHistoryBatchDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryBatchDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryBatchDetail {
+  source: HXCHistoryBatchDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistoryBatch;
+}
+
 export interface AutomationHistorySOP {
   /** @minimum 1 */
   id: number;
@@ -18102,6 +18442,227 @@ export interface MessageHistoryDetail {
   item: MessageHistoryItem;
 }
 
+export interface ProfileCatalogHistoryTemplate {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_key_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+  template_code: string;
+  template_name: string;
+  /** @nullable */
+  questionnaire_source_id: number | null;
+  /** @nullable */
+  segmentation_question_source_id: number | null;
+  /** @nullable */
+  program_source_id: number | null;
+  description: string;
+  original_enabled: boolean;
+  version: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  created_by_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  updated_by_digest: number[];
+  created_at: string;
+  updated_at: string;
+}
+
+export type ProfileCatalogHistoryTemplatePageSource =
+  (typeof ProfileCatalogHistoryTemplatePageSource)[keyof typeof ProfileCatalogHistoryTemplatePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProfileCatalogHistoryTemplatePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ProfileCatalogHistoryTemplatePage {
+  source: ProfileCatalogHistoryTemplatePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ProfileCatalogHistoryTemplate[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type ProfileCatalogHistoryTemplateDetailSource =
+  (typeof ProfileCatalogHistoryTemplateDetailSource)[keyof typeof ProfileCatalogHistoryTemplateDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProfileCatalogHistoryTemplateDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ProfileCatalogHistoryTemplateDetail {
+  source: ProfileCatalogHistoryTemplateDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: ProfileCatalogHistoryTemplate;
+}
+
+export interface ProfileCatalogHistoryCategory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_key_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+  template_source_id: number;
+  /** @minimum 1 */
+  template_history_id: number;
+  category_key: string;
+  category_name: string;
+  description: string;
+  sort_order: number;
+  original_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ProfileCatalogHistoryCategoryPageSource =
+  (typeof ProfileCatalogHistoryCategoryPageSource)[keyof typeof ProfileCatalogHistoryCategoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProfileCatalogHistoryCategoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ProfileCatalogHistoryCategoryPage {
+  source: ProfileCatalogHistoryCategoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ProfileCatalogHistoryCategory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface ProfileCatalogHistoryOptionMapping {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_key_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+  template_source_id: number;
+  category_source_id: number;
+  /** @minimum 1 */
+  template_history_id: number;
+  /** @minimum 1 */
+  category_history_id: number;
+  question_source_id: number;
+  option_source_id: number;
+  created_at: string;
+}
+
+export type ProfileCatalogHistoryOptionMappingPageSource =
+  (typeof ProfileCatalogHistoryOptionMappingPageSource)[keyof typeof ProfileCatalogHistoryOptionMappingPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProfileCatalogHistoryOptionMappingPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ProfileCatalogHistoryOptionMappingPage {
+  source: ProfileCatalogHistoryOptionMappingPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ProfileCatalogHistoryOptionMapping[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface ProfileCatalogHistorySignupTagRule {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_key_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+  tag_source_id: string;
+  tag_name: string;
+  signup_status: string;
+  original_active: boolean;
+  updated_at: string;
+}
+
+export type ProfileCatalogHistorySignupTagRulePageSource =
+  (typeof ProfileCatalogHistorySignupTagRulePageSource)[keyof typeof ProfileCatalogHistorySignupTagRulePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProfileCatalogHistorySignupTagRulePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ProfileCatalogHistorySignupTagRulePage {
+  source: ProfileCatalogHistorySignupTagRulePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: ProfileCatalogHistorySignupTagRule[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
 export interface AudienceHistoryGroup {
   /** @minimum 1 */
   id: number;
@@ -18884,6 +19445,82 @@ export type PushCenterCreatedToFilterParameter = string;
  * Route-bound token. Required either here or in the closed JSON body.
  */
 export type AdminOpsActionTokenParameter = string;
+
+export type ListHXCHistoryMetaParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListHXCHistorySnapshotParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+  /**
+   * @minimum 1
+   */
+  customer_id?: number;
+};
+
+export type ListHXCHistoryActivationParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+  source_table?: ListHXCHistoryActivationSourceTable;
+};
+
+export type ListHXCHistoryActivationSourceTable =
+  (typeof ListHXCHistoryActivationSourceTable)[keyof typeof ListHXCHistoryActivationSourceTable];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListHXCHistoryActivationSourceTable = {
+  "public/user_ops_activation_status_source":
+    "public/user_ops_activation_status_source",
+  "public/user_ops_huangxiaocan_activation_source":
+    "public/user_ops_huangxiaocan_activation_source",
+} as const;
+
+export type ListHXCHistoryLeadParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListHXCHistoryBatchParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
 
 export type ListAutomationHistorySOPsParams = {
   /**
@@ -21103,6 +21740,54 @@ export const ListMessageHistoryChatType = {
   group: "group",
 } as const;
 
+export type ListProfileHistoryTemplatesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListProfileHistoryCategoriesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListProfileHistoryOptionMappingsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListSignupTagHistoryRulesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListAudienceHistoryGroupsParams = {
   /**
    * @minimum 1
@@ -21257,6 +21942,751 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type listHXCHistoryMetaResponse200 = {
+  data: HXCHistoryMetaPage;
+  status: 200;
+};
+
+export type listHXCHistoryMetaResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistoryMetaResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistoryMetaResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistoryMetaResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistoryMetaResponseSuccess =
+  listHXCHistoryMetaResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistoryMetaResponseError = (
+  | listHXCHistoryMetaResponse400
+  | listHXCHistoryMetaResponse401
+  | listHXCHistoryMetaResponse403
+  | listHXCHistoryMetaResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistoryMetaResponse =
+  listHXCHistoryMetaResponseSuccess | listHXCHistoryMetaResponseError;
+
+export const getListHXCHistoryMetaUrl = (params?: ListHXCHistoryMetaParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/refreshes?${stringifiedParams}`
+    : `/api/admin/hxc-history/refreshes`;
+};
+
+export const listHXCHistoryMeta = async (
+  params?: ListHXCHistoryMetaParams,
+  options?: RequestInit,
+): Promise<listHXCHistoryMetaResponse> => {
+  const res = await fetch(getListHXCHistoryMetaUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistoryMetaResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistoryMetaResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type getHXCHistoryMetaResponse200 = {
+  data: HXCHistoryMetaDetail;
+  status: 200;
+};
+
+export type getHXCHistoryMetaResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistoryMetaResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistoryMetaResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistoryMetaResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistoryMetaResponseSuccess = getHXCHistoryMetaResponse200 & {
+  headers: Headers;
+};
+export type getHXCHistoryMetaResponseError = (
+  | getHXCHistoryMetaResponse400
+  | getHXCHistoryMetaResponse401
+  | getHXCHistoryMetaResponse403
+  | getHXCHistoryMetaResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistoryMetaResponse =
+  getHXCHistoryMetaResponseSuccess | getHXCHistoryMetaResponseError;
+
+export const getGetHXCHistoryMetaUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/refreshes/${historyId}`;
+};
+
+export const getHXCHistoryMeta = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistoryMetaResponse> => {
+  const res = await fetch(getGetHXCHistoryMetaUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistoryMetaResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistoryMetaResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type listHXCHistorySnapshotResponse200 = {
+  data: HXCHistorySnapshotPage;
+  status: 200;
+};
+
+export type listHXCHistorySnapshotResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistorySnapshotResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistorySnapshotResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistorySnapshotResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistorySnapshotResponseSuccess =
+  listHXCHistorySnapshotResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistorySnapshotResponseError = (
+  | listHXCHistorySnapshotResponse400
+  | listHXCHistorySnapshotResponse401
+  | listHXCHistorySnapshotResponse403
+  | listHXCHistorySnapshotResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistorySnapshotResponse =
+  listHXCHistorySnapshotResponseSuccess | listHXCHistorySnapshotResponseError;
+
+export const getListHXCHistorySnapshotUrl = (
+  params?: ListHXCHistorySnapshotParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/snapshots?${stringifiedParams}`
+    : `/api/admin/hxc-history/snapshots`;
+};
+
+export const listHXCHistorySnapshot = async (
+  params?: ListHXCHistorySnapshotParams,
+  options?: RequestInit,
+): Promise<listHXCHistorySnapshotResponse> => {
+  const res = await fetch(getListHXCHistorySnapshotUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistorySnapshotResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistorySnapshotResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type getHXCHistorySnapshotResponse200 = {
+  data: HXCHistorySnapshotDetail;
+  status: 200;
+};
+
+export type getHXCHistorySnapshotResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistorySnapshotResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistorySnapshotResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistorySnapshotResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistorySnapshotResponseSuccess =
+  getHXCHistorySnapshotResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistorySnapshotResponseError = (
+  | getHXCHistorySnapshotResponse400
+  | getHXCHistorySnapshotResponse401
+  | getHXCHistorySnapshotResponse403
+  | getHXCHistorySnapshotResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistorySnapshotResponse =
+  getHXCHistorySnapshotResponseSuccess | getHXCHistorySnapshotResponseError;
+
+export const getGetHXCHistorySnapshotUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/snapshots/${historyId}`;
+};
+
+export const getHXCHistorySnapshot = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistorySnapshotResponse> => {
+  const res = await fetch(getGetHXCHistorySnapshotUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistorySnapshotResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistorySnapshotResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type listHXCHistoryActivationResponse200 = {
+  data: HXCHistoryActivationPage;
+  status: 200;
+};
+
+export type listHXCHistoryActivationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistoryActivationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistoryActivationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistoryActivationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistoryActivationResponseSuccess =
+  listHXCHistoryActivationResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistoryActivationResponseError = (
+  | listHXCHistoryActivationResponse400
+  | listHXCHistoryActivationResponse401
+  | listHXCHistoryActivationResponse403
+  | listHXCHistoryActivationResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistoryActivationResponse =
+  | listHXCHistoryActivationResponseSuccess
+  | listHXCHistoryActivationResponseError;
+
+export const getListHXCHistoryActivationUrl = (
+  params?: ListHXCHistoryActivationParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/activations?${stringifiedParams}`
+    : `/api/admin/hxc-history/activations`;
+};
+
+export const listHXCHistoryActivation = async (
+  params?: ListHXCHistoryActivationParams,
+  options?: RequestInit,
+): Promise<listHXCHistoryActivationResponse> => {
+  const res = await fetch(getListHXCHistoryActivationUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistoryActivationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistoryActivationResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type getHXCHistoryActivationResponse200 = {
+  data: HXCHistoryActivationDetail;
+  status: 200;
+};
+
+export type getHXCHistoryActivationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistoryActivationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistoryActivationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistoryActivationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistoryActivationResponseSuccess =
+  getHXCHistoryActivationResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistoryActivationResponseError = (
+  | getHXCHistoryActivationResponse400
+  | getHXCHistoryActivationResponse401
+  | getHXCHistoryActivationResponse403
+  | getHXCHistoryActivationResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistoryActivationResponse =
+  getHXCHistoryActivationResponseSuccess | getHXCHistoryActivationResponseError;
+
+export const getGetHXCHistoryActivationUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/activations/${historyId}`;
+};
+
+export const getHXCHistoryActivation = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistoryActivationResponse> => {
+  const res = await fetch(getGetHXCHistoryActivationUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistoryActivationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistoryActivationResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type listHXCHistoryLeadResponse200 = {
+  data: HXCHistoryLeadPage;
+  status: 200;
+};
+
+export type listHXCHistoryLeadResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistoryLeadResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistoryLeadResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistoryLeadResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistoryLeadResponseSuccess =
+  listHXCHistoryLeadResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistoryLeadResponseError = (
+  | listHXCHistoryLeadResponse400
+  | listHXCHistoryLeadResponse401
+  | listHXCHistoryLeadResponse403
+  | listHXCHistoryLeadResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistoryLeadResponse =
+  listHXCHistoryLeadResponseSuccess | listHXCHistoryLeadResponseError;
+
+export const getListHXCHistoryLeadUrl = (params?: ListHXCHistoryLeadParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/leads?${stringifiedParams}`
+    : `/api/admin/hxc-history/leads`;
+};
+
+export const listHXCHistoryLead = async (
+  params?: ListHXCHistoryLeadParams,
+  options?: RequestInit,
+): Promise<listHXCHistoryLeadResponse> => {
+  const res = await fetch(getListHXCHistoryLeadUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistoryLeadResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistoryLeadResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type getHXCHistoryLeadResponse200 = {
+  data: HXCHistoryLeadDetail;
+  status: 200;
+};
+
+export type getHXCHistoryLeadResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistoryLeadResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistoryLeadResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistoryLeadResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistoryLeadResponseSuccess = getHXCHistoryLeadResponse200 & {
+  headers: Headers;
+};
+export type getHXCHistoryLeadResponseError = (
+  | getHXCHistoryLeadResponse400
+  | getHXCHistoryLeadResponse401
+  | getHXCHistoryLeadResponse403
+  | getHXCHistoryLeadResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistoryLeadResponse =
+  getHXCHistoryLeadResponseSuccess | getHXCHistoryLeadResponseError;
+
+export const getGetHXCHistoryLeadUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/leads/${historyId}`;
+};
+
+export const getHXCHistoryLead = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistoryLeadResponse> => {
+  const res = await fetch(getGetHXCHistoryLeadUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistoryLeadResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistoryLeadResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type listHXCHistoryBatchResponse200 = {
+  data: HXCHistoryBatchPage;
+  status: 200;
+};
+
+export type listHXCHistoryBatchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistoryBatchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistoryBatchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistoryBatchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistoryBatchResponseSuccess =
+  listHXCHistoryBatchResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistoryBatchResponseError = (
+  | listHXCHistoryBatchResponse400
+  | listHXCHistoryBatchResponse401
+  | listHXCHistoryBatchResponse403
+  | listHXCHistoryBatchResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistoryBatchResponse =
+  listHXCHistoryBatchResponseSuccess | listHXCHistoryBatchResponseError;
+
+export const getListHXCHistoryBatchUrl = (
+  params?: ListHXCHistoryBatchParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/batches?${stringifiedParams}`
+    : `/api/admin/hxc-history/batches`;
+};
+
+export const listHXCHistoryBatch = async (
+  params?: ListHXCHistoryBatchParams,
+  options?: RequestInit,
+): Promise<listHXCHistoryBatchResponse> => {
+  const res = await fetch(getListHXCHistoryBatchUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistoryBatchResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistoryBatchResponse;
+};
+
+/**
+ * @summary Read immutable HXC observations without refreshing or executing tasks
+ */
+export type getHXCHistoryBatchResponse200 = {
+  data: HXCHistoryBatchDetail;
+  status: 200;
+};
+
+export type getHXCHistoryBatchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistoryBatchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistoryBatchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistoryBatchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistoryBatchResponseSuccess =
+  getHXCHistoryBatchResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistoryBatchResponseError = (
+  | getHXCHistoryBatchResponse400
+  | getHXCHistoryBatchResponse401
+  | getHXCHistoryBatchResponse403
+  | getHXCHistoryBatchResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistoryBatchResponse =
+  getHXCHistoryBatchResponseSuccess | getHXCHistoryBatchResponseError;
+
+export const getGetHXCHistoryBatchUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/batches/${historyId}`;
+};
+
+export const getHXCHistoryBatch = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistoryBatchResponse> => {
+  const res = await fetch(getGetHXCHistoryBatchUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistoryBatchResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistoryBatchResponse;
 };
 
 /**
@@ -66218,6 +67648,424 @@ export const getMessageHistory = async (
     status: res.status,
     headers: res.headers,
   } as getMessageHistoryResponse;
+};
+
+/**
+ * @summary Read inert V1 profile catalogue facts without activating rules
+ */
+export type listProfileHistoryTemplatesResponse200 = {
+  data: ProfileCatalogHistoryTemplatePage;
+  status: 200;
+};
+
+export type listProfileHistoryTemplatesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProfileHistoryTemplatesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProfileHistoryTemplatesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProfileHistoryTemplatesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listProfileHistoryTemplatesResponseSuccess =
+  listProfileHistoryTemplatesResponse200 & {
+    headers: Headers;
+  };
+export type listProfileHistoryTemplatesResponseError = (
+  | listProfileHistoryTemplatesResponse400
+  | listProfileHistoryTemplatesResponse401
+  | listProfileHistoryTemplatesResponse403
+  | listProfileHistoryTemplatesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listProfileHistoryTemplatesResponse =
+  | listProfileHistoryTemplatesResponseSuccess
+  | listProfileHistoryTemplatesResponseError;
+
+export const getListProfileHistoryTemplatesUrl = (
+  params?: ListProfileHistoryTemplatesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/profile-catalog-history/templates?${stringifiedParams}`
+    : `/api/admin/profile-catalog-history/templates`;
+};
+
+export const listProfileHistoryTemplates = async (
+  params?: ListProfileHistoryTemplatesParams,
+  options?: RequestInit,
+): Promise<listProfileHistoryTemplatesResponse> => {
+  const res = await fetch(getListProfileHistoryTemplatesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProfileHistoryTemplatesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProfileHistoryTemplatesResponse;
+};
+
+/**
+ * @summary Read inert V1 profile catalogue facts without activating rules
+ */
+export type getProfileHistoryTemplateResponse200 = {
+  data: ProfileCatalogHistoryTemplateDetail;
+  status: 200;
+};
+
+export type getProfileHistoryTemplateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getProfileHistoryTemplateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getProfileHistoryTemplateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getProfileHistoryTemplateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getProfileHistoryTemplateResponseSuccess =
+  getProfileHistoryTemplateResponse200 & {
+    headers: Headers;
+  };
+export type getProfileHistoryTemplateResponseError = (
+  | getProfileHistoryTemplateResponse400
+  | getProfileHistoryTemplateResponse401
+  | getProfileHistoryTemplateResponse403
+  | getProfileHistoryTemplateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getProfileHistoryTemplateResponse =
+  | getProfileHistoryTemplateResponseSuccess
+  | getProfileHistoryTemplateResponseError;
+
+export const getGetProfileHistoryTemplateUrl = (templateId: number) => {
+  return `/api/admin/profile-catalog-history/templates/${templateId}`;
+};
+
+export const getProfileHistoryTemplate = async (
+  templateId: number,
+  options?: RequestInit,
+): Promise<getProfileHistoryTemplateResponse> => {
+  const res = await fetch(getGetProfileHistoryTemplateUrl(templateId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getProfileHistoryTemplateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getProfileHistoryTemplateResponse;
+};
+
+/**
+ * @summary Read inert V1 profile catalogue facts without activating rules
+ */
+export type listProfileHistoryCategoriesResponse200 = {
+  data: ProfileCatalogHistoryCategoryPage;
+  status: 200;
+};
+
+export type listProfileHistoryCategoriesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProfileHistoryCategoriesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProfileHistoryCategoriesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProfileHistoryCategoriesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listProfileHistoryCategoriesResponseSuccess =
+  listProfileHistoryCategoriesResponse200 & {
+    headers: Headers;
+  };
+export type listProfileHistoryCategoriesResponseError = (
+  | listProfileHistoryCategoriesResponse400
+  | listProfileHistoryCategoriesResponse401
+  | listProfileHistoryCategoriesResponse403
+  | listProfileHistoryCategoriesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listProfileHistoryCategoriesResponse =
+  | listProfileHistoryCategoriesResponseSuccess
+  | listProfileHistoryCategoriesResponseError;
+
+export const getListProfileHistoryCategoriesUrl = (
+  templateId: number,
+  params?: ListProfileHistoryCategoriesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/profile-catalog-history/templates/${templateId}/categories?${stringifiedParams}`
+    : `/api/admin/profile-catalog-history/templates/${templateId}/categories`;
+};
+
+export const listProfileHistoryCategories = async (
+  templateId: number,
+  params?: ListProfileHistoryCategoriesParams,
+  options?: RequestInit,
+): Promise<listProfileHistoryCategoriesResponse> => {
+  const res = await fetch(
+    getListProfileHistoryCategoriesUrl(templateId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProfileHistoryCategoriesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProfileHistoryCategoriesResponse;
+};
+
+/**
+ * @summary Read inert V1 profile catalogue facts without activating rules
+ */
+export type listProfileHistoryOptionMappingsResponse200 = {
+  data: ProfileCatalogHistoryOptionMappingPage;
+  status: 200;
+};
+
+export type listProfileHistoryOptionMappingsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listProfileHistoryOptionMappingsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listProfileHistoryOptionMappingsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listProfileHistoryOptionMappingsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listProfileHistoryOptionMappingsResponseSuccess =
+  listProfileHistoryOptionMappingsResponse200 & {
+    headers: Headers;
+  };
+export type listProfileHistoryOptionMappingsResponseError = (
+  | listProfileHistoryOptionMappingsResponse400
+  | listProfileHistoryOptionMappingsResponse401
+  | listProfileHistoryOptionMappingsResponse403
+  | listProfileHistoryOptionMappingsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listProfileHistoryOptionMappingsResponse =
+  | listProfileHistoryOptionMappingsResponseSuccess
+  | listProfileHistoryOptionMappingsResponseError;
+
+export const getListProfileHistoryOptionMappingsUrl = (
+  templateId: number,
+  categoryId: number,
+  params?: ListProfileHistoryOptionMappingsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/profile-catalog-history/templates/${templateId}/categories/${categoryId}/option-mappings?${stringifiedParams}`
+    : `/api/admin/profile-catalog-history/templates/${templateId}/categories/${categoryId}/option-mappings`;
+};
+
+export const listProfileHistoryOptionMappings = async (
+  templateId: number,
+  categoryId: number,
+  params?: ListProfileHistoryOptionMappingsParams,
+  options?: RequestInit,
+): Promise<listProfileHistoryOptionMappingsResponse> => {
+  const res = await fetch(
+    getListProfileHistoryOptionMappingsUrl(templateId, categoryId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProfileHistoryOptionMappingsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listProfileHistoryOptionMappingsResponse;
+};
+
+/**
+ * @summary Read inert V1 profile catalogue facts without activating rules
+ */
+export type listSignupTagHistoryRulesResponse200 = {
+  data: ProfileCatalogHistorySignupTagRulePage;
+  status: 200;
+};
+
+export type listSignupTagHistoryRulesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSignupTagHistoryRulesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSignupTagHistoryRulesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSignupTagHistoryRulesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSignupTagHistoryRulesResponseSuccess =
+  listSignupTagHistoryRulesResponse200 & {
+    headers: Headers;
+  };
+export type listSignupTagHistoryRulesResponseError = (
+  | listSignupTagHistoryRulesResponse400
+  | listSignupTagHistoryRulesResponse401
+  | listSignupTagHistoryRulesResponse403
+  | listSignupTagHistoryRulesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSignupTagHistoryRulesResponse =
+  | listSignupTagHistoryRulesResponseSuccess
+  | listSignupTagHistoryRulesResponseError;
+
+export const getListSignupTagHistoryRulesUrl = (
+  params?: ListSignupTagHistoryRulesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/profile-catalog-history/signup-tag-rules?${stringifiedParams}`
+    : `/api/admin/profile-catalog-history/signup-tag-rules`;
+};
+
+export const listSignupTagHistoryRules = async (
+  params?: ListSignupTagHistoryRulesParams,
+  options?: RequestInit,
+): Promise<listSignupTagHistoryRulesResponse> => {
+  const res = await fetch(getListSignupTagHistoryRulesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSignupTagHistoryRulesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSignupTagHistoryRulesResponse;
 };
 
 /**

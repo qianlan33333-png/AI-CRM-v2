@@ -120,6 +120,17 @@ type ContactV1SidebarProfileHistory struct {
 	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
 }
 
+type ContactV1SignupTagRule struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	TagSourceID         string             `json:"tag_source_id"`
+	TagName             string             `json:"tag_name"`
+	SignupStatus        string             `json:"signup_status"`
+	OriginalActive      bool               `json:"original_active"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Customer struct {
 	ID             int64              `json:"id"`
 	Name           string             `json:"name"`

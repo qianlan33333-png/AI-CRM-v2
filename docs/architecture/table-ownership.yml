@@ -54,11 +54,13 @@ owners:
       - channel_acquisition_entrant_receipts
       - channel_historical_contacts
       - channel_historical_assignees
+      - contact_v1_signup_tag_rules
       - contact_v1_sidebar_profile_history
       - contact_v1_owner_migration_result_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
+      contact_v1_signup_tag_rules: immutable_history_without_current_tag_sync_or_rule_activation
       customer_merge_lineage: contact_owned_effective_customer_projection
       customer_event_idempotency: external_event_fact_registry
       customer_contact_policies: canonical_OneID_local_contact_suppression_policy_without_provider_or_outbound_execution
@@ -110,8 +112,11 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts, ai_audience_package_configuration_versions, ai_audience_operation_member_projection, ai_audience_inbound_webhook_receipts, ai_audience_webhook_transport_replays, segment_v1_audience_groups, segment_v1_audience_packages, segment_v1_audience_versions, segment_v1_audience_senders, segment_v1_audience_rules, segment_v1_audience_rule_versions, segment_v1_definitions, segment_v1_audience_members]
+    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts, ai_audience_package_configuration_versions, ai_audience_operation_member_projection, ai_audience_inbound_webhook_receipts, ai_audience_webhook_transport_replays, segment_v1_audience_groups, segment_v1_audience_packages, segment_v1_audience_versions, segment_v1_audience_senders, segment_v1_audience_rules, segment_v1_audience_rule_versions, segment_v1_definitions, segment_v1_audience_members, segment_v1_profile_templates, segment_v1_profile_categories, segment_v1_profile_option_mappings]
     constraints:
+      segment_v1_profile_templates: immutable_nonexecutable_source_profile_template
+      segment_v1_profile_categories: immutable_history_with_verified_template_history_parent
+      segment_v1_profile_option_mappings: immutable_history_with_same_template_category_parent_no_live_survey_mapping
       segment_operation_receipts: transaction_scoped_crud_idempotency_receipts
       ai_audience_package_metadata: local_package_lifecycle_and_version_over_authoritative_segment_members
       ai_audience_package_groups: local_package_group_metadata_without_provider_or_send_execution
@@ -458,7 +463,7 @@ owners:
 
   hxc:
     package: internal/hxc
-    tables: [hxc_sender_configs, hxc_sender_config_receipts]
+    tables: [hxc_sender_configs, hxc_sender_config_receipts, hxc_v1_dashboard_refresh_history, hxc_v1_dashboard_observations, hxc_v1_activation_observations, hxc_v1_experience_lead_history, hxc_v1_import_batch_history]
     constraints:
       hxc_sender_configs: single_instance_local_sender_configuration_without_provider_directory_or_broadcast_execution
       hxc_sender_config_receipts: actor_scoped_transactional_sender_configuration_idempotency_receipts

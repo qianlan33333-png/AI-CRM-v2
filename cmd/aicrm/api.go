@@ -2118,7 +2118,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
+	legacyHandler.profileCatalogHistory = segmentstore.NewProfileCatalogHistoryReader(pool)
+	legacyHandler.signupTagHistory = contactstore.NewSignupTagHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
+	legacyHandler.hxcHistory = hxcstore.NewHXCHistoryReader(pool)
 	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
 		webhook: inboundWebhookHandler, retiredSubscriptions: retiredOutboundSubscriptionHandler,
 	}
@@ -3234,6 +3237,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			handler http.HandlerFunc
 		}{
 			{"/api/admin/audience-history/groups", legacy.ListAudienceHistoryGroups},
+			{"/api/admin/profile-catalog-history/templates", legacy.ListProfileHistoryTemplates},
+			{"/api/admin/profile-catalog-history/templates/{template_id}", legacy.GetProfileHistoryTemplate},
+			{"/api/admin/profile-catalog-history/templates/{template_id}/categories", legacy.ListProfileHistoryCategories},
+			{"/api/admin/profile-catalog-history/templates/{template_id}/categories/{category_id}/option-mappings", legacy.ListProfileHistoryOptionMappings},
+			{"/api/admin/profile-catalog-history/signup-tag-rules", legacy.ListSignupTagHistoryRules},
 			{"/api/admin/audience-history/packages", legacy.ListAudienceHistoryPackages},
 			{"/api/admin/audience-history/packages/{package_id}/versions", legacy.ListAudienceHistoryVersions},
 			{"/api/admin/audience-history/packages/{package_id}/senders", legacy.ListAudienceHistorySenders},
@@ -3671,6 +3679,17 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/wecom/tag-effects/{effect_id}/reconcile", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.ReconcileWeComTagEffect)},
 			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
 			{http.MethodGet, "/api/admin/coupon-history", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryDefinitions)},
+
+			{http.MethodGet, "/api/admin/hxc-history/refreshes", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryMeta)},
+			{http.MethodGet, "/api/admin/hxc-history/refreshes/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryMeta)},
+			{http.MethodGet, "/api/admin/hxc-history/snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistorySnapshot)},
+			{http.MethodGet, "/api/admin/hxc-history/snapshots/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistorySnapshot)},
+			{http.MethodGet, "/api/admin/hxc-history/activations", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryActivation)},
+			{http.MethodGet, "/api/admin/hxc-history/activations/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryActivation)},
+			{http.MethodGet, "/api/admin/hxc-history/leads", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryLead)},
+			{http.MethodGet, "/api/admin/hxc-history/leads/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryLead)},
+			{http.MethodGet, "/api/admin/hxc-history/batches", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryBatch)},
+			{http.MethodGet, "/api/admin/hxc-history/batches/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryBatch)},
 			{http.MethodGet, "/api/admin/automation-history/sops", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistorySOPs)},
 			{http.MethodGet, "/api/admin/automation-history/sops/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistorySOP)},
 			{http.MethodGet, "/api/admin/automation-history/configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryConfigs)},

@@ -146,3 +146,52 @@ type SegmentV1Definition struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	DefinitionDigest []byte             `json:"definition_digest"`
 }
+
+type SegmentV1ProfileCategory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	TemplateSourceID    int64              `json:"template_source_id"`
+	TemplateHistoryID   int64              `json:"template_history_id"`
+	CategoryKey         string             `json:"category_key"`
+	CategoryName        string             `json:"category_name"`
+	Description         string             `json:"description"`
+	SortOrder           int64              `json:"sort_order"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1ProfileOptionMapping struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	TemplateSourceID    int64              `json:"template_source_id"`
+	CategorySourceID    int64              `json:"category_source_id"`
+	TemplateHistoryID   int64              `json:"template_history_id"`
+	CategoryHistoryID   int64              `json:"category_history_id"`
+	QuestionSourceID    int64              `json:"question_source_id"`
+	OptionSourceID      int64              `json:"option_source_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type SegmentV1ProfileTemplate struct {
+	ID                           int64              `json:"id"`
+	SourceID                     int64              `json:"source_id"`
+	SourceKeyDigest              []byte             `json:"source_key_digest"`
+	SourcePayloadDigest          []byte             `json:"source_payload_digest"`
+	TemplateCode                 string             `json:"template_code"`
+	TemplateName                 string             `json:"template_name"`
+	QuestionnaireSourceID        pgtype.Int8        `json:"questionnaire_source_id"`
+	SegmentationQuestionSourceID pgtype.Int8        `json:"segmentation_question_source_id"`
+	ProgramSourceID              pgtype.Int8        `json:"program_source_id"`
+	Description                  string             `json:"description"`
+	OriginalEnabled              bool               `json:"original_enabled"`
+	Version                      int64              `json:"version"`
+	CreatedByDigest              []byte             `json:"created_by_digest"`
+	UpdatedByDigest              []byte             `json:"updated_by_digest"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+}

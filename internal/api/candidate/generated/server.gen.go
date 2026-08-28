@@ -3850,6 +3850,489 @@ func (e GroupOpsHistoryPlanPageSource) Valid() bool {
 	}
 }
 
+// Defines values for HXCHistoryActivationSourceTable.
+const (
+	HXCHistoryActivationSourceTablePublicuserOpsActivationStatusSource       HXCHistoryActivationSourceTable = "public/user_ops_activation_status_source"
+	HXCHistoryActivationSourceTablePublicuserOpsHuangxiaocanActivationSource HXCHistoryActivationSourceTable = "public/user_ops_huangxiaocan_activation_source"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationSourceTable enum.
+func (e HXCHistoryActivationSourceTable) Valid() bool {
+	switch e {
+	case HXCHistoryActivationSourceTablePublicuserOpsActivationStatusSource:
+		return true
+	case HXCHistoryActivationSourceTablePublicuserOpsHuangxiaocanActivationSource:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryActivationDetailReadOnly.
+const (
+	HXCHistoryActivationDetailReadOnlyTrue HXCHistoryActivationDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationDetailReadOnly enum.
+func (e HXCHistoryActivationDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryActivationDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryActivationDetailRealExternalCallExecuted.
+const (
+	HXCHistoryActivationDetailRealExternalCallExecutedFalse HXCHistoryActivationDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationDetailRealExternalCallExecuted enum.
+func (e HXCHistoryActivationDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryActivationDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryActivationDetailSource.
+const (
+	HXCHistoryActivationDetailSourceV1History HXCHistoryActivationDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationDetailSource enum.
+func (e HXCHistoryActivationDetailSource) Valid() bool {
+	switch e {
+	case HXCHistoryActivationDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryActivationPageReadOnly.
+const (
+	HXCHistoryActivationPageReadOnlyTrue HXCHistoryActivationPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationPageReadOnly enum.
+func (e HXCHistoryActivationPageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryActivationPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryActivationPageRealExternalCallExecuted.
+const (
+	HXCHistoryActivationPageRealExternalCallExecutedFalse HXCHistoryActivationPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationPageRealExternalCallExecuted enum.
+func (e HXCHistoryActivationPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryActivationPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryActivationPageSource.
+const (
+	HXCHistoryActivationPageSourceV1History HXCHistoryActivationPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryActivationPageSource enum.
+func (e HXCHistoryActivationPageSource) Valid() bool {
+	switch e {
+	case HXCHistoryActivationPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryBatchDetailReadOnly.
+const (
+	HXCHistoryBatchDetailReadOnlyTrue HXCHistoryBatchDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryBatchDetailReadOnly enum.
+func (e HXCHistoryBatchDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryBatchDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryBatchDetailRealExternalCallExecuted.
+const (
+	HXCHistoryBatchDetailRealExternalCallExecutedFalse HXCHistoryBatchDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryBatchDetailRealExternalCallExecuted enum.
+func (e HXCHistoryBatchDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryBatchDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryBatchDetailSource.
+const (
+	HXCHistoryBatchDetailSourceV1History HXCHistoryBatchDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryBatchDetailSource enum.
+func (e HXCHistoryBatchDetailSource) Valid() bool {
+	switch e {
+	case HXCHistoryBatchDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryBatchPageReadOnly.
+const (
+	HXCHistoryBatchPageReadOnlyTrue HXCHistoryBatchPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryBatchPageReadOnly enum.
+func (e HXCHistoryBatchPageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryBatchPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryBatchPageRealExternalCallExecuted.
+const (
+	HXCHistoryBatchPageRealExternalCallExecutedFalse HXCHistoryBatchPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryBatchPageRealExternalCallExecuted enum.
+func (e HXCHistoryBatchPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryBatchPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryBatchPageSource.
+const (
+	HXCHistoryBatchPageSourceV1History HXCHistoryBatchPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryBatchPageSource enum.
+func (e HXCHistoryBatchPageSource) Valid() bool {
+	switch e {
+	case HXCHistoryBatchPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryLeadDetailReadOnly.
+const (
+	HXCHistoryLeadDetailReadOnlyTrue HXCHistoryLeadDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryLeadDetailReadOnly enum.
+func (e HXCHistoryLeadDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryLeadDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryLeadDetailRealExternalCallExecuted.
+const (
+	HXCHistoryLeadDetailRealExternalCallExecutedFalse HXCHistoryLeadDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryLeadDetailRealExternalCallExecuted enum.
+func (e HXCHistoryLeadDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryLeadDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryLeadDetailSource.
+const (
+	HXCHistoryLeadDetailSourceV1History HXCHistoryLeadDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryLeadDetailSource enum.
+func (e HXCHistoryLeadDetailSource) Valid() bool {
+	switch e {
+	case HXCHistoryLeadDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryLeadPageReadOnly.
+const (
+	HXCHistoryLeadPageReadOnlyTrue HXCHistoryLeadPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryLeadPageReadOnly enum.
+func (e HXCHistoryLeadPageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryLeadPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryLeadPageRealExternalCallExecuted.
+const (
+	HXCHistoryLeadPageRealExternalCallExecutedFalse HXCHistoryLeadPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryLeadPageRealExternalCallExecuted enum.
+func (e HXCHistoryLeadPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryLeadPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryLeadPageSource.
+const (
+	HXCHistoryLeadPageSourceV1History HXCHistoryLeadPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryLeadPageSource enum.
+func (e HXCHistoryLeadPageSource) Valid() bool {
+	switch e {
+	case HXCHistoryLeadPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMetaDetailReadOnly.
+const (
+	HXCHistoryMetaDetailReadOnlyTrue HXCHistoryMetaDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMetaDetailReadOnly enum.
+func (e HXCHistoryMetaDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryMetaDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMetaDetailRealExternalCallExecuted.
+const (
+	HXCHistoryMetaDetailRealExternalCallExecutedFalse HXCHistoryMetaDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMetaDetailRealExternalCallExecuted enum.
+func (e HXCHistoryMetaDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryMetaDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMetaDetailSource.
+const (
+	HXCHistoryMetaDetailSourceV1History HXCHistoryMetaDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMetaDetailSource enum.
+func (e HXCHistoryMetaDetailSource) Valid() bool {
+	switch e {
+	case HXCHistoryMetaDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMetaPageReadOnly.
+const (
+	HXCHistoryMetaPageReadOnlyTrue HXCHistoryMetaPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMetaPageReadOnly enum.
+func (e HXCHistoryMetaPageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryMetaPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMetaPageRealExternalCallExecuted.
+const (
+	HXCHistoryMetaPageRealExternalCallExecutedFalse HXCHistoryMetaPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMetaPageRealExternalCallExecuted enum.
+func (e HXCHistoryMetaPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryMetaPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMetaPageSource.
+const (
+	HXCHistoryMetaPageSourceV1History HXCHistoryMetaPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMetaPageSource enum.
+func (e HXCHistoryMetaPageSource) Valid() bool {
+	switch e {
+	case HXCHistoryMetaPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotObservation.
+const (
+	ObservedSnapshot HXCHistorySnapshotObservation = "observed_snapshot"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotObservation enum.
+func (e HXCHistorySnapshotObservation) Valid() bool {
+	switch e {
+	case ObservedSnapshot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotDetailReadOnly.
+const (
+	HXCHistorySnapshotDetailReadOnlyTrue HXCHistorySnapshotDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotDetailReadOnly enum.
+func (e HXCHistorySnapshotDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistorySnapshotDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotDetailRealExternalCallExecuted.
+const (
+	HXCHistorySnapshotDetailRealExternalCallExecutedFalse HXCHistorySnapshotDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotDetailRealExternalCallExecuted enum.
+func (e HXCHistorySnapshotDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistorySnapshotDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotDetailSource.
+const (
+	HXCHistorySnapshotDetailSourceV1History HXCHistorySnapshotDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotDetailSource enum.
+func (e HXCHistorySnapshotDetailSource) Valid() bool {
+	switch e {
+	case HXCHistorySnapshotDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotPageReadOnly.
+const (
+	HXCHistorySnapshotPageReadOnlyTrue HXCHistorySnapshotPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotPageReadOnly enum.
+func (e HXCHistorySnapshotPageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistorySnapshotPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotPageRealExternalCallExecuted.
+const (
+	HXCHistorySnapshotPageRealExternalCallExecutedFalse HXCHistorySnapshotPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotPageRealExternalCallExecuted enum.
+func (e HXCHistorySnapshotPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistorySnapshotPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistorySnapshotPageSource.
+const (
+	HXCHistorySnapshotPageSourceV1History HXCHistorySnapshotPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistorySnapshotPageSource enum.
+func (e HXCHistorySnapshotPageSource) Valid() bool {
+	switch e {
+	case HXCHistorySnapshotPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HistoricalBroadcastMessagePageReadOnly.
 const (
 	HistoricalBroadcastMessagePageReadOnlyTrue HistoricalBroadcastMessagePageReadOnly = true
@@ -7849,6 +8332,231 @@ func (e OwnerMigrationResultHistoryPageSource) Valid() bool {
 	}
 }
 
+// Defines values for ProfileCatalogHistoryCategoryPageReadOnly.
+const (
+	ProfileCatalogHistoryCategoryPageReadOnlyTrue ProfileCatalogHistoryCategoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryCategoryPageReadOnly enum.
+func (e ProfileCatalogHistoryCategoryPageReadOnly) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryCategoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryCategoryPageRealExternalCallExecuted.
+const (
+	ProfileCatalogHistoryCategoryPageRealExternalCallExecutedFalse ProfileCatalogHistoryCategoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryCategoryPageRealExternalCallExecuted enum.
+func (e ProfileCatalogHistoryCategoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryCategoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryCategoryPageSource.
+const (
+	ProfileCatalogHistoryCategoryPageSourceV1History ProfileCatalogHistoryCategoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryCategoryPageSource enum.
+func (e ProfileCatalogHistoryCategoryPageSource) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryCategoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryOptionMappingPageReadOnly.
+const (
+	ProfileCatalogHistoryOptionMappingPageReadOnlyTrue ProfileCatalogHistoryOptionMappingPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryOptionMappingPageReadOnly enum.
+func (e ProfileCatalogHistoryOptionMappingPageReadOnly) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryOptionMappingPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted.
+const (
+	ProfileCatalogHistoryOptionMappingPageRealExternalCallExecutedFalse ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted enum.
+func (e ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryOptionMappingPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryOptionMappingPageSource.
+const (
+	ProfileCatalogHistoryOptionMappingPageSourceV1History ProfileCatalogHistoryOptionMappingPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryOptionMappingPageSource enum.
+func (e ProfileCatalogHistoryOptionMappingPageSource) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryOptionMappingPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistorySignupTagRulePageReadOnly.
+const (
+	ProfileCatalogHistorySignupTagRulePageReadOnlyTrue ProfileCatalogHistorySignupTagRulePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistorySignupTagRulePageReadOnly enum.
+func (e ProfileCatalogHistorySignupTagRulePageReadOnly) Valid() bool {
+	switch e {
+	case ProfileCatalogHistorySignupTagRulePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted.
+const (
+	ProfileCatalogHistorySignupTagRulePageRealExternalCallExecutedFalse ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted enum.
+func (e ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ProfileCatalogHistorySignupTagRulePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistorySignupTagRulePageSource.
+const (
+	ProfileCatalogHistorySignupTagRulePageSourceV1History ProfileCatalogHistorySignupTagRulePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistorySignupTagRulePageSource enum.
+func (e ProfileCatalogHistorySignupTagRulePageSource) Valid() bool {
+	switch e {
+	case ProfileCatalogHistorySignupTagRulePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryTemplateDetailReadOnly.
+const (
+	ProfileCatalogHistoryTemplateDetailReadOnlyTrue ProfileCatalogHistoryTemplateDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryTemplateDetailReadOnly enum.
+func (e ProfileCatalogHistoryTemplateDetailReadOnly) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryTemplateDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted.
+const (
+	ProfileCatalogHistoryTemplateDetailRealExternalCallExecutedFalse ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted enum.
+func (e ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryTemplateDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryTemplateDetailSource.
+const (
+	ProfileCatalogHistoryTemplateDetailSourceV1History ProfileCatalogHistoryTemplateDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryTemplateDetailSource enum.
+func (e ProfileCatalogHistoryTemplateDetailSource) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryTemplateDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryTemplatePageReadOnly.
+const (
+	ProfileCatalogHistoryTemplatePageReadOnlyTrue ProfileCatalogHistoryTemplatePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryTemplatePageReadOnly enum.
+func (e ProfileCatalogHistoryTemplatePageReadOnly) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryTemplatePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryTemplatePageRealExternalCallExecuted.
+const (
+	ProfileCatalogHistoryTemplatePageRealExternalCallExecutedFalse ProfileCatalogHistoryTemplatePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryTemplatePageRealExternalCallExecuted enum.
+func (e ProfileCatalogHistoryTemplatePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryTemplatePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProfileCatalogHistoryTemplatePageSource.
+const (
+	ProfileCatalogHistoryTemplatePageSourceV1History ProfileCatalogHistoryTemplatePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ProfileCatalogHistoryTemplatePageSource enum.
+func (e ProfileCatalogHistoryTemplatePageSource) Valid() bool {
+	switch e {
+	case ProfileCatalogHistoryTemplatePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PublicServicePeriodMemberGridSummaryLimit.
 const (
 	N50 PublicServicePeriodMemberGridSummaryLimit = 50
@@ -9843,13 +10551,13 @@ func (e SidebarProfileHistoryPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for SidebarProfileHistoryPageSource.
 const (
-	SidebarProfileHistoryPageSourceV1History SidebarProfileHistoryPageSource = "v1_history"
+	V1History SidebarProfileHistoryPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the SidebarProfileHistoryPageSource enum.
 func (e SidebarProfileHistoryPageSource) Valid() bool {
 	switch e {
-	case SidebarProfileHistoryPageSourceV1History:
+	case V1History:
 		return true
 	default:
 		return false
@@ -9891,13 +10599,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
+	True SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case SidebarSafetyLocalOnlyTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -9921,13 +10629,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -10417,6 +11125,24 @@ func (e ListCloudCampaignPlansParamsReviewStatus) Valid() bool {
 	case ListCloudCampaignPlansParamsReviewStatusPendingReview:
 		return true
 	case ListCloudCampaignPlansParamsReviewStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListHXCHistoryActivationParamsSourceTable.
+const (
+	ListHXCHistoryActivationParamsSourceTablePublicuserOpsActivationStatusSource       ListHXCHistoryActivationParamsSourceTable = "public/user_ops_activation_status_source"
+	ListHXCHistoryActivationParamsSourceTablePublicuserOpsHuangxiaocanActivationSource ListHXCHistoryActivationParamsSourceTable = "public/user_ops_huangxiaocan_activation_source"
+)
+
+// Valid indicates whether the value is a known member of the ListHXCHistoryActivationParamsSourceTable enum.
+func (e ListHXCHistoryActivationParamsSourceTable) Valid() bool {
+	switch e {
+	case ListHXCHistoryActivationParamsSourceTablePublicuserOpsActivationStatusSource:
+		return true
+	case ListHXCHistoryActivationParamsSourceTablePublicuserOpsHuangxiaocanActivationSource:
 		return true
 	default:
 		return false
@@ -12992,6 +13718,299 @@ type GroupOpsHistoryPlanPageRealExternalCallExecuted bool
 // GroupOpsHistoryPlanPageSource defines model for GroupOpsHistoryPlanPage.Source.
 type GroupOpsHistoryPlanPageSource string
 
+// HXCHistoryActivation defines model for HXCHistoryActivation.
+type HXCHistoryActivation struct {
+	CreatedAt            time.Time                       `json:"created_at"`
+	Id                   int64                           `json:"id"`
+	IsActive             bool                            `json:"is_active"`
+	LegacyImportBatchRef *string                         `json:"legacy_import_batch_ref"`
+	OriginalState        string                          `json:"original_state"`
+	SourceId             int64                           `json:"source_id"`
+	SourceKeyDigest      HXCHistoryDigest                `json:"source_key_digest"`
+	SourcePayloadDigest  HXCHistoryDigest                `json:"source_payload_digest"`
+	SourceTable          HXCHistoryActivationSourceTable `json:"source_table"`
+	UpdatedAt            time.Time                       `json:"updated_at"`
+}
+
+// HXCHistoryActivationSourceTable defines model for HXCHistoryActivation.SourceTable.
+type HXCHistoryActivationSourceTable string
+
+// HXCHistoryActivationDetail defines model for HXCHistoryActivationDetail.
+type HXCHistoryActivationDetail struct {
+	Item                     HXCHistoryActivation                               `json:"item"`
+	ReadOnly                 HXCHistoryActivationDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryActivationDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryActivationDetailSource                   `json:"source"`
+}
+
+// HXCHistoryActivationDetailReadOnly defines model for HXCHistoryActivationDetail.ReadOnly.
+type HXCHistoryActivationDetailReadOnly bool
+
+// HXCHistoryActivationDetailRealExternalCallExecuted defines model for HXCHistoryActivationDetail.RealExternalCallExecuted.
+type HXCHistoryActivationDetailRealExternalCallExecuted bool
+
+// HXCHistoryActivationDetailSource defines model for HXCHistoryActivationDetail.Source.
+type HXCHistoryActivationDetailSource string
+
+// HXCHistoryActivationPage defines model for HXCHistoryActivationPage.
+type HXCHistoryActivationPage struct {
+	Items                    []HXCHistoryActivation                           `json:"items"`
+	Limit                    int                                              `json:"limit"`
+	Offset                   int                                              `json:"offset"`
+	ReadOnly                 HXCHistoryActivationPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryActivationPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryActivationPageSource                   `json:"source"`
+	Total                    int64                                            `json:"total"`
+}
+
+// HXCHistoryActivationPageReadOnly defines model for HXCHistoryActivationPage.ReadOnly.
+type HXCHistoryActivationPageReadOnly bool
+
+// HXCHistoryActivationPageRealExternalCallExecuted defines model for HXCHistoryActivationPage.RealExternalCallExecuted.
+type HXCHistoryActivationPageRealExternalCallExecuted bool
+
+// HXCHistoryActivationPageSource defines model for HXCHistoryActivationPage.Source.
+type HXCHistoryActivationPageSource string
+
+// HXCHistoryBatch defines model for HXCHistoryBatch.
+type HXCHistoryBatch struct {
+	CreatedAt           time.Time        `json:"created_at"`
+	FailedRows          int64            `json:"failed_rows"`
+	Id                  int64            `json:"id"`
+	ImportType          string           `json:"import_type"`
+	SourceId            int64            `json:"source_id"`
+	SourceKeyDigest     HXCHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest HXCHistoryDigest `json:"source_payload_digest"`
+	SuccessRows         int64            `json:"success_rows"`
+	TotalRows           int64            `json:"total_rows"`
+}
+
+// HXCHistoryBatchDetail defines model for HXCHistoryBatchDetail.
+type HXCHistoryBatchDetail struct {
+	Item                     HXCHistoryBatch                               `json:"item"`
+	ReadOnly                 HXCHistoryBatchDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryBatchDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryBatchDetailSource                   `json:"source"`
+}
+
+// HXCHistoryBatchDetailReadOnly defines model for HXCHistoryBatchDetail.ReadOnly.
+type HXCHistoryBatchDetailReadOnly bool
+
+// HXCHistoryBatchDetailRealExternalCallExecuted defines model for HXCHistoryBatchDetail.RealExternalCallExecuted.
+type HXCHistoryBatchDetailRealExternalCallExecuted bool
+
+// HXCHistoryBatchDetailSource defines model for HXCHistoryBatchDetail.Source.
+type HXCHistoryBatchDetailSource string
+
+// HXCHistoryBatchPage defines model for HXCHistoryBatchPage.
+type HXCHistoryBatchPage struct {
+	Items                    []HXCHistoryBatch                           `json:"items"`
+	Limit                    int                                         `json:"limit"`
+	Offset                   int                                         `json:"offset"`
+	ReadOnly                 HXCHistoryBatchPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryBatchPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryBatchPageSource                   `json:"source"`
+	Total                    int64                                       `json:"total"`
+}
+
+// HXCHistoryBatchPageReadOnly defines model for HXCHistoryBatchPage.ReadOnly.
+type HXCHistoryBatchPageReadOnly bool
+
+// HXCHistoryBatchPageRealExternalCallExecuted defines model for HXCHistoryBatchPage.RealExternalCallExecuted.
+type HXCHistoryBatchPageRealExternalCallExecuted bool
+
+// HXCHistoryBatchPageSource defines model for HXCHistoryBatchPage.Source.
+type HXCHistoryBatchPageSource string
+
+// HXCHistoryDigest defines model for HXCHistoryDigest.
+type HXCHistoryDigest = []int
+
+// HXCHistoryLead defines model for HXCHistoryLead.
+type HXCHistoryLead struct {
+	CreatedAt            time.Time        `json:"created_at"`
+	Id                   int64            `json:"id"`
+	IsActive             bool             `json:"is_active"`
+	LegacyImportBatchRef *string          `json:"legacy_import_batch_ref"`
+	OriginalType         string           `json:"original_type"`
+	SourceId             int64            `json:"source_id"`
+	SourceKeyDigest      HXCHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest  HXCHistoryDigest `json:"source_payload_digest"`
+	UpdatedAt            time.Time        `json:"updated_at"`
+}
+
+// HXCHistoryLeadDetail defines model for HXCHistoryLeadDetail.
+type HXCHistoryLeadDetail struct {
+	Item                     HXCHistoryLead                               `json:"item"`
+	ReadOnly                 HXCHistoryLeadDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryLeadDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryLeadDetailSource                   `json:"source"`
+}
+
+// HXCHistoryLeadDetailReadOnly defines model for HXCHistoryLeadDetail.ReadOnly.
+type HXCHistoryLeadDetailReadOnly bool
+
+// HXCHistoryLeadDetailRealExternalCallExecuted defines model for HXCHistoryLeadDetail.RealExternalCallExecuted.
+type HXCHistoryLeadDetailRealExternalCallExecuted bool
+
+// HXCHistoryLeadDetailSource defines model for HXCHistoryLeadDetail.Source.
+type HXCHistoryLeadDetailSource string
+
+// HXCHistoryLeadPage defines model for HXCHistoryLeadPage.
+type HXCHistoryLeadPage struct {
+	Items                    []HXCHistoryLead                           `json:"items"`
+	Limit                    int                                        `json:"limit"`
+	Offset                   int                                        `json:"offset"`
+	ReadOnly                 HXCHistoryLeadPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryLeadPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryLeadPageSource                   `json:"source"`
+	Total                    int64                                      `json:"total"`
+}
+
+// HXCHistoryLeadPageReadOnly defines model for HXCHistoryLeadPage.ReadOnly.
+type HXCHistoryLeadPageReadOnly bool
+
+// HXCHistoryLeadPageRealExternalCallExecuted defines model for HXCHistoryLeadPage.RealExternalCallExecuted.
+type HXCHistoryLeadPageRealExternalCallExecuted bool
+
+// HXCHistoryLeadPageSource defines model for HXCHistoryLeadPage.Source.
+type HXCHistoryLeadPageSource string
+
+// HXCHistoryMeta defines model for HXCHistoryMeta.
+type HXCHistoryMeta struct {
+	FinishedAt          *time.Time       `json:"finished_at"`
+	Id                  int64            `json:"id"`
+	MemberHit           int64            `json:"member_hit"`
+	OnlyMember          int64            `json:"only_member"`
+	RowCount            int64            `json:"row_count"`
+	SourceId            int64            `json:"source_id"`
+	SourceKeyDigest     HXCHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest HXCHistoryDigest `json:"source_payload_digest"`
+	StartedAt           time.Time        `json:"started_at"`
+	Status              string           `json:"status"`
+	TriggerSource       string           `json:"trigger_source"`
+	UserHit             int64            `json:"user_hit"`
+}
+
+// HXCHistoryMetaDetail defines model for HXCHistoryMetaDetail.
+type HXCHistoryMetaDetail struct {
+	Item                     HXCHistoryMeta                               `json:"item"`
+	ReadOnly                 HXCHistoryMetaDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryMetaDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryMetaDetailSource                   `json:"source"`
+}
+
+// HXCHistoryMetaDetailReadOnly defines model for HXCHistoryMetaDetail.ReadOnly.
+type HXCHistoryMetaDetailReadOnly bool
+
+// HXCHistoryMetaDetailRealExternalCallExecuted defines model for HXCHistoryMetaDetail.RealExternalCallExecuted.
+type HXCHistoryMetaDetailRealExternalCallExecuted bool
+
+// HXCHistoryMetaDetailSource defines model for HXCHistoryMetaDetail.Source.
+type HXCHistoryMetaDetailSource string
+
+// HXCHistoryMetaPage defines model for HXCHistoryMetaPage.
+type HXCHistoryMetaPage struct {
+	Items                    []HXCHistoryMeta                           `json:"items"`
+	Limit                    int                                        `json:"limit"`
+	Offset                   int                                        `json:"offset"`
+	ReadOnly                 HXCHistoryMetaPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryMetaPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryMetaPageSource                   `json:"source"`
+	Total                    int64                                      `json:"total"`
+}
+
+// HXCHistoryMetaPageReadOnly defines model for HXCHistoryMetaPage.ReadOnly.
+type HXCHistoryMetaPageReadOnly bool
+
+// HXCHistoryMetaPageRealExternalCallExecuted defines model for HXCHistoryMetaPage.RealExternalCallExecuted.
+type HXCHistoryMetaPageRealExternalCallExecuted bool
+
+// HXCHistoryMetaPageSource defines model for HXCHistoryMetaPage.Source.
+type HXCHistoryMetaPageSource string
+
+// HXCHistorySnapshot defines model for HXCHistorySnapshot.
+type HXCHistorySnapshot struct {
+	ClassTermLabel          string                        `json:"class_term_label"`
+	ClassTermNo             *int64                        `json:"class_term_no"`
+	ConsultCompleted        int64                         `json:"consult_completed"`
+	ConsultationLimit       *int64                        `json:"consultation_limit"`
+	ConsultationUsed        *int64                        `json:"consultation_used"`
+	ConversationChat        int64                         `json:"conversation_chat"`
+	ConversationConsult     int64                         `json:"conversation_consult"`
+	ConversationLesson      int64                         `json:"conversation_lesson"`
+	CrmCreatedAt            *openapi_types.Date           `json:"crm_created_at"`
+	CrmHxcState             string                        `json:"crm_hxc_state"`
+	CustomerId              *int64                        `json:"customer_id"`
+	FunnelState             string                        `json:"funnel_state"`
+	HxcLastLoginAt          *time.Time                    `json:"hxc_last_login_at"`
+	HxcMemberHit            bool                          `json:"hxc_member_hit"`
+	HxcMemberStatus         string                        `json:"hxc_member_status"`
+	HxcRegisteredAt         *time.Time                    `json:"hxc_registered_at"`
+	HxcUserHit              bool                          `json:"hxc_user_hit"`
+	Id                      int64                         `json:"id"`
+	InLeadPool              bool                          `json:"in_lead_pool"`
+	InPeople                bool                          `json:"in_people"`
+	InQuestionnaire         bool                          `json:"in_questionnaire"`
+	LastMessageAt           *time.Time                    `json:"last_message_at"`
+	LastQuestionnaireAt     *openapi_types.Date           `json:"last_questionnaire_at"`
+	MembershipDaysLeft      *int64                        `json:"membership_days_left"`
+	MembershipEndAt         *time.Time                    `json:"membership_end_at"`
+	MembershipStatus        string                        `json:"membership_status"`
+	MembershipType          string                        `json:"membership_type"`
+	MessagesAi              int64                         `json:"messages_ai"`
+	MessagesUser            int64                         `json:"messages_user"`
+	Observation             HXCHistorySnapshotObservation `json:"observation"`
+	ObservedAt              time.Time                     `json:"observed_at"`
+	SourceId                int64                         `json:"source_id"`
+	SourceKeyDigest         HXCHistoryDigest              `json:"source_key_digest"`
+	SourcePayloadDigest     HXCHistoryDigest              `json:"source_payload_digest"`
+	SubscriptionExpires     *time.Time                    `json:"subscription_expires"`
+	SubscriptionPeriodStart *openapi_types.Date           `json:"subscription_period_start"`
+	SubscriptionQuota       *int64                        `json:"subscription_quota"`
+	SubscriptionTier        string                        `json:"subscription_tier"`
+	SubscriptionUsed        *int64                        `json:"subscription_used"`
+}
+
+// HXCHistorySnapshotObservation defines model for HXCHistorySnapshot.Observation.
+type HXCHistorySnapshotObservation string
+
+// HXCHistorySnapshotDetail defines model for HXCHistorySnapshotDetail.
+type HXCHistorySnapshotDetail struct {
+	Item                     HXCHistorySnapshot                               `json:"item"`
+	ReadOnly                 HXCHistorySnapshotDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistorySnapshotDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistorySnapshotDetailSource                   `json:"source"`
+}
+
+// HXCHistorySnapshotDetailReadOnly defines model for HXCHistorySnapshotDetail.ReadOnly.
+type HXCHistorySnapshotDetailReadOnly bool
+
+// HXCHistorySnapshotDetailRealExternalCallExecuted defines model for HXCHistorySnapshotDetail.RealExternalCallExecuted.
+type HXCHistorySnapshotDetailRealExternalCallExecuted bool
+
+// HXCHistorySnapshotDetailSource defines model for HXCHistorySnapshotDetail.Source.
+type HXCHistorySnapshotDetailSource string
+
+// HXCHistorySnapshotPage defines model for HXCHistorySnapshotPage.
+type HXCHistorySnapshotPage struct {
+	Items                    []HXCHistorySnapshot                           `json:"items"`
+	Limit                    int                                            `json:"limit"`
+	Offset                   int                                            `json:"offset"`
+	ReadOnly                 HXCHistorySnapshotPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistorySnapshotPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistorySnapshotPageSource                   `json:"source"`
+	Total                    int64                                          `json:"total"`
+}
+
+// HXCHistorySnapshotPageReadOnly defines model for HXCHistorySnapshotPage.ReadOnly.
+type HXCHistorySnapshotPageReadOnly bool
+
+// HXCHistorySnapshotPageRealExternalCallExecuted defines model for HXCHistorySnapshotPage.RealExternalCallExecuted.
+type HXCHistorySnapshotPageRealExternalCallExecuted bool
+
+// HXCHistorySnapshotPageSource defines model for HXCHistorySnapshotPage.Source.
+type HXCHistorySnapshotPageSource string
+
 // HistoricalBroadcastMessage defines model for HistoricalBroadcastMessage.
 type HistoricalBroadcastMessage struct {
 	AttachmentsDigest    []int      `json:"attachments_digest"`
@@ -15113,6 +16132,167 @@ type ProductPage struct {
 	Items      []Product `json:"items"`
 	NextCursor *string   `json:"next_cursor,omitempty"`
 }
+
+// ProfileCatalogHistoryCategory defines model for ProfileCatalogHistoryCategory.
+type ProfileCatalogHistoryCategory struct {
+	CategoryKey         string    `json:"category_key"`
+	CategoryName        string    `json:"category_name"`
+	CreatedAt           time.Time `json:"created_at"`
+	Description         string    `json:"description"`
+	Id                  int64     `json:"id"`
+	OriginalEnabled     bool      `json:"original_enabled"`
+	SortOrder           int64     `json:"sort_order"`
+	SourceId            int64     `json:"source_id"`
+	SourceKeyDigest     []int     `json:"source_key_digest"`
+	SourcePayloadDigest []int     `json:"source_payload_digest"`
+	TemplateHistoryId   int64     `json:"template_history_id"`
+	TemplateSourceId    int64     `json:"template_source_id"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// ProfileCatalogHistoryCategoryPage defines model for ProfileCatalogHistoryCategoryPage.
+type ProfileCatalogHistoryCategoryPage struct {
+	Items                    []ProfileCatalogHistoryCategory                           `json:"items"`
+	Limit                    int32                                                     `json:"limit"`
+	Offset                   int32                                                     `json:"offset"`
+	ReadOnly                 ProfileCatalogHistoryCategoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ProfileCatalogHistoryCategoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ProfileCatalogHistoryCategoryPageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// ProfileCatalogHistoryCategoryPageReadOnly defines model for ProfileCatalogHistoryCategoryPage.ReadOnly.
+type ProfileCatalogHistoryCategoryPageReadOnly bool
+
+// ProfileCatalogHistoryCategoryPageRealExternalCallExecuted defines model for ProfileCatalogHistoryCategoryPage.RealExternalCallExecuted.
+type ProfileCatalogHistoryCategoryPageRealExternalCallExecuted bool
+
+// ProfileCatalogHistoryCategoryPageSource defines model for ProfileCatalogHistoryCategoryPage.Source.
+type ProfileCatalogHistoryCategoryPageSource string
+
+// ProfileCatalogHistoryOptionMapping defines model for ProfileCatalogHistoryOptionMapping.
+type ProfileCatalogHistoryOptionMapping struct {
+	CategoryHistoryId   int64     `json:"category_history_id"`
+	CategorySourceId    int64     `json:"category_source_id"`
+	CreatedAt           time.Time `json:"created_at"`
+	Id                  int64     `json:"id"`
+	OptionSourceId      int64     `json:"option_source_id"`
+	QuestionSourceId    int64     `json:"question_source_id"`
+	SourceId            int64     `json:"source_id"`
+	SourceKeyDigest     []int     `json:"source_key_digest"`
+	SourcePayloadDigest []int     `json:"source_payload_digest"`
+	TemplateHistoryId   int64     `json:"template_history_id"`
+	TemplateSourceId    int64     `json:"template_source_id"`
+}
+
+// ProfileCatalogHistoryOptionMappingPage defines model for ProfileCatalogHistoryOptionMappingPage.
+type ProfileCatalogHistoryOptionMappingPage struct {
+	Items                    []ProfileCatalogHistoryOptionMapping                           `json:"items"`
+	Limit                    int32                                                          `json:"limit"`
+	Offset                   int32                                                          `json:"offset"`
+	ReadOnly                 ProfileCatalogHistoryOptionMappingPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ProfileCatalogHistoryOptionMappingPageSource                   `json:"source"`
+	Total                    int64                                                          `json:"total"`
+}
+
+// ProfileCatalogHistoryOptionMappingPageReadOnly defines model for ProfileCatalogHistoryOptionMappingPage.ReadOnly.
+type ProfileCatalogHistoryOptionMappingPageReadOnly bool
+
+// ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted defines model for ProfileCatalogHistoryOptionMappingPage.RealExternalCallExecuted.
+type ProfileCatalogHistoryOptionMappingPageRealExternalCallExecuted bool
+
+// ProfileCatalogHistoryOptionMappingPageSource defines model for ProfileCatalogHistoryOptionMappingPage.Source.
+type ProfileCatalogHistoryOptionMappingPageSource string
+
+// ProfileCatalogHistorySignupTagRule defines model for ProfileCatalogHistorySignupTagRule.
+type ProfileCatalogHistorySignupTagRule struct {
+	Id                  int64     `json:"id"`
+	OriginalActive      bool      `json:"original_active"`
+	SignupStatus        string    `json:"signup_status"`
+	SourceKeyDigest     []int     `json:"source_key_digest"`
+	SourcePayloadDigest []int     `json:"source_payload_digest"`
+	TagName             string    `json:"tag_name"`
+	TagSourceId         string    `json:"tag_source_id"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// ProfileCatalogHistorySignupTagRulePage defines model for ProfileCatalogHistorySignupTagRulePage.
+type ProfileCatalogHistorySignupTagRulePage struct {
+	Items                    []ProfileCatalogHistorySignupTagRule                           `json:"items"`
+	Limit                    int32                                                          `json:"limit"`
+	Offset                   int32                                                          `json:"offset"`
+	ReadOnly                 ProfileCatalogHistorySignupTagRulePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ProfileCatalogHistorySignupTagRulePageSource                   `json:"source"`
+	Total                    int64                                                          `json:"total"`
+}
+
+// ProfileCatalogHistorySignupTagRulePageReadOnly defines model for ProfileCatalogHistorySignupTagRulePage.ReadOnly.
+type ProfileCatalogHistorySignupTagRulePageReadOnly bool
+
+// ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted defines model for ProfileCatalogHistorySignupTagRulePage.RealExternalCallExecuted.
+type ProfileCatalogHistorySignupTagRulePageRealExternalCallExecuted bool
+
+// ProfileCatalogHistorySignupTagRulePageSource defines model for ProfileCatalogHistorySignupTagRulePage.Source.
+type ProfileCatalogHistorySignupTagRulePageSource string
+
+// ProfileCatalogHistoryTemplate defines model for ProfileCatalogHistoryTemplate.
+type ProfileCatalogHistoryTemplate struct {
+	CreatedAt                    time.Time `json:"created_at"`
+	CreatedByDigest              []int     `json:"created_by_digest"`
+	Description                  string    `json:"description"`
+	Id                           int64     `json:"id"`
+	OriginalEnabled              bool      `json:"original_enabled"`
+	ProgramSourceId              *int64    `json:"program_source_id"`
+	QuestionnaireSourceId        *int64    `json:"questionnaire_source_id"`
+	SegmentationQuestionSourceId *int64    `json:"segmentation_question_source_id"`
+	SourceId                     int64     `json:"source_id"`
+	SourceKeyDigest              []int     `json:"source_key_digest"`
+	SourcePayloadDigest          []int     `json:"source_payload_digest"`
+	TemplateCode                 string    `json:"template_code"`
+	TemplateName                 string    `json:"template_name"`
+	UpdatedAt                    time.Time `json:"updated_at"`
+	UpdatedByDigest              []int     `json:"updated_by_digest"`
+	Version                      int64     `json:"version"`
+}
+
+// ProfileCatalogHistoryTemplateDetail defines model for ProfileCatalogHistoryTemplateDetail.
+type ProfileCatalogHistoryTemplateDetail struct {
+	Item                     ProfileCatalogHistoryTemplate                               `json:"item"`
+	ReadOnly                 ProfileCatalogHistoryTemplateDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ProfileCatalogHistoryTemplateDetailSource                   `json:"source"`
+}
+
+// ProfileCatalogHistoryTemplateDetailReadOnly defines model for ProfileCatalogHistoryTemplateDetail.ReadOnly.
+type ProfileCatalogHistoryTemplateDetailReadOnly bool
+
+// ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted defines model for ProfileCatalogHistoryTemplateDetail.RealExternalCallExecuted.
+type ProfileCatalogHistoryTemplateDetailRealExternalCallExecuted bool
+
+// ProfileCatalogHistoryTemplateDetailSource defines model for ProfileCatalogHistoryTemplateDetail.Source.
+type ProfileCatalogHistoryTemplateDetailSource string
+
+// ProfileCatalogHistoryTemplatePage defines model for ProfileCatalogHistoryTemplatePage.
+type ProfileCatalogHistoryTemplatePage struct {
+	Items                    []ProfileCatalogHistoryTemplate                           `json:"items"`
+	Limit                    int32                                                     `json:"limit"`
+	Offset                   int32                                                     `json:"offset"`
+	ReadOnly                 ProfileCatalogHistoryTemplatePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ProfileCatalogHistoryTemplatePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ProfileCatalogHistoryTemplatePageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// ProfileCatalogHistoryTemplatePageReadOnly defines model for ProfileCatalogHistoryTemplatePage.ReadOnly.
+type ProfileCatalogHistoryTemplatePageReadOnly bool
+
+// ProfileCatalogHistoryTemplatePageRealExternalCallExecuted defines model for ProfileCatalogHistoryTemplatePage.RealExternalCallExecuted.
+type ProfileCatalogHistoryTemplatePageRealExternalCallExecuted bool
+
+// ProfileCatalogHistoryTemplatePageSource defines model for ProfileCatalogHistoryTemplatePage.Source.
+type ProfileCatalogHistoryTemplatePageSource string
 
 // PublicServicePeriodMemberGridPublicMember defines model for PublicServicePeriodMemberGridPublicMember.
 type PublicServicePeriodMemberGridPublicMember struct {
@@ -17698,6 +18878,41 @@ type RetryExternalEffectRuntimeParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListHXCHistoryActivationParams defines parameters for ListHXCHistoryActivation.
+type ListHXCHistoryActivationParams struct {
+	Limit       *int                                       `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset      *int                                       `form:"offset,omitempty" json:"offset,omitempty"`
+	SourceTable *ListHXCHistoryActivationParamsSourceTable `form:"source_table,omitempty" json:"source_table,omitempty"`
+}
+
+// ListHXCHistoryActivationParamsSourceTable defines parameters for ListHXCHistoryActivation.
+type ListHXCHistoryActivationParamsSourceTable string
+
+// ListHXCHistoryBatchParams defines parameters for ListHXCHistoryBatch.
+type ListHXCHistoryBatchParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListHXCHistoryLeadParams defines parameters for ListHXCHistoryLead.
+type ListHXCHistoryLeadParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListHXCHistoryMetaParams defines parameters for ListHXCHistoryMeta.
+type ListHXCHistoryMetaParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListHXCHistorySnapshotParams defines parameters for ListHXCHistorySnapshot.
+type ListHXCHistorySnapshotParams struct {
+	Limit      *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset     *int   `form:"offset,omitempty" json:"offset,omitempty"`
+	CustomerId *int64 `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+}
+
 // CreateInternalEventSafeExportParams defines parameters for CreateInternalEventSafeExport.
 type CreateInternalEventSafeExportParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -17793,6 +19008,30 @@ type ReconcileOutboundCampaignDispatchParams struct {
 
 	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListSignupTagHistoryRulesParams defines parameters for ListSignupTagHistoryRules.
+type ListSignupTagHistoryRulesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListProfileHistoryTemplatesParams defines parameters for ListProfileHistoryTemplates.
+type ListProfileHistoryTemplatesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListProfileHistoryCategoriesParams defines parameters for ListProfileHistoryCategories.
+type ListProfileHistoryCategoriesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListProfileHistoryOptionMappingsParams defines parameters for ListProfileHistoryOptionMappings.
+type ListProfileHistoryOptionMappingsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListLegacyOutboundJobsParams defines parameters for ListLegacyOutboundJobs.
@@ -20667,6 +21906,36 @@ type ServerInterface interface {
 	// Requeue only a deterministically retryable failed local effect
 	// (POST /api/admin/external-effects/{effect_id}/retry)
 	RetryExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params RetryExternalEffectRuntimeParams)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/activations)
+	ListHXCHistoryActivation(w http.ResponseWriter, r *http.Request, params ListHXCHistoryActivationParams)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/activations/{history_id})
+	GetHXCHistoryActivation(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/batches)
+	ListHXCHistoryBatch(w http.ResponseWriter, r *http.Request, params ListHXCHistoryBatchParams)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/batches/{history_id})
+	GetHXCHistoryBatch(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/leads)
+	ListHXCHistoryLead(w http.ResponseWriter, r *http.Request, params ListHXCHistoryLeadParams)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/leads/{history_id})
+	GetHXCHistoryLead(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/refreshes)
+	ListHXCHistoryMeta(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMetaParams)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/refreshes/{history_id})
+	GetHXCHistoryMeta(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/snapshots)
+	ListHXCHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListHXCHistorySnapshotParams)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/snapshots/{history_id})
+	GetHXCHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Freeze an admin-only local event and delivery safe CSV snapshot
 	// (POST /api/admin/internal-events/exports)
 	CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams)
@@ -20748,6 +22017,21 @@ type ServerInterface interface {
 	// Reconcile held local task-link counts without customer IDs or Provider fields
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
 	ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/signup-tag-rules)
+	ListSignupTagHistoryRules(w http.ResponseWriter, r *http.Request, params ListSignupTagHistoryRulesParams)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates)
+	ListProfileHistoryTemplates(w http.ResponseWriter, r *http.Request, params ListProfileHistoryTemplatesParams)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates/{template_id})
+	GetProfileHistoryTemplate(w http.ResponseWriter, r *http.Request, templateId int64)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates/{template_id}/categories)
+	ListProfileHistoryCategories(w http.ResponseWriter, r *http.Request, templateId int64, params ListProfileHistoryCategoriesParams)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates/{template_id}/categories/{category_id}/option-mappings)
+	ListProfileHistoryOptionMappings(w http.ResponseWriter, r *http.Request, templateId int64, categoryId int64, params ListProfileHistoryOptionMappingsParams)
 	// Read bounded local outbound-job projections without starting a worker or provider call
 	// (GET /api/admin/push-center/jobs)
 	ListLegacyOutboundJobs(w http.ResponseWriter, r *http.Request, params ListLegacyOutboundJobsParams)
@@ -21864,6 +23148,66 @@ func (_ Unimplemented) RetryExternalEffectRuntime(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/activations)
+func (_ Unimplemented) ListHXCHistoryActivation(w http.ResponseWriter, r *http.Request, params ListHXCHistoryActivationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/activations/{history_id})
+func (_ Unimplemented) GetHXCHistoryActivation(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/batches)
+func (_ Unimplemented) ListHXCHistoryBatch(w http.ResponseWriter, r *http.Request, params ListHXCHistoryBatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/batches/{history_id})
+func (_ Unimplemented) GetHXCHistoryBatch(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/leads)
+func (_ Unimplemented) ListHXCHistoryLead(w http.ResponseWriter, r *http.Request, params ListHXCHistoryLeadParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/leads/{history_id})
+func (_ Unimplemented) GetHXCHistoryLead(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/refreshes)
+func (_ Unimplemented) ListHXCHistoryMeta(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMetaParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/refreshes/{history_id})
+func (_ Unimplemented) GetHXCHistoryMeta(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/snapshots)
+func (_ Unimplemented) ListHXCHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListHXCHistorySnapshotParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC observations without refreshing or executing tasks
+// (GET /api/admin/hxc-history/snapshots/{history_id})
+func (_ Unimplemented) GetHXCHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Freeze an admin-only local event and delivery safe CSV snapshot
 // (POST /api/admin/internal-events/exports)
 func (_ Unimplemented) CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams) {
@@ -22023,6 +23367,36 @@ func (_ Unimplemented) ReconcileOutboundCampaignDispatch(w http.ResponseWriter, 
 // Reconcile held local task-link counts without customer IDs or Provider fields
 // (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
 func (_ Unimplemented) ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 profile catalogue facts without activating rules
+// (GET /api/admin/profile-catalog-history/signup-tag-rules)
+func (_ Unimplemented) ListSignupTagHistoryRules(w http.ResponseWriter, r *http.Request, params ListSignupTagHistoryRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 profile catalogue facts without activating rules
+// (GET /api/admin/profile-catalog-history/templates)
+func (_ Unimplemented) ListProfileHistoryTemplates(w http.ResponseWriter, r *http.Request, params ListProfileHistoryTemplatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 profile catalogue facts without activating rules
+// (GET /api/admin/profile-catalog-history/templates/{template_id})
+func (_ Unimplemented) GetProfileHistoryTemplate(w http.ResponseWriter, r *http.Request, templateId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 profile catalogue facts without activating rules
+// (GET /api/admin/profile-catalog-history/templates/{template_id}/categories)
+func (_ Unimplemented) ListProfileHistoryCategories(w http.ResponseWriter, r *http.Request, templateId int64, params ListProfileHistoryCategoriesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 profile catalogue facts without activating rules
+// (GET /api/admin/profile-catalog-history/templates/{template_id}/categories/{category_id}/option-mappings)
+func (_ Unimplemented) ListProfileHistoryOptionMappings(w http.ResponseWriter, r *http.Request, templateId int64, categoryId int64, params ListProfileHistoryOptionMappingsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -28181,6 +29555,382 @@ func (siw *ServerInterfaceWrapper) RetryExternalEffectRuntime(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
+// ListHXCHistoryActivation operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistoryActivation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistoryActivationParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "source_table" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_table", r.URL.Query(), &params.SourceTable, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_table", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistoryActivation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistoryActivation operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistoryActivation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistoryActivation(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListHXCHistoryBatch operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistoryBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistoryBatchParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistoryBatch(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistoryBatch operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistoryBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistoryBatch(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListHXCHistoryLead operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistoryLead(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistoryLeadParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistoryLead(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistoryLead operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistoryLead(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistoryLead(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListHXCHistoryMeta operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistoryMeta(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistoryMetaParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistoryMeta(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistoryMeta operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistoryMeta(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistoryMeta(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListHXCHistorySnapshot operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistorySnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistorySnapshotParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistorySnapshot(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistorySnapshot operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistorySnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistorySnapshot(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateInternalEventSafeExport operation middleware
 func (siw *ServerInterfaceWrapper) CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request) {
 
@@ -29459,6 +31209,228 @@ func (siw *ServerInterfaceWrapper) ReconcileOutboundCampaignHandoff(w http.Respo
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReconcileOutboundCampaignHandoff(w, r, campaignCode, planId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSignupTagHistoryRules operation middleware
+func (siw *ServerInterfaceWrapper) ListSignupTagHistoryRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSignupTagHistoryRulesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignupTagHistoryRules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProfileHistoryTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListProfileHistoryTemplates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProfileHistoryTemplatesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProfileHistoryTemplates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProfileHistoryTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetProfileHistoryTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "template_id" -------------
+	var templateId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "template_id", chi.URLParam(r, "template_id"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "template_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProfileHistoryTemplate(w, r, templateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProfileHistoryCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListProfileHistoryCategories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "template_id" -------------
+	var templateId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "template_id", chi.URLParam(r, "template_id"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "template_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProfileHistoryCategoriesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProfileHistoryCategories(w, r, templateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProfileHistoryOptionMappings operation middleware
+func (siw *ServerInterfaceWrapper) ListProfileHistoryOptionMappings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "template_id" -------------
+	var templateId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "template_id", chi.URLParam(r, "template_id"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "template_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "category_id" -------------
+	var categoryId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "category_id", chi.URLParam(r, "category_id"), &categoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProfileHistoryOptionMappingsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProfileHistoryOptionMappings(w, r, templateId, categoryId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -40327,6 +42299,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/external-effects/{effect_id}/retry", wrapper.RetryExternalEffectRuntime)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/activations", wrapper.ListHXCHistoryActivation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/activations/{history_id}", wrapper.GetHXCHistoryActivation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/batches", wrapper.ListHXCHistoryBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/batches/{history_id}", wrapper.GetHXCHistoryBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/leads", wrapper.ListHXCHistoryLead)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/leads/{history_id}", wrapper.GetHXCHistoryLead)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/refreshes", wrapper.ListHXCHistoryMeta)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/refreshes/{history_id}", wrapper.GetHXCHistoryMeta)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/snapshots", wrapper.ListHXCHistorySnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/snapshots/{history_id}", wrapper.GetHXCHistorySnapshot)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/internal-events/exports", wrapper.CreateInternalEventSafeExport)
 	})
 	r.Group(func(r chi.Router) {
@@ -40406,6 +42408,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", wrapper.ReconcileOutboundCampaignHandoff)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/profile-catalog-history/signup-tag-rules", wrapper.ListSignupTagHistoryRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/profile-catalog-history/templates", wrapper.ListProfileHistoryTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/profile-catalog-history/templates/{template_id}", wrapper.GetProfileHistoryTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/profile-catalog-history/templates/{template_id}/categories", wrapper.ListProfileHistoryCategories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/profile-catalog-history/templates/{template_id}/categories/{category_id}/option-mappings", wrapper.ListProfileHistoryOptionMappings)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/push-center/jobs", wrapper.ListLegacyOutboundJobs)
@@ -46792,6 +48809,536 @@ func (response RetryExternalEffectRuntime503JSONResponse) VisitRetryExternalEffe
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListHXCHistoryActivationRequestObject struct {
+	Params ListHXCHistoryActivationParams
+}
+
+type ListHXCHistoryActivationResponseObject interface {
+	VisitListHXCHistoryActivationResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistoryActivation200JSONResponse HXCHistoryActivationPage
+
+func (response ListHXCHistoryActivation200JSONResponse) VisitListHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryActivation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistoryActivation400JSONResponse) VisitListHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryActivation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistoryActivation401JSONResponse) VisitListHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryActivation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistoryActivation403JSONResponse) VisitListHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryActivation503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistoryActivation503JSONResponse) VisitListHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryActivationRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistoryActivationResponseObject interface {
+	VisitGetHXCHistoryActivationResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistoryActivation200JSONResponse HXCHistoryActivationDetail
+
+func (response GetHXCHistoryActivation200JSONResponse) VisitGetHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryActivation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistoryActivation400JSONResponse) VisitGetHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryActivation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistoryActivation401JSONResponse) VisitGetHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryActivation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistoryActivation403JSONResponse) VisitGetHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryActivation503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistoryActivation503JSONResponse) VisitGetHXCHistoryActivationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryBatchRequestObject struct {
+	Params ListHXCHistoryBatchParams
+}
+
+type ListHXCHistoryBatchResponseObject interface {
+	VisitListHXCHistoryBatchResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistoryBatch200JSONResponse HXCHistoryBatchPage
+
+func (response ListHXCHistoryBatch200JSONResponse) VisitListHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryBatch400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistoryBatch400JSONResponse) VisitListHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryBatch401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistoryBatch401JSONResponse) VisitListHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryBatch403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistoryBatch403JSONResponse) VisitListHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryBatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistoryBatch503JSONResponse) VisitListHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryBatchRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistoryBatchResponseObject interface {
+	VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistoryBatch200JSONResponse HXCHistoryBatchDetail
+
+func (response GetHXCHistoryBatch200JSONResponse) VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryBatch400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistoryBatch400JSONResponse) VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryBatch401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistoryBatch401JSONResponse) VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryBatch403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistoryBatch403JSONResponse) VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryBatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistoryBatch503JSONResponse) VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryLeadRequestObject struct {
+	Params ListHXCHistoryLeadParams
+}
+
+type ListHXCHistoryLeadResponseObject interface {
+	VisitListHXCHistoryLeadResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistoryLead200JSONResponse HXCHistoryLeadPage
+
+func (response ListHXCHistoryLead200JSONResponse) VisitListHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryLead400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistoryLead400JSONResponse) VisitListHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryLead401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistoryLead401JSONResponse) VisitListHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryLead403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistoryLead403JSONResponse) VisitListHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryLead503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistoryLead503JSONResponse) VisitListHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryLeadRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistoryLeadResponseObject interface {
+	VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistoryLead200JSONResponse HXCHistoryLeadDetail
+
+func (response GetHXCHistoryLead200JSONResponse) VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryLead400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistoryLead400JSONResponse) VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryLead401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistoryLead401JSONResponse) VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryLead403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistoryLead403JSONResponse) VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryLead503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistoryLead503JSONResponse) VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMetaRequestObject struct {
+	Params ListHXCHistoryMetaParams
+}
+
+type ListHXCHistoryMetaResponseObject interface {
+	VisitListHXCHistoryMetaResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistoryMeta200JSONResponse HXCHistoryMetaPage
+
+func (response ListHXCHistoryMeta200JSONResponse) VisitListHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMeta400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistoryMeta400JSONResponse) VisitListHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMeta401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistoryMeta401JSONResponse) VisitListHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMeta403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistoryMeta403JSONResponse) VisitListHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMeta503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistoryMeta503JSONResponse) VisitListHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMetaRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistoryMetaResponseObject interface {
+	VisitGetHXCHistoryMetaResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistoryMeta200JSONResponse HXCHistoryMetaDetail
+
+func (response GetHXCHistoryMeta200JSONResponse) VisitGetHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMeta400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistoryMeta400JSONResponse) VisitGetHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMeta401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistoryMeta401JSONResponse) VisitGetHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMeta403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistoryMeta403JSONResponse) VisitGetHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMeta503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistoryMeta503JSONResponse) VisitGetHXCHistoryMetaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistorySnapshotRequestObject struct {
+	Params ListHXCHistorySnapshotParams
+}
+
+type ListHXCHistorySnapshotResponseObject interface {
+	VisitListHXCHistorySnapshotResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistorySnapshot200JSONResponse HXCHistorySnapshotPage
+
+func (response ListHXCHistorySnapshot200JSONResponse) VisitListHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistorySnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistorySnapshot400JSONResponse) VisitListHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistorySnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistorySnapshot401JSONResponse) VisitListHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistorySnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistorySnapshot403JSONResponse) VisitListHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistorySnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistorySnapshot503JSONResponse) VisitListHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistorySnapshotRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistorySnapshotResponseObject interface {
+	VisitGetHXCHistorySnapshotResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistorySnapshot200JSONResponse HXCHistorySnapshotDetail
+
+func (response GetHXCHistorySnapshot200JSONResponse) VisitGetHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistorySnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistorySnapshot400JSONResponse) VisitGetHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistorySnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistorySnapshot401JSONResponse) VisitGetHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistorySnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistorySnapshot403JSONResponse) VisitGetHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistorySnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistorySnapshot503JSONResponse) VisitGetHXCHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CreateInternalEventSafeExportRequestObject struct {
 	Params CreateInternalEventSafeExportParams
 	Body   *CreateInternalEventSafeExportJSONRequestBody
@@ -48364,6 +50911,274 @@ func (response ReconcileOutboundCampaignHandoff404JSONResponse) VisitReconcileOu
 type ReconcileOutboundCampaignHandoff503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ReconcileOutboundCampaignHandoff503JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSignupTagHistoryRulesRequestObject struct {
+	Params ListSignupTagHistoryRulesParams
+}
+
+type ListSignupTagHistoryRulesResponseObject interface {
+	VisitListSignupTagHistoryRulesResponse(w http.ResponseWriter) error
+}
+
+type ListSignupTagHistoryRules200JSONResponse ProfileCatalogHistorySignupTagRulePage
+
+func (response ListSignupTagHistoryRules200JSONResponse) VisitListSignupTagHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSignupTagHistoryRules400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSignupTagHistoryRules400JSONResponse) VisitListSignupTagHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSignupTagHistoryRules401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSignupTagHistoryRules401JSONResponse) VisitListSignupTagHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSignupTagHistoryRules403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSignupTagHistoryRules403JSONResponse) VisitListSignupTagHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSignupTagHistoryRules503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSignupTagHistoryRules503JSONResponse) VisitListSignupTagHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryTemplatesRequestObject struct {
+	Params ListProfileHistoryTemplatesParams
+}
+
+type ListProfileHistoryTemplatesResponseObject interface {
+	VisitListProfileHistoryTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListProfileHistoryTemplates200JSONResponse ProfileCatalogHistoryTemplatePage
+
+func (response ListProfileHistoryTemplates200JSONResponse) VisitListProfileHistoryTemplatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryTemplates400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProfileHistoryTemplates400JSONResponse) VisitListProfileHistoryTemplatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryTemplates401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProfileHistoryTemplates401JSONResponse) VisitListProfileHistoryTemplatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryTemplates403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListProfileHistoryTemplates403JSONResponse) VisitListProfileHistoryTemplatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryTemplates503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListProfileHistoryTemplates503JSONResponse) VisitListProfileHistoryTemplatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProfileHistoryTemplateRequestObject struct {
+	TemplateId int64 `json:"template_id"`
+}
+
+type GetProfileHistoryTemplateResponseObject interface {
+	VisitGetProfileHistoryTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetProfileHistoryTemplate200JSONResponse ProfileCatalogHistoryTemplateDetail
+
+func (response GetProfileHistoryTemplate200JSONResponse) VisitGetProfileHistoryTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProfileHistoryTemplate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProfileHistoryTemplate400JSONResponse) VisitGetProfileHistoryTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProfileHistoryTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProfileHistoryTemplate401JSONResponse) VisitGetProfileHistoryTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProfileHistoryTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetProfileHistoryTemplate403JSONResponse) VisitGetProfileHistoryTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetProfileHistoryTemplate503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetProfileHistoryTemplate503JSONResponse) VisitGetProfileHistoryTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryCategoriesRequestObject struct {
+	TemplateId int64 `json:"template_id"`
+	Params     ListProfileHistoryCategoriesParams
+}
+
+type ListProfileHistoryCategoriesResponseObject interface {
+	VisitListProfileHistoryCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListProfileHistoryCategories200JSONResponse ProfileCatalogHistoryCategoryPage
+
+func (response ListProfileHistoryCategories200JSONResponse) VisitListProfileHistoryCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryCategories400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProfileHistoryCategories400JSONResponse) VisitListProfileHistoryCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryCategories401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProfileHistoryCategories401JSONResponse) VisitListProfileHistoryCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryCategories403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListProfileHistoryCategories403JSONResponse) VisitListProfileHistoryCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryCategories503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListProfileHistoryCategories503JSONResponse) VisitListProfileHistoryCategoriesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryOptionMappingsRequestObject struct {
+	TemplateId int64 `json:"template_id"`
+	CategoryId int64 `json:"category_id"`
+	Params     ListProfileHistoryOptionMappingsParams
+}
+
+type ListProfileHistoryOptionMappingsResponseObject interface {
+	VisitListProfileHistoryOptionMappingsResponse(w http.ResponseWriter) error
+}
+
+type ListProfileHistoryOptionMappings200JSONResponse ProfileCatalogHistoryOptionMappingPage
+
+func (response ListProfileHistoryOptionMappings200JSONResponse) VisitListProfileHistoryOptionMappingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryOptionMappings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProfileHistoryOptionMappings400JSONResponse) VisitListProfileHistoryOptionMappingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryOptionMappings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProfileHistoryOptionMappings401JSONResponse) VisitListProfileHistoryOptionMappingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryOptionMappings403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListProfileHistoryOptionMappings403JSONResponse) VisitListProfileHistoryOptionMappingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListProfileHistoryOptionMappings503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListProfileHistoryOptionMappings503JSONResponse) VisitListProfileHistoryOptionMappingsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -59621,6 +62436,36 @@ type StrictServerInterface interface {
 	// Requeue only a deterministically retryable failed local effect
 	// (POST /api/admin/external-effects/{effect_id}/retry)
 	RetryExternalEffectRuntime(ctx context.Context, request RetryExternalEffectRuntimeRequestObject) (RetryExternalEffectRuntimeResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/activations)
+	ListHXCHistoryActivation(ctx context.Context, request ListHXCHistoryActivationRequestObject) (ListHXCHistoryActivationResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/activations/{history_id})
+	GetHXCHistoryActivation(ctx context.Context, request GetHXCHistoryActivationRequestObject) (GetHXCHistoryActivationResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/batches)
+	ListHXCHistoryBatch(ctx context.Context, request ListHXCHistoryBatchRequestObject) (ListHXCHistoryBatchResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/batches/{history_id})
+	GetHXCHistoryBatch(ctx context.Context, request GetHXCHistoryBatchRequestObject) (GetHXCHistoryBatchResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/leads)
+	ListHXCHistoryLead(ctx context.Context, request ListHXCHistoryLeadRequestObject) (ListHXCHistoryLeadResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/leads/{history_id})
+	GetHXCHistoryLead(ctx context.Context, request GetHXCHistoryLeadRequestObject) (GetHXCHistoryLeadResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/refreshes)
+	ListHXCHistoryMeta(ctx context.Context, request ListHXCHistoryMetaRequestObject) (ListHXCHistoryMetaResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/refreshes/{history_id})
+	GetHXCHistoryMeta(ctx context.Context, request GetHXCHistoryMetaRequestObject) (GetHXCHistoryMetaResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/snapshots)
+	ListHXCHistorySnapshot(ctx context.Context, request ListHXCHistorySnapshotRequestObject) (ListHXCHistorySnapshotResponseObject, error)
+	// Read immutable HXC observations without refreshing or executing tasks
+	// (GET /api/admin/hxc-history/snapshots/{history_id})
+	GetHXCHistorySnapshot(ctx context.Context, request GetHXCHistorySnapshotRequestObject) (GetHXCHistorySnapshotResponseObject, error)
 	// Freeze an admin-only local event and delivery safe CSV snapshot
 	// (POST /api/admin/internal-events/exports)
 	CreateInternalEventSafeExport(ctx context.Context, request CreateInternalEventSafeExportRequestObject) (CreateInternalEventSafeExportResponseObject, error)
@@ -59702,6 +62547,21 @@ type StrictServerInterface interface {
 	// Reconcile held local task-link counts without customer IDs or Provider fields
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
 	ReconcileOutboundCampaignHandoff(ctx context.Context, request ReconcileOutboundCampaignHandoffRequestObject) (ReconcileOutboundCampaignHandoffResponseObject, error)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/signup-tag-rules)
+	ListSignupTagHistoryRules(ctx context.Context, request ListSignupTagHistoryRulesRequestObject) (ListSignupTagHistoryRulesResponseObject, error)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates)
+	ListProfileHistoryTemplates(ctx context.Context, request ListProfileHistoryTemplatesRequestObject) (ListProfileHistoryTemplatesResponseObject, error)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates/{template_id})
+	GetProfileHistoryTemplate(ctx context.Context, request GetProfileHistoryTemplateRequestObject) (GetProfileHistoryTemplateResponseObject, error)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates/{template_id}/categories)
+	ListProfileHistoryCategories(ctx context.Context, request ListProfileHistoryCategoriesRequestObject) (ListProfileHistoryCategoriesResponseObject, error)
+	// Read inert V1 profile catalogue facts without activating rules
+	// (GET /api/admin/profile-catalog-history/templates/{template_id}/categories/{category_id}/option-mappings)
+	ListProfileHistoryOptionMappings(ctx context.Context, request ListProfileHistoryOptionMappingsRequestObject) (ListProfileHistoryOptionMappingsResponseObject, error)
 	// Read bounded local outbound-job projections without starting a worker or provider call
 	// (GET /api/admin/push-center/jobs)
 	ListLegacyOutboundJobs(ctx context.Context, request ListLegacyOutboundJobsRequestObject) (ListLegacyOutboundJobsResponseObject, error)
@@ -63091,6 +65951,266 @@ func (sh *strictHandler) RetryExternalEffectRuntime(w http.ResponseWriter, r *ht
 	}
 }
 
+// ListHXCHistoryActivation operation middleware
+func (sh *strictHandler) ListHXCHistoryActivation(w http.ResponseWriter, r *http.Request, params ListHXCHistoryActivationParams) {
+	var request ListHXCHistoryActivationRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistoryActivation(ctx, request.(ListHXCHistoryActivationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistoryActivation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistoryActivationResponseObject); ok {
+		if err := validResponse.VisitListHXCHistoryActivationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistoryActivation operation middleware
+func (sh *strictHandler) GetHXCHistoryActivation(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistoryActivationRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistoryActivation(ctx, request.(GetHXCHistoryActivationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistoryActivation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistoryActivationResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistoryActivationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHXCHistoryBatch operation middleware
+func (sh *strictHandler) ListHXCHistoryBatch(w http.ResponseWriter, r *http.Request, params ListHXCHistoryBatchParams) {
+	var request ListHXCHistoryBatchRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistoryBatch(ctx, request.(ListHXCHistoryBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistoryBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistoryBatchResponseObject); ok {
+		if err := validResponse.VisitListHXCHistoryBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistoryBatch operation middleware
+func (sh *strictHandler) GetHXCHistoryBatch(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistoryBatchRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistoryBatch(ctx, request.(GetHXCHistoryBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistoryBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistoryBatchResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistoryBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHXCHistoryLead operation middleware
+func (sh *strictHandler) ListHXCHistoryLead(w http.ResponseWriter, r *http.Request, params ListHXCHistoryLeadParams) {
+	var request ListHXCHistoryLeadRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistoryLead(ctx, request.(ListHXCHistoryLeadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistoryLead")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistoryLeadResponseObject); ok {
+		if err := validResponse.VisitListHXCHistoryLeadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistoryLead operation middleware
+func (sh *strictHandler) GetHXCHistoryLead(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistoryLeadRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistoryLead(ctx, request.(GetHXCHistoryLeadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistoryLead")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistoryLeadResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistoryLeadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHXCHistoryMeta operation middleware
+func (sh *strictHandler) ListHXCHistoryMeta(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMetaParams) {
+	var request ListHXCHistoryMetaRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistoryMeta(ctx, request.(ListHXCHistoryMetaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistoryMeta")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistoryMetaResponseObject); ok {
+		if err := validResponse.VisitListHXCHistoryMetaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistoryMeta operation middleware
+func (sh *strictHandler) GetHXCHistoryMeta(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistoryMetaRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistoryMeta(ctx, request.(GetHXCHistoryMetaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistoryMeta")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistoryMetaResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistoryMetaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHXCHistorySnapshot operation middleware
+func (sh *strictHandler) ListHXCHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListHXCHistorySnapshotParams) {
+	var request ListHXCHistorySnapshotRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistorySnapshot(ctx, request.(ListHXCHistorySnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistorySnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistorySnapshotResponseObject); ok {
+		if err := validResponse.VisitListHXCHistorySnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistorySnapshot operation middleware
+func (sh *strictHandler) GetHXCHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistorySnapshotRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistorySnapshot(ctx, request.(GetHXCHistorySnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistorySnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistorySnapshotResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistorySnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateInternalEventSafeExport operation middleware
 func (sh *strictHandler) CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams) {
 	var request CreateInternalEventSafeExportRequestObject
@@ -63844,6 +66964,139 @@ func (sh *strictHandler) ReconcileOutboundCampaignHandoff(w http.ResponseWriter,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileOutboundCampaignHandoffResponseObject); ok {
 		if err := validResponse.VisitReconcileOutboundCampaignHandoffResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSignupTagHistoryRules operation middleware
+func (sh *strictHandler) ListSignupTagHistoryRules(w http.ResponseWriter, r *http.Request, params ListSignupTagHistoryRulesParams) {
+	var request ListSignupTagHistoryRulesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSignupTagHistoryRules(ctx, request.(ListSignupTagHistoryRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSignupTagHistoryRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSignupTagHistoryRulesResponseObject); ok {
+		if err := validResponse.VisitListSignupTagHistoryRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProfileHistoryTemplates operation middleware
+func (sh *strictHandler) ListProfileHistoryTemplates(w http.ResponseWriter, r *http.Request, params ListProfileHistoryTemplatesParams) {
+	var request ListProfileHistoryTemplatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProfileHistoryTemplates(ctx, request.(ListProfileHistoryTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProfileHistoryTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProfileHistoryTemplatesResponseObject); ok {
+		if err := validResponse.VisitListProfileHistoryTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProfileHistoryTemplate operation middleware
+func (sh *strictHandler) GetProfileHistoryTemplate(w http.ResponseWriter, r *http.Request, templateId int64) {
+	var request GetProfileHistoryTemplateRequestObject
+
+	request.TemplateId = templateId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProfileHistoryTemplate(ctx, request.(GetProfileHistoryTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProfileHistoryTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProfileHistoryTemplateResponseObject); ok {
+		if err := validResponse.VisitGetProfileHistoryTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProfileHistoryCategories operation middleware
+func (sh *strictHandler) ListProfileHistoryCategories(w http.ResponseWriter, r *http.Request, templateId int64, params ListProfileHistoryCategoriesParams) {
+	var request ListProfileHistoryCategoriesRequestObject
+
+	request.TemplateId = templateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProfileHistoryCategories(ctx, request.(ListProfileHistoryCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProfileHistoryCategories")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProfileHistoryCategoriesResponseObject); ok {
+		if err := validResponse.VisitListProfileHistoryCategoriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProfileHistoryOptionMappings operation middleware
+func (sh *strictHandler) ListProfileHistoryOptionMappings(w http.ResponseWriter, r *http.Request, templateId int64, categoryId int64, params ListProfileHistoryOptionMappingsParams) {
+	var request ListProfileHistoryOptionMappingsRequestObject
+
+	request.TemplateId = templateId
+	request.CategoryId = categoryId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProfileHistoryOptionMappings(ctx, request.(ListProfileHistoryOptionMappingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProfileHistoryOptionMappings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProfileHistoryOptionMappingsResponseObject); ok {
+		if err := validResponse.VisitListProfileHistoryOptionMappingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

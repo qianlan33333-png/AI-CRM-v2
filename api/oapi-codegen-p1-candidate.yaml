@@ -6,6 +6,8 @@ generate:
   strict-server: true
 output-options:
   include-tags:
+    - p4-hxc-history
+    - p4-profile-catalog-history
     - p4-audience-history
     - p4-campaign-history
     - p1-core-candidate

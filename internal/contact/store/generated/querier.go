@@ -42,6 +42,7 @@ type Querier interface {
 	CountHistoricalOwnerMigrationResults(ctx context.Context) (int64, error)
 	CountHistoricalReconcileCompanions(ctx context.Context, arg CountHistoricalReconcileCompanionsParams) (CountHistoricalReconcileCompanionsRow, error)
 	CountHistoricalSidebarProfiles(ctx context.Context, customerID pgtype.Int8) (int64, error)
+	CountHistoricalSignupTagRules(ctx context.Context) (int64, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
 	CreateDM01AcceptanceExpiredImportingRun(ctx context.Context, arg CreateDM01AcceptanceExpiredImportingRunParams) (int64, error)
@@ -58,6 +59,9 @@ type Querier interface {
 	CreateHistoricalImportCustomer(ctx context.Context, arg CreateHistoricalImportCustomerParams) (int64, error)
 	CreateHistoricalOwnerMigrationResult(ctx context.Context, arg CreateHistoricalOwnerMigrationResultParams) (ContactV1OwnerMigrationResultHistory, error)
 	CreateHistoricalSidebarProfile(ctx context.Context, arg CreateHistoricalSidebarProfileParams) (ContactV1SidebarProfileHistory, error)
+	// Signup tag rules are immutable V1 history. They never populate the current
+	// tag catalogue or trigger a Provider synchronization.
+	CreateHistoricalSignupTagRule(ctx context.Context, arg CreateHistoricalSignupTagRuleParams) (ContactV1SignupTagRule, error)
 	CreateHistoricalTagImport(ctx context.Context, arg CreateHistoricalTagImportParams) (CreateHistoricalTagImportRow, error)
 	CreateHistoricalTagImportGroup(ctx context.Context, arg CreateHistoricalTagImportGroupParams) (TagGroup, error)
 	CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams) (CreateLegacyTagRow, error)
@@ -91,6 +95,7 @@ type Querier interface {
 	GetHistoricalChannelContact(ctx context.Context, id int64) (ChannelHistoricalContact, error)
 	GetHistoricalOwnerMigrationResult(ctx context.Context, id int64) (ContactV1OwnerMigrationResultHistory, error)
 	GetHistoricalSidebarProfile(ctx context.Context, id int64) (ContactV1SidebarProfileHistory, error)
+	GetHistoricalSignupTagRule(ctx context.Context, id int64) (ContactV1SignupTagRule, error)
 	GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error)
 	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
 	GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error)
@@ -132,6 +137,7 @@ type Querier interface {
 	ListHistoricalOwnerMigrationResults(ctx context.Context, arg ListHistoricalOwnerMigrationResultsParams) ([]ContactV1OwnerMigrationResultHistory, error)
 	ListHistoricalReconcileReceiptsPage(ctx context.Context, arg ListHistoricalReconcileReceiptsPageParams) ([]ListHistoricalReconcileReceiptsPageRow, error)
 	ListHistoricalSidebarProfiles(ctx context.Context, arg ListHistoricalSidebarProfilesParams) ([]ContactV1SidebarProfileHistory, error)
+	ListHistoricalSignupTagRules(ctx context.Context, arg ListHistoricalSignupTagRulesParams) ([]ContactV1SignupTagRule, error)
 	ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error)
 	ListLegacyTags(ctx context.Context) ([]ListLegacyTagsRow, error)
 	ListLockedCustomerSafeExportRows(ctx context.Context, arg ListLockedCustomerSafeExportRowsParams) ([]ListLockedCustomerSafeExportRowsRow, error)

@@ -11,6 +11,7 @@ import { AdminController } from './controller';
 import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
+import { mountHXCHistory } from './sections/hxcHistory';
 import { mountCampaignWorkspace } from './sections/campaigns';
 import { mountCampaignHistory } from './sections/campaignHistory';
 import { mountAdminAccess } from './sections/adminAccess';
@@ -22,6 +23,7 @@ import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
+import { mountProfileCatalogHistory } from './sections/profileCatalogHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
@@ -36,6 +38,13 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'funnel' && historyQuery.get('hxc_history') === '1') {
+    void mountHXCHistory(stage, {
+      kind: historyQuery.get('history_kind') ?? undefined,
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
   if (page === 'config' && historyQuery.get('automation_history') === '1') {
     void mountAutomationHistory(stage, {
       kind: historyQuery.get('history_kind') ?? undefined,
@@ -72,6 +81,15 @@ function boot(): void {
     void mountMessageHistory(stage, {
       historyID: qs.get('history_message_id') ?? undefined,
       customerID: qs.get('customer_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+
+  if (page === 'config' && qs.get('profile_catalog_history') === '1') {
+    void mountProfileCatalogHistory(stage, {
+      templateID: qs.get('history_template_id') ?? undefined,
+      categoryID: qs.get('history_category_id') ?? undefined,
+      view: qs.get('history_view') ?? undefined,
     }).catch((error) => showLoadError(stage, error));
     return;
   }
@@ -128,7 +146,8 @@ function boot(): void {
       void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'funnel':
-      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error));
+      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error))
+        .finally(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="funnel.html?hxc_history=1">V1 HXC历史观察（只读）</a></p>'); });
       return;
     case 'campaigns':
       void mountCampaignWorkspace(stage).catch((error) => showLoadError(stage, error));

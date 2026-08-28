@@ -6,6 +6,223 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/hxc-history/refreshes:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistoryMeta
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryMetaPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/refreshes/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistoryMeta
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryMetaDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/snapshots:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistorySnapshot
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistorySnapshotPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/snapshots/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistorySnapshot
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistorySnapshotDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/activations:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistoryActivation
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: source_table, in: query, schema: { type: string, enum: [public/user_ops_activation_status_source, public/user_ops_huangxiaocan_activation_source] } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryActivationPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/activations/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistoryActivation
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryActivationDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/leads:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistoryLead
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryLeadPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/leads/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistoryLead
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryLeadDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/batches:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistoryBatch
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryBatchPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/batches/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistoryBatch
+      summary: Read immutable HXC observations without refreshing or executing tasks
+      x-p4-decision-evidence: P4-V1-HXC-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryBatchDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/automation-history/sops:
     get:
       tags: [p4-automation-history]
@@ -13225,6 +13442,123 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
 
+  /api/admin/profile-catalog-history/templates:
+    get:
+      tags: [p4-profile-catalog-history]
+      operationId: listProfileHistoryTemplates
+      summary: Read inert V1 profile catalogue facts without activating rules
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-PROFILE-CATALOG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_profile_catalog_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read only V1 facts; no current rule activation, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileCatalogHistoryTemplatePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/profile-catalog-history/templates/{template_id}:
+    get:
+      tags: [p4-profile-catalog-history]
+      operationId: getProfileHistoryTemplate
+      summary: Read inert V1 profile catalogue facts without activating rules
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-PROFILE-CATALOG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_profile_catalog_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: template_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read only V1 facts; no current rule activation, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileCatalogHistoryTemplateDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/profile-catalog-history/templates/{template_id}/categories:
+    get:
+      tags: [p4-profile-catalog-history]
+      operationId: listProfileHistoryCategories
+      summary: Read inert V1 profile catalogue facts without activating rules
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-PROFILE-CATALOG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_profile_catalog_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: template_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read only V1 facts; no current rule activation, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileCatalogHistoryCategoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/profile-catalog-history/templates/{template_id}/categories/{category_id}/option-mappings:
+    get:
+      tags: [p4-profile-catalog-history]
+      operationId: listProfileHistoryOptionMappings
+      summary: Read inert V1 profile catalogue facts without activating rules
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-PROFILE-CATALOG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_profile_catalog_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: template_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: category_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read only V1 facts; no current rule activation, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileCatalogHistoryOptionMappingPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/profile-catalog-history/signup-tag-rules:
+    get:
+      tags: [p4-profile-catalog-history]
+      operationId: listSignupTagHistoryRules
+      summary: Read inert V1 profile catalogue facts without activating rules
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-PROFILE-CATALOG-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_profile_catalog_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read only V1 facts; no current rule activation, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileCatalogHistorySignupTagRulePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/audience-history/groups:
     get:
       tags: [p4-audience-history]
@@ -14036,6 +14370,220 @@ components:
       minItems: 32
       maxItems: 32
       items: { type: integer, minimum: 0, maximum: 255 }
+    HXCHistoryDigest:
+      type: array
+      minItems: 32
+      maxItems: 32
+      items: { type: integer, minimum: 0, maximum: 255 }
+    HXCHistoryMeta:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, started_at, finished_at, status, row_count, member_hit, user_hit, only_member, trigger_source]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        status: { type: string }
+        row_count: { type: integer, format: int64 }
+        member_hit: { type: integer, format: int64 }
+        user_hit: { type: integer, format: int64 }
+        only_member: { type: integer, format: int64 }
+        trigger_source: { type: string }
+    HXCHistoryMetaPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistoryMeta" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistoryMetaDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistoryMeta" }
+    HXCHistorySnapshot:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, customer_id, observation, observed_at, in_lead_pool, in_people, in_questionnaire, class_term_no, class_term_label, crm_hxc_state, crm_created_at, last_questionnaire_at, hxc_member_hit, hxc_user_hit, funnel_state, hxc_member_status, hxc_registered_at, hxc_last_login_at, membership_type, membership_status, membership_end_at, membership_days_left, consultation_used, consultation_limit, conversation_chat, conversation_consult, conversation_lesson, messages_user, messages_ai, consult_completed, last_message_at, subscription_tier, subscription_expires, subscription_quota, subscription_used, subscription_period_start]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        customer_id: { type: integer, format: int64, nullable: true, minimum: 1 }
+        observation: { type: string, enum: [observed_snapshot] }
+        observed_at: { type: string, format: date-time }
+        in_lead_pool: { type: boolean }
+        in_people: { type: boolean }
+        in_questionnaire: { type: boolean }
+        class_term_no: { type: integer, format: int64, nullable: true }
+        class_term_label: { type: string }
+        crm_hxc_state: { type: string }
+        crm_created_at: { type: string, format: date, nullable: true }
+        last_questionnaire_at: { type: string, format: date, nullable: true }
+        hxc_member_hit: { type: boolean }
+        hxc_user_hit: { type: boolean }
+        funnel_state: { type: string }
+        hxc_member_status: { type: string }
+        hxc_registered_at: { type: string, format: date-time, nullable: true }
+        hxc_last_login_at: { type: string, format: date-time, nullable: true }
+        membership_type: { type: string }
+        membership_status: { type: string }
+        membership_end_at: { type: string, format: date-time, nullable: true }
+        membership_days_left: { type: integer, format: int64, nullable: true }
+        consultation_used: { type: integer, format: int64, nullable: true }
+        consultation_limit: { type: integer, format: int64, nullable: true }
+        conversation_chat: { type: integer, format: int64 }
+        conversation_consult: { type: integer, format: int64 }
+        conversation_lesson: { type: integer, format: int64 }
+        messages_user: { type: integer, format: int64 }
+        messages_ai: { type: integer, format: int64 }
+        consult_completed: { type: integer, format: int64 }
+        last_message_at: { type: string, format: date-time, nullable: true }
+        subscription_tier: { type: string }
+        subscription_expires: { type: string, format: date-time, nullable: true }
+        subscription_quota: { type: integer, format: int64, nullable: true }
+        subscription_used: { type: integer, format: int64, nullable: true }
+        subscription_period_start: { type: string, format: date, nullable: true }
+    HXCHistorySnapshotPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistorySnapshot" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistorySnapshotDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistorySnapshot" }
+    HXCHistoryActivation:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, source_table, original_state, is_active, legacy_import_batch_ref, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        source_table: { type: string, enum: [public/user_ops_activation_status_source, public/user_ops_huangxiaocan_activation_source] }
+        original_state: { type: string }
+        is_active: { type: boolean }
+        legacy_import_batch_ref: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    HXCHistoryActivationPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistoryActivation" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistoryActivationDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistoryActivation" }
+    HXCHistoryLead:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, original_type, is_active, legacy_import_batch_ref, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        original_type: { type: string }
+        is_active: { type: boolean }
+        legacy_import_batch_ref: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    HXCHistoryLeadPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistoryLead" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistoryLeadDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistoryLead" }
+    HXCHistoryBatch:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, import_type, total_rows, success_rows, failed_rows, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/HXCHistoryDigest" }
+        import_type: { type: string }
+        total_rows: { type: integer, format: int64 }
+        success_rows: { type: integer, format: int64 }
+        failed_rows: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+    HXCHistoryBatchPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistoryBatch" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistoryBatchDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistoryBatch" }
     AutomationHistorySOP:
       type: object
       additionalProperties: false
@@ -22880,6 +23428,131 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/MessageHistoryItem" }
+    ProfileCatalogHistoryTemplate:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, template_code, template_name, questionnaire_source_id, segmentation_question_source_id, program_source_id, description, original_enabled, version, created_by_digest, updated_by_digest, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        template_code: { type: string }
+        template_name: { type: string }
+        questionnaire_source_id: { type: integer, format: int64, nullable: true }
+        segmentation_question_source_id: { type: integer, format: int64, nullable: true }
+        program_source_id: { type: integer, format: int64, nullable: true }
+        description: { type: string }
+        original_enabled: { type: boolean }
+        version: { type: integer, format: int64 }
+        created_by_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        updated_by_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProfileCatalogHistoryTemplatePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/ProfileCatalogHistoryTemplate" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    ProfileCatalogHistoryTemplateDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/ProfileCatalogHistoryTemplate" }
+    ProfileCatalogHistoryCategory:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, template_source_id, template_history_id, category_key, category_name, description, sort_order, original_enabled, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        template_source_id: { type: integer, format: int64 }
+        template_history_id: { type: integer, format: int64, minimum: 1 }
+        category_key: { type: string }
+        category_name: { type: string }
+        description: { type: string }
+        sort_order: { type: integer, format: int64 }
+        original_enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProfileCatalogHistoryCategoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/ProfileCatalogHistoryCategory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    ProfileCatalogHistoryOptionMapping:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, template_source_id, category_source_id, template_history_id, category_history_id, question_source_id, option_source_id, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        template_source_id: { type: integer, format: int64 }
+        category_source_id: { type: integer, format: int64 }
+        template_history_id: { type: integer, format: int64, minimum: 1 }
+        category_history_id: { type: integer, format: int64, minimum: 1 }
+        question_source_id: { type: integer, format: int64 }
+        option_source_id: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+    ProfileCatalogHistoryOptionMappingPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/ProfileCatalogHistoryOptionMapping" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    ProfileCatalogHistorySignupTagRule:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, source_payload_digest, tag_source_id, tag_name, signup_status, original_active, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        tag_source_id: { type: string }
+        tag_name: { type: string }
+        signup_status: { type: string }
+        original_active: { type: boolean }
+        updated_at: { type: string, format: date-time }
+    ProfileCatalogHistorySignupTagRulePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/ProfileCatalogHistorySignupTagRule" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
     AudienceHistoryGroup:
       type: object
       additionalProperties: false

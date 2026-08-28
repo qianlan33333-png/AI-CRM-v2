@@ -216,6 +216,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
 		"ListAudienceHistoryGroups", "ListAudienceHistoryPackages", "ListAudienceHistoryVersions", "ListAudienceHistorySenders", "ListAudienceHistoryRules", "ListAudienceHistoryRuleVersions", "ListAudienceHistoryDefinitions", "ListAudienceHistoryMembers", "GetAudienceHistoryPackage", "GetAudienceHistoryDefinition",
+		"ListProfileHistoryTemplates", "GetProfileHistoryTemplate", "ListProfileHistoryCategories", "ListProfileHistoryOptionMappings", "ListSignupTagHistoryRules",
 		"GetChannelHistory",
 		"ListCampaignHistorySegments",
 		"GetCampaignHistorySegment",
@@ -227,6 +228,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListServicePeriodHistoryDefinitions", "ListServicePeriodHistoryEntitlements", "ListServicePeriodHistoryEvents",
 		"ListCouponHistoryDefinitions", "ListCouponHistoryClaims", "ListCouponHistoryRedemptions",
 		"ListAutomationHistorySOPs", "GetAutomationHistorySOP", "ListAutomationHistoryConfigs", "GetAutomationHistoryConfig", "ListAutomationHistoryPrompts", "GetAutomationHistoryPrompt", "ListAutomationHistoryAgents", "GetAutomationHistoryAgent",
+		"ListHXCHistoryMeta", "GetHXCHistoryMeta", "ListHXCHistorySnapshot", "GetHXCHistorySnapshot", "ListHXCHistoryActivation", "GetHXCHistoryActivation", "ListHXCHistoryLead", "GetHXCHistoryLead", "ListHXCHistoryBatch", "GetHXCHistoryBatch",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",
 		"ListMemberViewHistory", "GetMemberViewHistory", "ListMemberUsageHistory", "GetMemberUsageHistory",
 		"ListSidebarProfileHistory", "GetSidebarProfileHistory", "ListOwnerMigrationResultHistory", "GetOwnerMigrationResultHistory",
