@@ -9715,6 +9715,186 @@ func (e UpdateSegmentRequestRefreshMode) Valid() bool {
 	}
 }
 
+// Defines values for WeComContactHistoryEventDetailReadOnly.
+const (
+	WeComContactHistoryEventDetailReadOnlyTrue WeComContactHistoryEventDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryEventDetailReadOnly enum.
+func (e WeComContactHistoryEventDetailReadOnly) Valid() bool {
+	switch e {
+	case WeComContactHistoryEventDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryEventDetailRealExternalCallExecuted.
+const (
+	WeComContactHistoryEventDetailRealExternalCallExecutedFalse WeComContactHistoryEventDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryEventDetailRealExternalCallExecuted enum.
+func (e WeComContactHistoryEventDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case WeComContactHistoryEventDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryEventDetailSource.
+const (
+	WeComContactHistoryEventDetailSourceV1History WeComContactHistoryEventDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryEventDetailSource enum.
+func (e WeComContactHistoryEventDetailSource) Valid() bool {
+	switch e {
+	case WeComContactHistoryEventDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryEventPageReadOnly.
+const (
+	WeComContactHistoryEventPageReadOnlyTrue WeComContactHistoryEventPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryEventPageReadOnly enum.
+func (e WeComContactHistoryEventPageReadOnly) Valid() bool {
+	switch e {
+	case WeComContactHistoryEventPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryEventPageRealExternalCallExecuted.
+const (
+	WeComContactHistoryEventPageRealExternalCallExecutedFalse WeComContactHistoryEventPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryEventPageRealExternalCallExecuted enum.
+func (e WeComContactHistoryEventPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case WeComContactHistoryEventPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryEventPageSource.
+const (
+	WeComContactHistoryEventPageSourceV1History WeComContactHistoryEventPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryEventPageSource enum.
+func (e WeComContactHistoryEventPageSource) Valid() bool {
+	switch e {
+	case WeComContactHistoryEventPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryRelationDetailReadOnly.
+const (
+	WeComContactHistoryRelationDetailReadOnlyTrue WeComContactHistoryRelationDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryRelationDetailReadOnly enum.
+func (e WeComContactHistoryRelationDetailReadOnly) Valid() bool {
+	switch e {
+	case WeComContactHistoryRelationDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryRelationDetailRealExternalCallExecuted.
+const (
+	WeComContactHistoryRelationDetailRealExternalCallExecutedFalse WeComContactHistoryRelationDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryRelationDetailRealExternalCallExecuted enum.
+func (e WeComContactHistoryRelationDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case WeComContactHistoryRelationDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryRelationDetailSource.
+const (
+	WeComContactHistoryRelationDetailSourceV1History WeComContactHistoryRelationDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryRelationDetailSource enum.
+func (e WeComContactHistoryRelationDetailSource) Valid() bool {
+	switch e {
+	case WeComContactHistoryRelationDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryRelationPageReadOnly.
+const (
+	WeComContactHistoryRelationPageReadOnlyTrue WeComContactHistoryRelationPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageReadOnly enum.
+func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
+	switch e {
+	case WeComContactHistoryRelationPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryRelationPageRealExternalCallExecuted.
+const (
+	WeComContactHistoryRelationPageRealExternalCallExecutedFalse WeComContactHistoryRelationPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageRealExternalCallExecuted enum.
+func (e WeComContactHistoryRelationPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case WeComContactHistoryRelationPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WeComContactHistoryRelationPageSource.
+const (
+	WeComContactHistoryRelationPageSourceV1History WeComContactHistoryRelationPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageSource enum.
+func (e WeComContactHistoryRelationPageSource) Valid() bool {
+	switch e {
+	case WeComContactHistoryRelationPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WechatPayCallbackAckCode.
 const (
 	WechatPayCallbackSuccess WechatPayCallbackAckCode = "SUCCESS"
@@ -16204,6 +16384,108 @@ type VersionedDeleteRequest struct {
 	ExpectedVersion int64 `json:"expected_version"`
 }
 
+// WeComContactHistoryEvent defines model for WeComContactHistoryEvent.
+type WeComContactHistoryEvent struct {
+	ChangeType         string    `json:"change_type"`
+	CreatedAt          time.Time `json:"created_at"`
+	EventTime          *int64    `json:"event_time"`
+	EventType          string    `json:"event_type"`
+	Id                 int64     `json:"id"`
+	IdentitySyncStatus string    `json:"identity_sync_status"`
+	ProcessStatus      string    `json:"process_status"`
+	RetryCount         int32     `json:"retry_count"`
+	SourceId           int64     `json:"source_id"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+// WeComContactHistoryEventDetail defines model for WeComContactHistoryEventDetail.
+type WeComContactHistoryEventDetail struct {
+	Item                     WeComContactHistoryEvent                               `json:"item"`
+	ReadOnly                 WeComContactHistoryEventDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted WeComContactHistoryEventDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   WeComContactHistoryEventDetailSource                   `json:"source"`
+}
+
+// WeComContactHistoryEventDetailReadOnly defines model for WeComContactHistoryEventDetail.ReadOnly.
+type WeComContactHistoryEventDetailReadOnly bool
+
+// WeComContactHistoryEventDetailRealExternalCallExecuted defines model for WeComContactHistoryEventDetail.RealExternalCallExecuted.
+type WeComContactHistoryEventDetailRealExternalCallExecuted bool
+
+// WeComContactHistoryEventDetailSource defines model for WeComContactHistoryEventDetail.Source.
+type WeComContactHistoryEventDetailSource string
+
+// WeComContactHistoryEventPage defines model for WeComContactHistoryEventPage.
+type WeComContactHistoryEventPage struct {
+	Items                    []WeComContactHistoryEvent                           `json:"items"`
+	Limit                    int32                                                `json:"limit"`
+	Offset                   int32                                                `json:"offset"`
+	ReadOnly                 WeComContactHistoryEventPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted WeComContactHistoryEventPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   WeComContactHistoryEventPageSource                   `json:"source"`
+	Total                    int64                                                `json:"total"`
+}
+
+// WeComContactHistoryEventPageReadOnly defines model for WeComContactHistoryEventPage.ReadOnly.
+type WeComContactHistoryEventPageReadOnly bool
+
+// WeComContactHistoryEventPageRealExternalCallExecuted defines model for WeComContactHistoryEventPage.RealExternalCallExecuted.
+type WeComContactHistoryEventPageRealExternalCallExecuted bool
+
+// WeComContactHistoryEventPageSource defines model for WeComContactHistoryEventPage.Source.
+type WeComContactHistoryEventPageSource string
+
+// WeComContactHistoryRelation defines model for WeComContactHistoryRelation.
+type WeComContactHistoryRelation struct {
+	AddWay         *int32    `json:"add_way"`
+	CreateTime     *int64    `json:"create_time"`
+	CreatedAt      time.Time `json:"created_at"`
+	FirstSeenAt    time.Time `json:"first_seen_at"`
+	Id             int64     `json:"id"`
+	IsPrimary      bool      `json:"is_primary"`
+	LastSeenAt     time.Time `json:"last_seen_at"`
+	RelationStatus string    `json:"relation_status"`
+	SourceId       int64     `json:"source_id"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// WeComContactHistoryRelationDetail defines model for WeComContactHistoryRelationDetail.
+type WeComContactHistoryRelationDetail struct {
+	Item                     WeComContactHistoryRelation                               `json:"item"`
+	ReadOnly                 WeComContactHistoryRelationDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted WeComContactHistoryRelationDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   WeComContactHistoryRelationDetailSource                   `json:"source"`
+}
+
+// WeComContactHistoryRelationDetailReadOnly defines model for WeComContactHistoryRelationDetail.ReadOnly.
+type WeComContactHistoryRelationDetailReadOnly bool
+
+// WeComContactHistoryRelationDetailRealExternalCallExecuted defines model for WeComContactHistoryRelationDetail.RealExternalCallExecuted.
+type WeComContactHistoryRelationDetailRealExternalCallExecuted bool
+
+// WeComContactHistoryRelationDetailSource defines model for WeComContactHistoryRelationDetail.Source.
+type WeComContactHistoryRelationDetailSource string
+
+// WeComContactHistoryRelationPage defines model for WeComContactHistoryRelationPage.
+type WeComContactHistoryRelationPage struct {
+	Items                    []WeComContactHistoryRelation                           `json:"items"`
+	Limit                    int32                                                   `json:"limit"`
+	Offset                   int32                                                   `json:"offset"`
+	ReadOnly                 WeComContactHistoryRelationPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted WeComContactHistoryRelationPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   WeComContactHistoryRelationPageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// WeComContactHistoryRelationPageReadOnly defines model for WeComContactHistoryRelationPage.ReadOnly.
+type WeComContactHistoryRelationPageReadOnly bool
+
+// WeComContactHistoryRelationPageRealExternalCallExecuted defines model for WeComContactHistoryRelationPage.RealExternalCallExecuted.
+type WeComContactHistoryRelationPageRealExternalCallExecuted bool
+
+// WeComContactHistoryRelationPageSource defines model for WeComContactHistoryRelationPage.Source.
+type WeComContactHistoryRelationPageSource string
+
 // WechatPayCallbackAck defines model for WechatPayCallbackAck.
 type WechatPayCallbackAck struct {
 	Code WechatPayCallbackAckCode `json:"code"`
@@ -17561,6 +17843,18 @@ type QueueWechatPayProductExternalPushTestParams struct {
 type ReconcileWechatShopRefundParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// ListWeComContactHistoryEventsParams defines parameters for ListWeComContactHistoryEvents.
+type ListWeComContactHistoryEventsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListWeComContactHistoryRelationsParams defines parameters for ListWeComContactHistoryRelations.
+type ListWeComContactHistoryRelationsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // CallbackSurveyH5OAuthParams defines parameters for CallbackSurveyH5OAuth.
@@ -20284,6 +20578,18 @@ type ServerInterface interface {
 	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 	// (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 	ReconcileWechatShopRefund(w http.ResponseWriter, r *http.Request, refundId int64, params ReconcileWechatShopRefundParams)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/events)
+	ListWeComContactHistoryEvents(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryEventsParams)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/events/{history_id})
+	GetWeComContactHistoryEvent(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/relations)
+	ListWeComContactHistoryRelations(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryRelationsParams)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/relations/{history_id})
+	GetWeComContactHistoryRelation(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
 	// (GET /api/h5/surveys/oauth/callback)
 	CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params CallbackSurveyH5OAuthParams)
@@ -21682,6 +21988,30 @@ func (_ Unimplemented) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *
 // Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 // (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 func (_ Unimplemented) ReconcileWechatShopRefund(w http.ResponseWriter, r *http.Request, refundId int64, params ReconcileWechatShopRefundParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 WeCom contact history without current owner or callback effects
+// (GET /api/admin/wecom-contact-history/events)
+func (_ Unimplemented) ListWeComContactHistoryEvents(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 WeCom contact history without current owner or callback effects
+// (GET /api/admin/wecom-contact-history/events/{history_id})
+func (_ Unimplemented) GetWeComContactHistoryEvent(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 WeCom contact history without current owner or callback effects
+// (GET /api/admin/wecom-contact-history/relations)
+func (_ Unimplemented) ListWeComContactHistoryRelations(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryRelationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 WeCom contact history without current owner or callback effects
+// (GET /api/admin/wecom-contact-history/relations/{history_id})
+func (_ Unimplemented) GetWeComContactHistoryRelation(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -32328,6 +32658,150 @@ func (siw *ServerInterfaceWrapper) ReconcileWechatShopRefund(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// ListWeComContactHistoryEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListWeComContactHistoryEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWeComContactHistoryEventsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWeComContactHistoryEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWeComContactHistoryEvent operation middleware
+func (siw *ServerInterfaceWrapper) GetWeComContactHistoryEvent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWeComContactHistoryEvent(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWeComContactHistoryRelations operation middleware
+func (siw *ServerInterfaceWrapper) ListWeComContactHistoryRelations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWeComContactHistoryRelationsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWeComContactHistoryRelations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWeComContactHistoryRelation operation middleware
+func (siw *ServerInterfaceWrapper) GetWeComContactHistoryRelation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWeComContactHistoryRelation(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CallbackSurveyH5OAuth operation middleware
 func (siw *ServerInterfaceWrapper) CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Request) {
 
@@ -39582,6 +40056,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/wechat-shop/refunds/{refund_id}/reconcile", wrapper.ReconcileWechatShopRefund)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/events", wrapper.ListWeComContactHistoryEvents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/events/{history_id}", wrapper.GetWeComContactHistoryEvent)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/relations", wrapper.ListWeComContactHistoryRelations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wecom-contact-history/relations/{history_id}", wrapper.GetWeComContactHistoryRelation)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/h5/surveys/oauth/callback", wrapper.CallbackSurveyH5OAuth)
@@ -50875,6 +51361,218 @@ func (response ReconcileWechatShopRefund503JSONResponse) VisitReconcileWechatSho
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListWeComContactHistoryEventsRequestObject struct {
+	Params ListWeComContactHistoryEventsParams
+}
+
+type ListWeComContactHistoryEventsResponseObject interface {
+	VisitListWeComContactHistoryEventsResponse(w http.ResponseWriter) error
+}
+
+type ListWeComContactHistoryEvents200JSONResponse WeComContactHistoryEventPage
+
+func (response ListWeComContactHistoryEvents200JSONResponse) VisitListWeComContactHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryEvents400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListWeComContactHistoryEvents400JSONResponse) VisitListWeComContactHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryEvents401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListWeComContactHistoryEvents401JSONResponse) VisitListWeComContactHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryEvents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListWeComContactHistoryEvents403JSONResponse) VisitListWeComContactHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryEvents503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListWeComContactHistoryEvents503JSONResponse) VisitListWeComContactHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryEventRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetWeComContactHistoryEventResponseObject interface {
+	VisitGetWeComContactHistoryEventResponse(w http.ResponseWriter) error
+}
+
+type GetWeComContactHistoryEvent200JSONResponse WeComContactHistoryEventDetail
+
+func (response GetWeComContactHistoryEvent200JSONResponse) VisitGetWeComContactHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryEvent400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetWeComContactHistoryEvent400JSONResponse) VisitGetWeComContactHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryEvent401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetWeComContactHistoryEvent401JSONResponse) VisitGetWeComContactHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryEvent403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetWeComContactHistoryEvent403JSONResponse) VisitGetWeComContactHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryEvent503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetWeComContactHistoryEvent503JSONResponse) VisitGetWeComContactHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryRelationsRequestObject struct {
+	Params ListWeComContactHistoryRelationsParams
+}
+
+type ListWeComContactHistoryRelationsResponseObject interface {
+	VisitListWeComContactHistoryRelationsResponse(w http.ResponseWriter) error
+}
+
+type ListWeComContactHistoryRelations200JSONResponse WeComContactHistoryRelationPage
+
+func (response ListWeComContactHistoryRelations200JSONResponse) VisitListWeComContactHistoryRelationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryRelations400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListWeComContactHistoryRelations400JSONResponse) VisitListWeComContactHistoryRelationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryRelations401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListWeComContactHistoryRelations401JSONResponse) VisitListWeComContactHistoryRelationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryRelations403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListWeComContactHistoryRelations403JSONResponse) VisitListWeComContactHistoryRelationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListWeComContactHistoryRelations503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListWeComContactHistoryRelations503JSONResponse) VisitListWeComContactHistoryRelationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryRelationRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetWeComContactHistoryRelationResponseObject interface {
+	VisitGetWeComContactHistoryRelationResponse(w http.ResponseWriter) error
+}
+
+type GetWeComContactHistoryRelation200JSONResponse WeComContactHistoryRelationDetail
+
+func (response GetWeComContactHistoryRelation200JSONResponse) VisitGetWeComContactHistoryRelationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryRelation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetWeComContactHistoryRelation400JSONResponse) VisitGetWeComContactHistoryRelationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryRelation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetWeComContactHistoryRelation401JSONResponse) VisitGetWeComContactHistoryRelationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryRelation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetWeComContactHistoryRelation403JSONResponse) VisitGetWeComContactHistoryRelationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWeComContactHistoryRelation503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetWeComContactHistoryRelation503JSONResponse) VisitGetWeComContactHistoryRelationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CallbackSurveyH5OAuthRequestObject struct {
 	Params CallbackSurveyH5OAuthParams
 }
@@ -58430,6 +59128,18 @@ type StrictServerInterface interface {
 	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 	// (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 	ReconcileWechatShopRefund(ctx context.Context, request ReconcileWechatShopRefundRequestObject) (ReconcileWechatShopRefundResponseObject, error)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/events)
+	ListWeComContactHistoryEvents(ctx context.Context, request ListWeComContactHistoryEventsRequestObject) (ListWeComContactHistoryEventsResponseObject, error)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/events/{history_id})
+	GetWeComContactHistoryEvent(ctx context.Context, request GetWeComContactHistoryEventRequestObject) (GetWeComContactHistoryEventResponseObject, error)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/relations)
+	ListWeComContactHistoryRelations(ctx context.Context, request ListWeComContactHistoryRelationsRequestObject) (ListWeComContactHistoryRelationsResponseObject, error)
+	// Read immutable V1 WeCom contact history without current owner or callback effects
+	// (GET /api/admin/wecom-contact-history/relations/{history_id})
+	GetWeComContactHistoryRelation(ctx context.Context, request GetWeComContactHistoryRelationRequestObject) (GetWeComContactHistoryRelationResponseObject, error)
 	// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
 	// (GET /api/h5/surveys/oauth/callback)
 	CallbackSurveyH5OAuth(ctx context.Context, request CallbackSurveyH5OAuthRequestObject) (CallbackSurveyH5OAuthResponseObject, error)
@@ -63928,6 +64638,110 @@ func (sh *strictHandler) ReconcileWechatShopRefund(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileWechatShopRefundResponseObject); ok {
 		if err := validResponse.VisitReconcileWechatShopRefundResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWeComContactHistoryEvents operation middleware
+func (sh *strictHandler) ListWeComContactHistoryEvents(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryEventsParams) {
+	var request ListWeComContactHistoryEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWeComContactHistoryEvents(ctx, request.(ListWeComContactHistoryEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWeComContactHistoryEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWeComContactHistoryEventsResponseObject); ok {
+		if err := validResponse.VisitListWeComContactHistoryEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWeComContactHistoryEvent operation middleware
+func (sh *strictHandler) GetWeComContactHistoryEvent(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetWeComContactHistoryEventRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWeComContactHistoryEvent(ctx, request.(GetWeComContactHistoryEventRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWeComContactHistoryEvent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWeComContactHistoryEventResponseObject); ok {
+		if err := validResponse.VisitGetWeComContactHistoryEventResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWeComContactHistoryRelations operation middleware
+func (sh *strictHandler) ListWeComContactHistoryRelations(w http.ResponseWriter, r *http.Request, params ListWeComContactHistoryRelationsParams) {
+	var request ListWeComContactHistoryRelationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWeComContactHistoryRelations(ctx, request.(ListWeComContactHistoryRelationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWeComContactHistoryRelations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWeComContactHistoryRelationsResponseObject); ok {
+		if err := validResponse.VisitListWeComContactHistoryRelationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWeComContactHistoryRelation operation middleware
+func (sh *strictHandler) GetWeComContactHistoryRelation(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetWeComContactHistoryRelationRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWeComContactHistoryRelation(ctx, request.(GetWeComContactHistoryRelationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWeComContactHistoryRelation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWeComContactHistoryRelationResponseObject); ok {
+		if err := validResponse.VisitGetWeComContactHistoryRelationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
