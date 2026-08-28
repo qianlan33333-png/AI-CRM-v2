@@ -102,6 +102,33 @@ type HxcV1ImportBatchHistory struct {
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 }
 
+type HxcV1MemberUsageHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	Generation          int64              `json:"generation"`
+	Unionid             string             `json:"unionid"`
+	OwnerUserid         string             `json:"owner_userid"`
+	MobileHash          string             `json:"mobile_hash"`
+	IsMember            bool               `json:"is_member"`
+	IsRegistered        bool               `json:"is_registered"`
+	RegisteredAt        pgtype.Timestamptz `json:"registered_at"`
+	HasRealUsage        bool               `json:"has_real_usage"`
+	FirstUsedAt         pgtype.Timestamptz `json:"first_used_at"`
+	LastUsedAt          pgtype.Timestamptz `json:"last_used_at"`
+	MemberSince         pgtype.Timestamptz `json:"member_since"`
+	MembershipExpiresAt pgtype.Timestamptz `json:"membership_expires_at"`
+	MembershipTier      string             `json:"membership_tier"`
+	MembershipStatus    string             `json:"membership_status"`
+	MembershipSource    string             `json:"membership_source"`
+	RegistrationSource  string             `json:"registration_source"`
+	UsageSource         string             `json:"usage_source"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	PayloadJson         string             `json:"payload_json"`
+	ProjectedAt         pgtype.Timestamptz `json:"projected_at"`
+}
+
 type HxcV1SendRecordHistory struct {
 	ID                  int64              `json:"id"`
 	SourceID            int64              `json:"source_id"`
