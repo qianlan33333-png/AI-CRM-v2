@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
@@ -52,6 +53,110 @@ type TerminalReceipt struct {
 
 var _ campaign.HistoricalDefinitionJournal = (*Journal)(nil)
 var _ media.HistoricalMiniProgramJournal = (*Journal)(nil)
+
+// DeferredIdentityDM01Reader reads only immutable evidence already on V2.
+// The caller supplies a transaction-reusing UoW for reconciliation.
+type DeferredIdentityDM01Reader struct{ UOW UnitOfWork }
+
+var _ deferredhistory.DM01EvidenceReader = DeferredIdentityDM01Reader{}
+
+func (reader DeferredIdentityDM01Reader) read(ctx context.Context, run int64, table string, apply func(pgx.Tx) error) error {
+	if reader.UOW == nil || ctx == nil || run < 1 || (table != "" && table != deferredhistory.DM01PeopleSourceTable && table != deferredhistory.DM01IdentityConflictsSourceTable && table != deferredhistory.DM01IdentityMapSourceTable) {
+		return ErrInvalidScope
+	}
+	return reader.UOW.Within(ctx, func(bound context.Context) error {
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		return apply(tx)
+	})
+}
+
+func (reader DeferredIdentityDM01Reader) ReadDM01Run(ctx context.Context, run int64) (value deferredhistory.DM01Run, err error) {
+	err = reader.read(ctx, run, "", func(tx pgx.Tx) error {
+		return tx.QueryRow(ctx, `SELECT id,mode,state,hmac_key_version FROM public.legacy_contact_identity_import_runs WHERE id=$1`, run).Scan(&value.ID, &value.Mode, &value.State, &value.HMACKeyVersion)
+	})
+	return
+}
+
+func (reader DeferredIdentityDM01Reader) ReadDM01Checkpoint(ctx context.Context, run int64, table string) (value deferredhistory.DM01Checkpoint, err error) {
+	err = reader.read(ctx, run, table, func(tx pgx.Tx) error {
+		var key, payload, field, upper []byte
+		if err := tx.QueryRow(ctx, `SELECT source_table,final_source_key_hmac,payload_hmac,field_digest,watermark,upper_source_key_hmac,upper_bound_empty FROM public.legacy_contact_identity_import_checkpoints WHERE run_id=$1 AND source_table=$2`, run, table).Scan(&value.SourceTable, &key, &payload, &field, &value.Watermark, &upper, &value.UpperBoundEmpty); err != nil {
+			return err
+		}
+		if len(key) != 32 || len(payload) != 32 || len(field) != 32 || len(upper) != 32 {
+			return ErrConflict
+		}
+		copy(value.FinalSourceKeyHMAC[:], key)
+		copy(value.PayloadHMAC[:], payload)
+		copy(value.FieldDigest[:], field)
+		copy(value.UpperSourceKeyHMAC[:], upper)
+		return nil
+	})
+	return
+}
+
+func (reader DeferredIdentityDM01Reader) EachDM01TerminalReceipt(ctx context.Context, run int64, table string, emit func(deferredhistory.DM01TerminalReceipt) error) error {
+	if emit == nil {
+		return ErrInvalidScope
+	}
+	return reader.read(ctx, run, table, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `SELECT source_table,source_ordinal,source_key_hmac,payload_hmac,field_digest,disposition FROM public.legacy_contact_identity_import_row_receipts WHERE run_id=$1 AND source_table=$2 ORDER BY source_ordinal`, run, table)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var value deferredhistory.DM01TerminalReceipt
+			var key, payload, field []byte
+			if err := rows.Scan(&value.SourceTable, &value.SourceOrdinal, &key, &payload, &field, &value.Disposition); err != nil {
+				return err
+			}
+			if len(key) != 32 || len(payload) != 32 || len(field) != 32 {
+				return ErrConflict
+			}
+			copy(value.SourceKeyHMAC[:], key)
+			copy(value.PayloadHMAC[:], payload)
+			copy(value.FieldDigest[:], field)
+			if err := emit(value); err != nil {
+				return err
+			}
+		}
+		return rows.Err()
+	})
+}
+
+func (reader DeferredIdentityDM01Reader) EachDM01Quarantine(ctx context.Context, run int64, table string, emit func(deferredhistory.DM01Quarantine) error) error {
+	if emit == nil {
+		return ErrInvalidScope
+	}
+	return reader.read(ctx, run, table, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `SELECT source_table,source_key_hmac,payload_hmac,field_digest,reason_code FROM public.legacy_contact_identity_import_quarantines WHERE run_id=$1 AND source_table=$2 ORDER BY source_key_hmac,reason_code`, run, table)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var value deferredhistory.DM01Quarantine
+			var key, payload, field []byte
+			if err := rows.Scan(&value.SourceTable, &key, &payload, &field, &value.ReasonCode); err != nil {
+				return err
+			}
+			if len(key) != 32 || len(payload) != 32 || len(field) != 32 {
+				return ErrConflict
+			}
+			copy(value.SourceKeyHMAC[:], key)
+			copy(value.PayloadHMAC[:], payload)
+			copy(value.FieldDigest[:], field)
+			if err := emit(value); err != nil {
+				return err
+			}
+		}
+		return rows.Err()
+	})
+}
 
 // Finance must be sealed before missing order mappings can be treated as
 // unresolved historical data rather than an import-order mistake.

@@ -36,6 +36,7 @@ import { mountCustomerStateHistory } from './sections/customerStateHistory';
 import { mountMarketingStateHistory } from './sections/marketingStateHistory';
 import { mountBroadcastJobHistory } from './sections/broadcastJobHistory';
 import { mountWeComContactHistory } from './sections/wecomContactHistory';
+import { mountDeferredIdentityHistory } from './sections/deferredIdentityHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -47,6 +48,10 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'config' && historyQuery.get('deferred_identity_history') === '1') {
+    void mountDeferredIdentityHistory(stage, { kind: historyQuery.get('history_kind') ?? undefined, historyID: historyQuery.get('history_id') ?? undefined }).catch((error) => showLoadError(stage, error));
+    return;
+  }
   if (page === 'questionnaires' && historyQuery.get('unresolved_history') === '1') {
     void mountSurveyUnresolvedHistory(stage, surveyUnresolvedHistoryHttp, {
       historyID: historyQuery.get('history_id') ?? undefined,
@@ -257,6 +262,7 @@ function boot(): void {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?static_history=1">V1 静态历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?automation_history=1">V1 自动化历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?wecom_contact_history=1">V1 企微联系人历史（只读）</a></p>');
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?deferred_identity_history=1">V1 未归属身份历史证据（只读）</a></p>');
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);
         const adminAccess = stage.querySelector<HTMLElement>('#admin-access-card');
