@@ -90,15 +90,14 @@ func TestInvalidRadarLinkHistoryPostgresRoundTripRollback(t *testing.T) {
 			if err != nil || !reflect.DeepEqual(loaded, created) {
 				return errors.New("radar invalid link bare transaction read mismatch")
 			}
-			if first == 11 {
-				if _, err := store.CreateHistoricalInvalidRadarLink(txCtx, invalidRadarLinkHistoryStoreFixture(first)); !errors.Is(err, radarport.ErrInvalidSourceHistoryConflict) {
-					return errors.New("radar invalid link duplicate was accepted")
-				}
-			}
 		}
 		items, total, err := reader.ListHistoricalInvalidRadarLink(txCtx, radarport.InvalidSourceHistoryQuery{Limit: 1, Offset: int32(before + 1)})
 		if err != nil || total != before+2 || len(items) != 1 || items[0].ID != ids[1] {
 			return errors.New("radar invalid link page mismatch")
+		}
+		// A uniqueness error aborts the transaction; verify it after the reads.
+		if _, err := store.CreateHistoricalInvalidRadarLink(txCtx, invalidRadarLinkHistoryStoreFixture(11)); !errors.Is(err, radarport.ErrInvalidSourceHistoryConflict) {
+			return errors.New("radar invalid link duplicate was accepted")
 		}
 		return forced
 	})

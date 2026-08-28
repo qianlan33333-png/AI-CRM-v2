@@ -93,15 +93,14 @@ func TestInvalidAssetHistoryPostgresRoundTripRollback(t *testing.T) {
 			if err != nil || !reflect.DeepEqual(loaded, created) {
 				return errors.New("media invalid asset bare transaction read mismatch")
 			}
-			if first == 11 {
-				if _, err := store.CreateHistoricalInvalidAsset(txCtx, invalidAssetHistoryStoreFixture(first)); !errors.Is(err, mediaport.ErrInvalidSourceHistoryConflict) {
-					return errors.New("media invalid asset duplicate was accepted")
-				}
-			}
 		}
 		items, total, err := reader.ListHistoricalInvalidAsset(txCtx, mediaport.InvalidSourceHistoryQuery{Limit: 1, Offset: int32(before + 1)})
 		if err != nil || total != before+2 || len(items) != 1 || items[0].ID != ids[1] {
 			return errors.New("media invalid asset page mismatch")
+		}
+		// A uniqueness error aborts the transaction; verify it after the reads.
+		if _, err := store.CreateHistoricalInvalidAsset(txCtx, invalidAssetHistoryStoreFixture(11)); !errors.Is(err, mediaport.ErrInvalidSourceHistoryConflict) {
+			return errors.New("media invalid asset duplicate was accepted")
 		}
 		return forced
 	})
