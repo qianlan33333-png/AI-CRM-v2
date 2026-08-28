@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
+	runtimehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcruntimehistory"
 	invalidhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1invalidsourcehistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
@@ -24,6 +25,121 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+// RunHXCRuntimeHistory converts the two sealed runtime sources into immutable
+// HXC-owned facts. Import, replay and readback all use one caller transaction.
+func RunHXCRuntimeHistory(ctx context.Context, pool *pgxpool.Pool, archive runtimehistory.ArchiveSource, run string, key []byte, reconcile bool) (HXCRuntimeHistoryResult, error) {
+	if ctx == nil || pool == nil || archive == nil || run == "" || len(key) < sha256.Size {
+		return HXCRuntimeHistoryResult{}, ErrInvalidScope
+	}
+	var result HXCRuntimeHistoryResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(bound context.Context) error {
+		result = HXCRuntimeHistoryResult{}
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+			return err
+		}
+		var ready bool
+		err = tx.QueryRow(bound, `SELECT EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts
+WHERE import_version='v1-hxc-history-a1' AND archive_run_id=$1
+AND selected_source_count=receipt_count AND verified_count=receipt_count
+AND imported_count+archived_count+quarantined_count=receipt_count)`, run).Scan(&ready)
+		if err != nil {
+			return err
+		}
+		if !ready {
+			return ErrConflict
+		}
+		selected, err := runtimehistory.Select(bound, archive, hxcRuntimeTerminalReader{}, runtimehistory.SelectionOptions{ArchiveRunID: run, SourceHMACKey: key})
+		if err != nil {
+			return err
+		}
+		entries, err := hxcRuntimeEntries(selected, run, tx)
+		if err != nil {
+			return err
+		}
+		result.Selected = len(entries)
+		if reconcile {
+			proof, err := reconcileHXCRuntimeEntries(bound, tx, entries, run)
+			if err != nil {
+				return err
+			}
+			result.Reconciliation = &proof
+			return nil
+		}
+		for _, entry := range entries {
+			receipt, err := entry.write(bound)
+			if err != nil {
+				return err
+			}
+			if receipt.Kind != entry.kind || receipt.SourceIdentifier != entry.source || receipt.PayloadDigest != entry.payload || receipt.TargetID < 1 {
+				return ErrConflict
+			}
+			terminal, found, err := entry.journal.LoadTerminal(bound, entry.source)
+			if err != nil || !found {
+				return ErrConflict
+			}
+			digest, err := entry.verify(bound, receipt.TargetID)
+			if err != nil || receipt.TargetDigest != digest || terminal.TargetDigest != digest || terminal.SourceKeyDigest != entry.key || terminal.PayloadDigest != entry.payload || terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetID != strconv.FormatInt(receipt.TargetID, 10) || len(terminal.Metadata) != 0 {
+				return ErrConflict
+			}
+			if receipt.Replayed {
+				result.Replayed++
+			} else {
+				result.Imported++
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return HXCRuntimeHistoryResult{}, err
+	}
+	return result, nil
+}
+
+type hxcRuntimeTerminalReader struct{}
+
+func (hxcRuntimeTerminalReader) EachTerminal(ctx context.Context, scope runtimehistory.TerminalScope, visit func(runtimehistory.TerminalReceipt) error) error {
+	if ctx == nil || visit == nil || scope.ImportVersion != "v1-hxc-history-a1" || scope.ArchiveRunID == "" || scope.AdapterID != v1archive.DefaultAdapterID || scope.TargetDomain != "hxc" || scope.TargetTable != "hxc_v1_runtime_archive" || (scope.TableID != runtimehistory.SenderConfigTableID && scope.TableID != runtimehistory.SendRecordsTableID) {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := tx.Query(ctx, `SELECT source_key_digest,payload_digest,disposition,reason,target_domain,target_table,target_id,target_digest,metadata,verified
+FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 ORDER BY source_key_digest`, scope.ImportVersion, scope.ArchiveRunID, scope.AdapterID, scope.TableID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var value runtimehistory.TerminalReceipt
+		var key, payload, target, metadata []byte
+		var domain, table, id *string
+		if err = rows.Scan(&key, &payload, &value.Disposition, &value.Reason, &domain, &table, &id, &target, &metadata, &value.Verified); err != nil {
+			return err
+		}
+		if len(key) != sha256.Size || len(payload) != sha256.Size || domain != nil || table != nil || id != nil || target != nil || !value.Verified {
+			return ErrConflict
+		}
+		copy(value.SourceKeyDigest[:], key)
+		copy(value.PayloadDigest[:], payload)
+		decoder := json.NewDecoder(bytes.NewReader(metadata))
+		decoder.UseNumber()
+		if decoder.Decode(&value.Metadata) != nil || value.Metadata == nil || len(value.Metadata) != 0 {
+			return ErrConflict
+		}
+		if err = visit(value); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
 
 // This tail package is exactly the 16 sealed invalid definitions. It cannot
 // create a current object, fix a source, or update any earlier import receipt.
