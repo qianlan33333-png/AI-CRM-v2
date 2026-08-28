@@ -63,6 +63,11 @@ func TestDM01ExternalIdentityArchiveDiffReadOnly(t *testing.T) {
 		t.Fatal("DM01/archive difference counts are not conserved")
 	}
 	t.Logf("dm01 external identity archive diff: archive_rows=%d dm01_terminal_rows=%d intersection=%d only_archive=%d only_dm01=%d summary_sha256=%x", result.ArchiveRows, result.DM01TerminalRows, result.Intersection, result.OnlyArchive, result.OnlyDM01, result.SummaryDigest)
+	shape, err := v1domain.AggregateDM01ExternalIdentityArchiveOnly(ctx, archive, receipts, *dm01ExternalIdentityArchiveDiffArchiveRun, *dm01ExternalIdentityArchiveDiffRun, []byte(archiveEnvironment.SourceHMACKey), []byte(dm01Environment.SourceHMACKey))
+	if err != nil || shape.ArchiveRows != result.ArchiveRows || shape.DM01TerminalRows != result.DM01TerminalRows || shape.OnlyArchive != result.OnlyArchive {
+		t.Fatal("read-only archive-only shape check failed")
+	}
+	t.Logf("dm01 archive-only shape: only_archive=%d canonical_source_shape=%d required_field_redacted=%d empty_external=%d empty_union=%d empty_corp=%d invalid_updated_at=%d summary_sha256=%x", shape.OnlyArchive, shape.CanonicalSourceShape, shape.RequiredFieldRedacted, shape.ExternalUserIDMissingOrBlank, shape.UnionIDMissingOrBlank, shape.CorpIDMissingOrBlank, shape.UpdatedAtMissingOrInvalid, shape.SummaryDigest)
 }
 
 type dm01ReadOnlyBeginner struct{ pool *pgxpool.Pool }
