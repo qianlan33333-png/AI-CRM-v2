@@ -215,9 +215,14 @@ func TestSurveyUnresolvedJSONSnapshotPreservesNullAndPrivateDigestIsDomainSepara
 	}
 }
 
-func TestNewSurveyUnresolvedHistoryImporterRejectsInvalidSourceKey(t *testing.T) {
-	if _, err := NewSurveyUnresolvedHistoryImporter(surveyUnresolvedArchiveFake{}, surveyUnresolvedImporterUOW{}, newSurveyUnresolvedImporterWriter(), &surveyUnresolvedImporterReferences{}, []byte("short")); !errors.Is(err, ErrInvalidScope) {
-		t.Fatalf("invalid key error=%v", err)
+func TestNewSurveyUnresolvedHistoryImporterAcceptsArchiveKeyLengthsAtLeastSHA256(t *testing.T) {
+	for _, keyLength := range []int{sha256.Size, 64} {
+		if _, err := NewSurveyUnresolvedHistoryImporter(surveyUnresolvedArchiveFake{}, surveyUnresolvedImporterUOW{}, newSurveyUnresolvedImporterWriter(), &surveyUnresolvedImporterReferences{}, bytes.Repeat([]byte{9}, keyLength)); err != nil {
+			t.Fatalf("key length %d error=%v", keyLength, err)
+		}
+	}
+	if _, err := NewSurveyUnresolvedHistoryImporter(surveyUnresolvedArchiveFake{}, surveyUnresolvedImporterUOW{}, newSurveyUnresolvedImporterWriter(), &surveyUnresolvedImporterReferences{}, bytes.Repeat([]byte{9}, sha256.Size-1)); !errors.Is(err, ErrInvalidScope) {
+		t.Fatalf("short key error=%v", err)
 	}
 }
 

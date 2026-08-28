@@ -47,7 +47,7 @@ type SurveyUnresolvedHistoryImporter struct {
 }
 
 func NewSurveyUnresolvedHistoryImporter(archive ArchiveSource, uow UnitOfWork, writer SurveyUnresolvedHistoryWriter, references SurveyUnresolvedHistoryReferences, sourceHMACKey []byte) (*SurveyUnresolvedHistoryImporter, error) {
-	if nilSurveyUnresolvedImporter(archive) || nilSurveyUnresolvedImporter(uow) || nilSurveyUnresolvedImporter(writer) || nilSurveyUnresolvedImporter(references) || len(sourceHMACKey) != sha256.Size {
+	if nilSurveyUnresolvedImporter(archive) || nilSurveyUnresolvedImporter(uow) || nilSurveyUnresolvedImporter(writer) || nilSurveyUnresolvedImporter(references) || len(sourceHMACKey) < sha256.Size {
 		return nil, ErrInvalidScope
 	}
 	return &SurveyUnresolvedHistoryImporter{
@@ -59,7 +59,7 @@ func NewSurveyUnresolvedHistoryImporter(archive ArchiveSource, uow UnitOfWork, w
 // because their historical definition cannot be resolved. It does not modify
 // the old quarantine receipts or any current Survey definition.
 func (importer *SurveyUnresolvedHistoryImporter) Import(ctx context.Context, archiveRunID string) (SurveyUnresolvedHistoryImportResult, error) {
-	if importer == nil || ctx == nil || archiveRunID == "" || nilSurveyUnresolvedImporter(importer.archive) || nilSurveyUnresolvedImporter(importer.uow) || nilSurveyUnresolvedImporter(importer.writer) || nilSurveyUnresolvedImporter(importer.references) || len(importer.sourceHMACKey) != sha256.Size {
+	if importer == nil || ctx == nil || archiveRunID == "" || nilSurveyUnresolvedImporter(importer.archive) || nilSurveyUnresolvedImporter(importer.uow) || nilSurveyUnresolvedImporter(importer.writer) || nilSurveyUnresolvedImporter(importer.references) || len(importer.sourceHMACKey) < sha256.Size {
 		return SurveyUnresolvedHistoryImportResult{}, ErrInvalidScope
 	}
 	candidates, err := BuildSurveyUnresolvedCandidates(ctx, importer.archive, archiveRunID)
