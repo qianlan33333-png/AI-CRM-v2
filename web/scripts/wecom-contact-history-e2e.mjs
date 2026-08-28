@@ -1,0 +1,66 @@
+import { build } from 'esbuild';
+import { JSDOM } from 'jsdom';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const outdir = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-wecom-contact-history-'));
+const digest = Array.from({ length: 32 }, (_, index) => index + 1);
+const at = '2026-08-28T01:02:03.123456Z';
+const events = Array.from({ length: 21 }, (_, index) => ({ id: 10 + index, source_id: index ? -index : 0, event_type: index ? 'change' : '<img src=x>', change_type: '', event_time: index ? 1700000000 + index : null, process_status: '', retry_count: -index, created_at: at, updated_at: at, identity_sync_status: 'unknown' }));
+const relations = Array.from({ length: 21 }, (_, index) => ({ id: 40 + index, source_id: index ? -index : 0, relation_status: '', is_primary: index === 0, add_way: index ? -index : null, create_time: index ? 1700000000 + index : null, first_seen_at: at, last_seen_at: at, created_at: at, updated_at: at }));
+const calls = [];
+let unsafe = false;
+let failing = false;
+const savedFetch = globalThis.fetch;
+globalThis.fetch = async (input, init = {}) => {
+  const url = new URL(String(input), 'https://test.invalid');
+  calls.push({ path: url.pathname, query: url.search, method: init.method, credentials: init.credentials, body: init.body });
+  if (failing) return new Response(JSON.stringify({ code: 'unavailable' }), { status: 503 });
+  const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+  const eventDetail = /^\/api\/admin\/wecom-contact-history\/events\/\d+$/.test(url.pathname);
+  const relationDetail = /^\/api\/admin\/wecom-contact-history\/relations\/\d+$/.test(url.pathname);
+  const listEvents = url.pathname === '/api/admin/wecom-contact-history/events';
+  const listRelations = url.pathname === '/api/admin/wecom-contact-history/relations';
+  if (!eventDetail && !relationDetail && !listEvents && !listRelations) return new Response(JSON.stringify({ code: 'unexpected' }), { status: 500 });
+  const source = listEvents || eventDetail ? events : relations;
+  const item = source.find((value) => value.id === Number(url.pathname.split('/').at(-1)));
+  const limit = Number(url.searchParams.get('limit')), offset = Number(url.searchParams.get('offset'));
+  const body = eventDetail || relationDetail ? { ...safety, item } : { ...safety, items: source.slice(offset, offset + limit), total: source.length, limit, offset };
+  return new Response(JSON.stringify(unsafe ? { ...body, forbidden_digest: digest } : body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+const assert = (value, message) => { if (!value) throw new Error(message); };
+try {
+  await build({ entryPoints: { api: path.join(root, 'src/api/wecomContactHistory.ts'), section: path.join(root, 'src/admin/sections/wecomContactHistory.ts') }, bundle: true, format: 'esm', platform: 'node', outdir, logLevel: 'warning' });
+  const api = await import(pathToFileURL(path.join(outdir, 'api.js')).href);
+  const section = await import(pathToFileURL(path.join(outdir, 'section.js')).href);
+  const eventPage = await api.readWeComContactHistoryEvents(0, 20);
+  const relationPage = await api.readWeComContactHistoryRelations(0, 20);
+  assert(eventPage.items[0].source_id === 0 && eventPage.items[1].source_id === -1 && eventPage.items[0].event_time === null, 'event signed/zero/null source fields changed');
+  assert(relationPage.items[0].is_primary === true && relationPage.items[0].create_time === null && relationPage.items[1].add_way === -1, 'relation nullable/raw fields changed');
+  await api.readWeComContactHistoryEvent(10);
+  await api.readWeComContactHistoryRelation(40);
+  assert(calls.map((call) => call.path).join('|') === ['/api/admin/wecom-contact-history/events', '/api/admin/wecom-contact-history/relations', '/api/admin/wecom-contact-history/events/10', '/api/admin/wecom-contact-history/relations/40'].join('|'), 'did not use all four generated GET operations');
+  assert(calls.every((call) => call.method === 'GET' && call.credentials === 'include' && call.body === undefined), 'adapter issued non-read-only transport');
+  unsafe = true;
+  await api.readWeComContactHistoryEvents().then(() => { throw new Error('extra private field was accepted'); }, (error) => assert(error instanceof Error && error.message.includes('只读契约'), 'unsafe DTO did not fail closed'));
+  unsafe = false;
+  const dom = new JSDOM('<main id="stage"></main>', { url: 'https://test.invalid/admin/config.html?wecom_contact_history=1', pretendToBeVisual: true });
+  const stage = dom.window.document.querySelector('#stage');
+  await section.mountWeComContactHistory(stage, { kind: 'event' });
+  assert(stage.textContent.includes('EventTime：NULL') && stage.innerHTML.includes('&lt;img src=x&gt;') && !stage.innerHTML.includes('<img src=x>'), 'event DOM did not preserve raw time or escape source text');
+  stage.querySelector('[data-wecom-history-next]').click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert(calls.some((call) => call.path.endsWith('/events') && call.query === '?offset=20&limit=20'), 'event next page did not request offset 20');
+  await section.mountWeComContactHistory(stage, { kind: 'relation', historyID: '40' });
+  assert(stage.textContent.includes('V1主跟进标记（非当前负责人）') && stage.textContent.includes('CreateTime（原整数，单位未知）'), 'relation detail label or raw integer display changed');
+  failing = true;
+  await section.mountWeComContactHistory(stage, { kind: 'event' });
+  assert(stage.querySelector('[role="alert"]')?.textContent.includes('未显示旧数据，也未回退 Mock'), 'failure left old data or used Mock fallback');
+  console.log('wecom-contact-history-e2e: PASS');
+} finally {
+  globalThis.fetch = savedFetch;
+  fs.rmSync(outdir, { recursive: true, force: true });
+}
