@@ -47,7 +47,7 @@ func main() {
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
 	mode := flags.String("mode", "import", "import|reconcile")
-	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|member-grid-history (read-only|campaign-history (read-only snapshots|automation-history (non-executable configuration)")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|member-grid-history (read-only)|campaign-history (read-only snapshots)|automation-history (non-executable configuration)|profile-catalog-history (inert templates and signup rules)|hxc-history (immutable observations)|static-tail-history (inert media/product/cycle facts)|customer-state-history (immutable status observations)|marketing-state-history (immutable marketing observations)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
 	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
@@ -62,8 +62,8 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" && *domain != "campaign-history" && *domain != "automation-history" && *domain != "survey-unresolved-history" {
-		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history contact-history, message-history member-grid-history campaign-history or automation-history")
+	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" && *domain != "coupon" && *domain != "groupops" && *domain != "audience-history" && *domain != "message-history" && *domain != "contact-history" && *domain != "member-grid-history" && *domain != "campaign-history" && *domain != "automation-history" && *domain != "profile-catalog-history" && *domain != "hxc-history" && *domain != "static-tail-history" && *domain != "customer-state-history" && *domain != "marketing-state-history" && *domain != "survey-unresolved-history" {
+		return fmt.Errorf("reconcile requires domain=all, static, finance, channel, service-period, coupon, groupops, audience-history contact-history, message-history member-grid-history campaign-history or automation-history or profile-catalog-history or hxc-history or static-tail-history or customer-state-history or marketing-state-history or survey-unresolved-history")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
@@ -77,7 +77,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return fmt.Errorf("migration-actor is required")
 	}
 	var dm01HMACKey []byte
-	if *mode == "import" && (*domain == "static" || *domain == "survey-unresolved-history" || *domain == "finance" || *domain == "channel" || *domain == "coupon" || *domain == "service-period" || *domain == "groupops" || *domain == "audience-history" || *domain == "message-history" || *domain == "contact-history" || *domain == "member-grid-history" || *domain == "campaign-history") {
+	if *mode == "import" && (*domain == "static" || *domain == "finance" || *domain == "channel" || *domain == "coupon" || *domain == "service-period" || *domain == "groupops" || *domain == "audience-history" || *domain == "message-history" || *domain == "contact-history" || *domain == "member-grid-history" || *domain == "campaign-history" || *domain == "hxc-history" || *domain == "survey-unresolved-history") {
 		dm01HMACKey = []byte(appconfig.LoadDM01RuntimeEnvironment().SourceHMACKey)
 		if *dm01RunID < 1 || len(dm01HMACKey) < 32 {
 			return fmt.Errorf("%s import requires dm01-run-id and the frozen DM01 source HMAC key", *domain)
@@ -107,6 +107,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 			}
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"survey_unresolved_history_reconciliation": value})
 		}
+		if *domain == "profile-catalog-history" {
+			result, err := v1domain.ReconcileProfileCatalogHistory(ctx, pool, profileCatalogHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"profile_catalog_history_reconciliation": result})
+		}
 		if *domain == "automation-history" {
 			result, err := v1domain.ReconcileAutomationHistory(ctx, pool, automationHistoryImportVersion, *archiveRunID)
 			if err != nil {
@@ -134,6 +141,34 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 				return err
 			}
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"member_grid_history_reconciliation": result})
+		}
+		if *domain == "marketing-state-history" {
+			result, err := v1domain.ReconcileMarketingStateHistory(ctx, pool, marketingStateHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"marketing_state_history_reconciliation": result})
+		}
+		if *domain == "customer-state-history" {
+			result, err := v1domain.ReconcileCustomerStateHistory(ctx, pool, customerStateHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"customer_state_history_reconciliation": result})
+		}
+		if *domain == "static-tail-history" {
+			result, err := v1domain.ReconcileStaticTailHistory(ctx, pool, staticTailHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"static_tail_history_reconciliation": result})
+		}
+		if *domain == "hxc-history" {
+			result, err := v1domain.ReconcileHXCHistory(ctx, pool, hxcHistoryImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"hxc_history_reconciliation": result})
 		}
 		if *domain == "contact-history" {
 			result, err := v1domain.ReconcileContactHistory(ctx, pool, contactHistoryImportVersion, *archiveRunID)
@@ -218,6 +253,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		}
 		result["survey_unresolved_history"] = value
 	}
+	if *domain == "profile-catalog-history" {
+		value, err := importProfileCatalogHistory(ctx, archive, uow, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		result["profile_catalog_history"] = value
+	}
 	if *domain == "automation-history" {
 		value, err := importAutomationHistory(ctx, archive, uow, *archiveRunID)
 		if err != nil {
@@ -231,6 +273,34 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 			return err
 		}
 		result["member_grid_history"] = value
+	}
+	if *domain == "marketing-state-history" {
+		value, err := importMarketingStateHistory(ctx, archive, uow, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		result["marketing_state_history"] = value
+	}
+	if *domain == "customer-state-history" {
+		value, err := importCustomerStateHistory(ctx, archive, uow, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		result["customer_state_history"] = value
+	}
+	if *domain == "static-tail-history" {
+		value, err := importStaticTailHistory(ctx, archive, uow, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		result["static_tail_history"] = value
+	}
+	if *domain == "hxc-history" {
+		value, err := importHXCHistory(ctx, archive, uow, *archiveRunID, *dm01RunID, dm01HMACKey)
+		if err != nil {
+			return err
+		}
+		result["hxc_history"] = value
 	}
 	if *domain == "contact-history" {
 		value, err := importContactHistory(ctx, archive, uow, *archiveRunID, *dm01RunID, dm01HMACKey)
@@ -334,7 +404,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 }
 
 func validDomain(value string) bool {
-	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history" || value == "campaign-history" || value == "automation-history" || value == "survey-unresolved-history"
+	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance" || value == "channel" || value == "service-period" || value == "coupon" || value == "groupops" || value == "audience-history" || value == "member-grid-history" || value == "message-history" || value == "contact-history" || value == "campaign-history" || value == "automation-history" || value == "profile-catalog-history" || value == "hxc-history" || value == "static-tail-history" || value == "customer-state-history" || value == "marketing-state-history" || value == "survey-unresolved-history"
 }
 
 func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {

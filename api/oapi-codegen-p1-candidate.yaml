@@ -7,6 +7,11 @@ generate:
 output-options:
   include-tags:
     - p4-survey-unresolved-history
+    - p4-marketing-state-history
+    - p4-static-history
+    - p4-customer-state-history
+    - p4-hxc-history
+    - p4-profile-catalog-history
     - p4-audience-history
     - p4-campaign-history
     - p1-core-candidate

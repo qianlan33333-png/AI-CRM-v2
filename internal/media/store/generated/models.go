@@ -67,6 +67,24 @@ type MediaGroupInvite struct {
 	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
 }
 
+type MediaV1GroupInviteHistory struct {
+	ID                   int64              `json:"id"`
+	SourceID             int64              `json:"source_id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	Name                 string             `json:"name"`
+	Title                string             `json:"title"`
+	Description          string             `json:"description"`
+	OriginalState        string             `json:"original_state"`
+	OriginalAutoCreate   bool               `json:"original_auto_create"`
+	RoomBaseName         string             `json:"room_base_name"`
+	RoomBaseSourceID     pgtype.Int8        `json:"room_base_source_id"`
+	OriginalEnabled      bool               `json:"original_enabled"`
+	OriginalBindingState string             `json:"original_binding_state"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
 type MediaWecomUploadReceipt struct {
 	ExternalEffectID  int64              `json:"external_effect_id"`
 	PreparationID     int64              `json:"preparation_id"`

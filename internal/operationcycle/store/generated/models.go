@@ -46,3 +46,55 @@ type OperationCycleStrategy struct {
 	Snapshot    []byte             `json:"snapshot"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
+
+type OperationCycleV1DocumentHistory struct {
+	ID                          int64              `json:"id"`
+	SourceID                    int64              `json:"source_id"`
+	SourceKeyDigest             []byte             `json:"source_key_digest"`
+	SourcePayloadDigest         []byte             `json:"source_payload_digest"`
+	StrategyVersionSourceID     int64              `json:"strategy_version_source_id"`
+	VersionHistoryID            int64              `json:"version_history_id"`
+	SchemaVersion               string             `json:"schema_version"`
+	ExecutionGuideSha256        string             `json:"execution_guide_sha256"`
+	ExecutionGuideGeneratedAt   pgtype.Timestamptz `json:"execution_guide_generated_at"`
+	CopyGuideSha256             string             `json:"copy_guide_sha256"`
+	CopyGuideGeneratedAt        pgtype.Timestamptz `json:"copy_guide_generated_at"`
+	MeasurementGuideSha256      string             `json:"measurement_guide_sha256"`
+	MeasurementGuideGeneratedAt pgtype.Timestamptz `json:"measurement_guide_generated_at"`
+	DocumentPackHash            string             `json:"document_pack_hash"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+}
+
+type OperationCycleV1StrategyHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	StrategyKey         string             `json:"strategy_key"`
+	Title               string             `json:"title"`
+	Description         string             `json:"description"`
+	Cadence             string             `json:"cadence"`
+	Timezone            string             `json:"timezone"`
+	OriginalStatus      string             `json:"original_status"`
+	CurrentVersion      int64              `json:"current_version"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OperationCycleV1VersionHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	StrategySourceID    int64              `json:"strategy_source_id"`
+	StrategyHistoryID   int64              `json:"strategy_history_id"`
+	Version             int64              `json:"version"`
+	Label               string             `json:"label"`
+	Objective           string             `json:"objective"`
+	VersionHash         string             `json:"version_hash"`
+	EffectiveFrom       pgtype.Timestamptz `json:"effective_from"`
+	OriginalGovernance  string             `json:"original_governance"`
+	ConfirmedAt         pgtype.Timestamptz `json:"confirmed_at"`
+	OperationSkillHash  string             `json:"operation_skill_hash"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
