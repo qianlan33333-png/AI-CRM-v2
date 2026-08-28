@@ -31,6 +31,7 @@ type HistoricalCampaignDefinition struct {
 	SourceKeyDigest     [32]byte
 	SourcePayloadDigest [32]byte
 	SourceFieldDigest   [32]byte
+	RedactedRoots       []string
 }
 
 // A step may reference a verified history header or an existing current
@@ -60,6 +61,7 @@ type HistoricalCampaignDefinitionStep struct {
 	SourceKeyDigest     [32]byte
 	SourcePayloadDigest [32]byte
 	SourceFieldDigest   [32]byte
+	RedactedRoots       []string
 }
 
 // Store methods use the caller-bound transaction together with the generic
