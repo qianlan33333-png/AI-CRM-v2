@@ -394,9 +394,13 @@ owners:
 
   groupops:
     package: internal/groupops
-    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts, group_ops_protocol_replays, group_ops_directory_groups, group_ops_directory_refresh_receipts, group_ops_runs, group_ops_execution_intents, group_ops_executions, group_ops_wecom_group_message_receipts]
+    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts, group_ops_protocol_replays, group_ops_directory_groups, group_ops_directory_refresh_receipts, group_ops_runs, group_ops_execution_intents, group_ops_executions, group_ops_wecom_group_message_receipts, group_ops_v1_history_plans, group_ops_v1_history_directory, group_ops_v1_history_groups, group_ops_v1_history_nodes]
     constraints:
       group_ops_plans: local_only_draft_active_paused_archived_plan_control_plane
+      group_ops_v1_history_plans: immutable_legacy_plan_marker_without_runtime_activation
+      group_ops_v1_history_directory: source_kind_separated_historical_directory_not_current_provider_projection
+      group_ops_v1_history_groups: historical_plan_group_snapshots_without_current_assets_or_permissions
+      group_ops_v1_history_nodes: non_executable_original_schedule_and_content_facts
       group_ops_plan_members: local_operator_member_bindings_with_contact_staff_projection_only
       group_ops_plan_group_assets: opaque_local_group_asset_references_with_explicit_provider_read_refresh_only
       group_ops_plan_nodes: local_standard_content_and_material_references_snapshotted_before_external_effect_acceptance

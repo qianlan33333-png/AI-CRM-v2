@@ -1047,24 +1047,83 @@ export async function previewAudienceConfigurationDto(packageId: number): Promis
 export async function materializeAudienceConfigurationDto(packageId: number): Promise<AudienceEvaluation> { const [pkgResult, cfgResult] = await Promise.all([call(getAIAudiencePackage(packageId, apiRequestOptions())), call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))]); const pkg = requireStoppedAudiencePackage(obj(pkgResult).package); const cfg = obj(obj(cfgResult).configuration); if (!cfg.version) throw new Error('请先保存配置版本'); return audienceEvaluationDto(await call(materializeAIAudienceConfiguration(packageId, { configuration_version: Number(cfg.version), expected_package_version: Number(pkg.version) }, apiRequestOptions()))); }
 export type GroupOpsWriteInput = { id?: string; name: string; staffIds: number[]; assetReferences: string[]; nodes: Array<{ id?: string; position: number; kind: 'message' | 'delay'; messageText?: string; delayMinutes?: number; materialReference?: string; materialPlan?: GroupOpsMaterialPlan }>; webhookReference?: string };
 async function readGroupOpsDetail(planId: string): Promise<NonNullable<AdminDb['groupOpsDetail']>> { const detail = await call(getGroupOpsPlan(planId, apiRequestOptions())); return groupOpsDetailDto(detail); }
+// Keep failed logical writes keyed until the complete save is read back successfully.
+const groupOpsSaveMutationKeys = new Map<string, string>();
+function groupOpsMutationOptions(scope: string): RequestInit {
+  let key = groupOpsSaveMutationKeys.get(scope);
+  if (!key) { key = `groupops-${globalThis.crypto.randomUUID()}`; groupOpsSaveMutationKeys.set(scope, key); }
+  return apiRequestOptions({ headers: { 'Idempotency-Key': key } });
+}
 export async function saveGroupOpsPlanDto(input: GroupOpsWriteInput): Promise<NonNullable<AdminDb['groupOpsDetail']>> {
   const opt = apiRequestOptions();
+  const usedKeys: string[] = [];
+  let planScope = input.id || 'new';
+  const mutation = (operation: string, payload: unknown): RequestInit => {
+    const scope = JSON.stringify([planScope, operation, payload]);
+    usedKeys.push(scope);
+    return groupOpsMutationOptions(scope);
+  };
   let detail: NonNullable<AdminDb['groupOpsDetail']>;
-  if (!input.id) { detail = groupOpsDetailDto(await call(createGroupOpsPlan({ name: input.name }, opt))); }
-  else { detail = await readGroupOpsDetail(input.id); if (detail.plan.name !== input.name) { await call(updateGroupOpsPlan(input.id, { expected_revision: detail.plan.revision, name: input.name }, opt)); detail = await readGroupOpsDetail(input.id); } }
+  if (!input.id) { const created = groupOpsDetailDto(await call(createGroupOpsPlan({ name: input.name }, mutation('create', { name: input.name })))); detail = await readGroupOpsDetail(created.plan.id); }
+  else { detail = await readGroupOpsDetail(input.id); if (detail.plan.name !== input.name) { await call(updateGroupOpsPlan(input.id, { expected_revision: detail.plan.revision, name: input.name }, mutation('rename', [detail.plan.revision, input.name]))); detail = await readGroupOpsDetail(input.id); } }
   const planId = detail.plan.id;
-  for (const staffId of detail.staffIds.filter((id) => !input.staffIds.includes(id))) { await call(removeGroupOpsPlanMember(planId, String(staffId), { expected_revision: detail.plan.revision }, opt)); detail = await readGroupOpsDetail(planId); }
-  for (const staffId of input.staffIds.filter((id) => !detail.staffIds.includes(id))) { await call(addGroupOpsPlanMember(planId, { expected_revision: detail.plan.revision, staff_id: staffId }, opt)); detail = await readGroupOpsDetail(planId); }
-  for (const asset of detail.assets.filter((item) => !input.assetReferences.includes(item.reference))) { await call(removeGroupOpsPlanGroupAsset(planId, asset.id, { expected_revision: detail.plan.revision }, opt)); detail = await readGroupOpsDetail(planId); }
-  for (const reference of input.assetReferences.filter((value) => !detail.assets.some((item) => item.reference === value))) { await call(addGroupOpsPlanGroupAsset(planId, { expected_revision: detail.plan.revision, asset_reference: reference }, opt)); detail = await readGroupOpsDetail(planId); }
-  for (const node of detail.nodes.filter((item) => item.id && !input.nodes.some((candidate) => candidate.id === item.id))) { await call(removeGroupOpsPlanNode(planId, node.id!, { expected_revision: detail.plan.revision }, opt)); detail = await readGroupOpsDetail(planId); }
-  for (const node of input.nodes) { const payload: GroupOpsNodeRequest = { expected_revision: detail.plan.revision, position: node.position, kind: node.kind, message_text: node.kind === 'message' ? node.messageText : undefined, delay_minutes: node.kind === 'delay' ? node.delayMinutes : undefined, material_plan: node.materialPlan || { references: [] } }; if (node.id && detail.nodes.some((item) => item.id === node.id)) await call(updateGroupOpsPlanNode(planId, node.id, payload, opt)); else await call(addGroupOpsPlanNode(planId, payload, opt)); detail = await readGroupOpsDetail(planId); }
-  if ((detail.webhookReference || '') !== (input.webhookReference || '')) { await call(putGroupOpsWebhookDescriptor(planId, { expected_revision: detail.plan.revision, reference: input.webhookReference || undefined }, opt)); detail = await readGroupOpsDetail(planId); }
+  planScope = planId;
+  for (const staffId of detail.staffIds.filter((id) => !input.staffIds.includes(id))) { await call(removeGroupOpsPlanMember(planId, String(staffId), { expected_revision: detail.plan.revision }, mutation('remove-member', [detail.plan.revision, staffId]))); detail = await readGroupOpsDetail(planId); }
+  for (const staffId of input.staffIds.filter((id) => !detail.staffIds.includes(id))) { await call(addGroupOpsPlanMember(planId, { expected_revision: detail.plan.revision, staff_id: staffId }, mutation('add-member', [detail.plan.revision, staffId]))); detail = await readGroupOpsDetail(planId); }
+  for (const asset of detail.assets.filter((item) => !input.assetReferences.includes(item.reference))) { await call(removeGroupOpsPlanGroupAsset(planId, asset.reference, { expected_revision: detail.plan.revision }, mutation('remove-group', [detail.plan.revision, asset.reference]))); detail = await readGroupOpsDetail(planId); }
+  for (const reference of input.assetReferences.filter((value) => !detail.assets.some((item) => item.reference === value))) { await call(addGroupOpsPlanGroupAsset(planId, { expected_revision: detail.plan.revision, asset_reference: reference }, mutation('add-group', [detail.plan.revision, reference]))); detail = await readGroupOpsDetail(planId); }
+  const fields = (value: GroupOpsWriteInput['nodes'][number], persisted = false) => ({ position: value.position, kind: value.kind, message_text: value.kind === 'message' ? (persisted ? (value.messageText || '').replace(/^\p{White_Space}+|\p{White_Space}+$/gu, '') : value.messageText || '') : undefined, delay_minutes: value.kind === 'delay' ? value.delayMinutes : undefined, material_plan: { references: (value.materialPlan?.references || []).map((ref) => ({ kind: ref.kind, id: ref.id })) } });
+  const desiredNodes = input.nodes.map((node) => {
+    if (node.id) return node;
+    const matches = detail.nodes.filter((item) => item.position === node.position);
+    const existing = matches.length === 1 ? matches[0] : undefined;
+    return existing?.id && !existing.materialReference && JSON.stringify(fields(existing)) === JSON.stringify(fields(node, true)) ? { ...node, id: existing.id } : node;
+  });
+  for (const node of detail.nodes.filter((item) => item.id && !desiredNodes.some((candidate) => candidate.id === item.id))) { await call(removeGroupOpsPlanNode(planId, node.id!, { expected_revision: detail.plan.revision }, mutation('remove-node', [detail.plan.revision, node.id]))); detail = await readGroupOpsDetail(planId); }
+  for (const node of desiredNodes) {
+    const existing = node.id ? detail.nodes.find((item) => item.id === node.id) : undefined;
+    if (existing && !existing.materialReference && JSON.stringify(fields(existing)) === JSON.stringify(fields(node, true))) continue;
+    const payload: GroupOpsNodeRequest = { expected_revision: detail.plan.revision, ...fields(node) };
+    if (existing) await call(updateGroupOpsPlanNode(planId, node.id!, payload, mutation('update-node', [node.id, payload])));
+    else await call(addGroupOpsPlanNode(planId, payload, mutation('add-node', payload)));
+    detail = await readGroupOpsDetail(planId);
+  }
+  if ((detail.webhookReference || '') !== (input.webhookReference || '')) { await call(putGroupOpsWebhookDescriptor(planId, { expected_revision: detail.plan.revision, reference: input.webhookReference || undefined }, mutation('webhook', [detail.plan.revision, input.webhookReference]))); detail = await readGroupOpsDetail(planId); }
   const preview = await call(previewGroupOpsPlanContent(planId, opt));
-  return groupOpsDetailDto(await call(getGroupOpsPlan(planId, opt)), preview);
+  const result = groupOpsDetailDto(await call(getGroupOpsPlan(planId, opt)), preview);
+  usedKeys.forEach((scope) => groupOpsSaveMutationKeys.delete(scope));
+  return result;
 }
-export async function transitionGroupOpsPlanDto(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void> { const revision = (await readGroupOpsDetail(planId)).plan.revision; await call(action === 'activate' ? activateGroupOpsPlan(planId, { expected_revision: revision }, apiRequestOptions()) : action === 'pause' ? pauseGroupOpsPlan(planId, { expected_revision: revision }, apiRequestOptions()) : archiveGroupOpsPlan(planId, { expected_revision: revision }, apiRequestOptions())); }
-export async function deleteGroupOpsPlanDto(planId: string): Promise<void> { const revision = (await readGroupOpsDetail(planId)).plan.revision; await call(deleteGroupOpsPlan(planId, { expected_revision: revision }, apiRequestOptions())); }
+type GroupOpsLifecycleAction = 'activate' | 'pause' | 'archive' | 'delete';
+const groupOpsLifecycleIntents = new Map<string, { revision: number; key: string }>();
+async function mutateGroupOpsLifecycle(planId: string, action: GroupOpsLifecycleAction): Promise<void> {
+  const scope = JSON.stringify([planId, action]);
+  let intent = groupOpsLifecycleIntents.get(scope);
+  if (!intent) {
+    const revision = (await readGroupOpsDetail(planId)).plan.revision;
+    intent = { revision, key: `groupops-${globalThis.crypto.randomUUID()}` };
+    groupOpsLifecycleIntents.set(scope, intent);
+  }
+  const body = { expected_revision: intent.revision };
+  const opt = apiRequestOptions({ headers: { 'Idempotency-Key': intent.key } });
+  try {
+    await call(action === 'activate' ? activateGroupOpsPlan(planId, body, opt)
+      : action === 'pause' ? pauseGroupOpsPlan(planId, body, opt)
+      : action === 'archive' ? archiveGroupOpsPlan(planId, body, opt)
+      : deleteGroupOpsPlan(planId, body, opt));
+    groupOpsLifecycleIntents.delete(scope);
+  } catch (error) {
+    // A confirmed CAS conflict did not execute; network/5xx remain unresolved.
+    if (error instanceof ApiError && error.status === 409) groupOpsLifecycleIntents.delete(scope);
+    throw error;
+  }
+}
+export async function transitionGroupOpsPlanDto(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void> {
+  await mutateGroupOpsLifecycle(planId, action);
+}
+export async function deleteGroupOpsPlanDto(planId: string): Promise<void> {
+  await mutateGroupOpsLifecycle(planId, 'delete');
+}
 export type RefundIntentInput = { provider: string; orderNo: string; amount: string; reason: string; transactionIdConfirmation: string; checked: boolean; productId?: string; skuId?: string; refundCount?: number; reasonCode?: WechatShopRefundRequest['reason_code'] };
 export type RefundIntentResult = { id: string; state: string; provider: string; realExternalCallExecuted: boolean; deliveryProven: boolean };
 export type WechatOrderExportInput = { mobile?: string; identity?: string; transactionId?: string; productCode?: string; status?: string; createdFrom?: string; createdTo?: string };
@@ -1137,13 +1196,43 @@ export interface CustomerListQuery {
   ownerStaffId?: number;
   tagId?: number;
 }
-export interface AdminReadContext { page?: string; id?: string; customerList?: CustomerListQuery }
+export interface MiniProgramListQuery {
+  limit: 20 | 50;
+  offset: number;
+  q?: string;
+}
+export interface MiniProgramListPage {
+  total: number;
+  limit: number;
+  offset: number;
+  q: string;
+}
+export type AdminDbWithMiniProgramList = AdminDb & { miniProgramList?: MiniProgramListPage };
+export interface AdminReadContext { page?: string; id?: string; customerList?: CustomerListQuery; miniProgramList?: MiniProgramListQuery }
+
+const miniProgramListParams = (query?: MiniProgramListQuery): { limit: number; offset: number; enabled_only: false; q?: string } | undefined => {
+  if (!query) return undefined;
+  if ((query.limit !== 20 && query.limit !== 50) || !Number.isSafeInteger(query.offset) || query.offset < 0) throw new Error('小程序素材分页参数无效');
+  const q = query.q?.trim() || '';
+  return { limit: query.limit, offset: query.offset, enabled_only: false, ...(q ? { q } : {}) };
+};
+
+const miniProgramListPage = (value: unknown, query: MiniProgramListQuery): MiniProgramListPage => {
+  const source = obj(value);
+  const total = Number(source.total);
+  const limit = Number(source.limit);
+  const offset = Number(source.offset);
+  const items = list(value, 'items', 'mini_programs');
+  if (!Number.isSafeInteger(total) || total < 0 || limit !== query.limit || offset !== query.offset || items.length > limit || (items.length > 0 && offset + items.length > total)) throw new Error('小程序素材分页响应无效');
+  return { total, limit, offset, q: query.q?.trim() || '' };
+};
 
 /** Shared lists are loaded from current operations only. A rejected request reaches the page error state. */
-export async function readAdminRows(page?: string, customerList?: CustomerListQuery): Promise<AdminDb> {
+export async function readAdminRows(page?: string, customerList?: CustomerListQuery, miniProgramList?: MiniProgramListQuery): Promise<AdminDbWithMiniProgramList> {
   const opt = apiRequestOptions();
   const needs = (...screens: string[]) => !page || screens.includes(page);
   const skip = Promise.resolve({});
+  const miniProgramParams = miniProgramListParams(miniProgramList);
   const customerParams = {
     limit: 50,
     ...(customerList?.cursor ? { cursor: customerList.cursor } : {}),
@@ -1162,7 +1251,7 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     needs('coupons', 'couponForm', 'couponData') ? call(listLegacyCoupons(undefined, opt)) : skip,
     needs('images') ? call(getLegacyImageList(undefined, opt)) : skip,
     needs('attach') ? call(listLegacyAttachments(undefined, opt)) : skip,
-    needs('mpLib') ? call(listLegacyMiniPrograms(undefined, opt)) : skip,
+    needs('mpLib') ? call(listLegacyMiniPrograms(miniProgramParams, opt)) : skip,
     needs('tags', 'channelForm') ? call(listLegacyWecomTagGroups(opt)) : skip,
     needs('tags', 'channelForm') ? call(listLegacyWecomTags(opt)) : skip,
     needs('radar', 'radarDetail', 'radarForm') ? call(listRadarLinks(undefined, opt)) : skip,
@@ -1177,12 +1266,12 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     needs('config', 'configDetail') ? call(listAdminOpsReleases(opt)) : skip,
   ]);
   const [customers, questionnaires, channels, orders, products, spProducts, coupons, images, attachments, minis, tagGroups, tags, radar, audienceGroups, audiencePackages, groupOps, groupOpsMembers, config, hxc, appSettings, pushCapabilities, releases] = responses; const db = emptyAdminDb();
-  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); const customerSource = obj(customers); db.customerList = { total: typeof customerSource.total === 'number' ? customerSource.total : db.rows.customers.length, totalIsEstimate: customerSource.total_is_estimate === true, nextCursor: typeof customerSource.next_cursor === 'string' ? customerSource.next_cursor : null }; db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map(productPageDto); db.rows.spProducts = list(spProducts, 'items').map(serviceProductPageDto); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items', 'attachments').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items', 'groups').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.groupOpsPlans = list(groupOps, 'items').map(groupOpsPlanDto); if (needs('groupops', 'groupopsDetail')) db.staff = groupOpsOperationMembersDto(groupOpsMembers); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); if (obj(appSettings).config) db.configCategories.push(appSettingsPageDto(appSettings)); if (obj(pushCapabilities).capabilities) db.configCategories.push(readOnlyConfigPageDto('push-capabilities', pushCapabilities)); if (Array.isArray(obj(releases).releases)) db.configCategories.push(readOnlyConfigPageDto('releases', releases)); db.rows.agents = list(hxc, 'send_configs').map((x) => hxcSenderPageDto(x as LegacyHXCSenderConfig)); return db;
+  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); const customerSource = obj(customers); db.customerList = { total: typeof customerSource.total === 'number' ? customerSource.total : db.rows.customers.length, totalIsEstimate: customerSource.total_is_estimate === true, nextCursor: typeof customerSource.next_cursor === 'string' ? customerSource.next_cursor : null }; db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map(productPageDto); db.rows.spProducts = list(spProducts, 'items').map(serviceProductPageDto); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); if (miniProgramList) Object.assign(db, { miniProgramList: miniProgramListPage(minis, miniProgramList) }); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.groupOpsPlans = list(groupOps, 'items').map(groupOpsPlanDto); if (needs('groupops', 'groupopsDetail')) db.staff = groupOpsOperationMembersDto(groupOpsMembers); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); if (obj(appSettings).config) db.configCategories.push(appSettingsPageDto(appSettings)); if (obj(pushCapabilities).capabilities) db.configCategories.push(readOnlyConfigPageDto('push-capabilities', pushCapabilities)); if (Array.isArray(obj(releases).releases)) db.configCategories.push(readOnlyConfigPageDto('releases', releases)); db.rows.agents = list(hxc, 'send_configs').map((x) => hxcSenderPageDto(x as LegacyHXCSenderConfig)); return db;
 }
 
 /** Detail page reads are deliberately page-scoped and never synthesize demo records. */
-export async function readAdminPage(context: AdminReadContext = {}): Promise<AdminDb> {
-  const db = await readAdminRows(context.page, context.customerList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
+export async function readAdminPage(context: AdminReadContext = {}): Promise<AdminDbWithMiniProgramList> {
+  const db = await readAdminRows(context.page, context.customerList, context.miniProgramList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
   if (context.page === 'customerDetail') {
     if (!id || !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(numeric)) {
       db.customerDetail = { status: 'not_found', context: null, survey: null, error: '客户档案不存在或 OneID 无效' };

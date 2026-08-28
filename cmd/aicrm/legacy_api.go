@@ -211,6 +211,7 @@ type Handler struct {
 	surveySafeAdmin         surveySafeAdminHTTP
 	surveyOperations        surveyOperationsHTTP
 	groupOps                groupOpsHTTP
+	groupOpsHistory         *adminGroupOpsHistory
 	channels                legacyChannelApplication
 	channelHistory          contactport.HistoricalChannelHistoryReader
 	legacyTags              legacyTagApplication

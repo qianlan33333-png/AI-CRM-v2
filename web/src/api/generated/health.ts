@@ -1637,6 +1637,258 @@ export interface GroupOpsError {
   real_external_call_executed: boolean;
 }
 
+export type GroupOpsHistoryPlanStatus =
+  (typeof GroupOpsHistoryPlanStatus)[keyof typeof GroupOpsHistoryPlanStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryPlanStatus = {
+  archived: "archived",
+} as const;
+
+export type GroupOpsHistoryPlanRevision =
+  (typeof GroupOpsHistoryPlanRevision)[keyof typeof GroupOpsHistoryPlanRevision];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryPlanRevision = {
+  NUMBER_1: 1,
+} as const;
+
+export interface GroupOpsHistoryPlan {
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  plan_id: string;
+  name: string;
+  status: GroupOpsHistoryPlanStatus;
+  revision: GroupOpsHistoryPlanRevision;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+  /** @minimum 1 */
+  source_plan_id: number;
+  source_code: string;
+  plan_type: string;
+  original_status: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id: number | null;
+  /** @nullable */
+  archived_at: string | null;
+}
+
+export type GroupOpsHistoryPlanPageSource =
+  (typeof GroupOpsHistoryPlanPageSource)[keyof typeof GroupOpsHistoryPlanPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryPlanPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface GroupOpsHistoryPlanPage {
+  source: GroupOpsHistoryPlanPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: GroupOpsHistoryPlan[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type GroupOpsHistoryDirectorySourceKind =
+  (typeof GroupOpsHistoryDirectorySourceKind)[keyof typeof GroupOpsHistoryDirectorySourceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryDirectorySourceKind = {
+  group_chats: "group_chats",
+  wecom_group_chat_snapshots: "wecom_group_chat_snapshots",
+} as const;
+
+export interface GroupOpsHistoryDirectory {
+  /** @minimum 1 */
+  id: number;
+  source_kind: GroupOpsHistoryDirectorySourceKind;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  source_id: number | null;
+  chat_reference: string;
+  /** @nullable */
+  display_name: string | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id: number | null;
+  /** @nullable */
+  owner_name: string | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  member_count: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  internal_member_count: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  external_member_count: number | null;
+  original_status: string;
+  recorded_at: string;
+}
+
+export type GroupOpsHistoryDirectoryPageSource =
+  (typeof GroupOpsHistoryDirectoryPageSource)[keyof typeof GroupOpsHistoryDirectoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryDirectoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface GroupOpsHistoryDirectoryPage {
+  source: GroupOpsHistoryDirectoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: GroupOpsHistoryDirectory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface GroupOpsHistoryGroup {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_group_id: number;
+  /** @minimum 1 */
+  source_plan_id: number;
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  plan_id: string;
+  chat_reference: string;
+  display_name: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id: number | null;
+  /** @minimum 0 */
+  internal_member_count: number;
+  /** @minimum 0 */
+  external_member_count: number;
+  original_status: string;
+  created_at: string;
+  /** @nullable */
+  removed_at: string | null;
+}
+
+export type GroupOpsHistoryGroupPageSource =
+  (typeof GroupOpsHistoryGroupPageSource)[keyof typeof GroupOpsHistoryGroupPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryGroupPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface GroupOpsHistoryGroupPage {
+  source: GroupOpsHistoryGroupPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: GroupOpsHistoryGroup[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  plan_id: string;
+}
+
+export type GroupOpsHistoryNodeContentPackage = { [key: string]: unknown };
+
+export interface GroupOpsHistoryNode {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_node_id: number;
+  /** @minimum 1 */
+  source_plan_id: number;
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  plan_id: string;
+  /** @minimum 0 */
+  day_index: number;
+  trigger_time: string;
+  /** @minimum 0 */
+  sort_order: number;
+  original_status: string;
+  content_package: GroupOpsHistoryNodeContentPackage;
+  created_at: string;
+  updated_at: string;
+}
+
+export type GroupOpsHistoryNodePageSource =
+  (typeof GroupOpsHistoryNodePageSource)[keyof typeof GroupOpsHistoryNodePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsHistoryNodePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface GroupOpsHistoryNodePage {
+  source: GroupOpsHistoryNodePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: GroupOpsHistoryNode[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  plan_id: string;
+}
+
 export type GroupOpsPlanStatus =
   (typeof GroupOpsPlanStatus)[keyof typeof GroupOpsPlanStatus];
 
@@ -18324,6 +18576,58 @@ export type ListLegacyQuestionnairesParams = {
   /**
    * @minimum 0
    * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListGroupOpsHistoryPlansParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
+   */
+  offset?: number;
+};
+
+export type ListGroupOpsHistoryDirectoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
+   */
+  offset?: number;
+};
+
+export type ListGroupOpsHistoryGroupsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
+   */
+  offset?: number;
+};
+
+export type ListGroupOpsHistoryNodesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 2147483647
    */
   offset?: number;
 };
@@ -39518,6 +39822,346 @@ export const getLegacyQuestionnaireResults = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyQuestionnaireResultsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Group Ops history without runtime effects
+ */
+export type listGroupOpsHistoryPlansResponse200 = {
+  data: GroupOpsHistoryPlanPage;
+  status: 200;
+};
+
+export type listGroupOpsHistoryPlansResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listGroupOpsHistoryPlansResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsHistoryPlansResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsHistoryPlansResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsHistoryPlansResponseSuccess =
+  listGroupOpsHistoryPlansResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsHistoryPlansResponseError = (
+  | listGroupOpsHistoryPlansResponse400
+  | listGroupOpsHistoryPlansResponse401
+  | listGroupOpsHistoryPlansResponse403
+  | listGroupOpsHistoryPlansResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsHistoryPlansResponse =
+  | listGroupOpsHistoryPlansResponseSuccess
+  | listGroupOpsHistoryPlansResponseError;
+
+export const getListGroupOpsHistoryPlansUrl = (
+  params?: ListGroupOpsHistoryPlansParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/history/plans?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/history/plans`;
+};
+
+export const listGroupOpsHistoryPlans = async (
+  params?: ListGroupOpsHistoryPlansParams,
+  options?: RequestInit,
+): Promise<listGroupOpsHistoryPlansResponse> => {
+  const res = await fetch(getListGroupOpsHistoryPlansUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsHistoryPlansResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsHistoryPlansResponse;
+};
+
+/**
+ * @summary Read immutable V1 Group Ops history without runtime effects
+ */
+export type listGroupOpsHistoryDirectoryResponse200 = {
+  data: GroupOpsHistoryDirectoryPage;
+  status: 200;
+};
+
+export type listGroupOpsHistoryDirectoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listGroupOpsHistoryDirectoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsHistoryDirectoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsHistoryDirectoryResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsHistoryDirectoryResponseSuccess =
+  listGroupOpsHistoryDirectoryResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsHistoryDirectoryResponseError = (
+  | listGroupOpsHistoryDirectoryResponse400
+  | listGroupOpsHistoryDirectoryResponse401
+  | listGroupOpsHistoryDirectoryResponse403
+  | listGroupOpsHistoryDirectoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsHistoryDirectoryResponse =
+  | listGroupOpsHistoryDirectoryResponseSuccess
+  | listGroupOpsHistoryDirectoryResponseError;
+
+export const getListGroupOpsHistoryDirectoryUrl = (
+  params?: ListGroupOpsHistoryDirectoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/history/directory?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/history/directory`;
+};
+
+export const listGroupOpsHistoryDirectory = async (
+  params?: ListGroupOpsHistoryDirectoryParams,
+  options?: RequestInit,
+): Promise<listGroupOpsHistoryDirectoryResponse> => {
+  const res = await fetch(getListGroupOpsHistoryDirectoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsHistoryDirectoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsHistoryDirectoryResponse;
+};
+
+/**
+ * @summary Read immutable V1 Group Ops history without runtime effects
+ */
+export type listGroupOpsHistoryGroupsResponse200 = {
+  data: GroupOpsHistoryGroupPage;
+  status: 200;
+};
+
+export type listGroupOpsHistoryGroupsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listGroupOpsHistoryGroupsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsHistoryGroupsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsHistoryGroupsResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsHistoryGroupsResponseSuccess =
+  listGroupOpsHistoryGroupsResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsHistoryGroupsResponseError = (
+  | listGroupOpsHistoryGroupsResponse400
+  | listGroupOpsHistoryGroupsResponse401
+  | listGroupOpsHistoryGroupsResponse403
+  | listGroupOpsHistoryGroupsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsHistoryGroupsResponse =
+  | listGroupOpsHistoryGroupsResponseSuccess
+  | listGroupOpsHistoryGroupsResponseError;
+
+export const getListGroupOpsHistoryGroupsUrl = (
+  planId: string,
+  params?: ListGroupOpsHistoryGroupsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/history/plans/${planId}/groups?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/history/plans/${planId}/groups`;
+};
+
+export const listGroupOpsHistoryGroups = async (
+  planId: string,
+  params?: ListGroupOpsHistoryGroupsParams,
+  options?: RequestInit,
+): Promise<listGroupOpsHistoryGroupsResponse> => {
+  const res = await fetch(getListGroupOpsHistoryGroupsUrl(planId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsHistoryGroupsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsHistoryGroupsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Group Ops history without runtime effects
+ */
+export type listGroupOpsHistoryNodesResponse200 = {
+  data: GroupOpsHistoryNodePage;
+  status: 200;
+};
+
+export type listGroupOpsHistoryNodesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listGroupOpsHistoryNodesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsHistoryNodesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsHistoryNodesResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsHistoryNodesResponseSuccess =
+  listGroupOpsHistoryNodesResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsHistoryNodesResponseError = (
+  | listGroupOpsHistoryNodesResponse400
+  | listGroupOpsHistoryNodesResponse401
+  | listGroupOpsHistoryNodesResponse403
+  | listGroupOpsHistoryNodesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsHistoryNodesResponse =
+  | listGroupOpsHistoryNodesResponseSuccess
+  | listGroupOpsHistoryNodesResponseError;
+
+export const getListGroupOpsHistoryNodesUrl = (
+  planId: string,
+  params?: ListGroupOpsHistoryNodesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/history/plans/${planId}/nodes?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/history/plans/${planId}/nodes`;
+};
+
+export const listGroupOpsHistoryNodes = async (
+  planId: string,
+  params?: ListGroupOpsHistoryNodesParams,
+  options?: RequestInit,
+): Promise<listGroupOpsHistoryNodesResponse> => {
+  const res = await fetch(getListGroupOpsHistoryNodesUrl(planId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsHistoryNodesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsHistoryNodesResponse;
 };
 
 /**

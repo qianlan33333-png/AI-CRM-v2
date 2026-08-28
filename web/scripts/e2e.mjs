@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '' } = {}) {
+async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,8 +69,48 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp);
-      if (couponHistoryHttp) {
+      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      if (groupDirectoryHttp) {
+        window.Headers = Headers;
+        window.document.cookie = 'aicrm_csrf=group-directory-csrf';
+        const test = window.__groupDirectoryTest = { calls: [], fail: false, syncFail: false, empty: false, ownersFail: false };
+        const safety = { provider_execution_eligible: false, real_external_call_executed: false, provider_accepted: false, delivery_proven: false };
+        const detail = { ...safety, plan: { plan_id: '10', name: '目录测试计划', revision: 1, status: 'draft', queue_count: 0, created_at: '', updated_at: '' }, members: [{ staff_id: 7 }], nodes: [], group_assets: [{ group_asset_id: '1', asset_reference: 'group-old' }, { group_asset_id: '2', asset_reference: 'unknown-old' }], webhook_descriptor: { configured: false } };
+        test.detail = detail;
+        const json = (body, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(body) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin), method = init.method || 'GET';
+          const body = init.body ? JSON.parse(init.body) : {};
+          test.calls.push({ path: url.pathname, query: url.search, method, body, headers: new Headers(init.headers), credentials: init.credentials });
+          if (url.pathname === '/api/admin/common/operation-members') return test.ownersFail ? json({ code: 'unavailable' }, 503) : json({ ...safety, scope: 'group_ops', page_size: 100, items: [7, 8].map((staff_id) => ({ staff_id, sender_userid: 'staff-' + staff_id, display_name: '成员' + staff_id })) });
+          if (url.pathname.endsWith('/groups') || url.pathname.endsWith('/groups/sync')) {
+            const sync = method === 'POST';
+            if (sync && test.syncFail || !sync && test.fail) return json({ code: 'unavailable' }, 503);
+            const owner = sync ? body.owner_staff_id : Number(url.searchParams.get('owner_userid'));
+            const offset = sync ? 0 : Number(url.searchParams.get('offset'));
+            const rows = test.empty ? [] : Array.from({ length: owner === 7 ? 51 : 1 }, (_, i) => ({ chat_reference: 'group-' + owner + '-' + i, owner_staff_id: owner, display_name: i === 0 ? '<群' + owner + '>' : '群' + i, member_count: i, refreshed_at: '2026-08-28T00:00:00Z' }));
+            return json({ ...safety, items: rows.slice(offset, offset + 50), total: rows.length, offset, limit: 50, has_more: offset + 50 < rows.length });
+          }
+          if (url.pathname.endsWith('/plans')) return json({ ...safety, items: [detail.plan], total: 1, limit: 100, offset: 0, has_more: false });
+          if (url.pathname.endsWith('/content/preview')) return json({ preview_lines: [], issue_codes: [] });
+          if (url.pathname.endsWith('/run-due/preview')) return json({ ...safety, plan_id: '10', snapshot_revision: detail.plan.revision, due_execution_count: 0, blockers: [] });
+          if (url.pathname.endsWith('/executions')) return json({ ...safety, items: [] });
+          if (url.pathname.endsWith('/webhook-descriptor')) return json({ ...safety, configured: false });
+          if (url.pathname.includes('/group-assets')) {
+            if (!new Headers(init.headers).get('Idempotency-Key') || body.expected_revision !== detail.plan.revision) return json({ code: 'conflict' }, 409);
+            if (method === 'DELETE') {
+              const reference = url.pathname.split('/').pop();
+              if (!detail.group_assets.some((item) => item.asset_reference === reference)) return json({ code: 'not_found' }, 404);
+              detail.group_assets = detail.group_assets.filter((item) => item.asset_reference !== reference);
+            } else if (method === 'POST') detail.group_assets.push({ group_asset_id: String(detail.group_assets.length + 10), asset_reference: body.asset_reference });
+            else return json({ code: 'unexpected' }, 400);
+            detail.plan.revision++;
+            return json(detail);
+          }
+          if (url.pathname.endsWith('/plans/10')) return json(detail);
+          return json({ code: 'unexpected_test_route' }, 404);
+        };
+      } else if (couponHistoryHttp) {
         window.Headers = Headers;
         const test = window.__couponHistoryHttpTest = { calls: [], fail: couponHistoryHttp.fail || false };
         const at = '2026-08-28T00:00:00.000000Z';
@@ -89,6 +129,34 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
           const offset = Number(url.searchParams.get('offset'));
           const total = couponHistoryHttp.empty ? 0 : rows.length;
           return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: total ? rows.slice(offset, offset + limit) : [], total, limit, offset, ...(url.pathname.endsWith('/coupon-history') ? {} : { coupon_id: 31 }) });
+        };
+        return;
+      }
+      if (groupOpsHistoryHttp) {
+        const calls = [];
+        const failures = {};
+        const planID = '9007199254740993';
+        const date = '2026-08-28T01:02:03.123456Z';
+        const rows = {
+          plans: { plan_id: planID, name: '历史计划 <img src=x onerror=alert(1)>', status: 'archived', revision: 1, source_plan_id: 8, source_code: 'legacy-code', plan_type: 'normal', original_status: 'active', owner_staff_id: null, created_at: date, updated_at: date, archived_at: null },
+          directory: { id: 1, source_kind: 'group_chats', source_id: 9, chat_reference: 'historical-chat', display_name: null, owner_staff_id: null, owner_name: null, member_count: 0, internal_member_count: null, external_member_count: null, original_status: '', recorded_at: date },
+          groups: { id: 2, source_group_id: 10, source_plan_id: 8, plan_id: planID, chat_reference: 'plan-chat', display_name: '历史群', owner_staff_id: null, internal_member_count: 0, external_member_count: 2, original_status: 'removed', created_at: date, removed_at: null },
+          nodes: { id: 3, source_node_id: 11, source_plan_id: 8, plan_id: planID, day_index: 0, trigger_time: '  入群后  ', sort_order: 0, original_status: 'legacy_disabled', content_package: { text: '<script>历史消息</script>' }, created_at: date, updated_at: date },
+        };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers(), text: async () => JSON.stringify(data) });
+        window.Headers = Headers;
+        window.__groupOpsHistoryHttpTest = { calls, failures };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          const kind = url.pathname.split('/').at(-1);
+          if (!url.pathname.startsWith('/api/admin/automation-conversion/group-ops/history/') || !rows[kind]) return json({ code: 'unexpected_history_request' }, 500);
+          if (failures[kind]) return json({ code: 'unavailable', detail: '<b>private database error</b>' }, failures[kind]);
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          const total = groupOpsHistoryHttp.empty ? 0 : 21;
+          const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, index) => kind === 'directory' && (offset + index) % 2 ? { ...rows[kind], source_kind: 'wecom_group_chat_snapshots', source_id: null, member_count: null, internal_member_count: 0, external_member_count: 2 } : rows[kind]);
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items, total, limit, offset, ...(kind === 'groups' || kind === 'nodes' ? { plan_id: planID } : {}) });
         };
         return;
       }
@@ -152,6 +220,26 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
           if (url.pathname === '/api/admin/refunds') return json({ items: [], total: 0, limit: 20, has_more: false });
           if (url.pathname === '/api/admin/wechat-pay/orders/V1-H-12/external-push-deliveries') return json({ items: [], total: 0 });
           return json({ code: 'unexpected_order_history_request' }, 500);
+        };
+        return;
+      }
+      if (miniProgramHttp) {
+        const calls = [];
+        window.__miniProgramHttpTest = { calls };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          if (url.pathname !== '/api/admin/miniprogram-library') return json({ code: 'unexpected_mini_program_request' }, 500);
+          if (url.searchParams.get('q') === '网络失败') return json({ code: 'unavailable' }, 503);
+          const offset = Number(url.searchParams.get('offset'));
+          const shrunk = url.searchParams.get('q') === '已收缩';
+          return json({
+            items: shrunk && offset === 50 ? [] : [{ id: offset + 1, name: `历史卡片-${offset + 1}`, appid: 'wx-history', pagepath: 'pages/history', title: '历史素材', thumbnail_status: 'ready', enabled: false }],
+            total: shrunk ? 50 : 120,
+            limit: Number(url.searchParams.get('limit')),
+            offset,
+          });
         };
         return;
       }
@@ -594,6 +682,35 @@ const input = (dom, el, v) => {
   el.value = v;
   el.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
 };
+
+console.log('admin/mpLib.html（停用历史素材分页）');
+{
+  const dom = await loadPage('admin/mpLib.html', { miniProgramHttp: true });
+  const d = dom.window.document;
+  const test = dom.window.__miniProgramHttpTest;
+  ok('素材库管理页仅读取首个有限分页并请求停用历史素材', test.calls.length === 1 && test.calls[0].path === '/api/admin/miniprogram-library' && test.calls[0].query.includes('limit=50') && test.calls[0].query.includes('offset=0') && test.calls[0].query.includes('enabled_only=false'));
+  ok('停用素材明确展示为停用，页面说明仅包含历史素材而不自动启用', d.body.textContent.includes('历史卡片-1') && d.body.textContent.includes('已停用') && d.body.textContent.includes('包含已停用的历史素材；不会自动启用或发送'));
+  click(dom, d.querySelector('#mpNext'));
+  await sleep(40);
+  ok('下一页保持停用筛选并使用 offset=50', test.calls.at(-1).query.includes('offset=50') && test.calls.at(-1).query.includes('enabled_only=false') && d.body.textContent.includes('历史卡片-51'));
+  input(dom, d.querySelector('#fMpQuery'), '已收缩');
+  click(dom, d.querySelector('#mpSearch'));
+  await sleep(40);
+  click(dom, d.querySelector('#mpNext'));
+  await sleep(40);
+  ok('服务端总数收缩时空页显示 0-0 且仍可返回上一页', d.body.textContent.includes('显示 0-0 / 50') && test.calls.at(-1).query.includes('offset=50'));
+  click(dom, d.querySelector('#mpPrevious'));
+  await sleep(40);
+  ok('总数收缩后的上一页仍用同一查询读取 offset=0', test.calls.at(-1).query.includes('offset=0') && test.calls.at(-1).query.includes('q=%E5%B7%B2%E6%94%B6%E7%BC%A9'));
+  input(dom, d.querySelector('#fMpQuery'), '网络失败');
+  click(dom, d.querySelector('#mpSearch'));
+  await sleep(40);
+  ok('查询失败清除旧页并显示当前页重试入口', !d.body.textContent.includes('历史卡片-51') && d.body.textContent.includes('重试当前页'));
+  click(dom, d.querySelector('#mpRetry'));
+  await sleep(40);
+  ok('重试沿用失败查询的同页请求而不回退 Mock', test.calls.at(-1).query.includes('offset=0') && test.calls.at(-1).query.includes('q=%E7%BD%91%E7%BB%9C%E5%A4%B1%E8%B4%A5'));
+  dom.window.close();
+}
 
 /* ================= 后台 · 内容雷达 ================= */
 console.log('admin/radar.html（列表）');
@@ -1119,10 +1236,130 @@ console.log('admin/groupops.html（本地计划与目录边界）');
   const dom = await loadPage('admin/groupops.html');
   const d = dom.window.document;
   ok('群运营计划页显示本地计划和本地队列口径', d.body.textContent.includes('群运营计划') && d.body.textContent.includes('本地队列'));
-  ok('运营成员选项展示可信数值 staff_id，群目录能力仍明确阻塞', d.body.textContent.includes('运营成员选项') && d.body.textContent.includes('staff_id=') && !d.body.textContent.includes('S06-028') && ['S06-031', 'S06-032'].every((id) => d.body.textContent.includes(id)));
+  ok('当前计划页保留功能并提供只读历史入口', !!d.querySelector('a[href="groupops.html?history=1"]'));
+  ok('运营成员选项展示可信数值 staff_id，目录与 Provider 验收分开', d.body.textContent.includes('运营成员选项') && d.body.textContent.includes('staff_id=') && ['S06-031', 'S06-032'].every((id) => d.body.textContent.includes(id)) && d.body.textContent.includes('真实 Provider 配置与回执仍需单独验收'));
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录'));
   await sleep(30);
   ok('缺少 owner_staff_id 时不触发目录同步或 Provider 成功提示', d.querySelector('#fb-toast')?.textContent.includes('owner_staff_id'));
+  dom.window.close();
+}
+
+console.log('admin/groupops 历史（真实四 GET，只读独立分页）');
+{
+  const dom = await loadPage('admin/groupops.html', { q: 'history=1', groupOpsHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__groupOpsHistoryHttpTest;
+  const primary = d.querySelector('#group-history-primary');
+  const secondary = d.querySelector('#group-history-secondary');
+  ok('历史列表仅读取计划和目录，不加载当前计划/运营成员', test.calls.length === 2 && test.calls.every((c) => c.method === 'GET' && c.path.includes('/history/') && c.query === '?limit=20&offset=0'));
+  ok('历史计划保留原 active 与归档状态、NULL、微秒时间，文本安全转义', primary.textContent.includes('源状态：active') && primary.textContent.includes('archived / 1') && primary.textContent.includes('NULL') && primary.textContent.includes('2026-08-28T01:02:03.123456Z') && primary.textContent.includes('<img') && !primary.querySelector('img'));
+  ok('历史计划详情链接保留字符串 ID 与 history 模式', primary.querySelector('a')?.getAttribute('href') === 'groupopsDetail.html?history=1&id=9007199254740993');
+  ok('目录两来源逐条保留，空字符串不同于 NULL，且未合成当前目录', secondary.textContent.includes('group_chats（本页）') && secondary.textContent.includes('wecom_group_chat_snapshots（本页）') && secondary.textContent.includes('""（源空字符串）') && secondary.textContent.includes('NULL') && d.querySelector('#stage').textContent.includes('不合并为当前群目录'));
+  click(dom, primary.querySelector('[data-next]'));
+  await sleep(30);
+  ok('计划独立翻页不刷新目录', test.calls.length === 3 && test.calls[2].path.endsWith('/plans') && test.calls[2].query === '?limit=20&offset=20' && secondary.textContent.includes('offset=0'));
+  click(dom, secondary.querySelector('[data-next]'));
+  await sleep(30);
+  ok('目录独立翻页并禁用尾页下一页', test.calls[3].path.endsWith('/directory') && test.calls[3].query === '?limit=20&offset=20' && secondary.querySelector('[data-next]')?.disabled);
+  test.failures.plans = 503;
+  click(dom, primary.querySelector('[data-refresh]'));
+  await sleep(30);
+  ok('读取失败清除旧计划，错误不泄底层信息且保留相邻目录', !primary.querySelector('[data-history-rows]') && primary.textContent.includes('HTTP 503') && !primary.textContent.includes('private database') && !primary.textContent.includes('legacy-code') && !!secondary.querySelector('[data-history-rows]'));
+  delete test.failures.plans;
+  click(dom, primary.querySelector('[data-retry]'));
+  await sleep(30);
+  ok('失败重试同 offset，无 Mock 回退', test.calls.at(-1).query === '?limit=20&offset=20' && primary.textContent.includes('offset=20'));
+  ok('历史列表无创建/同步/激活/发送控件及写请求', ![...d.querySelectorAll('#stage button')].some((b) => /创建|同步|激活|发送/.test(b.textContent)) && test.calls.every((c) => c.method === 'GET'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/groupopsDetail.html', { q: 'history=1&id=9007199254740993', groupOpsHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__groupOpsHistoryHttpTest;
+  const primary = d.querySelector('#group-history-primary');
+  const secondary = d.querySelector('#group-history-secondary');
+  ok('历史详情只读计划下群与节点，字符串 ID 无精度损失', test.calls.length === 2 && test.calls.every((c) => c.path.includes('/history/plans/9007199254740993/')));
+  ok('源节点 day=0、触发标签空格、排序与原状态原样展示，内容不执行', secondary.textContent.includes('源 day_index：0') && secondary.textContent.includes('源触发标签：  入群后  ') && secondary.textContent.includes('源排序：0') && secondary.textContent.includes('legacy_disabled') && secondary.textContent.includes('<script>历史消息</script>') && !secondary.querySelector('script'));
+  ok('历史群保留 removed 原状态及空 removed_at，不推测当前群状态', primary.textContent.includes('源状态：removed') && primary.textContent.includes('移除时间：NULL'));
+  click(dom, primary.querySelector('[data-next]'));
+  await sleep(30);
+  click(dom, secondary.querySelector('[data-next]'));
+  await sleep(30);
+  ok('计划群与节点各自分页', test.calls[2].path.endsWith('/groups') && test.calls[3].path.endsWith('/nodes') && test.calls.slice(2).every((c) => c.query === '?limit=20&offset=20'));
+  test.failures.nodes = 403;
+  click(dom, secondary.querySelector('[data-refresh]'));
+  await sleep(30);
+  ok('节点权限失败清空节点，保留群读取结果且不伪造空态', !!secondary.querySelector('[role="alert"]') && !secondary.querySelector('[data-history-rows]') && primary.textContent.includes('历史群') && !secondary.textContent.includes('暂无历史记录'));
+  delete test.failures.nodes;
+  click(dom, secondary.querySelector('[data-retry]'));
+  await sleep(30);
+  ok('节点同页重试恢复，未接当前节点/消息/Provider 写操作', secondary.textContent.includes('offset=20') && test.calls.at(-1).query === '?limit=20&offset=20' && test.calls.every((c) => c.method === 'GET' && c.path.includes('/history/')) && !d.querySelector('#groupOpsNodes'));
+  dom.window.close();
+}
+for (const rel of ['admin/groupops.html', 'admin/groupopsDetail.html']) {
+  const dom = await loadPage(rel, { q: 'history=1&id=9007199254740993', groupOpsHistoryHttp: { empty: true } });
+  ok(`${rel} 合法空页独立显示真实空态`, dom.window.document.querySelectorAll('[data-history-rows]').length === 2 && [...dom.window.document.querySelectorAll('[data-history-rows]')].every((el) => el.textContent.includes('暂无历史记录')) && [...dom.window.document.querySelectorAll('[data-next]')].every((el) => el.disabled));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/groupopsDetail.html', { q: 'history=1&id=01', groupOpsHistoryHttp: {} });
+  ok('历史计划非法 ID 在 HTTP 前失败关闭', dom.window.document.querySelector('[role="alert"]')?.textContent.includes('ID 无效') && dom.window.__groupOpsHistoryHttpTest.calls.length === 0);
+  dom.window.close();
+}
+
+console.log('admin/groupopsDetail.html（真实 HTTP 群目录选择）');
+{
+  const dom = await loadPage('admin/groupopsDetail.html', { id: 10, groupDirectoryHttp: true });
+  const d = dom.window.document, test = dom.window.__groupDirectoryTest;
+  const open = () => click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('从成员名下群选择')));
+  const action = (name) => click(dom, d.querySelector('[data-gd="' + name + '"]'));
+  const owner = (value) => { const el = d.querySelector('[data-gd="owner"]'); el.value = String(value); el.dispatchEvent(new dom.window.Event('change', { bubbles: true })); };
+  open(); await sleep(30);
+  ok('原群引用只读且打开目录不自动刷新 Provider', d.querySelector('#groupOpsAssets').readOnly && d.querySelectorAll('[data-gd-remove]').length === 2 && !test.calls.some((c) => c.path.endsWith('/groups/sync')));
+  owner(7); await sleep(30);
+  ok('可信负责人 GET 使用真实 owner_userid 与有限分页', test.calls.some((c) => c.query === '?owner_userid=7&limit=50&offset=0') && d.querySelectorAll('[data-gd-ref]').length === 50 && d.querySelector('#group-directory').textContent.includes('<群7>') && !d.querySelector('#group-directory img'));
+  click(dom, d.querySelector('[data-gd-ref="group-7-0"]'));
+  action('next'); await sleep(30);
+  click(dom, d.querySelector('[data-gd-ref="group-7-50"]'));
+  owner(8); await sleep(30);
+  click(dom, d.querySelector('[data-gd-ref="group-8-0"]'));
+  ok('切换负责人和翻页保留选择及未知旧引用', d.querySelectorAll('[data-gd-remove]').length === 5 && !!d.querySelector('[data-gd-remove="unknown-old"]') && d.querySelector('#group-directory').textContent.includes('未在已加载目录确认'));
+  owner(7); await sleep(30);
+  ok('返回原负责人仍显示跨页已选中状态', d.querySelector('[data-gd-ref="group-7-0"]').checked);
+  test.fail = true; action('next'); await sleep(30);
+  ok('目录失败清除旧行但保留已选引用', !d.querySelector('[data-gd-ref]') && d.querySelectorAll('[data-gd-remove]').length === 5 && d.querySelector('#group-directory').textContent.includes('读取失败'));
+  test.fail = false; action('read'); await sleep(30);
+  ok('失败重试沿同 owner 和 offset', test.calls.at(-1).query === '?owner_userid=7&limit=50&offset=50' && d.querySelector('[data-gd-ref="group-7-50"]').checked);
+  click(dom, d.querySelector('[data-gd-remove="group-old"]'));
+  action('apply'); await sleep(30);
+  ok('使用选择仅更新待保存表单，未知引用不被静默删除', !d.querySelector('#group-directory') && d.querySelector('#groupOpsAssets').value.split('\n').join(',') === 'unknown-old,group-7-0,group-7-50,group-8-0' && !test.calls.some((c) => c.path.includes('/group-assets')));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存完整计划'));
+  await sleep(60);
+  const writes = test.calls.filter((c) => c.path.includes('/group-assets'));
+  ok('保存按真实 reference 删除与逐次 CAS 批量绑定', writes.length === 4 && writes[0].path.endsWith('/group-assets/group-old') && writes.map((c) => c.body.expected_revision).join(',') === '1,2,3,4' && test.detail.plan.revision === 5 && test.detail.group_assets.some((a) => a.asset_reference === 'unknown-old'));
+  ok('绑定使用 CSRF 与各自幂等键且未发送群消息', writes.every((c) => c.headers.get('X-CSRF-Token') === 'group-directory-csrf' && c.headers.get('Idempotency-Key')) && !test.calls.some((c) => c.path.endsWith('/groups/sync') || c.path.endsWith('/run-due') || c.path.includes('/broadcast')));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/groupops.html', { groupDirectoryHttp: true });
+  const d = dom.window.document, test = dom.window.__groupDirectoryTest;
+  const action = (name) => click(dom, d.querySelector('[data-gd="' + name + '"]'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录')); await sleep(30);
+  const select = d.querySelector('[data-gd="owner"]'); select.value = '8'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await sleep(30);
+  ok('列表目录为只读浏览，不显示选择提交', !d.querySelector('[data-gd="apply"]') && !d.querySelector('[data-gd-ref]'));
+  action('refresh');
+  ok('刷新前明确 Provider 读取且确认前无请求', d.querySelector('#fb-body').textContent.includes('实际读取') && !test.calls.some((c) => c.path.endsWith('/groups/sync')));
+  test.syncFail = true; click(dom, d.querySelector('#fb-ok')); await sleep(30);
+  ok('刷新失败不展示旧快照或成功消息', d.querySelector('#group-directory').textContent.includes('读取失败') && !d.querySelector('#group-directory table'));
+  test.syncFail = false; action('refresh'); click(dom, d.querySelector('#fb-ok')); await sleep(30);
+  const refreshes = test.calls.filter((c) => c.path.endsWith('/groups/sync'));
+  ok('刷新失败重试使用同幂等键并传闭合 owner body', refreshes.length === 2 && refreshes[0].headers.get('Idempotency-Key') === refreshes[1].headers.get('Idempotency-Key') && refreshes[1].body.owner_staff_id === 8 && refreshes[1].body.limit === 50);
+  ok('刷新响应只宣称服务器目录快照，不等于送达', d.querySelector('#group-directory').textContent.includes('服务器返回目录快照') && d.querySelector('#group-directory').textContent.includes('当前响应无 Provider 读取回执'));
+  test.empty = true; action('read'); await sleep(30);
+  ok('合法空目录明确不等于企微没有群', d.querySelector('#group-directory').textContent.includes('本地目录为空；不等于企微没有群'));
+  action('close'); test.ownersFail = true;
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录')); await sleep(30);
+  ok('成员读取失败不使用种子候选且禁用刷新', d.querySelector('#group-directory').textContent.includes('运营成员读取失败') && d.querySelectorAll('[data-gd="owner"] option').length === 1 && d.querySelector('[data-gd="refresh"]').disabled);
   dom.window.close();
 }
 

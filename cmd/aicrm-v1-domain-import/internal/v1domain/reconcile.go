@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -76,6 +77,11 @@ var targetBySourceTable = map[string]struct {
 	"public/commerce_coupon_product_bindings": {"coupon", "coupon_targets"},
 	"public/commerce_coupon_claims":           {"coupon", "coupon_v1_history_claims"},
 	"public/commerce_coupon_redemptions":      {"coupon", "coupon_v1_history_redemptions"},
+	"public/automation_group_ops_plans":       {"groupops", "group_ops_plans"},
+	"public/group_chats":                      {"groupops", "group_ops_v1_history_directory"},
+	"public/wecom_group_chat_snapshots":       {"groupops", "group_ops_v1_history_directory"},
+	"public/automation_group_ops_plan_groups": {"groupops", "group_ops_v1_history_groups"},
+	"public/automation_group_ops_plan_nodes":  {"groupops", "group_ops_v1_history_nodes"},
 }
 
 type ReconciliationResult struct {
@@ -122,6 +128,10 @@ func ReconcileFinance(ctx context.Context, pool *pgxpool.Pool, importVersion, ar
 
 func ReconcileChannel(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
 	return reconcileTables(ctx, pool, importVersion, archiveRunID, channelReconciledTables)
+}
+
+func ReconcileGroupOps(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
+	return reconcileTables(ctx, pool, importVersion, archiveRunID, groupOpsReconciledTables)
 }
 
 func reconcileTables(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string, tables []string) (ReconciliationResult, error) {
@@ -205,9 +215,14 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 			return ReconciliationResult{}, fmt.Errorf("unverified receipt for %s", row.TableID)
 		}
 		result.VerifiedCount++
+		if slices.Contains(groupOpsReconciledTables, row.TableID) {
+			if err = validateGroupOpsDisposition(row.TableID, row.Disposition); err != nil {
+				return ReconciliationResult{}, err
+			}
+		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -283,6 +298,8 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 		return verifyServicePeriodTarget(ctx, tx, row, importedTargets)
 	case "coupons", "coupon_targets", "coupon_v1_history_claims", "coupon_v1_history_redemptions":
 		return verifyCouponTarget(ctx, tx, row, importedTargets)
+	case "group_ops_plans", "group_ops_v1_history_directory", "group_ops_v1_history_groups", "group_ops_v1_history_nodes":
+		return verifyGroupOpsTarget(ctx, tx, row, importedTargets)
 	case "order_list_projections", "order_historical_refunds":
 		return verifyFinanceTarget(ctx, tx, row, importedTargets)
 	case "channel_historical_contacts":

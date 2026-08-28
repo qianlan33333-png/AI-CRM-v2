@@ -15,15 +15,17 @@ import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, Channel
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
 import { buildChannelFinalUrl, channelAcquisitionAssetReady } from '../api/admin';
-import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
+import type { AdminDbWithMiniProgramList, AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, MiniProgramListPage, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText } from './sections/util';
 import { downloadQr, renderQr } from './sections/qr';
 import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
+import { openGroupOpsDirectory } from './sections/groupOpsDirectory';
 
 const ACCENT = '#3370ff';
 const CHANNEL_HISTORY_PAGE_SIZE = 50;
+const MINI_PROGRAM_PAGE_SIZE = 50;
 
 type AdminState = {
   cstep: number;
@@ -58,6 +60,10 @@ type AdminState = {
   shareCode: string;
   /* ---- 素材库 ---- */
   editingName: string;
+  miniProgramQuery: string;
+  miniProgramOffset: number;
+  miniProgramLoading: boolean;
+  miniProgramError: string;
   /* ---- 通用选择器草稿 ---- */
   /** 渠道表单 · 客服分配（null = 沿用种子） */
   cfStaff: PickerItem[] | null;
@@ -154,6 +160,10 @@ export class AdminController extends PageBase {
     shareUrl: '',
     shareCode: '',
     editingName: '',
+    miniProgramQuery: '',
+    miniProgramOffset: 0,
+    miniProgramLoading: false,
+    miniProgramError: '',
     cfStaff: null,
     cfMats: [],
     cfTags: null,
@@ -218,7 +228,19 @@ export class AdminController extends PageBase {
       if ('error' in parsed) throw new Error(parsed.error);
       context.customerList = parsed.query;
     }
-    this.db = await this.api.loadDb(context);
+    if (this.page === 'mpLib') context.miniProgramList = this.miniProgramListQuery(this.state.miniProgramOffset, this.state.miniProgramQuery);
+    try {
+      this.db = await this.api.loadDb(context);
+      if (this.page === 'mpLib') {
+        if (this.api.mode === 'http') this.validateMiniProgramPage(this.db, context.miniProgramList!);
+        this.state.miniProgramLoading = false;
+        this.state.miniProgramError = '';
+      }
+    } catch (error) {
+      if (this.page !== 'mpLib') throw error;
+      this.db = emptyAdminDb();
+      this.state.miniProgramError = error instanceof Error ? error.message : '小程序素材读取失败';
+    }
     if (this.page === 'channelForm') {
       this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
       this.state.channelHistory = null;
@@ -355,6 +377,56 @@ export class AdminController extends PageBase {
     const page = this.state.customerPage - 1;
     const cursor = page === 0 ? undefined : this.state.customerCursors[page - 1];
     void this.loadCustomerPage(page, cursor, this.state.customerCursors.slice(0, page));
+  }
+
+  private miniProgramListQuery(offset: number, q: string): NonNullable<AdminReadContext['miniProgramList']> {
+    return { limit: MINI_PROGRAM_PAGE_SIZE, offset, ...(q.trim() ? { q: q.trim() } : {}) };
+  }
+
+  private miniProgramPage(): MiniProgramListPage | undefined {
+    return (this.db as AdminDbWithMiniProgramList).miniProgramList;
+  }
+
+  private validateMiniProgramPage(db: AdminDb, query: NonNullable<AdminReadContext['miniProgramList']>): MiniProgramListPage {
+    const page = (db as AdminDbWithMiniProgramList).miniProgramList;
+    if (!page || page.limit !== query.limit || page.offset !== query.offset || page.q !== (query.q || '') || !Number.isSafeInteger(page.total) || page.total < 0) throw new Error('小程序素材分页响应无效');
+    return page;
+  }
+
+  private async loadMiniProgramPage(offset: number, q = this.state.miniProgramQuery): Promise<void> {
+    if (this.state.miniProgramLoading) return;
+    this.db = emptyAdminDb();
+    this.setState({ miniProgramQuery: q.trim(), miniProgramOffset: offset, miniProgramLoading: true, miniProgramError: '' });
+    try {
+      const db = await this.api.loadDb({ page: 'mpLib', miniProgramList: this.miniProgramListQuery(offset, q) });
+      const page = this.validateMiniProgramPage(db, this.miniProgramListQuery(offset, q));
+      this.db = db;
+      this.setState({ miniProgramQuery: q.trim(), miniProgramOffset: page.offset, miniProgramLoading: false, miniProgramError: '' });
+    } catch (error) {
+      this.db = emptyAdminDb();
+      this.setState({ miniProgramLoading: false, miniProgramError: error instanceof Error ? error.message : '小程序素材读取失败' });
+    }
+  }
+
+  private queryMiniPrograms(): void {
+    const q = (document.getElementById('fMpQuery') as HTMLInputElement | null)?.value || '';
+    void this.loadMiniProgramPage(0, q);
+  }
+
+  private clearMiniPrograms(): void {
+    void this.loadMiniProgramPage(0, '');
+  }
+
+  private previousMiniProgramPage(): void {
+    const page = this.miniProgramPage();
+    if (!page || page.offset === 0) return;
+    void this.loadMiniProgramPage(Math.max(0, page.offset - page.limit));
+  }
+
+  private nextMiniProgramPage(): void {
+    const page = this.miniProgramPage();
+    if (!page || page.offset + this.db.rows.mpItems.length >= page.total) return;
+    void this.loadMiniProgramPage(page.offset + page.limit);
   }
 
   private pageId(): number {
@@ -1383,6 +1455,16 @@ export class AdminController extends PageBase {
     }).catch((error) => toast(error instanceof Error ? error.message : '渠道或本地分配配置保存失败', true));
   }
 
+  private openGroupOpsDirectory(): void {
+    if (this.api.mode !== 'http') return toast('群目录需要真实 HTTP 与可信 owner_staff_id；测试 Mock 不提供目录刷新', true);
+    const textarea = document.getElementById('groupOpsAssets') as HTMLTextAreaElement | null;
+    void openGroupOpsDirectory(textarea ? { selected: textarea.value.split(/[\s,，]+/).filter(Boolean) } : {}).then((selected) => {
+      if (!textarea || selected === null) return;
+      textarea.value = selected.join('\n');
+      toast('已更新待保存群选择；点击保存完整计划后写入，未发送群消息');
+    });
+  }
+
   private saveGroupOpsForm(): void {
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null)?.value.trim() || '';
     let nodes: GroupOpsWriteInput['nodes'];
@@ -1749,6 +1831,7 @@ export class AdminController extends PageBase {
       ...m,
       statusColor: m.thumbOk ? '#2EA121' : '#D97917',
       off: m.enabled ? {} : { opacity: '0.55' } as StyleObj,
+      enabledLabel: m.enabled ? '已启用' : '已停用',
       edit: () => this.setState({ modal: 'mpEdit', editingName: m.name }),
       del: () =>
         confirmBox('删除小程序素材', '确认删除「' + m.name + '」？删除后不可恢复。', '确认删除', true, () => {
@@ -1759,6 +1842,11 @@ export class AdminController extends PageBase {
         }),
     }));
     const editingMp = mpCards.find((x) => x.name === s.editingName);
+    const miniProgramMeta = this.miniProgramPage();
+    const miniProgramTotal = miniProgramMeta?.total ?? (this.api.mode === 'mock' ? rows.mpItems.length : 0);
+    const miniProgramOffset = miniProgramMeta?.offset ?? s.miniProgramOffset;
+    const miniProgramRangeStart = rows.mpItems.length === 0 ? 0 : miniProgramOffset + 1;
+    const miniProgramRangeEnd = rows.mpItems.length === 0 ? 0 : miniProgramOffset + rows.mpItems.length;
     const attachRows = rows.attachItems.map((a) => ({
       ...a,
       badge: a.type === 'PDF' ? { background: '#FFF7ED', color: '#C2410C' } : a.type === 'XLSX' ? { background: '#ECFDF3', color: '#067647' } : { background: '#EFF4FF', color: '#245BDB' },
@@ -2191,10 +2279,11 @@ export class AdminController extends PageBase {
         historicalRefunds: rows.orders[0]?.historicalRefunds || [],
         submitRefund: () => this.submitRefundIntent(),
       },
-      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },
+      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directory: () => this.openGroupOpsDirectory() },
       groupOpsDetailPage: {
         item: groupOpsDetail ? { ...groupOpsDetail, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
         members: groupOpsMemberOptions,
+        directory: () => this.openGroupOpsDirectory(),
         save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'),
       },
       hxcPage: {
@@ -2475,6 +2564,18 @@ export class AdminController extends PageBase {
       },
       mpPage: {
         cards: mpCards,
+        query: s.miniProgramQuery,
+        loading: s.miniProgramLoading,
+        error: s.miniProgramError,
+        empty: !s.miniProgramLoading && !s.miniProgramError && mpCards.length === 0,
+        rangeLabel: `显示 ${miniProgramRangeStart}-${miniProgramRangeEnd} / ${miniProgramTotal}`,
+        canPrevious: miniProgramOffset > 0,
+        canNext: miniProgramOffset + rows.mpItems.length < miniProgramTotal,
+        search: () => this.queryMiniPrograms(),
+        clear: () => this.clearMiniPrograms(),
+        retry: () => void this.loadMiniProgramPage(s.miniProgramOffset, s.miniProgramQuery),
+        previous: () => this.previousMiniProgramPage(),
+        next: () => this.nextMiniProgramPage(),
         editing: editingMp || null,
         editOpen: s.modal === 'mpEdit' && !!editingMp,
         createOpen: s.modal === 'mpCreate',

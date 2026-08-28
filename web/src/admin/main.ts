@@ -14,6 +14,7 @@ import { mountFunnelGrid } from './sections/funnelGrid';
 import { mountCampaignWorkspace } from './sections/campaigns';
 import { mountAdminAccess } from './sections/adminAccess';
 import { mountSetupWizard } from './sections/setupWizard';
+import { mountGroupOpsHistory } from './sections/groupOpsHistory';
 import { esc } from './sections/util';
 import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from './sections/commerce';
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
@@ -34,6 +35,11 @@ function boot(): void {
   if (['coupons', 'couponData'].includes(page) && new URLSearchParams(location.search).get('history') === '1') {
     const historyID = page === 'couponData' ? new URLSearchParams(location.search).get('id') || '' : undefined;
     void mountCouponHistory(stage, historyID).catch((error) => showLoadError(stage, error));
+    return;
+  }
+  if ((page === 'groupops' || page === 'groupopsDetail') && new URLSearchParams(location.search).get('history') === '1') {
+    void mountGroupOpsHistory(stage, { view: page === 'groupops' ? 'list' : 'detail', planID: new URLSearchParams(location.search).get('id') || undefined })
+      .catch((error) => showLoadError(stage, error));
     return;
   }
 
@@ -109,6 +115,9 @@ function boot(): void {
   void controller.init()
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
+      if (page === 'groupops') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
+      }
       if (page === 'config') {
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);
