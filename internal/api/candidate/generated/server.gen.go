@@ -1798,6 +1798,231 @@ func (e ContactOwnerReassignmentIssueCode) Valid() bool {
 	}
 }
 
+// Defines values for CouponHistoryClaimCurrency.
+const (
+	CouponHistoryClaimCurrencyCNY CouponHistoryClaimCurrency = "CNY"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryClaimCurrency enum.
+func (e CouponHistoryClaimCurrency) Valid() bool {
+	switch e {
+	case CouponHistoryClaimCurrencyCNY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryClaimPageReadOnly.
+const (
+	CouponHistoryClaimPageReadOnlyTrue CouponHistoryClaimPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryClaimPageReadOnly enum.
+func (e CouponHistoryClaimPageReadOnly) Valid() bool {
+	switch e {
+	case CouponHistoryClaimPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryClaimPageRealExternalCallExecuted.
+const (
+	CouponHistoryClaimPageRealExternalCallExecutedFalse CouponHistoryClaimPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryClaimPageRealExternalCallExecuted enum.
+func (e CouponHistoryClaimPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CouponHistoryClaimPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryClaimPageSource.
+const (
+	CouponHistoryClaimPageSourceV1History CouponHistoryClaimPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryClaimPageSource enum.
+func (e CouponHistoryClaimPageSource) Valid() bool {
+	switch e {
+	case CouponHistoryClaimPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionAvailabilityStatus.
+const (
+	CouponHistoryDefinitionAvailabilityStatusArchived CouponHistoryDefinitionAvailabilityStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionAvailabilityStatus enum.
+func (e CouponHistoryDefinitionAvailabilityStatus) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionAvailabilityStatusArchived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionCurrency.
+const (
+	CouponHistoryDefinitionCurrencyCNY CouponHistoryDefinitionCurrency = "CNY"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionCurrency enum.
+func (e CouponHistoryDefinitionCurrency) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionCurrencyCNY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionHistoryOnly.
+const (
+	CouponHistoryDefinitionHistoryOnlyTrue CouponHistoryDefinitionHistoryOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionHistoryOnly enum.
+func (e CouponHistoryDefinitionHistoryOnly) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionHistoryOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionStatus.
+const (
+	CouponHistoryDefinitionStatusArchived CouponHistoryDefinitionStatus = "archived"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionStatus enum.
+func (e CouponHistoryDefinitionStatus) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionStatusArchived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionPageReadOnly.
+const (
+	CouponHistoryDefinitionPageReadOnlyTrue CouponHistoryDefinitionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionPageReadOnly enum.
+func (e CouponHistoryDefinitionPageReadOnly) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionPageRealExternalCallExecuted.
+const (
+	CouponHistoryDefinitionPageRealExternalCallExecutedFalse CouponHistoryDefinitionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionPageRealExternalCallExecuted enum.
+func (e CouponHistoryDefinitionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryDefinitionPageSource.
+const (
+	CouponHistoryDefinitionPageSourceV1History CouponHistoryDefinitionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryDefinitionPageSource enum.
+func (e CouponHistoryDefinitionPageSource) Valid() bool {
+	switch e {
+	case CouponHistoryDefinitionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryRedemptionCurrency.
+const (
+	CNY CouponHistoryRedemptionCurrency = "CNY"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryRedemptionCurrency enum.
+func (e CouponHistoryRedemptionCurrency) Valid() bool {
+	switch e {
+	case CNY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryRedemptionPageReadOnly.
+const (
+	CouponHistoryRedemptionPageReadOnlyTrue CouponHistoryRedemptionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryRedemptionPageReadOnly enum.
+func (e CouponHistoryRedemptionPageReadOnly) Valid() bool {
+	switch e {
+	case CouponHistoryRedemptionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryRedemptionPageRealExternalCallExecuted.
+const (
+	CouponHistoryRedemptionPageRealExternalCallExecutedFalse CouponHistoryRedemptionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryRedemptionPageRealExternalCallExecuted enum.
+func (e CouponHistoryRedemptionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CouponHistoryRedemptionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponHistoryRedemptionPageSource.
+const (
+	CouponHistoryRedemptionPageSourceV1History CouponHistoryRedemptionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CouponHistoryRedemptionPageSource enum.
+func (e CouponHistoryRedemptionPageSource) Valid() bool {
+	switch e {
+	case CouponHistoryRedemptionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateSegmentRequestRefreshMode.
 const (
 	CreateSegmentRequestRefreshModeManual    CreateSegmentRequestRefreshMode = "manual"
@@ -6333,13 +6558,13 @@ func (e ServicePeriodHistoryEventPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for ServicePeriodHistoryEventPageSource.
 const (
-	ServicePeriodHistoryEventPageSourceV1History ServicePeriodHistoryEventPageSource = "v1_history"
+	V1History ServicePeriodHistoryEventPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageSource enum.
 func (e ServicePeriodHistoryEventPageSource) Valid() bool {
 	switch e {
-	case ServicePeriodHistoryEventPageSourceV1History:
+	case V1History:
 		return true
 	default:
 		return false
@@ -7716,13 +7941,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -9404,6 +9629,160 @@ type ContactOwnerReassignmentRow struct {
 	ExpectedUpdatedAt    time.Time `json:"expected_updated_at"`
 	TargetOwnerStaffId   int64     `json:"target_owner_staff_id"`
 }
+
+// CouponHistoryClaim defines model for CouponHistoryClaim.
+type CouponHistoryClaim struct {
+	ClaimNo             string                     `json:"claim_no"`
+	ClaimedAt           time.Time                  `json:"claimed_at"`
+	ConsumedAt          *time.Time                 `json:"consumed_at"`
+	CouponId            int64                      `json:"coupon_id"`
+	CreatedAt           time.Time                  `json:"created_at"`
+	Currency            CouponHistoryClaimCurrency `json:"currency"`
+	CustomerId          *int64                     `json:"customer_id"`
+	DiscountAmountTotal int64                      `json:"discount_amount_total"`
+	ExpiredAt           *time.Time                 `json:"expired_at"`
+	Id                  int64                      `json:"id"`
+	ReservedAt          *time.Time                 `json:"reserved_at"`
+	SourceClaimId       int64                      `json:"source_claim_id"`
+	SourceCouponId      int64                      `json:"source_coupon_id"`
+	Status              string                     `json:"status"`
+	UpdatedAt           time.Time                  `json:"updated_at"`
+	ValidFrom           time.Time                  `json:"valid_from"`
+	ValidUntil          time.Time                  `json:"valid_until"`
+}
+
+// CouponHistoryClaimCurrency defines model for CouponHistoryClaim.Currency.
+type CouponHistoryClaimCurrency string
+
+// CouponHistoryClaimPage defines model for CouponHistoryClaimPage.
+type CouponHistoryClaimPage struct {
+	CouponId                 int64                                          `json:"coupon_id"`
+	Items                    []CouponHistoryClaim                           `json:"items"`
+	Limit                    int32                                          `json:"limit"`
+	Offset                   int32                                          `json:"offset"`
+	ReadOnly                 CouponHistoryClaimPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CouponHistoryClaimPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CouponHistoryClaimPageSource                   `json:"source"`
+	Total                    int64                                          `json:"total"`
+}
+
+// CouponHistoryClaimPageReadOnly defines model for CouponHistoryClaimPage.ReadOnly.
+type CouponHistoryClaimPageReadOnly bool
+
+// CouponHistoryClaimPageRealExternalCallExecuted defines model for CouponHistoryClaimPage.RealExternalCallExecuted.
+type CouponHistoryClaimPageRealExternalCallExecuted bool
+
+// CouponHistoryClaimPageSource defines model for CouponHistoryClaimPage.Source.
+type CouponHistoryClaimPageSource string
+
+// CouponHistoryDefinition defines model for CouponHistoryDefinition.
+type CouponHistoryDefinition struct {
+	AvailabilityStatus   CouponHistoryDefinitionAvailabilityStatus `json:"availability_status"`
+	ClaimEndsAt          time.Time                                 `json:"claim_ends_at"`
+	ClaimStartsAt        time.Time                                 `json:"claim_starts_at"`
+	CreatedAt            time.Time                                 `json:"created_at"`
+	CreatedBy            int64                                     `json:"created_by"`
+	Currency             CouponHistoryDefinitionCurrency           `json:"currency"`
+	DiscountAmountTotal  int64                                     `json:"discount_amount_total"`
+	FirstClaimAt         *time.Time                                `json:"first_claim_at"`
+	HistoryOnly          CouponHistoryDefinitionHistoryOnly        `json:"history_only"`
+	Id                   int64                                     `json:"id"`
+	Instructions         string                                    `json:"instructions"`
+	IssuedCount          int64                                     `json:"issued_count"`
+	Name                 string                                    `json:"name"`
+	OriginalStatus       string                                    `json:"original_status"`
+	PerUserIssueLimit    int64                                     `json:"per_user_issue_limit"`
+	RelativeValidityDays *int32                                    `json:"relative_validity_days"`
+	SourceCouponId       int64                                     `json:"source_coupon_id"`
+	Status               CouponHistoryDefinitionStatus             `json:"status"`
+	TargetRefs           []string                                  `json:"target_refs"`
+	TotalIssueLimit      int64                                     `json:"total_issue_limit"`
+	UpdatedAt            time.Time                                 `json:"updated_at"`
+	UpdatedBy            int64                                     `json:"updated_by"`
+	UseEndsAt            *time.Time                                `json:"use_ends_at"`
+	UseStartsAt          *time.Time                                `json:"use_starts_at"`
+	ValidityMode         string                                    `json:"validity_mode"`
+	Version              int64                                     `json:"version"`
+}
+
+// CouponHistoryDefinitionAvailabilityStatus defines model for CouponHistoryDefinition.AvailabilityStatus.
+type CouponHistoryDefinitionAvailabilityStatus string
+
+// CouponHistoryDefinitionCurrency defines model for CouponHistoryDefinition.Currency.
+type CouponHistoryDefinitionCurrency string
+
+// CouponHistoryDefinitionHistoryOnly defines model for CouponHistoryDefinition.HistoryOnly.
+type CouponHistoryDefinitionHistoryOnly bool
+
+// CouponHistoryDefinitionStatus defines model for CouponHistoryDefinition.Status.
+type CouponHistoryDefinitionStatus string
+
+// CouponHistoryDefinitionPage defines model for CouponHistoryDefinitionPage.
+type CouponHistoryDefinitionPage struct {
+	Items                    []CouponHistoryDefinition                           `json:"items"`
+	Limit                    int32                                               `json:"limit"`
+	Offset                   int32                                               `json:"offset"`
+	ReadOnly                 CouponHistoryDefinitionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CouponHistoryDefinitionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CouponHistoryDefinitionPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// CouponHistoryDefinitionPageReadOnly defines model for CouponHistoryDefinitionPage.ReadOnly.
+type CouponHistoryDefinitionPageReadOnly bool
+
+// CouponHistoryDefinitionPageRealExternalCallExecuted defines model for CouponHistoryDefinitionPage.RealExternalCallExecuted.
+type CouponHistoryDefinitionPageRealExternalCallExecuted bool
+
+// CouponHistoryDefinitionPageSource defines model for CouponHistoryDefinitionPage.Source.
+type CouponHistoryDefinitionPageSource string
+
+// CouponHistoryRedemption defines model for CouponHistoryRedemption.
+type CouponHistoryRedemption struct {
+	ClaimHistoryId      int64                           `json:"claim_history_id"`
+	ConsumedAt          *time.Time                      `json:"consumed_at"`
+	CreatedAt           time.Time                       `json:"created_at"`
+	Currency            CouponHistoryRedemptionCurrency `json:"currency"`
+	DiscountAmountTotal int64                           `json:"discount_amount_total"`
+	Id                  int64                           `json:"id"`
+	OrderId             *int64                          `json:"order_id"`
+	OriginalAmountTotal int64                           `json:"original_amount_total"`
+	OutTradeNo          string                          `json:"out_trade_no"`
+	PayableAmountTotal  int64                           `json:"payable_amount_total"`
+	ReleaseReason       string                          `json:"release_reason"`
+	ReleasedAt          *time.Time                      `json:"released_at"`
+	ReservedAt          time.Time                       `json:"reserved_at"`
+	ReservedUntil       time.Time                       `json:"reserved_until"`
+	SourceClaimId       int64                           `json:"source_claim_id"`
+	SourceOrderId       int64                           `json:"source_order_id"`
+	SourceRedemptionId  int64                           `json:"source_redemption_id"`
+	Status              string                          `json:"status"`
+	UpdatedAt           time.Time                       `json:"updated_at"`
+}
+
+// CouponHistoryRedemptionCurrency defines model for CouponHistoryRedemption.Currency.
+type CouponHistoryRedemptionCurrency string
+
+// CouponHistoryRedemptionPage defines model for CouponHistoryRedemptionPage.
+type CouponHistoryRedemptionPage struct {
+	CouponId                 int64                                               `json:"coupon_id"`
+	Items                    []CouponHistoryRedemption                           `json:"items"`
+	Limit                    int32                                               `json:"limit"`
+	Offset                   int32                                               `json:"offset"`
+	ReadOnly                 CouponHistoryRedemptionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CouponHistoryRedemptionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CouponHistoryRedemptionPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// CouponHistoryRedemptionPageReadOnly defines model for CouponHistoryRedemptionPage.ReadOnly.
+type CouponHistoryRedemptionPageReadOnly bool
+
+// CouponHistoryRedemptionPageRealExternalCallExecuted defines model for CouponHistoryRedemptionPage.RealExternalCallExecuted.
+type CouponHistoryRedemptionPageRealExternalCallExecuted bool
+
+// CouponHistoryRedemptionPageSource defines model for CouponHistoryRedemptionPage.Source.
+type CouponHistoryRedemptionPageSource string
 
 // CreateLocalTagGroupRequest defines model for CreateLocalTagGroupRequest.
 type CreateLocalTagGroupRequest struct {
@@ -13874,6 +14253,24 @@ type UpdateMediaContentPackageParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListCouponHistoryDefinitionsParams defines parameters for ListCouponHistoryDefinitions.
+type ListCouponHistoryDefinitionsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCouponHistoryClaimsParams defines parameters for ListCouponHistoryClaims.
+type ListCouponHistoryClaimsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCouponHistoryRedemptionsParams defines parameters for ListCouponHistoryRedemptions.
+type ListCouponHistoryRedemptionsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListExternalEffectsRuntimeParams defines parameters for ListExternalEffectsRuntime.
 type ListExternalEffectsRuntimeParams struct {
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
@@ -16718,6 +17115,15 @@ type ServerInterface interface {
 	// CAS-update one local content package
 	// (PUT /api/admin/content-packages/{package_id})
 	UpdateMediaContentPackage(w http.ResponseWriter, r *http.Request, packageId int64, params UpdateMediaContentPackageParams)
+	// Read frozen V1 coupon definitions without current claim or payment authority
+	// (GET /api/admin/coupon-history)
+	ListCouponHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListCouponHistoryDefinitionsParams)
+	// Read frozen V1 coupon claims without current claim or payment authority
+	// (GET /api/admin/coupon-history/{coupon_id}/claims)
+	ListCouponHistoryClaims(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryClaimsParams)
+	// Read frozen V1 coupon redemptions without current claim or payment authority
+	// (GET /api/admin/coupon-history/{coupon_id}/redemptions)
+	ListCouponHistoryRedemptions(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryRedemptionsParams)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
@@ -17654,6 +18060,24 @@ func (_ Unimplemented) PreviewMediaContentPackage(w http.ResponseWriter, r *http
 // CAS-update one local content package
 // (PUT /api/admin/content-packages/{package_id})
 func (_ Unimplemented) UpdateMediaContentPackage(w http.ResponseWriter, r *http.Request, packageId int64, params UpdateMediaContentPackageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read frozen V1 coupon definitions without current claim or payment authority
+// (GET /api/admin/coupon-history)
+func (_ Unimplemented) ListCouponHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListCouponHistoryDefinitionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read frozen V1 coupon claims without current claim or payment authority
+// (GET /api/admin/coupon-history/{coupon_id}/claims)
+func (_ Unimplemented) ListCouponHistoryClaims(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryClaimsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read frozen V1 coupon redemptions without current claim or payment authority
+// (GET /api/admin/coupon-history/{coupon_id}/redemptions)
+func (_ Unimplemented) ListCouponHistoryRedemptions(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryRedemptionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22098,6 +22522,147 @@ func (siw *ServerInterfaceWrapper) UpdateMediaContentPackage(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateMediaContentPackage(w, r, packageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCouponHistoryDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ListCouponHistoryDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCouponHistoryDefinitionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCouponHistoryDefinitions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCouponHistoryClaims operation middleware
+func (siw *ServerInterfaceWrapper) ListCouponHistoryClaims(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "coupon_id" -------------
+	var couponId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "coupon_id", chi.URLParam(r, "coupon_id"), &couponId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "coupon_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCouponHistoryClaimsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCouponHistoryClaims(w, r, couponId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCouponHistoryRedemptions operation middleware
+func (siw *ServerInterfaceWrapper) ListCouponHistoryRedemptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "coupon_id" -------------
+	var couponId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "coupon_id", chi.URLParam(r, "coupon_id"), &couponId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "coupon_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCouponHistoryRedemptionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCouponHistoryRedemptions(w, r, couponId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -34254,6 +34819,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/api/admin/content-packages/{package_id}", wrapper.UpdateMediaContentPackage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/coupon-history", wrapper.ListCouponHistoryDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/coupon-history/{coupon_id}/claims", wrapper.ListCouponHistoryClaims)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/coupon-history/{coupon_id}/redemptions", wrapper.ListCouponHistoryRedemptions)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/execution-runtime", wrapper.GetLegacyExecutionRuntime)
 	})
 	r.Group(func(r chi.Router) {
@@ -38320,6 +38894,167 @@ func (response UpdateMediaContentPackage409JSONResponse) VisitUpdateMediaContent
 type UpdateMediaContentPackage503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response UpdateMediaContentPackage503JSONResponse) VisitUpdateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryDefinitionsRequestObject struct {
+	Params ListCouponHistoryDefinitionsParams
+}
+
+type ListCouponHistoryDefinitionsResponseObject interface {
+	VisitListCouponHistoryDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ListCouponHistoryDefinitions200JSONResponse CouponHistoryDefinitionPage
+
+func (response ListCouponHistoryDefinitions200JSONResponse) VisitListCouponHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryDefinitions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCouponHistoryDefinitions400JSONResponse) VisitListCouponHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryDefinitions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCouponHistoryDefinitions401JSONResponse) VisitListCouponHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryDefinitions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCouponHistoryDefinitions403JSONResponse) VisitListCouponHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryDefinitions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCouponHistoryDefinitions503JSONResponse) VisitListCouponHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryClaimsRequestObject struct {
+	CouponId int64 `json:"coupon_id"`
+	Params   ListCouponHistoryClaimsParams
+}
+
+type ListCouponHistoryClaimsResponseObject interface {
+	VisitListCouponHistoryClaimsResponse(w http.ResponseWriter) error
+}
+
+type ListCouponHistoryClaims200JSONResponse CouponHistoryClaimPage
+
+func (response ListCouponHistoryClaims200JSONResponse) VisitListCouponHistoryClaimsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryClaims400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCouponHistoryClaims400JSONResponse) VisitListCouponHistoryClaimsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryClaims401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCouponHistoryClaims401JSONResponse) VisitListCouponHistoryClaimsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryClaims403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCouponHistoryClaims403JSONResponse) VisitListCouponHistoryClaimsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryClaims503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCouponHistoryClaims503JSONResponse) VisitListCouponHistoryClaimsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryRedemptionsRequestObject struct {
+	CouponId int64 `json:"coupon_id"`
+	Params   ListCouponHistoryRedemptionsParams
+}
+
+type ListCouponHistoryRedemptionsResponseObject interface {
+	VisitListCouponHistoryRedemptionsResponse(w http.ResponseWriter) error
+}
+
+type ListCouponHistoryRedemptions200JSONResponse CouponHistoryRedemptionPage
+
+func (response ListCouponHistoryRedemptions200JSONResponse) VisitListCouponHistoryRedemptionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryRedemptions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCouponHistoryRedemptions400JSONResponse) VisitListCouponHistoryRedemptionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryRedemptions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCouponHistoryRedemptions401JSONResponse) VisitListCouponHistoryRedemptionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryRedemptions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCouponHistoryRedemptions403JSONResponse) VisitListCouponHistoryRedemptionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCouponHistoryRedemptions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCouponHistoryRedemptions503JSONResponse) VisitListCouponHistoryRedemptionsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -51186,6 +51921,15 @@ type StrictServerInterface interface {
 	// CAS-update one local content package
 	// (PUT /api/admin/content-packages/{package_id})
 	UpdateMediaContentPackage(ctx context.Context, request UpdateMediaContentPackageRequestObject) (UpdateMediaContentPackageResponseObject, error)
+	// Read frozen V1 coupon definitions without current claim or payment authority
+	// (GET /api/admin/coupon-history)
+	ListCouponHistoryDefinitions(ctx context.Context, request ListCouponHistoryDefinitionsRequestObject) (ListCouponHistoryDefinitionsResponseObject, error)
+	// Read frozen V1 coupon claims without current claim or payment authority
+	// (GET /api/admin/coupon-history/{coupon_id}/claims)
+	ListCouponHistoryClaims(ctx context.Context, request ListCouponHistoryClaimsRequestObject) (ListCouponHistoryClaimsResponseObject, error)
+	// Read frozen V1 coupon redemptions without current claim or payment authority
+	// (GET /api/admin/coupon-history/{coupon_id}/redemptions)
+	ListCouponHistoryRedemptions(ctx context.Context, request ListCouponHistoryRedemptionsRequestObject) (ListCouponHistoryRedemptionsResponseObject, error)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
@@ -53488,6 +54232,86 @@ func (sh *strictHandler) UpdateMediaContentPackage(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateMediaContentPackageResponseObject); ok {
 		if err := validResponse.VisitUpdateMediaContentPackageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCouponHistoryDefinitions operation middleware
+func (sh *strictHandler) ListCouponHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListCouponHistoryDefinitionsParams) {
+	var request ListCouponHistoryDefinitionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCouponHistoryDefinitions(ctx, request.(ListCouponHistoryDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCouponHistoryDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCouponHistoryDefinitionsResponseObject); ok {
+		if err := validResponse.VisitListCouponHistoryDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCouponHistoryClaims operation middleware
+func (sh *strictHandler) ListCouponHistoryClaims(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryClaimsParams) {
+	var request ListCouponHistoryClaimsRequestObject
+
+	request.CouponId = couponId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCouponHistoryClaims(ctx, request.(ListCouponHistoryClaimsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCouponHistoryClaims")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCouponHistoryClaimsResponseObject); ok {
+		if err := validResponse.VisitListCouponHistoryClaimsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCouponHistoryRedemptions operation middleware
+func (sh *strictHandler) ListCouponHistoryRedemptions(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryRedemptionsParams) {
+	var request ListCouponHistoryRedemptionsRequestObject
+
+	request.CouponId = couponId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCouponHistoryRedemptions(ctx, request.(ListCouponHistoryRedemptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCouponHistoryRedemptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCouponHistoryRedemptionsResponseObject); ok {
+		if err := validResponse.VisitListCouponHistoryRedemptionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

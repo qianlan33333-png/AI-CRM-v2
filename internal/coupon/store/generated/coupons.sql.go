@@ -202,7 +202,8 @@ func (q *Queries) DeleteDraftCoupon(ctx context.Context, couponID int64) (int64,
 }
 
 const getCoupon = `-- name: GetCoupon :one
-SELECT c.id, c.name, c.discount_amount_total, c.currency, c.status, c.total_issue_limit, c.per_user_issue_limit, c.issued_count, c.claim_starts_at, c.claim_ends_at, c.validity_mode, c.use_starts_at, c.use_ends_at, c.relative_validity_days, c.instructions, c.first_claim_at, c.created_by, c.updated_by, c.version, c.created_at, c.updated_at, COALESCE(t.refs, '[]'::jsonb) AS target_refs
+SELECT c.id, c.name, c.discount_amount_total, c.currency, c.status, c.total_issue_limit, c.per_user_issue_limit, c.issued_count, c.claim_starts_at, c.claim_ends_at, c.validity_mode, c.use_starts_at, c.use_ends_at, c.relative_validity_days, c.instructions, c.first_claim_at, c.created_by, c.updated_by, c.version, c.created_at, c.updated_at, COALESCE(t.refs, '[]'::jsonb) AS target_refs,
+  EXISTS(SELECT 1 FROM coupon_v1_history_definitions h WHERE h.coupon_id=c.id) AS history_only
 FROM coupons c
 LEFT JOIN LATERAL (SELECT jsonb_agg(target_ref ORDER BY position) refs FROM coupon_targets WHERE coupon_id=c.id) t ON true
 WHERE c.id=$1::bigint
@@ -231,6 +232,7 @@ type GetCouponRow struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	TargetRefs           []byte             `json:"target_refs"`
+	HistoryOnly          bool               `json:"history_only"`
 }
 
 func (q *Queries) GetCoupon(ctx context.Context, couponID int64) (GetCouponRow, error) {
@@ -259,6 +261,7 @@ func (q *Queries) GetCoupon(ctx context.Context, couponID int64) (GetCouponRow, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.TargetRefs,
+		&i.HistoryOnly,
 	)
 	return i, err
 }

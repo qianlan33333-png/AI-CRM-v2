@@ -2150,6 +2150,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	)
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
+	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
@@ -3624,6 +3625,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/wecom/tags/sync-due", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.SyncLegacyTagsDue)},
 			{http.MethodPost, "/api/admin/wecom/tag-effects/{effect_id}/reconcile", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.ReconcileWeComTagEffect)},
 			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
+			{http.MethodGet, "/api/admin/coupon-history", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryDefinitions)},
+			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryClaims)},
+			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/redemptions", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryRedemptions)},
 			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},
 			{http.MethodPost, "/api/admin/coupons", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CreateCoupon)},
 			{http.MethodGet, "/api/admin/coupons/{coupon_id}", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.GetCoupon)},

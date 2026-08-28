@@ -41,3 +41,52 @@ type CouponClaim struct {
 	Status      string             `json:"status"`
 	ClaimedAt   pgtype.Timestamptz `json:"claimed_at"`
 }
+
+type CouponTarget struct {
+	CouponID  int64  `json:"coupon_id"`
+	Position  int32  `json:"position"`
+	TargetRef string `json:"target_ref"`
+	ProductID int64  `json:"product_id"`
+}
+
+type CouponV1HistoryClaim struct {
+	ID                  int64              `json:"id"`
+	SourceClaimID       int64              `json:"source_claim_id"`
+	SourceCouponID      int64              `json:"source_coupon_id"`
+	CouponID            int64              `json:"coupon_id"`
+	CustomerID          pgtype.Int8        `json:"customer_id"`
+	ClaimNo             string             `json:"claim_no"`
+	Status              string             `json:"status"`
+	DiscountAmountTotal int64              `json:"discount_amount_total"`
+	Currency            string             `json:"currency"`
+	ValidFrom           pgtype.Timestamptz `json:"valid_from"`
+	ValidUntil          pgtype.Timestamptz `json:"valid_until"`
+	ClaimedAt           pgtype.Timestamptz `json:"claimed_at"`
+	ReservedAt          pgtype.Timestamptz `json:"reserved_at"`
+	ConsumedAt          pgtype.Timestamptz `json:"consumed_at"`
+	ExpiredAt           pgtype.Timestamptz `json:"expired_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type CouponV1HistoryRedemption struct {
+	ID                  int64              `json:"id"`
+	SourceRedemptionID  int64              `json:"source_redemption_id"`
+	SourceClaimID       int64              `json:"source_claim_id"`
+	SourceOrderID       int64              `json:"source_order_id"`
+	ClaimHistoryID      int64              `json:"claim_history_id"`
+	OrderID             pgtype.Int8        `json:"order_id"`
+	OutTradeNo          string             `json:"out_trade_no"`
+	Status              string             `json:"status"`
+	OriginalAmountTotal int64              `json:"original_amount_total"`
+	DiscountAmountTotal int64              `json:"discount_amount_total"`
+	PayableAmountTotal  int64              `json:"payable_amount_total"`
+	Currency            string             `json:"currency"`
+	ReservedUntil       pgtype.Timestamptz `json:"reserved_until"`
+	ReleaseReason       string             `json:"release_reason"`
+	ReservedAt          pgtype.Timestamptz `json:"reserved_at"`
+	ConsumedAt          pgtype.Timestamptz `json:"consumed_at"`
+	ReleasedAt          pgtype.Timestamptz `json:"released_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}

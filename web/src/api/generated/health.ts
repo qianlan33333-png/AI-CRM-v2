@@ -9182,6 +9182,184 @@ export interface CouponUpsertRequest {
   target_refs: string[];
 }
 
+export type CouponHistoryDefinitionCurrency =
+  (typeof CouponHistoryDefinitionCurrency)[keyof typeof CouponHistoryDefinitionCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryDefinitionCurrency = {
+  CNY: "CNY",
+} as const;
+
+export type CouponHistoryDefinitionStatus =
+  (typeof CouponHistoryDefinitionStatus)[keyof typeof CouponHistoryDefinitionStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryDefinitionStatus = {
+  archived: "archived",
+} as const;
+
+export type CouponHistoryDefinitionAvailabilityStatus =
+  (typeof CouponHistoryDefinitionAvailabilityStatus)[keyof typeof CouponHistoryDefinitionAvailabilityStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryDefinitionAvailabilityStatus = {
+  archived: "archived",
+} as const;
+
+export interface CouponHistoryDefinition {
+  id: number;
+  source_coupon_id: number;
+  name: string;
+  discount_amount_total: number;
+  currency: CouponHistoryDefinitionCurrency;
+  status: CouponHistoryDefinitionStatus;
+  availability_status: CouponHistoryDefinitionAvailabilityStatus;
+  history_only: boolean;
+  original_status: string;
+  total_issue_limit: number;
+  per_user_issue_limit: number;
+  issued_count: number;
+  claim_starts_at: string;
+  claim_ends_at: string;
+  validity_mode: string;
+  /** @nullable */
+  use_starts_at: string | null;
+  /** @nullable */
+  use_ends_at: string | null;
+  /** @nullable */
+  relative_validity_days: number | null;
+  instructions: string;
+  target_refs: string[];
+  /** @nullable */
+  first_claim_at: string | null;
+  created_by: number;
+  updated_by: number;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CouponHistoryDefinitionPageSource =
+  (typeof CouponHistoryDefinitionPageSource)[keyof typeof CouponHistoryDefinitionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryDefinitionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface CouponHistoryDefinitionPage {
+  source: CouponHistoryDefinitionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: CouponHistoryDefinition[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type CouponHistoryClaimCurrency =
+  (typeof CouponHistoryClaimCurrency)[keyof typeof CouponHistoryClaimCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryClaimCurrency = {
+  CNY: "CNY",
+} as const;
+
+export interface CouponHistoryClaim {
+  id: number;
+  source_claim_id: number;
+  source_coupon_id: number;
+  coupon_id: number;
+  /** @nullable */
+  customer_id: number | null;
+  claim_no: string;
+  status: string;
+  discount_amount_total: number;
+  currency: CouponHistoryClaimCurrency;
+  valid_from: string;
+  valid_until: string;
+  claimed_at: string;
+  /** @nullable */
+  reserved_at: string | null;
+  /** @nullable */
+  consumed_at: string | null;
+  /** @nullable */
+  expired_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CouponHistoryClaimPageSource =
+  (typeof CouponHistoryClaimPageSource)[keyof typeof CouponHistoryClaimPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryClaimPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface CouponHistoryClaimPage {
+  source: CouponHistoryClaimPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  coupon_id: number;
+  items: CouponHistoryClaim[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type CouponHistoryRedemptionCurrency =
+  (typeof CouponHistoryRedemptionCurrency)[keyof typeof CouponHistoryRedemptionCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryRedemptionCurrency = {
+  CNY: "CNY",
+} as const;
+
+export interface CouponHistoryRedemption {
+  id: number;
+  source_redemption_id: number;
+  source_claim_id: number;
+  source_order_id: number;
+  claim_history_id: number;
+  /** @nullable */
+  order_id: number | null;
+  out_trade_no: string;
+  status: string;
+  original_amount_total: number;
+  discount_amount_total: number;
+  payable_amount_total: number;
+  currency: CouponHistoryRedemptionCurrency;
+  reserved_until: string;
+  release_reason: string;
+  reserved_at: string;
+  /** @nullable */
+  consumed_at: string | null;
+  /** @nullable */
+  released_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CouponHistoryRedemptionPageSource =
+  (typeof CouponHistoryRedemptionPageSource)[keyof typeof CouponHistoryRedemptionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CouponHistoryRedemptionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface CouponHistoryRedemptionPage {
+  source: CouponHistoryRedemptionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  coupon_id: number;
+  items: CouponHistoryRedemption[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export type CouponAllOfCurrency =
   (typeof CouponAllOfCurrency)[keyof typeof CouponAllOfCurrency];
 
@@ -9218,6 +9396,8 @@ export const CouponAllOfAvailabilityStatus = {
 } as const;
 
 export type CouponAllOf = {
+  /** True only for read-only imported historical coupons. */
+  history_only?: boolean;
   /** @minimum 1 */
   id: number;
   currency: CouponAllOfCurrency;
@@ -17998,6 +18178,42 @@ export type ListLegacyWechatTransactionsParams = {
   /**
    * @minimum 0
    * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListCouponHistoryDefinitionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCouponHistoryClaimsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCouponHistoryRedemptionsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
    */
   offset?: number;
 };
@@ -35663,6 +35879,264 @@ export const reconcileWechatShopRefund = async (
     status: res.status,
     headers: res.headers,
   } as reconcileWechatShopRefundResponse;
+};
+
+/**
+ * @summary Read frozen V1 coupon definitions without current claim or payment authority
+ */
+export type listCouponHistoryDefinitionsResponse200 = {
+  data: CouponHistoryDefinitionPage;
+  status: 200;
+};
+
+export type listCouponHistoryDefinitionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCouponHistoryDefinitionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCouponHistoryDefinitionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCouponHistoryDefinitionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCouponHistoryDefinitionsResponseSuccess =
+  listCouponHistoryDefinitionsResponse200 & {
+    headers: Headers;
+  };
+export type listCouponHistoryDefinitionsResponseError = (
+  | listCouponHistoryDefinitionsResponse400
+  | listCouponHistoryDefinitionsResponse401
+  | listCouponHistoryDefinitionsResponse403
+  | listCouponHistoryDefinitionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCouponHistoryDefinitionsResponse =
+  | listCouponHistoryDefinitionsResponseSuccess
+  | listCouponHistoryDefinitionsResponseError;
+
+export const getListCouponHistoryDefinitionsUrl = (
+  params?: ListCouponHistoryDefinitionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/coupon-history?${stringifiedParams}`
+    : `/api/admin/coupon-history`;
+};
+
+export const listCouponHistoryDefinitions = async (
+  params?: ListCouponHistoryDefinitionsParams,
+  options?: RequestInit,
+): Promise<listCouponHistoryDefinitionsResponse> => {
+  const res = await fetch(getListCouponHistoryDefinitionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCouponHistoryDefinitionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCouponHistoryDefinitionsResponse;
+};
+
+/**
+ * @summary Read frozen V1 coupon claims without current claim or payment authority
+ */
+export type listCouponHistoryClaimsResponse200 = {
+  data: CouponHistoryClaimPage;
+  status: 200;
+};
+
+export type listCouponHistoryClaimsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCouponHistoryClaimsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCouponHistoryClaimsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCouponHistoryClaimsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCouponHistoryClaimsResponseSuccess =
+  listCouponHistoryClaimsResponse200 & {
+    headers: Headers;
+  };
+export type listCouponHistoryClaimsResponseError = (
+  | listCouponHistoryClaimsResponse400
+  | listCouponHistoryClaimsResponse401
+  | listCouponHistoryClaimsResponse403
+  | listCouponHistoryClaimsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCouponHistoryClaimsResponse =
+  listCouponHistoryClaimsResponseSuccess | listCouponHistoryClaimsResponseError;
+
+export const getListCouponHistoryClaimsUrl = (
+  couponId: number,
+  params?: ListCouponHistoryClaimsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/coupon-history/${couponId}/claims?${stringifiedParams}`
+    : `/api/admin/coupon-history/${couponId}/claims`;
+};
+
+export const listCouponHistoryClaims = async (
+  couponId: number,
+  params?: ListCouponHistoryClaimsParams,
+  options?: RequestInit,
+): Promise<listCouponHistoryClaimsResponse> => {
+  const res = await fetch(getListCouponHistoryClaimsUrl(couponId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCouponHistoryClaimsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCouponHistoryClaimsResponse;
+};
+
+/**
+ * @summary Read frozen V1 coupon redemptions without current claim or payment authority
+ */
+export type listCouponHistoryRedemptionsResponse200 = {
+  data: CouponHistoryRedemptionPage;
+  status: 200;
+};
+
+export type listCouponHistoryRedemptionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCouponHistoryRedemptionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCouponHistoryRedemptionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCouponHistoryRedemptionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCouponHistoryRedemptionsResponseSuccess =
+  listCouponHistoryRedemptionsResponse200 & {
+    headers: Headers;
+  };
+export type listCouponHistoryRedemptionsResponseError = (
+  | listCouponHistoryRedemptionsResponse400
+  | listCouponHistoryRedemptionsResponse401
+  | listCouponHistoryRedemptionsResponse403
+  | listCouponHistoryRedemptionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCouponHistoryRedemptionsResponse =
+  | listCouponHistoryRedemptionsResponseSuccess
+  | listCouponHistoryRedemptionsResponseError;
+
+export const getListCouponHistoryRedemptionsUrl = (
+  couponId: number,
+  params?: ListCouponHistoryRedemptionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/coupon-history/${couponId}/redemptions?${stringifiedParams}`
+    : `/api/admin/coupon-history/${couponId}/redemptions`;
+};
+
+export const listCouponHistoryRedemptions = async (
+  couponId: number,
+  params?: ListCouponHistoryRedemptionsParams,
+  options?: RequestInit,
+): Promise<listCouponHistoryRedemptionsResponse> => {
+  const res = await fetch(
+    getListCouponHistoryRedemptionsUrl(couponId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCouponHistoryRedemptionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCouponHistoryRedemptionsResponse;
 };
 
 /**

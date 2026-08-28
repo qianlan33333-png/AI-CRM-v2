@@ -72,6 +72,10 @@ var targetBySourceTable = map[string]struct {
 	"public/service_period_products":          {"product", "product_service_period_history"},
 	"public/service_period_entitlements":      {"product", "product_service_period_entitlement_history"},
 	"public/service_period_events":            {"product", "product_service_period_event_history"},
+	"public/commerce_coupons":                 {"coupon", "coupons"},
+	"public/commerce_coupon_product_bindings": {"coupon", "coupon_targets"},
+	"public/commerce_coupon_claims":           {"coupon", "coupon_v1_history_claims"},
+	"public/commerce_coupon_redemptions":      {"coupon", "coupon_v1_history_redemptions"},
 }
 
 type ReconciliationResult struct {
@@ -201,7 +205,9 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 			return ReconciliationResult{}, fmt.Errorf("unverified receipt for %s", row.TableID)
 		}
 		result.VerifiedCount++
-		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" {
+		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
+			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -275,6 +281,8 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	switch expected.table {
 	case "product_service_period_history", "product_service_period_entitlement_history", "product_service_period_event_history":
 		return verifyServicePeriodTarget(ctx, tx, row, importedTargets)
+	case "coupons", "coupon_targets", "coupon_v1_history_claims", "coupon_v1_history_redemptions":
+		return verifyCouponTarget(ctx, tx, row, importedTargets)
 	case "order_list_projections", "order_historical_refunds":
 		return verifyFinanceTarget(ctx, tx, row, importedTargets)
 	case "channel_historical_contacts":

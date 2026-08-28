@@ -68,7 +68,9 @@ func (r *Repository) Get(ctx context.Context, id couponport.ID) (couponport.Coup
 	if e != nil {
 		return couponport.Coupon{}, unavailable(e)
 	}
-	return mapCoupon(row.ID, row.Name, row.DiscountAmountTotal, row.Currency, row.Status, row.TotalIssueLimit, row.PerUserIssueLimit, row.IssuedCount, row.ClaimStartsAt, row.ClaimEndsAt, row.ValidityMode, row.UseStartsAt, row.UseEndsAt, row.RelativeValidityDays, row.Instructions, row.CreatedBy, row.UpdatedBy, row.Version, row.CreatedAt, row.UpdatedAt, row.TargetRefs)
+	item, err := mapCoupon(row.ID, row.Name, row.DiscountAmountTotal, row.Currency, row.Status, row.TotalIssueLimit, row.PerUserIssueLimit, row.IssuedCount, row.ClaimStartsAt, row.ClaimEndsAt, row.ValidityMode, row.UseStartsAt, row.UseEndsAt, row.RelativeValidityDays, row.Instructions, row.CreatedBy, row.UpdatedBy, row.Version, row.CreatedAt, row.UpdatedAt, row.TargetRefs)
+	item.HistoryOnly = row.HistoryOnly
+	return item, err
 }
 func (r *Repository) Lock(ctx context.Context, id couponport.ID) (couponport.Coupon, error) {
 	q, e := queries(ctx)

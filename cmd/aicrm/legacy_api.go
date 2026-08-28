@@ -224,6 +224,7 @@ type Handler struct {
 	wecomTagEffects         wecomTagEffectApplication
 	coupons                 legacyCouponApplication
 	couponBoard             couponBoardApplication
+	couponHistory           couponport.HistoricalReader
 	settings                legacySettingsApplication
 	setupWizard             http.Handler
 	adminAccess             http.Handler
