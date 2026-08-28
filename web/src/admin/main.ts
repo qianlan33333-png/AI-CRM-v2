@@ -37,6 +37,7 @@ import { mountMarketingStateHistory } from './sections/marketingStateHistory';
 import { mountBroadcastJobHistory } from './sections/broadcastJobHistory';
 import { mountOutboundTaskHistory } from './sections/outboundTaskHistory';
 import { mountWeComContactHistory } from './sections/wecomContactHistory';
+import { mountInvalidSourceHistory } from './sections/invalidSourceHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -48,6 +49,10 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'config' && historyQuery.has('invalid_source_history')) {
+    void mountInvalidSourceHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">异常源历史读取失败；未修改当前业务。</p>'; });
+    return;
+  }
   if (page === 'automation' && historyQuery.get('outbound_task_history') === '1') {
     void mountOutboundTaskHistory(stage, { historyID: historyQuery.get('history_id') ?? undefined }).catch(() => { stage.innerHTML = '<p role="alert">外发任务历史读取失败；未创建或发送任务。</p>'; });
     return;
@@ -261,6 +266,7 @@ function boot(): void {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?marketing_state_history=1">V1 营销状态历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?customer_state_history=1">V1 客户状态历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?static_history=1">V1 静态历史（只读）</a></p>');
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?invalid_source_history=1&history_kind=tags">V1 异常源历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?automation_history=1">V1 自动化历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?wecom_contact_history=1">V1 企微联系人历史（只读）</a></p>');
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
