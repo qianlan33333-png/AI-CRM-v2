@@ -28,11 +28,13 @@ import (
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
+	hxcport "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	operationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/app"
+	cycleport "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/port"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
@@ -195,7 +197,15 @@ type Handler struct {
 	campaign                http.Handler
 	aiAudience              http.Handler
 	audienceHistory         segmentport.AudienceHistoryReader
+	profileCatalogHistory   segmentport.ProfileCatalogHistoryReader
+	signupTagHistory        contactport.SignupTagHistoryReader
 	automationHistory       automationport.AutomationHistoryReader
+	hxcHistory              hxcport.HXCHistoryReader
+	staticMediaHistory      mediaport.StaticMediaHistoryReader
+	customerStateHistory    contactport.CustomerStateHistoryReader
+	marketingStateHistory   segmentport.MarketingStateHistoryReader
+	staticProductHistory    productport.StaticProductHistoryReader
+	staticCycleHistory      cycleport.StaticCycleHistoryReader
 	aiAudienceInbound       *aiAudienceInboundRoutes
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler

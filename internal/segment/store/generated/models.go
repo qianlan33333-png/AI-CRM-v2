@@ -146,3 +146,150 @@ type SegmentV1Definition struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	DefinitionDigest []byte             `json:"definition_digest"`
 }
+
+type SegmentV1MarketingStateChange struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+	SourceFieldDigest      []byte             `json:"source_field_digest"`
+	SourceID               int64              `json:"source_id"`
+	PersonSourceID         pgtype.Int8        `json:"person_source_id"`
+	BatchSourceID          pgtype.Int8        `json:"batch_source_id"`
+	ExternalUseridDigest   []byte             `json:"external_userid_digest"`
+	AutomationKey          string             `json:"automation_key"`
+	MainStage              string             `json:"main_stage"`
+	SubStage               string             `json:"sub_stage"`
+	Activated              bool               `json:"activated"`
+	Converted              bool               `json:"converted"`
+	EligibleForConversion  bool               `json:"eligible_for_conversion"`
+	LifecycleStatus        string             `json:"lifecycle_status"`
+	LastActivationAt       string             `json:"last_activation_at"`
+	LastConversionMarkedAt string             `json:"last_conversion_marked_at"`
+	LastMessageAt          string             `json:"last_message_at"`
+	ExitReason             string             `json:"exit_reason"`
+	ChangeReason           string             `json:"change_reason"`
+	StatePayloadDigest     []byte             `json:"state_payload_digest"`
+	RecordedAt             pgtype.Timestamptz `json:"recorded_at"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+}
+
+type SegmentV1MarketingStateSnapshot struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+	SourceFieldDigest      []byte             `json:"source_field_digest"`
+	SourceID               int64              `json:"source_id"`
+	PersonSourceID         pgtype.Int8        `json:"person_source_id"`
+	ExternalUseridDigest   []byte             `json:"external_userid_digest"`
+	AutomationKey          string             `json:"automation_key"`
+	MainStage              string             `json:"main_stage"`
+	SubStage               string             `json:"sub_stage"`
+	Activated              bool               `json:"activated"`
+	Converted              bool               `json:"converted"`
+	EligibleForConversion  bool               `json:"eligible_for_conversion"`
+	LifecycleStatus        string             `json:"lifecycle_status"`
+	LastActivationAt       string             `json:"last_activation_at"`
+	LastConversionMarkedAt string             `json:"last_conversion_marked_at"`
+	LastMessageAt          string             `json:"last_message_at"`
+	LastBatchSourceID      pgtype.Int8        `json:"last_batch_source_id"`
+	LastBatchStatus        string             `json:"last_batch_status"`
+	LastBatchWindowStart   string             `json:"last_batch_window_start"`
+	LastBatchWindowEnd     string             `json:"last_batch_window_end"`
+	LastTriggerMessageAt   string             `json:"last_trigger_message_at"`
+	EnteredAt              pgtype.Timestamptz `json:"entered_at"`
+	ExitedAt               pgtype.Timestamptz `json:"exited_at"`
+	ExitReason             string             `json:"exit_reason"`
+	StatePayloadDigest     []byte             `json:"state_payload_digest"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1ProfileCategory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	TemplateSourceID    int64              `json:"template_source_id"`
+	TemplateHistoryID   int64              `json:"template_history_id"`
+	CategoryKey         string             `json:"category_key"`
+	CategoryName        string             `json:"category_name"`
+	Description         string             `json:"description"`
+	SortOrder           int64              `json:"sort_order"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1ProfileOptionMapping struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	TemplateSourceID    int64              `json:"template_source_id"`
+	CategorySourceID    int64              `json:"category_source_id"`
+	TemplateHistoryID   int64              `json:"template_history_id"`
+	CategoryHistoryID   int64              `json:"category_history_id"`
+	QuestionSourceID    int64              `json:"question_source_id"`
+	OptionSourceID      int64              `json:"option_source_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type SegmentV1ProfileTemplate struct {
+	ID                           int64              `json:"id"`
+	SourceID                     int64              `json:"source_id"`
+	SourceKeyDigest              []byte             `json:"source_key_digest"`
+	SourcePayloadDigest          []byte             `json:"source_payload_digest"`
+	TemplateCode                 string             `json:"template_code"`
+	TemplateName                 string             `json:"template_name"`
+	QuestionnaireSourceID        pgtype.Int8        `json:"questionnaire_source_id"`
+	SegmentationQuestionSourceID pgtype.Int8        `json:"segmentation_question_source_id"`
+	ProgramSourceID              pgtype.Int8        `json:"program_source_id"`
+	Description                  string             `json:"description"`
+	OriginalEnabled              bool               `json:"original_enabled"`
+	Version                      int64              `json:"version"`
+	CreatedByDigest              []byte             `json:"created_by_digest"`
+	UpdatedByDigest              []byte             `json:"updated_by_digest"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1ValueSegmentChange struct {
+	ID                       int64              `json:"id"`
+	SourceKeyDigest          []byte             `json:"source_key_digest"`
+	SourcePayloadDigest      []byte             `json:"source_payload_digest"`
+	SourceFieldDigest        []byte             `json:"source_field_digest"`
+	SourceID                 int64              `json:"source_id"`
+	ExternalUseridDigest     []byte             `json:"external_userid_digest"`
+	Segment                  string             `json:"segment"`
+	SegmentRank              int32              `json:"segment_rank"`
+	Score                    int32              `json:"score"`
+	ScoringVersion           string             `json:"scoring_version"`
+	SubmissionSourceID       pgtype.Int8        `json:"submission_source_id"`
+	MatchedQuestionIdsDigest []byte             `json:"matched_question_ids_digest"`
+	StatePayloadDigest       []byte             `json:"state_payload_digest"`
+	ChangeReason             string             `json:"change_reason"`
+	EvaluatedAt              pgtype.Timestamptz `json:"evaluated_at"`
+	RecordedAt               pgtype.Timestamptz `json:"recorded_at"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+}
+
+type SegmentV1ValueSegmentSnapshot struct {
+	ID                       int64              `json:"id"`
+	SourceKeyDigest          []byte             `json:"source_key_digest"`
+	SourcePayloadDigest      []byte             `json:"source_payload_digest"`
+	SourceFieldDigest        []byte             `json:"source_field_digest"`
+	SourceID                 int64              `json:"source_id"`
+	ExternalUseridDigest     []byte             `json:"external_userid_digest"`
+	Segment                  string             `json:"segment"`
+	SegmentRank              int32              `json:"segment_rank"`
+	Score                    int32              `json:"score"`
+	ScoringVersion           string             `json:"scoring_version"`
+	SubmissionSourceID       pgtype.Int8        `json:"submission_source_id"`
+	MatchedQuestionIdsDigest []byte             `json:"matched_question_ids_digest"`
+	StatePayloadDigest       []byte             `json:"state_payload_digest"`
+	ComputedReason           string             `json:"computed_reason"`
+	EvaluatedAt              pgtype.Timestamptz `json:"evaluated_at"`
+	ComputedAt               pgtype.Timestamptz `json:"computed_at"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+}
