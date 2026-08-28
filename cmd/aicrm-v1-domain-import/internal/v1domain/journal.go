@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	referencehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1contactreferencehistory"
 	cyclehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1cycleobservationhistory"
 	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
 	runtimehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcruntimehistory"
@@ -225,6 +226,144 @@ AND imported_count+archived_count+quarantined_count=receipt_count)`, run).Scan(&
 		return HXCRuntimeHistoryResult{}, err
 	}
 	return result, nil
+}
+
+func RunContactReferenceHistory(ctx context.Context, pool *pgxpool.Pool, archive referencehistory.ArchiveSource, run string, key []byte, resolver ContactReferenceResolver, reconcile bool) (ContactReferenceHistoryResult, error) {
+	if ctx == nil || pool == nil || archive == nil || resolver == nil || run == "" || len(key) < sha256.Size {
+		return ContactReferenceHistoryResult{}, ErrInvalidScope
+	}
+	var result ContactReferenceHistoryResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(bound context.Context) error {
+		result = ContactReferenceHistoryResult{}
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+			return err
+		}
+		var ready bool
+		err = tx.QueryRow(bound, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_runs a
+JOIN public.data_migration_runs m ON m.run_id=a.run_id
+WHERE a.run_id=$1 AND m.phase='reconciled')`, run).Scan(&ready)
+		if err != nil {
+			return err
+		}
+		if !ready {
+			return ErrConflict
+		}
+		selector, err := referencehistory.NewSelector(archive, contactReferenceArchiveTerminalReader{})
+		if err != nil {
+			return err
+		}
+		selected, err := selector.Select(bound, referencehistory.SelectionOptions{ArchiveRunID: run, SourceHMACKey: key})
+		if err != nil {
+			return err
+		}
+		for table, count := range map[string]int{referencehistory.ExternalContactBindingsTableID: len(selected.Bindings), referencehistory.AdminWeComDirectoryMembersTableID: len(selected.DirectoryMembers)} {
+			var expected int64
+			if err = tx.QueryRow(bound, "SELECT row_count FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=$2", run, table).Scan(&expected); err != nil || expected != int64(count) {
+				return ErrConflict
+			}
+		}
+		entries, err := contactReferenceEntries(bound, selected, run, tx, key, resolver)
+		if err != nil {
+			return err
+		}
+		result.Selected = len(entries)
+		if reconcile {
+			proof, err := reconcileContactReferenceEntries(bound, tx, entries, run)
+			if err != nil {
+				return err
+			}
+			result.Reconciliation = &proof
+			return nil
+		}
+		for _, entry := range entries {
+			receipt, err := entry.write(bound)
+			if err != nil {
+				return err
+			}
+			if receipt.Kind != entry.kind || receipt.SourceIdentifier != entry.source || receipt.PayloadDigest != entry.payload || receipt.TargetID < 1 {
+				return ErrConflict
+			}
+			terminal, found, err := entry.journal.LoadTerminal(bound, entry.source)
+			if err != nil || !found {
+				return ErrConflict
+			}
+			digest, err := entry.verify(bound, receipt.TargetID)
+			if err != nil || receipt.TargetDigest != digest || terminal.TargetDigest != digest || terminal.SourceKeyDigest != entry.key || terminal.PayloadDigest != entry.payload || terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetID != strconv.FormatInt(receipt.TargetID, 10) || len(terminal.Metadata) != 0 {
+				return ErrConflict
+			}
+			if receipt.Replayed {
+				result.Replayed++
+			} else {
+				result.Imported++
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return ContactReferenceHistoryResult{}, err
+	}
+	return result, nil
+}
+
+type contactReferenceArchiveTerminalReader struct{}
+
+// ReadContactReferenceMapCount prevents a truncated identity-map archive from
+// silently becoming an unresolved link. It reads only the sealed V2 manifest.
+func ReadContactReferenceMapCount(ctx context.Context, run string) (int64, error) {
+	if ctx == nil || run == "" {
+		return 0, ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = tx.QueryRow(ctx, `SELECT t.row_count FROM public.v1_archive_tables t
+JOIN public.v1_archive_runs a ON a.run_id=t.run_id
+JOIN public.data_migration_runs m ON m.run_id=t.run_id
+WHERE t.run_id=$1 AND t.table_id='public/wecom_external_contact_identity_map' AND m.phase='reconciled'`, run).Scan(&count)
+	if err != nil || count < 0 {
+		return 0, ErrConflict
+	}
+	return count, nil
+}
+
+func (contactReferenceArchiveTerminalReader) EachArchiveTerminal(ctx context.Context, run, table string, emit func(referencehistory.ArchiveTerminalReceipt) error) error {
+	if ctx == nil || run == "" || emit == nil || (table != referencehistory.ExternalContactBindingsTableID && table != referencehistory.AdminWeComDirectoryMembersTableID) {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := tx.Query(ctx, `SELECT run_id,adapter_id,table_id,source_key_digest,payload_digest,field_digest,disposition,operation
+FROM public.data_migration_row_receipts WHERE run_id=$1 AND table_id=$2 AND adapter_id=$3 ORDER BY source_key_digest`, run, table, v1archive.DefaultAdapterID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var value referencehistory.ArchiveTerminalReceipt
+		var key, payload, field []byte
+		if err = rows.Scan(&value.ArchiveRunID, &value.AdapterID, &value.TableID, &key, &payload, &field, &value.Disposition, &value.Operation); err != nil {
+			return err
+		}
+		if len(key) != sha256.Size || len(payload) != sha256.Size || len(field) != sha256.Size {
+			return ErrConflict
+		}
+		copy(value.SourceKeyDigest[:], key)
+		copy(value.PayloadDigest[:], payload)
+		copy(value.FieldDigest[:], field)
+		if err = emit(value); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
 }
 
 type hxcRuntimeTerminalReader struct{}

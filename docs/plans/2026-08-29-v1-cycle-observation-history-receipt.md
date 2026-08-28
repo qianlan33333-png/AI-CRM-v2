@@ -1,5 +1,7 @@
 # Cycle observation history — candidate receipt
 
+集成更新：PR587已在最终候选c2bf/Full33215882004通过后合并；exact-main e9a0e449/Full33217605005通过。本分支已串行整合该验证基线，保留Contact135及全部CLI参数/路由，136编号连续；migration-mapping现在PASS（316rows/217physical/3312columns/pending0），OpenAPI与Go生成两遍通过。尚未表示本批候选Nightly通过或正式136已部署。
+
 本批仅21条周期指标、18条周期引用观察；不恢复周期任务，不创建当前run/snapshot关系。开发与隔离演练基于已验证5f4b9f48；集成到下一正式基线及最终136序号须等待PR587 exact-main绿灯。
 
 本地候选 `88abfceebd5d6fa0fac64289c789a36be3035120`：

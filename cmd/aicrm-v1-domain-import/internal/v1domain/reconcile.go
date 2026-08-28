@@ -81,6 +81,63 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 	return result, nil
 }
 
+func reconcileContactReferenceEntries(ctx context.Context, tx pgx.Tx, entries []contactReferenceEntry, run string) (ReconciliationResult, error) {
+	if ctx == nil || tx == nil || run == "" {
+		return ReconciliationResult{}, ErrInvalidScope
+	}
+	var count int64
+	if err := tx.QueryRow(ctx, "SELECT count(*) FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2", ContactReferenceHistoryVersion, run).Scan(&count); err != nil {
+		return ReconciliationResult{}, err
+	}
+	if count != int64(len(entries)) {
+		return ReconciliationResult{}, ErrConflict
+	}
+	hash := sha256.New()
+	encoder := json.NewEncoder(hash)
+	targets := make(map[string]bool)
+	for _, entry := range entries {
+		value, found, err := entry.journal.LoadTerminal(ctx, entry.source)
+		if err != nil || !found || value.SourceKeyDigest != entry.key || value.PayloadDigest != entry.payload || value.Disposition != "import" || value.Reason != "" || len(value.Metadata) != 0 {
+			return ReconciliationResult{}, ErrConflict
+		}
+		id, err := positiveID(value.TargetID)
+		if err != nil || value.TargetID != strconv.FormatInt(id, 10) {
+			return ReconciliationResult{}, ErrConflict
+		}
+		target := entry.scope.TargetTable + "/" + value.TargetID
+		if targets[target] {
+			return ReconciliationResult{}, ErrConflict
+		}
+		targets[target] = true
+		digest, err := entry.verify(ctx, id)
+		if err != nil || value.TargetDigest != digest {
+			return ReconciliationResult{}, ErrConflict
+		}
+		if err = encoder.Encode([]any{entry.scope.TableID, entry.source, hex.EncodeToString(entry.payload[:]), hex.EncodeToString(entry.field[:]), entry.scope.TargetDomain, entry.scope.TargetTable, value.TargetID, hex.EncodeToString(digest[:])}); err != nil {
+			return ReconciliationResult{}, err
+		}
+	}
+	digest := hash.Sum(nil)
+	result := ReconciliationResult{SelectedSourceCount: count, ReceiptCount: count, ImportedCount: count, VerifiedCount: count, ComparisonDigest: hex.EncodeToString(digest)}
+	command, err := tx.Exec(ctx, `INSERT INTO public.v1_domain_import_reconciliation_receipts
+(import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest)
+VALUES($1,$2,$3,$3,$3,0,0,$3,$4) ON CONFLICT(import_version,archive_run_id) DO NOTHING`, ContactReferenceHistoryVersion, run, count, digest)
+	if err != nil {
+		return ReconciliationResult{}, err
+	}
+	result.Replayed = command.RowsAffected() == 0
+	if result.Replayed {
+		var selected, receipts, imported, archived, quarantined, verified int64
+		var old []byte
+		err = tx.QueryRow(ctx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
+FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, ContactReferenceHistoryVersion, run).Scan(&selected, &receipts, &imported, &archived, &quarantined, &verified, &old)
+		if err != nil || selected != count || receipts != count || imported != count || verified != count || archived != 0 || quarantined != 0 || !equalBytes(old, digest) {
+			return ReconciliationResult{}, ErrConflict
+		}
+	}
+	return result, nil
+}
+
 func reconcileHXCRuntimeEntries(ctx context.Context, tx pgx.Tx, entries []hxcRuntimeEntry, run string) (ReconciliationResult, error) {
 	if ctx == nil || tx == nil || run == "" {
 		return ReconciliationResult{}, ErrInvalidScope

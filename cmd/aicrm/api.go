@@ -2177,6 +2177,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
 	legacyHandler.campaignDefinitionHistory = campaignstore.NewCampaignDefinitionHistoryReader(pool)
 	legacyHandler.wecomContactHistory = contactstore.NewWeComContactHistoryReader(pool)
+	legacyHandler.contactReferenceHistory = contactstore.NewReferenceHistoryReader(pool)
 	legacyHandler.deferredIdentityHistory = contactstore.NewDeferredIdentityHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
@@ -3791,6 +3792,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/campaign-history/definitions/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistoryDefinition)},
 			{http.MethodGet, "/api/admin/campaign-history/definition-steps", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryDefinitionSteps)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/bindings", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListContactReferenceHistoryBindings)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/bindings/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetContactReferenceHistoryBinding)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/directory", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListContactReferenceHistoryDirectory)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/directory/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetContactReferenceHistoryDirectory)},
 			{http.MethodGet, "/api/admin/contact-invalid-history/tags", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListUnboundTagHistory)},
 			{http.MethodGet, "/api/admin/contact-invalid-history/tags/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetUnboundTagHistory)},
 			{http.MethodGet, "/api/admin/contact-invalid-history/channels", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListInvalidChannelHistory)},
