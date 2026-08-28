@@ -679,6 +679,456 @@ func (e AdminOpsReleaseComparisonExternalCalls) Valid() bool {
 	}
 }
 
+// Defines values for AudienceHistoryDefinitionDetailReadOnly.
+const (
+	AudienceHistoryDefinitionDetailReadOnlyTrue AudienceHistoryDefinitionDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryDefinitionDetailReadOnly enum.
+func (e AudienceHistoryDefinitionDetailReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryDefinitionDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryDefinitionDetailRealExternalCallExecuted.
+const (
+	AudienceHistoryDefinitionDetailRealExternalCallExecutedFalse AudienceHistoryDefinitionDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryDefinitionDetailRealExternalCallExecuted enum.
+func (e AudienceHistoryDefinitionDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryDefinitionDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryDefinitionDetailSource.
+const (
+	AudienceHistoryDefinitionDetailSourceV1History AudienceHistoryDefinitionDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryDefinitionDetailSource enum.
+func (e AudienceHistoryDefinitionDetailSource) Valid() bool {
+	switch e {
+	case AudienceHistoryDefinitionDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryDefinitionPageReadOnly.
+const (
+	AudienceHistoryDefinitionPageReadOnlyTrue AudienceHistoryDefinitionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryDefinitionPageReadOnly enum.
+func (e AudienceHistoryDefinitionPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryDefinitionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryDefinitionPageRealExternalCallExecuted.
+const (
+	AudienceHistoryDefinitionPageRealExternalCallExecutedFalse AudienceHistoryDefinitionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryDefinitionPageRealExternalCallExecuted enum.
+func (e AudienceHistoryDefinitionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryDefinitionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryDefinitionPageSource.
+const (
+	AudienceHistoryDefinitionPageSourceV1History AudienceHistoryDefinitionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryDefinitionPageSource enum.
+func (e AudienceHistoryDefinitionPageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryDefinitionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryGroupPageReadOnly.
+const (
+	AudienceHistoryGroupPageReadOnlyTrue AudienceHistoryGroupPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryGroupPageReadOnly enum.
+func (e AudienceHistoryGroupPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryGroupPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryGroupPageRealExternalCallExecuted.
+const (
+	AudienceHistoryGroupPageRealExternalCallExecutedFalse AudienceHistoryGroupPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryGroupPageRealExternalCallExecuted enum.
+func (e AudienceHistoryGroupPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryGroupPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryGroupPageSource.
+const (
+	AudienceHistoryGroupPageSourceV1History AudienceHistoryGroupPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryGroupPageSource enum.
+func (e AudienceHistoryGroupPageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryGroupPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryMemberPageReadOnly.
+const (
+	AudienceHistoryMemberPageReadOnlyTrue AudienceHistoryMemberPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryMemberPageReadOnly enum.
+func (e AudienceHistoryMemberPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryMemberPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryMemberPageRealExternalCallExecuted.
+const (
+	AudienceHistoryMemberPageRealExternalCallExecutedFalse AudienceHistoryMemberPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryMemberPageRealExternalCallExecuted enum.
+func (e AudienceHistoryMemberPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryMemberPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryMemberPageSource.
+const (
+	AudienceHistoryMemberPageSourceV1History AudienceHistoryMemberPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryMemberPageSource enum.
+func (e AudienceHistoryMemberPageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryMemberPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryPackageDetailReadOnly.
+const (
+	AudienceHistoryPackageDetailReadOnlyTrue AudienceHistoryPackageDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryPackageDetailReadOnly enum.
+func (e AudienceHistoryPackageDetailReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryPackageDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryPackageDetailRealExternalCallExecuted.
+const (
+	AudienceHistoryPackageDetailRealExternalCallExecutedFalse AudienceHistoryPackageDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryPackageDetailRealExternalCallExecuted enum.
+func (e AudienceHistoryPackageDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryPackageDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryPackageDetailSource.
+const (
+	AudienceHistoryPackageDetailSourceV1History AudienceHistoryPackageDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryPackageDetailSource enum.
+func (e AudienceHistoryPackageDetailSource) Valid() bool {
+	switch e {
+	case AudienceHistoryPackageDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryPackagePageReadOnly.
+const (
+	AudienceHistoryPackagePageReadOnlyTrue AudienceHistoryPackagePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryPackagePageReadOnly enum.
+func (e AudienceHistoryPackagePageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryPackagePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryPackagePageRealExternalCallExecuted.
+const (
+	AudienceHistoryPackagePageRealExternalCallExecutedFalse AudienceHistoryPackagePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryPackagePageRealExternalCallExecuted enum.
+func (e AudienceHistoryPackagePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryPackagePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryPackagePageSource.
+const (
+	AudienceHistoryPackagePageSourceV1History AudienceHistoryPackagePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryPackagePageSource enum.
+func (e AudienceHistoryPackagePageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryPackagePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryRulePageReadOnly.
+const (
+	AudienceHistoryRulePageReadOnlyTrue AudienceHistoryRulePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryRulePageReadOnly enum.
+func (e AudienceHistoryRulePageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryRulePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryRulePageRealExternalCallExecuted.
+const (
+	AudienceHistoryRulePageRealExternalCallExecutedFalse AudienceHistoryRulePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryRulePageRealExternalCallExecuted enum.
+func (e AudienceHistoryRulePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryRulePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryRulePageSource.
+const (
+	AudienceHistoryRulePageSourceV1History AudienceHistoryRulePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryRulePageSource enum.
+func (e AudienceHistoryRulePageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryRulePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryRuleVersionPageReadOnly.
+const (
+	AudienceHistoryRuleVersionPageReadOnlyTrue AudienceHistoryRuleVersionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryRuleVersionPageReadOnly enum.
+func (e AudienceHistoryRuleVersionPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryRuleVersionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryRuleVersionPageRealExternalCallExecuted.
+const (
+	AudienceHistoryRuleVersionPageRealExternalCallExecutedFalse AudienceHistoryRuleVersionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryRuleVersionPageRealExternalCallExecuted enum.
+func (e AudienceHistoryRuleVersionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryRuleVersionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryRuleVersionPageSource.
+const (
+	AudienceHistoryRuleVersionPageSourceV1History AudienceHistoryRuleVersionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryRuleVersionPageSource enum.
+func (e AudienceHistoryRuleVersionPageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryRuleVersionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistorySenderPageReadOnly.
+const (
+	AudienceHistorySenderPageReadOnlyTrue AudienceHistorySenderPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistorySenderPageReadOnly enum.
+func (e AudienceHistorySenderPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistorySenderPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistorySenderPageRealExternalCallExecuted.
+const (
+	AudienceHistorySenderPageRealExternalCallExecutedFalse AudienceHistorySenderPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistorySenderPageRealExternalCallExecuted enum.
+func (e AudienceHistorySenderPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistorySenderPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistorySenderPageSource.
+const (
+	AudienceHistorySenderPageSourceV1History AudienceHistorySenderPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistorySenderPageSource enum.
+func (e AudienceHistorySenderPageSource) Valid() bool {
+	switch e {
+	case AudienceHistorySenderPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryVersionPageReadOnly.
+const (
+	AudienceHistoryVersionPageReadOnlyTrue AudienceHistoryVersionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryVersionPageReadOnly enum.
+func (e AudienceHistoryVersionPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceHistoryVersionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryVersionPageRealExternalCallExecuted.
+const (
+	AudienceHistoryVersionPageRealExternalCallExecutedFalse AudienceHistoryVersionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryVersionPageRealExternalCallExecuted enum.
+func (e AudienceHistoryVersionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceHistoryVersionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceHistoryVersionPageSource.
+const (
+	AudienceHistoryVersionPageSourceV1History AudienceHistoryVersionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceHistoryVersionPageSource enum.
+func (e AudienceHistoryVersionPageSource) Valid() bool {
+	switch e {
+	case AudienceHistoryVersionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuthSessionResponseRole.
 const (
 	Admin AuthSessionResponseRole = "admin"
@@ -9296,6 +9746,335 @@ type ApproveIdentityMergeReviewRequest struct {
 	Reason            string `json:"reason"`
 }
 
+// AudienceHistoryDefinition defines model for AudienceHistoryDefinition.
+type AudienceHistoryDefinition struct {
+	CachedHeadcount  int64      `json:"cached_headcount"`
+	Code             string     `json:"code"`
+	CreatedAt        time.Time  `json:"created_at"`
+	DefinitionDigest []int      `json:"definition_digest"`
+	Description      string     `json:"description"`
+	DisplayName      string     `json:"display_name"`
+	Id               int64      `json:"id"`
+	LastRefreshedAt  *time.Time `json:"last_refreshed_at"`
+	OriginalStatus   string     `json:"original_status"`
+	SourceId         int64      `json:"source_id"`
+	SourceType       string     `json:"source_type"`
+	SqlDialect       string     `json:"sql_dialect"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	UsageCount       int64      `json:"usage_count"`
+	Version          int64      `json:"version"`
+}
+
+// AudienceHistoryDefinitionDetail defines model for AudienceHistoryDefinitionDetail.
+type AudienceHistoryDefinitionDetail struct {
+	Item                     AudienceHistoryDefinition                               `json:"item"`
+	ReadOnly                 AudienceHistoryDefinitionDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryDefinitionDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryDefinitionDetailSource                   `json:"source"`
+}
+
+// AudienceHistoryDefinitionDetailReadOnly defines model for AudienceHistoryDefinitionDetail.ReadOnly.
+type AudienceHistoryDefinitionDetailReadOnly bool
+
+// AudienceHistoryDefinitionDetailRealExternalCallExecuted defines model for AudienceHistoryDefinitionDetail.RealExternalCallExecuted.
+type AudienceHistoryDefinitionDetailRealExternalCallExecuted bool
+
+// AudienceHistoryDefinitionDetailSource defines model for AudienceHistoryDefinitionDetail.Source.
+type AudienceHistoryDefinitionDetailSource string
+
+// AudienceHistoryDefinitionPage defines model for AudienceHistoryDefinitionPage.
+type AudienceHistoryDefinitionPage struct {
+	Items                    []AudienceHistoryDefinition                           `json:"items"`
+	Limit                    int32                                                 `json:"limit"`
+	Offset                   int32                                                 `json:"offset"`
+	ReadOnly                 AudienceHistoryDefinitionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryDefinitionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryDefinitionPageSource                   `json:"source"`
+	Total                    int64                                                 `json:"total"`
+}
+
+// AudienceHistoryDefinitionPageReadOnly defines model for AudienceHistoryDefinitionPage.ReadOnly.
+type AudienceHistoryDefinitionPageReadOnly bool
+
+// AudienceHistoryDefinitionPageRealExternalCallExecuted defines model for AudienceHistoryDefinitionPage.RealExternalCallExecuted.
+type AudienceHistoryDefinitionPageRealExternalCallExecuted bool
+
+// AudienceHistoryDefinitionPageSource defines model for AudienceHistoryDefinitionPage.Source.
+type AudienceHistoryDefinitionPageSource string
+
+// AudienceHistoryGroup defines model for AudienceHistoryGroup.
+type AudienceHistoryGroup struct {
+	CreatedAt time.Time `json:"created_at"`
+	Id        int64     `json:"id"`
+	Name      string    `json:"name"`
+	SourceId  int64     `json:"source_id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AudienceHistoryGroupPage defines model for AudienceHistoryGroupPage.
+type AudienceHistoryGroupPage struct {
+	Items                    []AudienceHistoryGroup                           `json:"items"`
+	Limit                    int32                                            `json:"limit"`
+	Offset                   int32                                            `json:"offset"`
+	ReadOnly                 AudienceHistoryGroupPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryGroupPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryGroupPageSource                   `json:"source"`
+	Total                    int64                                            `json:"total"`
+}
+
+// AudienceHistoryGroupPageReadOnly defines model for AudienceHistoryGroupPage.ReadOnly.
+type AudienceHistoryGroupPageReadOnly bool
+
+// AudienceHistoryGroupPageRealExternalCallExecuted defines model for AudienceHistoryGroupPage.RealExternalCallExecuted.
+type AudienceHistoryGroupPageRealExternalCallExecuted bool
+
+// AudienceHistoryGroupPageSource defines model for AudienceHistoryGroupPage.Source.
+type AudienceHistoryGroupPageSource string
+
+// AudienceHistoryMember defines model for AudienceHistoryMember.
+type AudienceHistoryMember struct {
+	CreatedAt        time.Time  `json:"created_at"`
+	CustomerId       *int64     `json:"customer_id"`
+	ExitedAt         *time.Time `json:"exited_at"`
+	FirstEnteredAt   time.Time  `json:"first_entered_at"`
+	Id               int64      `json:"id"`
+	IdentityKind     string     `json:"identity_kind"`
+	LastSeenAt       time.Time  `json:"last_seen_at"`
+	LastUpdatedAt    time.Time  `json:"last_updated_at"`
+	OriginalStatus   string     `json:"original_status"`
+	PackageHistoryId int64      `json:"package_history_id"`
+	PayloadDigest    []int      `json:"payload_digest"`
+	SourceId         int64      `json:"source_id"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+}
+
+// AudienceHistoryMemberPage defines model for AudienceHistoryMemberPage.
+type AudienceHistoryMemberPage struct {
+	Items                    []AudienceHistoryMember                           `json:"items"`
+	Limit                    int32                                             `json:"limit"`
+	Offset                   int32                                             `json:"offset"`
+	PackageId                int64                                             `json:"package_id"`
+	ReadOnly                 AudienceHistoryMemberPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryMemberPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryMemberPageSource                   `json:"source"`
+	Total                    int64                                             `json:"total"`
+}
+
+// AudienceHistoryMemberPageReadOnly defines model for AudienceHistoryMemberPage.ReadOnly.
+type AudienceHistoryMemberPageReadOnly bool
+
+// AudienceHistoryMemberPageRealExternalCallExecuted defines model for AudienceHistoryMemberPage.RealExternalCallExecuted.
+type AudienceHistoryMemberPageRealExternalCallExecuted bool
+
+// AudienceHistoryMemberPageSource defines model for AudienceHistoryMemberPage.Source.
+type AudienceHistoryMemberPageSource string
+
+// AudienceHistoryPackage defines model for AudienceHistoryPackage.
+type AudienceHistoryPackage struct {
+	CreatedAt                  time.Time  `json:"created_at"`
+	CurrentVersionSourceId     *int64     `json:"current_version_source_id"`
+	DailyEnabled               bool       `json:"daily_enabled"`
+	DailyRefreshTime           string     `json:"daily_refresh_time"`
+	GroupHistoryId             *int64     `json:"group_history_id"`
+	Id                         int64      `json:"id"`
+	IdentityPolicy             string     `json:"identity_policy"`
+	IncrementalEnabled         bool       `json:"incremental_enabled"`
+	IncrementalIntervalSeconds int64      `json:"incremental_interval_seconds"`
+	LastDailyRefreshedAt       *time.Time `json:"last_daily_refreshed_at"`
+	LastIncrementalAt          *time.Time `json:"last_incremental_at"`
+	LookbackSeconds            int64      `json:"lookback_seconds"`
+	Name                       string     `json:"name"`
+	NaturalLanguageDefinition  string     `json:"natural_language_definition"`
+	NextDailyAt                *time.Time `json:"next_daily_at"`
+	NextIncrementalAt          *time.Time `json:"next_incremental_at"`
+	OriginalStatus             string     `json:"original_status"`
+	PackageKey                 string     `json:"package_key"`
+	PausedReason               string     `json:"paused_reason"`
+	QueryMode                  string     `json:"query_mode"`
+	RuntimeDigest              []int      `json:"runtime_digest"`
+	SourceId                   int64      `json:"source_id"`
+	Timezone                   string     `json:"timezone"`
+	UpdatedAt                  time.Time  `json:"updated_at"`
+}
+
+// AudienceHistoryPackageDetail defines model for AudienceHistoryPackageDetail.
+type AudienceHistoryPackageDetail struct {
+	Item                     AudienceHistoryPackage                               `json:"item"`
+	ReadOnly                 AudienceHistoryPackageDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryPackageDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryPackageDetailSource                   `json:"source"`
+}
+
+// AudienceHistoryPackageDetailReadOnly defines model for AudienceHistoryPackageDetail.ReadOnly.
+type AudienceHistoryPackageDetailReadOnly bool
+
+// AudienceHistoryPackageDetailRealExternalCallExecuted defines model for AudienceHistoryPackageDetail.RealExternalCallExecuted.
+type AudienceHistoryPackageDetailRealExternalCallExecuted bool
+
+// AudienceHistoryPackageDetailSource defines model for AudienceHistoryPackageDetail.Source.
+type AudienceHistoryPackageDetailSource string
+
+// AudienceHistoryPackagePage defines model for AudienceHistoryPackagePage.
+type AudienceHistoryPackagePage struct {
+	Items                    []AudienceHistoryPackage                           `json:"items"`
+	Limit                    int32                                              `json:"limit"`
+	Offset                   int32                                              `json:"offset"`
+	ReadOnly                 AudienceHistoryPackagePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryPackagePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryPackagePageSource                   `json:"source"`
+	Total                    int64                                              `json:"total"`
+}
+
+// AudienceHistoryPackagePageReadOnly defines model for AudienceHistoryPackagePage.ReadOnly.
+type AudienceHistoryPackagePageReadOnly bool
+
+// AudienceHistoryPackagePageRealExternalCallExecuted defines model for AudienceHistoryPackagePage.RealExternalCallExecuted.
+type AudienceHistoryPackagePageRealExternalCallExecuted bool
+
+// AudienceHistoryPackagePageSource defines model for AudienceHistoryPackagePage.Source.
+type AudienceHistoryPackagePageSource string
+
+// AudienceHistoryRule defines model for AudienceHistoryRule.
+type AudienceHistoryRule struct {
+	CreatedAt      time.Time `json:"created_at"`
+	Description    string    `json:"description"`
+	DisplayName    string    `json:"display_name"`
+	Id             int64     `json:"id"`
+	OriginalStatus string    `json:"original_status"`
+	OwnerStaffId   *int64    `json:"owner_staff_id"`
+	RuleKey        string    `json:"rule_key"`
+	RuleType       string    `json:"rule_type"`
+	SourceId       int64     `json:"source_id"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// AudienceHistoryRulePage defines model for AudienceHistoryRulePage.
+type AudienceHistoryRulePage struct {
+	Items                    []AudienceHistoryRule                           `json:"items"`
+	Limit                    int32                                           `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 AudienceHistoryRulePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryRulePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryRulePageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// AudienceHistoryRulePageReadOnly defines model for AudienceHistoryRulePage.ReadOnly.
+type AudienceHistoryRulePageReadOnly bool
+
+// AudienceHistoryRulePageRealExternalCallExecuted defines model for AudienceHistoryRulePage.RealExternalCallExecuted.
+type AudienceHistoryRulePageRealExternalCallExecuted bool
+
+// AudienceHistoryRulePageSource defines model for AudienceHistoryRulePage.Source.
+type AudienceHistoryRulePageSource string
+
+// AudienceHistoryRuleVersion defines model for AudienceHistoryRuleVersion.
+type AudienceHistoryRuleVersion struct {
+	CreatedAt        time.Time  `json:"created_at"`
+	DefinitionDigest []int      `json:"definition_digest"`
+	ExecutorType     string     `json:"executor_type"`
+	Id               int64      `json:"id"`
+	OriginalStatus   string     `json:"original_status"`
+	PublishedAt      *time.Time `json:"published_at"`
+	RuleHistoryId    int64      `json:"rule_history_id"`
+	SourceId         int64      `json:"source_id"`
+	Version          int64      `json:"version"`
+}
+
+// AudienceHistoryRuleVersionPage defines model for AudienceHistoryRuleVersionPage.
+type AudienceHistoryRuleVersionPage struct {
+	Items                    []AudienceHistoryRuleVersion                           `json:"items"`
+	Limit                    int32                                                  `json:"limit"`
+	Offset                   int32                                                  `json:"offset"`
+	ReadOnly                 AudienceHistoryRuleVersionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryRuleVersionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	RuleId                   int64                                                  `json:"rule_id"`
+	Source                   AudienceHistoryRuleVersionPageSource                   `json:"source"`
+	Total                    int64                                                  `json:"total"`
+}
+
+// AudienceHistoryRuleVersionPageReadOnly defines model for AudienceHistoryRuleVersionPage.ReadOnly.
+type AudienceHistoryRuleVersionPageReadOnly bool
+
+// AudienceHistoryRuleVersionPageRealExternalCallExecuted defines model for AudienceHistoryRuleVersionPage.RealExternalCallExecuted.
+type AudienceHistoryRuleVersionPageRealExternalCallExecuted bool
+
+// AudienceHistoryRuleVersionPageSource defines model for AudienceHistoryRuleVersionPage.Source.
+type AudienceHistoryRuleVersionPageSource string
+
+// AudienceHistorySender defines model for AudienceHistorySender.
+type AudienceHistorySender struct {
+	CreatedAt        time.Time `json:"created_at"`
+	DisplayName      string    `json:"display_name"`
+	Id               int64     `json:"id"`
+	OriginalStatus   string    `json:"original_status"`
+	PackageHistoryId int64     `json:"package_history_id"`
+	Priority         int64     `json:"priority"`
+	SourceId         int64     `json:"source_id"`
+	StaffId          *int64    `json:"staff_id"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+// AudienceHistorySenderPage defines model for AudienceHistorySenderPage.
+type AudienceHistorySenderPage struct {
+	Items                    []AudienceHistorySender                           `json:"items"`
+	Limit                    int32                                             `json:"limit"`
+	Offset                   int32                                             `json:"offset"`
+	PackageId                int64                                             `json:"package_id"`
+	ReadOnly                 AudienceHistorySenderPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistorySenderPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistorySenderPageSource                   `json:"source"`
+	Total                    int64                                             `json:"total"`
+}
+
+// AudienceHistorySenderPageReadOnly defines model for AudienceHistorySenderPage.ReadOnly.
+type AudienceHistorySenderPageReadOnly bool
+
+// AudienceHistorySenderPageRealExternalCallExecuted defines model for AudienceHistorySenderPage.RealExternalCallExecuted.
+type AudienceHistorySenderPageRealExternalCallExecuted bool
+
+// AudienceHistorySenderPageSource defines model for AudienceHistorySenderPage.Source.
+type AudienceHistorySenderPageSource string
+
+// AudienceHistoryVersion defines model for AudienceHistoryVersion.
+type AudienceHistoryVersion struct {
+	AiPrompt                   string     `json:"ai_prompt"`
+	AiRationale                string     `json:"ai_rationale"`
+	CreatedAt                  time.Time  `json:"created_at"`
+	DefinitionDigest           []int      `json:"definition_digest"`
+	Id                         int64      `json:"id"`
+	NaturalLanguageExplanation string     `json:"natural_language_explanation"`
+	OriginalStatus             string     `json:"original_status"`
+	PackageHistoryId           int64      `json:"package_history_id"`
+	PublishedAt                *time.Time `json:"published_at"`
+	SourceId                   int64      `json:"source_id"`
+	TemplateFingerprint        string     `json:"template_fingerprint"`
+	TemplateKey                string     `json:"template_key"`
+	TemplateVersion            *int64     `json:"template_version"`
+	VersionNumber              int64      `json:"version_number"`
+}
+
+// AudienceHistoryVersionPage defines model for AudienceHistoryVersionPage.
+type AudienceHistoryVersionPage struct {
+	Items                    []AudienceHistoryVersion                           `json:"items"`
+	Limit                    int32                                              `json:"limit"`
+	Offset                   int32                                              `json:"offset"`
+	PackageId                int64                                              `json:"package_id"`
+	ReadOnly                 AudienceHistoryVersionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceHistoryVersionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceHistoryVersionPageSource                   `json:"source"`
+	Total                    int64                                              `json:"total"`
+}
+
+// AudienceHistoryVersionPageReadOnly defines model for AudienceHistoryVersionPage.ReadOnly.
+type AudienceHistoryVersionPageReadOnly bool
+
+// AudienceHistoryVersionPageRealExternalCallExecuted defines model for AudienceHistoryVersionPage.RealExternalCallExecuted.
+type AudienceHistoryVersionPageRealExternalCallExecuted bool
+
+// AudienceHistoryVersionPageSource defines model for AudienceHistoryVersionPage.Source.
+type AudienceHistoryVersionPageSource string
+
 // AuthSessionResponse defines model for AuthSessionResponse.
 type AuthSessionResponse struct {
 	AdminUserId int64                   `json:"admin_user_id"`
@@ -14494,6 +15273,54 @@ type PutMediaAttachmentMultipartPartParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListAudienceHistoryDefinitionsParams defines parameters for ListAudienceHistoryDefinitions.
+type ListAudienceHistoryDefinitionsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryGroupsParams defines parameters for ListAudienceHistoryGroups.
+type ListAudienceHistoryGroupsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryPackagesParams defines parameters for ListAudienceHistoryPackages.
+type ListAudienceHistoryPackagesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryMembersParams defines parameters for ListAudienceHistoryMembers.
+type ListAudienceHistoryMembersParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistorySendersParams defines parameters for ListAudienceHistorySenders.
+type ListAudienceHistorySendersParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryVersionsParams defines parameters for ListAudienceHistoryVersions.
+type ListAudienceHistoryVersionsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryRulesParams defines parameters for ListAudienceHistoryRules.
+type ListAudienceHistoryRulesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryRuleVersionsParams defines parameters for ListAudienceHistoryRuleVersions.
+type ListAudienceHistoryRuleVersionsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListAutomationTriggerRunsParams defines parameters for ListAutomationTriggerRuns.
 type ListAutomationTriggerRunsParams struct {
 	Page          *int32                                     `form:"page,omitempty" json:"page,omitempty"`
@@ -17515,6 +18342,36 @@ type ServerInterface interface {
 	// Persist one digest-checked local PDF multipart part
 	// (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 	PutMediaAttachmentMultipartPart(w http.ResponseWriter, r *http.Request, uploadId int64, partNumber int, params PutMediaAttachmentMultipartPartParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/definitions)
+	ListAudienceHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryDefinitionsParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/definitions/{definition_id})
+	GetAudienceHistoryDefinition(w http.ResponseWriter, r *http.Request, definitionId int64)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/groups)
+	ListAudienceHistoryGroups(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryGroupsParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages)
+	ListAudienceHistoryPackages(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryPackagesParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id})
+	GetAudienceHistoryPackage(w http.ResponseWriter, r *http.Request, packageId int64)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id}/members)
+	ListAudienceHistoryMembers(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistoryMembersParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id}/senders)
+	ListAudienceHistorySenders(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistorySendersParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id}/versions)
+	ListAudienceHistoryVersions(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistoryVersionsParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/rules)
+	ListAudienceHistoryRules(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryRulesParams)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/rules/{rule_id}/versions)
+	ListAudienceHistoryRuleVersions(w http.ResponseWriter, r *http.Request, ruleId int64, params ListAudienceHistoryRuleVersionsParams)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(w http.ResponseWriter, r *http.Request, params ListAutomationTriggerRunsParams)
@@ -18334,6 +19191,66 @@ func (_ Unimplemented) CompleteMediaAttachmentMultipartUpload(w http.ResponseWri
 // Persist one digest-checked local PDF multipart part
 // (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 func (_ Unimplemented) PutMediaAttachmentMultipartPart(w http.ResponseWriter, r *http.Request, uploadId int64, partNumber int, params PutMediaAttachmentMultipartPartParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/definitions)
+func (_ Unimplemented) ListAudienceHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryDefinitionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/definitions/{definition_id})
+func (_ Unimplemented) GetAudienceHistoryDefinition(w http.ResponseWriter, r *http.Request, definitionId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/groups)
+func (_ Unimplemented) ListAudienceHistoryGroups(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryGroupsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/packages)
+func (_ Unimplemented) ListAudienceHistoryPackages(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryPackagesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/packages/{package_id})
+func (_ Unimplemented) GetAudienceHistoryPackage(w http.ResponseWriter, r *http.Request, packageId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/packages/{package_id}/members)
+func (_ Unimplemented) ListAudienceHistoryMembers(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistoryMembersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/packages/{package_id}/senders)
+func (_ Unimplemented) ListAudienceHistorySenders(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistorySendersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/packages/{package_id}/versions)
+func (_ Unimplemented) ListAudienceHistoryVersions(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistoryVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/rules)
+func (_ Unimplemented) ListAudienceHistoryRules(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience facts without activating queries or members
+// (GET /api/admin/audience-history/rules/{rule_id}/versions)
+func (_ Unimplemented) ListAudienceHistoryRuleVersions(w http.ResponseWriter, r *http.Request, ruleId int64, params ListAudienceHistoryRuleVersionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -20307,6 +21224,432 @@ func (siw *ServerInterfaceWrapper) PutMediaAttachmentMultipartPart(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutMediaAttachmentMultipartPart(w, r, uploadId, partNumber, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryDefinitionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryDefinitions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAudienceHistoryDefinition operation middleware
+func (siw *ServerInterfaceWrapper) GetAudienceHistoryDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "definition_id" -------------
+	var definitionId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definition_id", chi.URLParam(r, "definition_id"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definition_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAudienceHistoryDefinition(w, r, definitionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryGroups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryGroupsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryGroups(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryPackages operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryPackages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryPackagesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryPackages(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAudienceHistoryPackage operation middleware
+func (siw *ServerInterfaceWrapper) GetAudienceHistoryPackage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "package_id" -------------
+	var packageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "package_id", chi.URLParam(r, "package_id"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "package_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAudienceHistoryPackage(w, r, packageId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "package_id" -------------
+	var packageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "package_id", chi.URLParam(r, "package_id"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "package_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryMembersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryMembers(w, r, packageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistorySenders operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistorySenders(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "package_id" -------------
+	var packageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "package_id", chi.URLParam(r, "package_id"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "package_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistorySendersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistorySenders(w, r, packageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "package_id" -------------
+	var packageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "package_id", chi.URLParam(r, "package_id"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "package_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryVersionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryVersions(w, r, packageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryRules operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryRulesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryRules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryRuleVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryRuleVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "rule_id" -------------
+	var ruleId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "rule_id", chi.URLParam(r, "rule_id"), &ruleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rule_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryRuleVersionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryRuleVersions(w, r, ruleId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -35437,6 +36780,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}", wrapper.PutMediaAttachmentMultipartPart)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/definitions", wrapper.ListAudienceHistoryDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/definitions/{definition_id}", wrapper.GetAudienceHistoryDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/groups", wrapper.ListAudienceHistoryGroups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/packages", wrapper.ListAudienceHistoryPackages)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/packages/{package_id}", wrapper.GetAudienceHistoryPackage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/packages/{package_id}/members", wrapper.ListAudienceHistoryMembers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/packages/{package_id}/senders", wrapper.ListAudienceHistorySenders)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/packages/{package_id}/versions", wrapper.ListAudienceHistoryVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/rules", wrapper.ListAudienceHistoryRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/rules/{rule_id}/versions", wrapper.ListAudienceHistoryRuleVersions)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/agent-runs", wrapper.ListAutomationTriggerRuns)
 	})
 	r.Group(func(r chi.Router) {
@@ -36868,6 +38241,540 @@ func (response PutMediaAttachmentMultipartPart409JSONResponse) VisitPutMediaAtta
 type PutMediaAttachmentMultipartPart503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response PutMediaAttachmentMultipartPart503JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryDefinitionsRequestObject struct {
+	Params ListAudienceHistoryDefinitionsParams
+}
+
+type ListAudienceHistoryDefinitionsResponseObject interface {
+	VisitListAudienceHistoryDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryDefinitions200JSONResponse AudienceHistoryDefinitionPage
+
+func (response ListAudienceHistoryDefinitions200JSONResponse) VisitListAudienceHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryDefinitions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryDefinitions400JSONResponse) VisitListAudienceHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryDefinitions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryDefinitions401JSONResponse) VisitListAudienceHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryDefinitions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryDefinitions403JSONResponse) VisitListAudienceHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryDefinitions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryDefinitions503JSONResponse) VisitListAudienceHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryDefinitionRequestObject struct {
+	DefinitionId int64 `json:"definition_id"`
+}
+
+type GetAudienceHistoryDefinitionResponseObject interface {
+	VisitGetAudienceHistoryDefinitionResponse(w http.ResponseWriter) error
+}
+
+type GetAudienceHistoryDefinition200JSONResponse AudienceHistoryDefinitionDetail
+
+func (response GetAudienceHistoryDefinition200JSONResponse) VisitGetAudienceHistoryDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAudienceHistoryDefinition400JSONResponse) VisitGetAudienceHistoryDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAudienceHistoryDefinition401JSONResponse) VisitGetAudienceHistoryDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAudienceHistoryDefinition403JSONResponse) VisitGetAudienceHistoryDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAudienceHistoryDefinition503JSONResponse) VisitGetAudienceHistoryDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryGroupsRequestObject struct {
+	Params ListAudienceHistoryGroupsParams
+}
+
+type ListAudienceHistoryGroupsResponseObject interface {
+	VisitListAudienceHistoryGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryGroups200JSONResponse AudienceHistoryGroupPage
+
+func (response ListAudienceHistoryGroups200JSONResponse) VisitListAudienceHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryGroups400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryGroups400JSONResponse) VisitListAudienceHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryGroups401JSONResponse) VisitListAudienceHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryGroups403JSONResponse) VisitListAudienceHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryGroups503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryGroups503JSONResponse) VisitListAudienceHistoryGroupsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryPackagesRequestObject struct {
+	Params ListAudienceHistoryPackagesParams
+}
+
+type ListAudienceHistoryPackagesResponseObject interface {
+	VisitListAudienceHistoryPackagesResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryPackages200JSONResponse AudienceHistoryPackagePage
+
+func (response ListAudienceHistoryPackages200JSONResponse) VisitListAudienceHistoryPackagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryPackages400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryPackages400JSONResponse) VisitListAudienceHistoryPackagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryPackages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryPackages401JSONResponse) VisitListAudienceHistoryPackagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryPackages403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryPackages403JSONResponse) VisitListAudienceHistoryPackagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryPackages503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryPackages503JSONResponse) VisitListAudienceHistoryPackagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryPackageRequestObject struct {
+	PackageId int64 `json:"package_id"`
+}
+
+type GetAudienceHistoryPackageResponseObject interface {
+	VisitGetAudienceHistoryPackageResponse(w http.ResponseWriter) error
+}
+
+type GetAudienceHistoryPackage200JSONResponse AudienceHistoryPackageDetail
+
+func (response GetAudienceHistoryPackage200JSONResponse) VisitGetAudienceHistoryPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryPackage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAudienceHistoryPackage400JSONResponse) VisitGetAudienceHistoryPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryPackage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAudienceHistoryPackage401JSONResponse) VisitGetAudienceHistoryPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryPackage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAudienceHistoryPackage403JSONResponse) VisitGetAudienceHistoryPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAudienceHistoryPackage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAudienceHistoryPackage503JSONResponse) VisitGetAudienceHistoryPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryMembersRequestObject struct {
+	PackageId int64 `json:"package_id"`
+	Params    ListAudienceHistoryMembersParams
+}
+
+type ListAudienceHistoryMembersResponseObject interface {
+	VisitListAudienceHistoryMembersResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryMembers200JSONResponse AudienceHistoryMemberPage
+
+func (response ListAudienceHistoryMembers200JSONResponse) VisitListAudienceHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryMembers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryMembers400JSONResponse) VisitListAudienceHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryMembers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryMembers401JSONResponse) VisitListAudienceHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryMembers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryMembers403JSONResponse) VisitListAudienceHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryMembers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryMembers503JSONResponse) VisitListAudienceHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistorySendersRequestObject struct {
+	PackageId int64 `json:"package_id"`
+	Params    ListAudienceHistorySendersParams
+}
+
+type ListAudienceHistorySendersResponseObject interface {
+	VisitListAudienceHistorySendersResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistorySenders200JSONResponse AudienceHistorySenderPage
+
+func (response ListAudienceHistorySenders200JSONResponse) VisitListAudienceHistorySendersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistorySenders400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistorySenders400JSONResponse) VisitListAudienceHistorySendersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistorySenders401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistorySenders401JSONResponse) VisitListAudienceHistorySendersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistorySenders403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistorySenders403JSONResponse) VisitListAudienceHistorySendersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistorySenders503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistorySenders503JSONResponse) VisitListAudienceHistorySendersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryVersionsRequestObject struct {
+	PackageId int64 `json:"package_id"`
+	Params    ListAudienceHistoryVersionsParams
+}
+
+type ListAudienceHistoryVersionsResponseObject interface {
+	VisitListAudienceHistoryVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryVersions200JSONResponse AudienceHistoryVersionPage
+
+func (response ListAudienceHistoryVersions200JSONResponse) VisitListAudienceHistoryVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryVersions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryVersions400JSONResponse) VisitListAudienceHistoryVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryVersions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryVersions401JSONResponse) VisitListAudienceHistoryVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryVersions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryVersions403JSONResponse) VisitListAudienceHistoryVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryVersions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryVersions503JSONResponse) VisitListAudienceHistoryVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRulesRequestObject struct {
+	Params ListAudienceHistoryRulesParams
+}
+
+type ListAudienceHistoryRulesResponseObject interface {
+	VisitListAudienceHistoryRulesResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryRules200JSONResponse AudienceHistoryRulePage
+
+func (response ListAudienceHistoryRules200JSONResponse) VisitListAudienceHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRules400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryRules400JSONResponse) VisitListAudienceHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRules401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryRules401JSONResponse) VisitListAudienceHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRules403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryRules403JSONResponse) VisitListAudienceHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRules503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryRules503JSONResponse) VisitListAudienceHistoryRulesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRuleVersionsRequestObject struct {
+	RuleId int64 `json:"rule_id"`
+	Params ListAudienceHistoryRuleVersionsParams
+}
+
+type ListAudienceHistoryRuleVersionsResponseObject interface {
+	VisitListAudienceHistoryRuleVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryRuleVersions200JSONResponse AudienceHistoryRuleVersionPage
+
+func (response ListAudienceHistoryRuleVersions200JSONResponse) VisitListAudienceHistoryRuleVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRuleVersions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryRuleVersions400JSONResponse) VisitListAudienceHistoryRuleVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRuleVersions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryRuleVersions401JSONResponse) VisitListAudienceHistoryRuleVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRuleVersions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryRuleVersions403JSONResponse) VisitListAudienceHistoryRuleVersionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryRuleVersions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryRuleVersions503JSONResponse) VisitListAudienceHistoryRuleVersionsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -52765,6 +54672,36 @@ type StrictServerInterface interface {
 	// Persist one digest-checked local PDF multipart part
 	// (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 	PutMediaAttachmentMultipartPart(ctx context.Context, request PutMediaAttachmentMultipartPartRequestObject) (PutMediaAttachmentMultipartPartResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/definitions)
+	ListAudienceHistoryDefinitions(ctx context.Context, request ListAudienceHistoryDefinitionsRequestObject) (ListAudienceHistoryDefinitionsResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/definitions/{definition_id})
+	GetAudienceHistoryDefinition(ctx context.Context, request GetAudienceHistoryDefinitionRequestObject) (GetAudienceHistoryDefinitionResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/groups)
+	ListAudienceHistoryGroups(ctx context.Context, request ListAudienceHistoryGroupsRequestObject) (ListAudienceHistoryGroupsResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages)
+	ListAudienceHistoryPackages(ctx context.Context, request ListAudienceHistoryPackagesRequestObject) (ListAudienceHistoryPackagesResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id})
+	GetAudienceHistoryPackage(ctx context.Context, request GetAudienceHistoryPackageRequestObject) (GetAudienceHistoryPackageResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id}/members)
+	ListAudienceHistoryMembers(ctx context.Context, request ListAudienceHistoryMembersRequestObject) (ListAudienceHistoryMembersResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id}/senders)
+	ListAudienceHistorySenders(ctx context.Context, request ListAudienceHistorySendersRequestObject) (ListAudienceHistorySendersResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/packages/{package_id}/versions)
+	ListAudienceHistoryVersions(ctx context.Context, request ListAudienceHistoryVersionsRequestObject) (ListAudienceHistoryVersionsResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/rules)
+	ListAudienceHistoryRules(ctx context.Context, request ListAudienceHistoryRulesRequestObject) (ListAudienceHistoryRulesResponseObject, error)
+	// Read immutable V1 Audience facts without activating queries or members
+	// (GET /api/admin/audience-history/rules/{rule_id}/versions)
+	ListAudienceHistoryRuleVersions(ctx context.Context, request ListAudienceHistoryRuleVersionsRequestObject) (ListAudienceHistoryRuleVersionsResponseObject, error)
 	// List real D01 Automation trigger receipts through the frozen legacy path
 	// (GET /api/admin/automation-conversion/agent-runs)
 	ListAutomationTriggerRuns(ctx context.Context, request ListAutomationTriggerRunsRequestObject) (ListAutomationTriggerRunsResponseObject, error)
@@ -53837,6 +55774,270 @@ func (sh *strictHandler) PutMediaAttachmentMultipartPart(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutMediaAttachmentMultipartPartResponseObject); ok {
 		if err := validResponse.VisitPutMediaAttachmentMultipartPartResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryDefinitions operation middleware
+func (sh *strictHandler) ListAudienceHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryDefinitionsParams) {
+	var request ListAudienceHistoryDefinitionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryDefinitions(ctx, request.(ListAudienceHistoryDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryDefinitionsResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAudienceHistoryDefinition operation middleware
+func (sh *strictHandler) GetAudienceHistoryDefinition(w http.ResponseWriter, r *http.Request, definitionId int64) {
+	var request GetAudienceHistoryDefinitionRequestObject
+
+	request.DefinitionId = definitionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAudienceHistoryDefinition(ctx, request.(GetAudienceHistoryDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAudienceHistoryDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAudienceHistoryDefinitionResponseObject); ok {
+		if err := validResponse.VisitGetAudienceHistoryDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryGroups operation middleware
+func (sh *strictHandler) ListAudienceHistoryGroups(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryGroupsParams) {
+	var request ListAudienceHistoryGroupsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryGroups(ctx, request.(ListAudienceHistoryGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryGroupsResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryPackages operation middleware
+func (sh *strictHandler) ListAudienceHistoryPackages(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryPackagesParams) {
+	var request ListAudienceHistoryPackagesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryPackages(ctx, request.(ListAudienceHistoryPackagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryPackages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryPackagesResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryPackagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAudienceHistoryPackage operation middleware
+func (sh *strictHandler) GetAudienceHistoryPackage(w http.ResponseWriter, r *http.Request, packageId int64) {
+	var request GetAudienceHistoryPackageRequestObject
+
+	request.PackageId = packageId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAudienceHistoryPackage(ctx, request.(GetAudienceHistoryPackageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAudienceHistoryPackage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAudienceHistoryPackageResponseObject); ok {
+		if err := validResponse.VisitGetAudienceHistoryPackageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryMembers operation middleware
+func (sh *strictHandler) ListAudienceHistoryMembers(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistoryMembersParams) {
+	var request ListAudienceHistoryMembersRequestObject
+
+	request.PackageId = packageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryMembers(ctx, request.(ListAudienceHistoryMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryMembersResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryMembersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistorySenders operation middleware
+func (sh *strictHandler) ListAudienceHistorySenders(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistorySendersParams) {
+	var request ListAudienceHistorySendersRequestObject
+
+	request.PackageId = packageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistorySenders(ctx, request.(ListAudienceHistorySendersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistorySenders")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistorySendersResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistorySendersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryVersions operation middleware
+func (sh *strictHandler) ListAudienceHistoryVersions(w http.ResponseWriter, r *http.Request, packageId int64, params ListAudienceHistoryVersionsParams) {
+	var request ListAudienceHistoryVersionsRequestObject
+
+	request.PackageId = packageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryVersions(ctx, request.(ListAudienceHistoryVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryVersionsResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryRules operation middleware
+func (sh *strictHandler) ListAudienceHistoryRules(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryRulesParams) {
+	var request ListAudienceHistoryRulesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryRules(ctx, request.(ListAudienceHistoryRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryRulesResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryRuleVersions operation middleware
+func (sh *strictHandler) ListAudienceHistoryRuleVersions(w http.ResponseWriter, r *http.Request, ruleId int64, params ListAudienceHistoryRuleVersionsParams) {
+	var request ListAudienceHistoryRuleVersionsRequestObject
+
+	request.RuleId = ruleId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryRuleVersions(ctx, request.(ListAudienceHistoryRuleVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryRuleVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryRuleVersionsResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryRuleVersionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
