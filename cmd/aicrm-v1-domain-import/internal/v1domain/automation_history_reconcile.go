@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	automationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/app"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
+	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 )
 
 var automationHistoryReconciledTables = []string{
@@ -26,6 +28,24 @@ func ReconcileAutomationHistory(ctx context.Context, pool *pgxpool.Pool, importV
 		return ReconciliationResult{}, ErrInvalidScope
 	}
 	return reconcileTables(ctx, pool, importVersion, archiveRunID, automationHistoryReconciledTables)
+}
+
+func isAutomationHistorySource(tableID string) bool {
+	for _, candidate := range automationHistoryReconciledTables {
+		if tableID == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+// verifyAutomationHistoryTarget stays on the reconciliation transaction: the
+// reader receives tx directly and never opens a pool-backed read of its own.
+func verifyAutomationHistoryTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, _ map[string]map[string]struct{}) (string, error) {
+	if tx == nil {
+		return "", ErrConflict
+	}
+	return verifyAutomationHistoryRow(ctx, automationstore.NewAutomationHistoryReader(tx), row)
 }
 
 // verifyAutomationHistoryRow is intentionally reader-based. Main-line
