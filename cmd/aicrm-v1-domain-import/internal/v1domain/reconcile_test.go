@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(legacyMarketingHistoryScopes) != 2 || len(marketingStateHistoryReconciledTables) != 4 || len(customerStateHistoryReconciledTables) != 3 || len(staticTailHistoryReconciledTables) != 5 || len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(memberGridHistoryReconciledTables) != 5 || len(campaignHistoryReconciledTables) != 5 || len(automationHistoryReconciledTables) != 4 || len(hxcHistoryReconciledTables) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+5+len(campaignHistoryReconciledTables)+4+len(profileCatalogHistoryScopes)+6+5+3+4+len(legacyMarketingHistoryScopes)+1 {
+	if len(radarClickHistoryReconciledTables) != 1 || len(marketingConfigHistoryReconciledTables) != 2 || len(wecomContactHistoryReconciledTables) != 2 || len(legacyMarketingHistoryScopes) != 2 || len(marketingStateHistoryReconciledTables) != 4 || len(customerStateHistoryReconciledTables) != 3 || len(staticTailHistoryReconciledTables) != 5 || len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(memberGridHistoryReconciledTables) != 5 || len(campaignHistoryReconciledTables) != 5 || len(automationHistoryReconciledTables) != 4 || len(hxcHistoryReconciledTables) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+5+len(campaignHistoryReconciledTables)+4+len(profileCatalogHistoryScopes)+6+5+3+4+len(legacyMarketingHistoryScopes)+1+2+3 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -87,6 +87,9 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 			t.Fatalf("static tail mapping mismatch: %s", scope.table)
 		}
 	}
+	all = append(all, wecomContactHistoryReconciledTables...)
+	all = append(all, radarClickHistoryReconciledTables...)
+	all = append(all, marketingConfigHistoryReconciledTables...)
 	for _, table := range all {
 		if seen[table] {
 			t.Fatalf("duplicate source table %s", table)

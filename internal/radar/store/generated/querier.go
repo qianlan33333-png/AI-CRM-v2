@@ -10,14 +10,18 @@ import (
 
 type Querier interface {
 	CountEnabledRadarLinksForSidebar(ctx context.Context) (int64, error)
+	CountHistoricalRadarClick(ctx context.Context) (int64, error)
 	CountRadarLinkEvents(ctx context.Context, arg CountRadarLinkEventsParams) (int64, error)
+	CreateHistoricalRadarClick(ctx context.Context, arg CreateHistoricalRadarClickParams) (RadarV1ClickHistory, error)
 	GetEnabledRadarLinkByCode(ctx context.Context, publicCode string) (RadarLink, error)
+	GetHistoricalRadarClick(ctx context.Context, id int64) (RadarV1ClickHistory, error)
 	GetHistoricalRadarDraftByCode(ctx context.Context, publicCode string) (RadarLink, error)
 	GetRadarLinkEventByKey(ctx context.Context, arg GetRadarLinkEventByKeyParams) (RadarLinkEvent, error)
 	GetRadarLinkEventStats(ctx context.Context, linkID int64) (GetRadarLinkEventStatsRow, error)
 	InsertHistoricalRadarDraft(ctx context.Context, arg InsertHistoricalRadarDraftParams) (RadarLink, error)
 	InsertRadarLinkEvent(ctx context.Context, arg InsertRadarLinkEventParams) (RadarLinkEvent, error)
 	ListEnabledRadarLinksForSidebar(ctx context.Context, arg ListEnabledRadarLinksForSidebarParams) ([]ListEnabledRadarLinksForSidebarRow, error)
+	ListHistoricalRadarClick(ctx context.Context, arg ListHistoricalRadarClickParams) ([]RadarV1ClickHistory, error)
 	ListRadarLinkEvents(ctx context.Context, arg ListRadarLinkEventsParams) ([]ListRadarLinkEventsRow, error)
 }
 

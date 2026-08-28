@@ -5,6 +5,286 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface RadarClickHistory {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  link_source_id: number;
+  /** @nullable */
+  radar_link_id: number | null;
+  /** @nullable */
+  customer_id: number | null;
+  code: string;
+  raw_stage: string;
+  source_channel: string;
+  target_type_snapshot: string;
+  source_channel_snapshot: string;
+  error_code: string;
+  created_at: string;
+}
+
+export type RadarClickHistoryPageSource =
+  (typeof RadarClickHistoryPageSource)[keyof typeof RadarClickHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarClickHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface RadarClickHistoryPage {
+  source: RadarClickHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: RadarClickHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type RadarClickHistoryDetailSource =
+  (typeof RadarClickHistoryDetailSource)[keyof typeof RadarClickHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarClickHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface RadarClickHistoryDetail {
+  source: RadarClickHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: RadarClickHistory;
+}
+
+export interface MarketingConfigHistoryConfig {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  automation_key: string;
+  automation_name: string;
+  target_event: string;
+  channel_type: string;
+  original_status: string;
+  do_not_start_after_hour: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MarketingConfigHistoryConfigPageSource =
+  (typeof MarketingConfigHistoryConfigPageSource)[keyof typeof MarketingConfigHistoryConfigPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryConfigPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryConfigPage {
+  source: MarketingConfigHistoryConfigPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: MarketingConfigHistoryConfig[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type MarketingConfigHistoryConfigDetailSource =
+  (typeof MarketingConfigHistoryConfigDetailSource)[keyof typeof MarketingConfigHistoryConfigDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryConfigDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryConfigDetail {
+  source: MarketingConfigHistoryConfigDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: MarketingConfigHistoryConfig;
+}
+
+export interface MarketingConfigHistoryRule {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  config_id: number;
+  config_source_id: number;
+  /** @nullable */
+  questionnaire_source_id: number | null;
+  /** @nullable */
+  question_source_id: number | null;
+  rule_code: string;
+  rule_name: string;
+  answer_match_type: string;
+  score_delta: number;
+  segment_hint: string;
+  stage_hint: string;
+  original_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MarketingConfigHistoryRulePageSource =
+  (typeof MarketingConfigHistoryRulePageSource)[keyof typeof MarketingConfigHistoryRulePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryRulePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryRulePage {
+  source: MarketingConfigHistoryRulePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: MarketingConfigHistoryRule[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type MarketingConfigHistoryRuleDetailSource =
+  (typeof MarketingConfigHistoryRuleDetailSource)[keyof typeof MarketingConfigHistoryRuleDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MarketingConfigHistoryRuleDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface MarketingConfigHistoryRuleDetail {
+  source: MarketingConfigHistoryRuleDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: MarketingConfigHistoryRule;
+}
+
+export interface WeComContactHistoryEvent {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  event_type: string;
+  change_type: string;
+  /** @nullable */
+  event_time: number | null;
+  process_status: string;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
+  identity_sync_status: string;
+}
+
+export type WeComContactHistoryEventPageSource =
+  (typeof WeComContactHistoryEventPageSource)[keyof typeof WeComContactHistoryEventPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryEventPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryEventPage {
+  source: WeComContactHistoryEventPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: WeComContactHistoryEvent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type WeComContactHistoryEventDetailSource =
+  (typeof WeComContactHistoryEventDetailSource)[keyof typeof WeComContactHistoryEventDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryEventDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryEventDetail {
+  source: WeComContactHistoryEventDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: WeComContactHistoryEvent;
+}
+
+export interface WeComContactHistoryRelation {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  relation_status: string;
+  is_primary: boolean;
+  /** @nullable */
+  add_way: number | null;
+  /** @nullable */
+  create_time: number | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WeComContactHistoryRelationPageSource =
+  (typeof WeComContactHistoryRelationPageSource)[keyof typeof WeComContactHistoryRelationPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryRelationPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryRelationPage {
+  source: WeComContactHistoryRelationPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: WeComContactHistoryRelation[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type WeComContactHistoryRelationDetailSource =
+  (typeof WeComContactHistoryRelationDetailSource)[keyof typeof WeComContactHistoryRelationDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComContactHistoryRelationDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface WeComContactHistoryRelationDetail {
+  source: WeComContactHistoryRelationDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: WeComContactHistoryRelation;
+}
+
 export interface BroadcastJobHistory {
   /** @minimum 1 */
   id: number;
@@ -20481,6 +20761,66 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListRadarClickHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListMarketingConfigHistoryConfigsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListMarketingConfigHistoryRulesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListWeComContactHistoryEventsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListWeComContactHistoryRelationsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListBroadcastJobHistoryParams = {
   /**
    * @minimum 1
@@ -23193,6 +23533,774 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type listRadarClickHistoryResponse200 = {
+  data: RadarClickHistoryPage;
+  status: 200;
+};
+
+export type listRadarClickHistoryResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type listRadarClickHistoryResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type listRadarClickHistoryResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type listRadarClickHistoryResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type listRadarClickHistoryResponseSuccess =
+  listRadarClickHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listRadarClickHistoryResponseError = (
+  | listRadarClickHistoryResponse400
+  | listRadarClickHistoryResponse401
+  | listRadarClickHistoryResponse403
+  | listRadarClickHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listRadarClickHistoryResponse =
+  listRadarClickHistoryResponseSuccess | listRadarClickHistoryResponseError;
+
+export const getListRadarClickHistoryUrl = (
+  params?: ListRadarClickHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/radar-click-history?${stringifiedParams}`
+    : `/api/admin/radar-click-history`;
+};
+
+export const listRadarClickHistory = async (
+  params?: ListRadarClickHistoryParams,
+  options?: RequestInit,
+): Promise<listRadarClickHistoryResponse> => {
+  const res = await fetch(getListRadarClickHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRadarClickHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listRadarClickHistoryResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type getRadarClickHistoryResponse200 = {
+  data: RadarClickHistoryDetail;
+  status: 200;
+};
+
+export type getRadarClickHistoryResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type getRadarClickHistoryResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getRadarClickHistoryResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type getRadarClickHistoryResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type getRadarClickHistoryResponseSuccess =
+  getRadarClickHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getRadarClickHistoryResponseError = (
+  | getRadarClickHistoryResponse400
+  | getRadarClickHistoryResponse401
+  | getRadarClickHistoryResponse403
+  | getRadarClickHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getRadarClickHistoryResponse =
+  getRadarClickHistoryResponseSuccess | getRadarClickHistoryResponseError;
+
+export const getGetRadarClickHistoryUrl = (historyId: number) => {
+  return `/api/admin/radar-click-history/${historyId}`;
+};
+
+export const getRadarClickHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getRadarClickHistoryResponse> => {
+  const res = await fetch(getGetRadarClickHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRadarClickHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRadarClickHistoryResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type listMarketingConfigHistoryConfigsResponse200 = {
+  data: MarketingConfigHistoryConfigPage;
+  status: 200;
+};
+
+export type listMarketingConfigHistoryConfigsResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type listMarketingConfigHistoryConfigsResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type listMarketingConfigHistoryConfigsResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type listMarketingConfigHistoryConfigsResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type listMarketingConfigHistoryConfigsResponseSuccess =
+  listMarketingConfigHistoryConfigsResponse200 & {
+    headers: Headers;
+  };
+export type listMarketingConfigHistoryConfigsResponseError = (
+  | listMarketingConfigHistoryConfigsResponse400
+  | listMarketingConfigHistoryConfigsResponse401
+  | listMarketingConfigHistoryConfigsResponse403
+  | listMarketingConfigHistoryConfigsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listMarketingConfigHistoryConfigsResponse =
+  | listMarketingConfigHistoryConfigsResponseSuccess
+  | listMarketingConfigHistoryConfigsResponseError;
+
+export const getListMarketingConfigHistoryConfigsUrl = (
+  params?: ListMarketingConfigHistoryConfigsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/marketing-config-history/configs?${stringifiedParams}`
+    : `/api/admin/marketing-config-history/configs`;
+};
+
+export const listMarketingConfigHistoryConfigs = async (
+  params?: ListMarketingConfigHistoryConfigsParams,
+  options?: RequestInit,
+): Promise<listMarketingConfigHistoryConfigsResponse> => {
+  const res = await fetch(getListMarketingConfigHistoryConfigsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMarketingConfigHistoryConfigsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listMarketingConfigHistoryConfigsResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type getMarketingConfigHistoryConfigResponse200 = {
+  data: MarketingConfigHistoryConfigDetail;
+  status: 200;
+};
+
+export type getMarketingConfigHistoryConfigResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type getMarketingConfigHistoryConfigResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getMarketingConfigHistoryConfigResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type getMarketingConfigHistoryConfigResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type getMarketingConfigHistoryConfigResponseSuccess =
+  getMarketingConfigHistoryConfigResponse200 & {
+    headers: Headers;
+  };
+export type getMarketingConfigHistoryConfigResponseError = (
+  | getMarketingConfigHistoryConfigResponse400
+  | getMarketingConfigHistoryConfigResponse401
+  | getMarketingConfigHistoryConfigResponse403
+  | getMarketingConfigHistoryConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type getMarketingConfigHistoryConfigResponse =
+  | getMarketingConfigHistoryConfigResponseSuccess
+  | getMarketingConfigHistoryConfigResponseError;
+
+export const getGetMarketingConfigHistoryConfigUrl = (historyId: number) => {
+  return `/api/admin/marketing-config-history/configs/${historyId}`;
+};
+
+export const getMarketingConfigHistoryConfig = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getMarketingConfigHistoryConfigResponse> => {
+  const res = await fetch(getGetMarketingConfigHistoryConfigUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMarketingConfigHistoryConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getMarketingConfigHistoryConfigResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type listMarketingConfigHistoryRulesResponse200 = {
+  data: MarketingConfigHistoryRulePage;
+  status: 200;
+};
+
+export type listMarketingConfigHistoryRulesResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type listMarketingConfigHistoryRulesResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type listMarketingConfigHistoryRulesResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type listMarketingConfigHistoryRulesResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type listMarketingConfigHistoryRulesResponseSuccess =
+  listMarketingConfigHistoryRulesResponse200 & {
+    headers: Headers;
+  };
+export type listMarketingConfigHistoryRulesResponseError = (
+  | listMarketingConfigHistoryRulesResponse400
+  | listMarketingConfigHistoryRulesResponse401
+  | listMarketingConfigHistoryRulesResponse403
+  | listMarketingConfigHistoryRulesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listMarketingConfigHistoryRulesResponse =
+  | listMarketingConfigHistoryRulesResponseSuccess
+  | listMarketingConfigHistoryRulesResponseError;
+
+export const getListMarketingConfigHistoryRulesUrl = (
+  params?: ListMarketingConfigHistoryRulesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/marketing-config-history/rules?${stringifiedParams}`
+    : `/api/admin/marketing-config-history/rules`;
+};
+
+export const listMarketingConfigHistoryRules = async (
+  params?: ListMarketingConfigHistoryRulesParams,
+  options?: RequestInit,
+): Promise<listMarketingConfigHistoryRulesResponse> => {
+  const res = await fetch(getListMarketingConfigHistoryRulesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMarketingConfigHistoryRulesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listMarketingConfigHistoryRulesResponse;
+};
+
+/**
+ * @summary Read immutable source history without current-state effects
+ */
+export type getMarketingConfigHistoryRuleResponse200 = {
+  data: MarketingConfigHistoryRuleDetail;
+  status: 200;
+};
+
+export type getMarketingConfigHistoryRuleResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type getMarketingConfigHistoryRuleResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type getMarketingConfigHistoryRuleResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type getMarketingConfigHistoryRuleResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type getMarketingConfigHistoryRuleResponseSuccess =
+  getMarketingConfigHistoryRuleResponse200 & {
+    headers: Headers;
+  };
+export type getMarketingConfigHistoryRuleResponseError = (
+  | getMarketingConfigHistoryRuleResponse400
+  | getMarketingConfigHistoryRuleResponse401
+  | getMarketingConfigHistoryRuleResponse403
+  | getMarketingConfigHistoryRuleResponse503
+) & {
+  headers: Headers;
+};
+
+export type getMarketingConfigHistoryRuleResponse =
+  | getMarketingConfigHistoryRuleResponseSuccess
+  | getMarketingConfigHistoryRuleResponseError;
+
+export const getGetMarketingConfigHistoryRuleUrl = (historyId: number) => {
+  return `/api/admin/marketing-config-history/rules/${historyId}`;
+};
+
+export const getMarketingConfigHistoryRule = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getMarketingConfigHistoryRuleResponse> => {
+  const res = await fetch(getGetMarketingConfigHistoryRuleUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMarketingConfigHistoryRuleResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getMarketingConfigHistoryRuleResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type listWeComContactHistoryEventsResponse200 = {
+  data: WeComContactHistoryEventPage;
+  status: 200;
+};
+
+export type listWeComContactHistoryEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listWeComContactHistoryEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listWeComContactHistoryEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listWeComContactHistoryEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listWeComContactHistoryEventsResponseSuccess =
+  listWeComContactHistoryEventsResponse200 & {
+    headers: Headers;
+  };
+export type listWeComContactHistoryEventsResponseError = (
+  | listWeComContactHistoryEventsResponse400
+  | listWeComContactHistoryEventsResponse401
+  | listWeComContactHistoryEventsResponse403
+  | listWeComContactHistoryEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listWeComContactHistoryEventsResponse =
+  | listWeComContactHistoryEventsResponseSuccess
+  | listWeComContactHistoryEventsResponseError;
+
+export const getListWeComContactHistoryEventsUrl = (
+  params?: ListWeComContactHistoryEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-contact-history/events?${stringifiedParams}`
+    : `/api/admin/wecom-contact-history/events`;
+};
+
+export const listWeComContactHistoryEvents = async (
+  params?: ListWeComContactHistoryEventsParams,
+  options?: RequestInit,
+): Promise<listWeComContactHistoryEventsResponse> => {
+  const res = await fetch(getListWeComContactHistoryEventsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWeComContactHistoryEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listWeComContactHistoryEventsResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type getWeComContactHistoryEventResponse200 = {
+  data: WeComContactHistoryEventDetail;
+  status: 200;
+};
+
+export type getWeComContactHistoryEventResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getWeComContactHistoryEventResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeComContactHistoryEventResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeComContactHistoryEventResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWeComContactHistoryEventResponseSuccess =
+  getWeComContactHistoryEventResponse200 & {
+    headers: Headers;
+  };
+export type getWeComContactHistoryEventResponseError = (
+  | getWeComContactHistoryEventResponse400
+  | getWeComContactHistoryEventResponse401
+  | getWeComContactHistoryEventResponse403
+  | getWeComContactHistoryEventResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWeComContactHistoryEventResponse =
+  | getWeComContactHistoryEventResponseSuccess
+  | getWeComContactHistoryEventResponseError;
+
+export const getGetWeComContactHistoryEventUrl = (historyId: number) => {
+  return `/api/admin/wecom-contact-history/events/${historyId}`;
+};
+
+export const getWeComContactHistoryEvent = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getWeComContactHistoryEventResponse> => {
+  const res = await fetch(getGetWeComContactHistoryEventUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeComContactHistoryEventResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeComContactHistoryEventResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type listWeComContactHistoryRelationsResponse200 = {
+  data: WeComContactHistoryRelationPage;
+  status: 200;
+};
+
+export type listWeComContactHistoryRelationsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listWeComContactHistoryRelationsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listWeComContactHistoryRelationsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listWeComContactHistoryRelationsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listWeComContactHistoryRelationsResponseSuccess =
+  listWeComContactHistoryRelationsResponse200 & {
+    headers: Headers;
+  };
+export type listWeComContactHistoryRelationsResponseError = (
+  | listWeComContactHistoryRelationsResponse400
+  | listWeComContactHistoryRelationsResponse401
+  | listWeComContactHistoryRelationsResponse403
+  | listWeComContactHistoryRelationsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listWeComContactHistoryRelationsResponse =
+  | listWeComContactHistoryRelationsResponseSuccess
+  | listWeComContactHistoryRelationsResponseError;
+
+export const getListWeComContactHistoryRelationsUrl = (
+  params?: ListWeComContactHistoryRelationsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-contact-history/relations?${stringifiedParams}`
+    : `/api/admin/wecom-contact-history/relations`;
+};
+
+export const listWeComContactHistoryRelations = async (
+  params?: ListWeComContactHistoryRelationsParams,
+  options?: RequestInit,
+): Promise<listWeComContactHistoryRelationsResponse> => {
+  const res = await fetch(getListWeComContactHistoryRelationsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWeComContactHistoryRelationsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listWeComContactHistoryRelationsResponse;
+};
+
+/**
+ * @summary Read immutable V1 WeCom contact history without current owner or callback effects
+ */
+export type getWeComContactHistoryRelationResponse200 = {
+  data: WeComContactHistoryRelationDetail;
+  status: 200;
+};
+
+export type getWeComContactHistoryRelationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getWeComContactHistoryRelationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeComContactHistoryRelationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeComContactHistoryRelationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWeComContactHistoryRelationResponseSuccess =
+  getWeComContactHistoryRelationResponse200 & {
+    headers: Headers;
+  };
+export type getWeComContactHistoryRelationResponseError = (
+  | getWeComContactHistoryRelationResponse400
+  | getWeComContactHistoryRelationResponse401
+  | getWeComContactHistoryRelationResponse403
+  | getWeComContactHistoryRelationResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWeComContactHistoryRelationResponse =
+  | getWeComContactHistoryRelationResponseSuccess
+  | getWeComContactHistoryRelationResponseError;
+
+export const getGetWeComContactHistoryRelationUrl = (historyId: number) => {
+  return `/api/admin/wecom-contact-history/relations/${historyId}`;
+};
+
+export const getWeComContactHistoryRelation = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getWeComContactHistoryRelationResponse> => {
+  const res = await fetch(getGetWeComContactHistoryRelationUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeComContactHistoryRelationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeComContactHistoryRelationResponse;
 };
 
 /**

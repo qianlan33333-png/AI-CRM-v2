@@ -127,6 +127,9 @@ WHERE import_version=$1 AND archive_run_id=$2`, externalIdentityGapImportVersion
 	return receipts, nil
 }
 
+const archiveFieldDigestSQL = `SELECT field_digest FROM public.v1_archive_records
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`
+
 var reconciledTables = []string{
 	"public/campaigns",
 	"public/campaign_steps",
@@ -181,6 +184,11 @@ var targetBySourceTable = map[string]struct {
 	"public/automation_profile_segment_category":       {"segment", "segment_v1_profile_categories"},
 	"public/automation_profile_segment_option_mapping": {"segment", "segment_v1_profile_option_mappings"},
 	"public/signup_tag_rules":                          {"contact", "contact_v1_signup_tag_rules"},
+	"public/wecom_external_contact_event_logs":         {"contact", "contact_v1_wecom_event_log_history"},
+	"public/wecom_external_contact_follow_users":       {"contact", "contact_v1_wecom_follow_user_history"},
+	"public/radar_click_events":                        {"radar", "radar_v1_click_history"},
+	"public/marketing_automation_configs":              {"automation", "automation_v1_marketing_config_history"},
+	"public/marketing_automation_question_rules":       {"automation", "automation_v1_marketing_rule_history"},
 	"public/campaigns":                                 {"campaign", "cloud_campaigns"},
 	"public/campaign_steps":                            {"campaign", "cloud_campaign_steps"},
 	"public/questionnaires":                            {"survey", "questionnaires"},
@@ -401,9 +409,8 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			}
 		}
 		proof := "terminal:" + row.Disposition
-		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) || row.TableID == broadcastJobHistoryTableID {
-			if err = tx.QueryRow(ctx, `SELECT field_digest FROM public.v1_archive_records
-WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`,
+		if isLegacyMarketingHistorySource(row.TableID) || row.TableID == broadcastJobHistoryTableID || isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isWeComContactHistorySource(row.TableID) || isRadarClickHistorySource(row.TableID) || isMarketingConfigHistorySource(row.TableID) {
+			if err = tx.QueryRow(ctx, archiveFieldDigestSQL,
 				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
 				return ReconciliationResult{}, ErrConflict
 			}
@@ -482,6 +489,15 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
 	if row.TableID == broadcastJobHistoryTableID {
 		return verifyBroadcastJobHistoryTarget(ctx, tx, row)
+	}
+	if isWeComContactHistorySource(row.TableID) {
+		return verifyWeComContactHistoryTarget(ctx, tx, row)
+	}
+	if isRadarClickHistorySource(row.TableID) {
+		return verifyRadarClickHistoryTarget(ctx, tx, row)
+	}
+	if isMarketingConfigHistorySource(row.TableID) {
+		return verifyMarketingConfigHistoryTarget(ctx, tx, row)
 	}
 	if isCampaignHistorySource(row.TableID) {
 		return verifyCampaignHistoryTarget(ctx, tx, row)

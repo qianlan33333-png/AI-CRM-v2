@@ -14,6 +14,7 @@ output-options:
     - p4-customer-state-history
     - p4-hxc-history
     - p4-profile-catalog-history
+    - p4-wecom-contact-history
     - p4-audience-history
     - p4-campaign-history
     - p1-core-candidate
@@ -28,6 +29,8 @@ output-options:
     - p4-service-period-products
     - p4-coupon-history
     - p4-automation-history
+    - p4-radar-click-history
+    - p4-marketing-config-history
     - p4-member-grid-history
     - p4-contact-history
     - p4-message-history

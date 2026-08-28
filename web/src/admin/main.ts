@@ -26,6 +26,7 @@ import { mountAudienceHistory } from './sections/audienceHistory';
 import { renderLegacyMarketingHistory } from './sections/legacyMarketingHistory';
 import { mountProfileCatalogHistory } from './sections/profileCatalogHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
+import { mountRadarMarketingHistory } from './sections/radarMarketingHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
 import { mountSurveyUnresolvedHistory } from './sections/surveyUnresolvedHistory';
@@ -34,6 +35,7 @@ import { mountStaticHistory } from './sections/staticHistory';
 import { mountCustomerStateHistory } from './sections/customerStateHistory';
 import { mountMarketingStateHistory } from './sections/marketingStateHistory';
 import { mountBroadcastJobHistory } from './sections/broadcastJobHistory';
+import { mountWeComContactHistory } from './sections/wecomContactHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -78,6 +80,13 @@ function boot(): void {
     }).catch((error) => showLoadError(stage, error));
     return;
   }
+  if ((page === 'radar' && historyQuery.get('click_history') === '1') || (page === 'ai' && historyQuery.get('marketing_config_history') === '1')) {
+    void mountRadarMarketingHistory(stage, {
+      kind: page === 'radar' ? 'radar_click' : historyQuery.get('history_kind') ?? 'marketing_config',
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch(() => { stage.innerHTML = '<p role="alert">历史参数或读取失败；未进入当前业务。</p>'; });
+    return;
+  }
   if (page === 'config' && historyQuery.get('automation_history') === '1') {
     void mountAutomationHistory(stage, {
       kind: historyQuery.get('history_kind') ?? undefined,
@@ -90,6 +99,13 @@ function boot(): void {
   const id = rawId || undefined;
 
   const historyParams = new URLSearchParams(location.search);
+  if (page === 'config' && historyParams.get('wecom_contact_history') === '1') {
+    void mountWeComContactHistory(stage, {
+      kind: historyParams.get('history_kind') ?? undefined,
+      historyID: historyParams.get('history_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
   if (page === 'ownerMig' && historyParams.get('contact_history') === '1') {
     void mountContactHistory(stage, {
       kind: historyParams.get('history_kind') ?? undefined,
@@ -164,7 +180,7 @@ function boot(): void {
       break;
     }
     case 'radar':
-      void mountRadar(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
+      void mountRadar(stage, api, { view: 'list' }).then(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="radar.html?click_history=1">V1 Radar 历史点击（只读）</a></p>'); }).catch((error) => showLoadError(stage, error));
       return;
     case 'radarDetail':
       void mountRadar(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
@@ -173,7 +189,7 @@ function boot(): void {
       void mountRadar(stage, api, { view: 'form', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'ai':
-      void mountAiAssistant(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
+      void mountAiAssistant(stage, api, { view: 'list' }).then(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="ai.html?marketing_config_history=1">V1 营销自动化历史（只读）</a></p>'); }).catch((error) => showLoadError(stage, error));
       return;
     case 'aiDetail':
       void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
@@ -240,6 +256,7 @@ function boot(): void {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?customer_state_history=1">V1 客户状态历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?static_history=1">V1 静态历史（只读）</a></p>');
         stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?automation_history=1">V1 自动化历史（只读）</a></p>');
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?wecom_contact_history=1">V1 企微联系人历史（只读）</a></p>');
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);
         const adminAccess = stage.querySelector<HTMLElement>('#admin-access-card');

@@ -2129,6 +2129,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.marketingStateHistory = segmentstore.NewMarketingStateHistoryReader(pool)
 	legacyHandler.staticProductHistory = productstore.NewStaticProductHistoryReader(pool)
 	legacyHandler.staticCycleHistory = operationstore.NewStaticCycleHistoryReader(pool)
+	legacyHandler.radarClickHistory = radarstore.NewRadarClickHistoryReader(pool)
+	legacyHandler.marketingConfigHistory = automationstore.NewMarketingConfigHistoryReader(pool)
 	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
 		webhook: inboundWebhookHandler, retiredSubscriptions: retiredOutboundSubscriptionHandler,
 	}
@@ -2166,6 +2168,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
 	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
 	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
+	legacyHandler.wecomContactHistory = contactstore.NewWeComContactHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
@@ -3741,6 +3744,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/hxc-history/batches", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryBatch)},
 			{http.MethodGet, "/api/admin/hxc-history/batches/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetHXCHistoryBatch)},
 			{http.MethodGet, "/api/admin/automation-history/sops", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistorySOPs)},
+			{http.MethodGet, "/api/admin/radar-click-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListRadarClickHistory)},
+			{http.MethodGet, "/api/admin/radar-click-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetRadarClickHistory)},
+			{http.MethodGet, "/api/admin/marketing-config-history/configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingConfigHistoryConfigs)},
+			{http.MethodGet, "/api/admin/marketing-config-history/configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingConfigHistoryConfig)},
+			{http.MethodGet, "/api/admin/marketing-config-history/rules", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingConfigHistoryRules)},
+			{http.MethodGet, "/api/admin/marketing-config-history/rules/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingConfigHistoryRule)},
 			{http.MethodGet, "/api/admin/automation-history/sops/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistorySOP)},
 			{http.MethodGet, "/api/admin/automation-history/configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryConfigs)},
 			{http.MethodGet, "/api/admin/automation-history/configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryConfig)},
@@ -3755,6 +3764,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/message-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMessageHistory)},
 			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
 			{http.MethodGet, "/api/admin/campaign-history/segments", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistorySegments)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/events/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryEvent)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/relations", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryRelations)},
+			{http.MethodGet, "/api/admin/wecom-contact-history/relations/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryRelation)},
 			{http.MethodGet, "/api/admin/campaign-history/segments/{segment_history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistorySegment)},
 			{http.MethodGet, "/api/admin/campaign-history/members", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryMembers)},
 			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastPlans)},

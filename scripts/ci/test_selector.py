@@ -491,6 +491,9 @@ class WorkflowWiringTests(unittest.TestCase):
             "static-product-history-postgres-dsn",
             "static-media-history-postgres-dsn",
             "static-cycle-history-postgres-dsn",
+            "wecom-contact-history-postgres-dsn",
+            "radar-click-history-postgres-dsn",
+            "marketing-config-history-postgres-dsn",
         ):
             self.assertIn(f'-{flag}="$database_url"', nightly_runner_source)
 
