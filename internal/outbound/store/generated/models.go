@@ -98,3 +98,21 @@ type OutboundV1BroadcastJobHistory struct {
 	SourceFieldDigest              []byte             `json:"source_field_digest"`
 	RedactedRoots                  []string           `json:"redacted_roots"`
 }
+
+type OutboundV1TaskHistory struct {
+	ID                    int64              `json:"id"`
+	SourceID              int64              `json:"source_id"`
+	TaskType              string             `json:"task_type"`
+	Status                string             `json:"status"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	BroadcastJobHistoryID pgtype.Int8        `json:"broadcast_job_history_id"`
+	RequestPayloadDigest  []byte             `json:"request_payload_digest"`
+	ResponsePayloadDigest []byte             `json:"response_payload_digest"`
+	WecomTaskIDDigest     []byte             `json:"wecom_task_id_digest"`
+	TraceIDDigest         []byte             `json:"trace_id_digest"`
+	LegacyBroadcastJobID  pgtype.Int8        `json:"legacy_broadcast_job_id"`
+	SourceKeyDigest       []byte             `json:"source_key_digest"`
+	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
+	SourceFieldDigest     []byte             `json:"source_field_digest"`
+	RedactedRoots         []string           `json:"redacted_roots"`
+}
