@@ -102,10 +102,105 @@ export async function runGroupOpsDirectoryAdapterTests(): Promise<void> {
       const run = () => action === 'delete' ? deleteGroupOpsPlanDto('10') : transitionGroupOpsPlanDto('10', action);
       await rejects(run, 503); failMutation = false; await run();
       const attempts = calls.filter((call) => call.init.method !== 'GET');
-      assert(calls.length === 4 && calls[0].init.method === 'GET' && calls[2].init.method === 'GET', 'failed lifecycle retry rereads current detail');
+      assert(calls.length === 3 && calls[0].init.method === 'GET' && calls[2].init.method !== 'GET', 'unconfirmed lifecycle retry preserves original intent without a new detail read');
       assert(attempts.length === 2 && new Headers(attempts[0].init.headers).get('Idempotency-Key') === new Headers(attempts[1].init.headers).get('Idempotency-Key'), 'same lifecycle command retries with same key');
       assert(action === 'delete' ? attempts[0].init.method === 'DELETE' && attempts[0].url.endsWith('/plans/10') : attempts[0].url.endsWith('/' + action), 'exact existing lifecycle route');
     }
+    for (const action of ['activate', 'pause', 'archive', 'delete'] as const) {
+      calls.length = 0;
+      const revision = detail.plan.revision;
+      let applied = false;
+      globalThis.fetch = async (input, init = {}) => {
+        calls.push({ url: String(input), init });
+        if (init.method === 'GET') return applied && action === 'delete' ? new Response('{"code":"not_found"}', { status: 404 }) : new Response(JSON.stringify(detail), { status: 200 });
+        assert(JSON.parse(String(init.body)).expected_revision === revision, 'committed lifecycle retry preserves original body');
+        if (!applied) { applied = true; detail.plan.revision++; throw new Error('response lost after commit'); }
+        return new Response(JSON.stringify(detail), { status: 200 });
+      };
+      const run = () => action === 'delete' ? deleteGroupOpsPlanDto('10') : transitionGroupOpsPlanDto('10', action);
+      await rejects(run); await run();
+      assert(calls.length === 3 && calls[1].init.body === calls[2].init.body && new Headers(calls[1].init.headers).get('Idempotency-Key') === new Headers(calls[2].init.headers).get('Idempotency-Key'), 'committed lifecycle/delete is replayed exactly once without new revision or 404 lookup');
+    }
+    for (const action of ['activate', 'delete'] as const) {
+      calls.length = 0; let conflict = true;
+      globalThis.fetch = async (input, init = {}) => {
+        calls.push({ url: String(input), init });
+        if (init.method !== 'GET' && conflict) { conflict = false; detail.plan.revision++; return new Response('{"code":"conflict"}', { status: 409 }); }
+        return new Response(JSON.stringify(detail), { status: 200 });
+      };
+      const run = () => action === 'delete' ? deleteGroupOpsPlanDto('10') : transitionGroupOpsPlanDto('10', action);
+      await rejects(run, 409); await run();
+      assert(calls.length === 4 && calls[2].init.method === 'GET' && calls[1].init.body !== calls[3].init.body && new Headers(calls[1].init.headers).get('Idempotency-Key') !== new Headers(calls[3].init.headers).get('Idempotency-Key'), 'definitive CAS 409 clears stale intent; next explicit retry reads new revision and key');
+    }
+    const nodeDetail = { plan: { plan_id: 'node-10', name: '节点计划', revision: 1, status: 'draft' }, members: [], group_assets: [], webhook_descriptor: {}, nodes: [{ node_id: '51', position: 1, kind: 'message', message_text: 'before', material_plan: { references: [{ kind: 'image', id: 7 }] } }] };
+    const nodeInput: Parameters<typeof saveGroupOpsPlanDto>[0] = { id: 'node-10', name: '节点计划', staffIds: [], assetReferences: [], nodes: [{ id: '51', position: 1, kind: 'message', messageText: '\u0085 after \n', materialPlan: { references: [{ kind: 'image', id: 8 }] } }] };
+    calls.length = 0; let loseNodeResponse = true;
+    globalThis.fetch = async (input, init = {}) => {
+      const url = String(input); calls.push({ url, init });
+      if (init.method === 'PATCH') {
+        const payload = JSON.parse(String(init.body));
+        assert(payload.expected_revision === nodeDetail.plan.revision, 'node update current revision');
+        Object.assign(nodeDetail.nodes[0], payload, { message_text: String(payload.message_text || '').replace(/^[\u0085 \n]+|[\u0085 \n]+$/g, '') }); nodeDetail.plan.revision++;
+        if (loseNodeResponse) { loseNodeResponse = false; throw new Error('committed node response lost'); }
+      }
+      return new Response(JSON.stringify(url.endsWith('/content/preview') ? { preview_lines: [], issue_codes: [] } : nodeDetail), { status: 200 });
+    };
+    await rejects(() => saveGroupOpsPlanDto(nodeInput)); await saveGroupOpsPlanDto(nodeInput);
+    assert(calls.filter((call) => call.init.method === 'PATCH').length === 1 && nodeDetail.plan.revision === 2, 'committed typed node is not updated or evented again after response loss');
+    nodeInput.nodes[0].messageText = '\uFEFFintentional change';
+    await saveGroupOpsPlanDto(nodeInput);
+    assert(calls.filter((call) => call.init.method === 'PATCH').length === 2, 'intentional node field change still updates');
+    assert(nodeDetail.nodes[0].message_text.charCodeAt(0) === 0xFEFF, 'BOM is retained like Go TrimSpace, not removed by JavaScript trim');
+    const addInput: Parameters<typeof saveGroupOpsPlanDto>[0] = { ...nodeInput, nodes: [...nodeInput.nodes, { position: 2, kind: 'message', messageText: 'new node', materialPlan: { references: [{ kind: 'attachment', id: 9 }] } }] };
+    calls.length = 0; let loseAddResponse = true;
+    globalThis.fetch = async (input, init = {}) => {
+      const url = String(input); calls.push({ url, init });
+      if (init.method === 'POST' && url.endsWith('/nodes')) {
+        const payload = JSON.parse(String(init.body));
+        assert(payload.expected_revision === nodeDetail.plan.revision, 'new node current revision');
+        nodeDetail.nodes.push({ node_id: '52', ...payload }); nodeDetail.plan.revision++;
+        if (loseAddResponse) { loseAddResponse = false; throw new Error('committed new node response lost'); }
+      }
+      if (init.method === 'DELETE') {
+        assert(JSON.parse(String(init.body)).expected_revision === nodeDetail.plan.revision, 'node removal current revision');
+        nodeDetail.nodes = nodeDetail.nodes.filter((node) => node.node_id !== url.split('/').pop()); nodeDetail.plan.revision++;
+      }
+      return new Response(JSON.stringify(url.endsWith('/content/preview') ? { preview_lines: [], issue_codes: [] } : nodeDetail), { status: 200 });
+    };
+    await rejects(() => saveGroupOpsPlanDto(addInput));
+    const committedRevision = nodeDetail.plan.revision;
+    await saveGroupOpsPlanDto(addInput);
+    assert(nodeDetail.plan.revision === committedRevision && calls.filter((call) => call.url.endsWith('/nodes') && call.init.method === 'POST').length === 1 && !calls.some((call) => call.init.method === 'DELETE' || call.init.method === 'PATCH'), 'unique-position complete typed match retains real new node ID after lost response, without remove/add/event');
+    calls.length = 0;
+    addInput.nodes[1].materialPlan = { references: [{ kind: 'attachment', id: 10 }] };
+    await saveGroupOpsPlanDto(addInput);
+    assert(calls.some((call) => call.init.method === 'DELETE') && calls.some((call) => call.init.method === 'POST' && call.url.endsWith('/nodes')) && nodeDetail.nodes[1].material_plan.references[0].id === 10, 'different typed material is not falsely matched by position or message text');
+    calls.length = 0;
+    await saveGroupOpsPlanDto(nodeInput);
+    assert(nodeDetail.nodes.length === 1 && nodeDetail.nodes[0].node_id === '51' && calls.filter((call) => call.init.method === 'DELETE').length === 1, 'explicit retained node survives intentional deletion of the other node');
+
+    const created = { plan: { plan_id: 'created-10', name: '新建回放测试', revision: 1, status: 'draft' }, members: [], nodes: [], group_assets: [] as Array<{ group_asset_id: string; asset_reference: string }>, webhook_descriptor: {} };
+    const creationSnapshot = JSON.stringify(created);
+    const createInput = { name: '新建回放测试', staffIds: [], assetReferences: ['group-a', 'group-b'], nodes: [] };
+    calls.length = 0; let createKey = '', lostSecondAsset = false;
+    globalThis.fetch = async (input, init = {}) => {
+      const url = String(input); calls.push({ url, init });
+      if (init.method === 'POST' && url.endsWith('/plans')) {
+        const key = new Headers(init.headers).get('Idempotency-Key')!;
+        assert(!createKey || key === createKey, 'creation replay keeps original key');
+        createKey = key; return new Response(creationSnapshot, { status: 201 });
+      }
+      if (init.method === 'POST' && url.endsWith('/group-assets')) {
+        const payload = JSON.parse(String(init.body));
+        assert(payload.expected_revision === created.plan.revision && !created.group_assets.some((asset) => asset.asset_reference === payload.asset_reference), 'creation replay must reread actual target and not duplicate existing assets');
+        created.group_assets.push({ group_asset_id: String(created.group_assets.length + 1), asset_reference: payload.asset_reference }); created.plan.revision++;
+        if (payload.asset_reference === 'group-b' && !lostSecondAsset) { lostSecondAsset = true; throw new Error('second asset response lost after commit'); }
+      }
+      return new Response(JSON.stringify(url.endsWith('/content/preview') ? { preview_lines: [], issue_codes: [] } : created), { status: 200 });
+    };
+    await rejects(() => saveGroupOpsPlanDto(createInput)); await saveGroupOpsPlanDto(createInput);
+    assert(calls.filter((call) => call.url.endsWith('/group-assets')).length === 2 && created.plan.revision === 3, 'new plan partial retry creates no duplicate assets/events');
+    assert(calls.filter((call) => call.url.endsWith('/plans')).length === 2 && calls.every((call, index) => !call.url.endsWith('/plans') || calls[index + 1]?.url.endsWith('/plans/created-10') && calls[index + 1]?.init.method === 'GET'), 'both create and create replay are followed by current detail GET');
     globalThis.fetch = async () => new Response('{"code":"not_found"}', { status: 404 });
     await rejects(() => deleteGroupOpsPlanDto('10'), 404);
   } finally {

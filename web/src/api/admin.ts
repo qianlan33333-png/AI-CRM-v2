@@ -1064,7 +1064,7 @@ export async function saveGroupOpsPlanDto(input: GroupOpsWriteInput): Promise<No
     return groupOpsMutationOptions(scope);
   };
   let detail: NonNullable<AdminDb['groupOpsDetail']>;
-  if (!input.id) { detail = groupOpsDetailDto(await call(createGroupOpsPlan({ name: input.name }, mutation('create', { name: input.name })))); }
+  if (!input.id) { const created = groupOpsDetailDto(await call(createGroupOpsPlan({ name: input.name }, mutation('create', { name: input.name })))); detail = await readGroupOpsDetail(created.plan.id); }
   else { detail = await readGroupOpsDetail(input.id); if (detail.plan.name !== input.name) { await call(updateGroupOpsPlan(input.id, { expected_revision: detail.plan.revision, name: input.name }, mutation('rename', [detail.plan.revision, input.name]))); detail = await readGroupOpsDetail(input.id); } }
   const planId = detail.plan.id;
   planScope = planId;
@@ -1072,25 +1072,57 @@ export async function saveGroupOpsPlanDto(input: GroupOpsWriteInput): Promise<No
   for (const staffId of input.staffIds.filter((id) => !detail.staffIds.includes(id))) { await call(addGroupOpsPlanMember(planId, { expected_revision: detail.plan.revision, staff_id: staffId }, mutation('add-member', [detail.plan.revision, staffId]))); detail = await readGroupOpsDetail(planId); }
   for (const asset of detail.assets.filter((item) => !input.assetReferences.includes(item.reference))) { await call(removeGroupOpsPlanGroupAsset(planId, asset.reference, { expected_revision: detail.plan.revision }, mutation('remove-group', [detail.plan.revision, asset.reference]))); detail = await readGroupOpsDetail(planId); }
   for (const reference of input.assetReferences.filter((value) => !detail.assets.some((item) => item.reference === value))) { await call(addGroupOpsPlanGroupAsset(planId, { expected_revision: detail.plan.revision, asset_reference: reference }, mutation('add-group', [detail.plan.revision, reference]))); detail = await readGroupOpsDetail(planId); }
-  for (const node of detail.nodes.filter((item) => item.id && !input.nodes.some((candidate) => candidate.id === item.id))) { await call(removeGroupOpsPlanNode(planId, node.id!, { expected_revision: detail.plan.revision }, mutation('remove-node', [detail.plan.revision, node.id]))); detail = await readGroupOpsDetail(planId); }
-  for (const node of input.nodes) { const payload: GroupOpsNodeRequest = { expected_revision: detail.plan.revision, position: node.position, kind: node.kind, message_text: node.kind === 'message' ? node.messageText : undefined, delay_minutes: node.kind === 'delay' ? node.delayMinutes : undefined, material_plan: node.materialPlan || { references: [] } }; if (node.id && detail.nodes.some((item) => item.id === node.id)) await call(updateGroupOpsPlanNode(planId, node.id, payload, mutation('update-node', [node.id, payload]))); else await call(addGroupOpsPlanNode(planId, payload, mutation('add-node', payload))); detail = await readGroupOpsDetail(planId); }
+  const fields = (value: GroupOpsWriteInput['nodes'][number], persisted = false) => ({ position: value.position, kind: value.kind, message_text: value.kind === 'message' ? (persisted ? (value.messageText || '').replace(/^\p{White_Space}+|\p{White_Space}+$/gu, '') : value.messageText || '') : undefined, delay_minutes: value.kind === 'delay' ? value.delayMinutes : undefined, material_plan: { references: (value.materialPlan?.references || []).map((ref) => ({ kind: ref.kind, id: ref.id })) } });
+  const desiredNodes = input.nodes.map((node) => {
+    if (node.id) return node;
+    const matches = detail.nodes.filter((item) => item.position === node.position);
+    const existing = matches.length === 1 ? matches[0] : undefined;
+    return existing?.id && !existing.materialReference && JSON.stringify(fields(existing)) === JSON.stringify(fields(node, true)) ? { ...node, id: existing.id } : node;
+  });
+  for (const node of detail.nodes.filter((item) => item.id && !desiredNodes.some((candidate) => candidate.id === item.id))) { await call(removeGroupOpsPlanNode(planId, node.id!, { expected_revision: detail.plan.revision }, mutation('remove-node', [detail.plan.revision, node.id]))); detail = await readGroupOpsDetail(planId); }
+  for (const node of desiredNodes) {
+    const existing = node.id ? detail.nodes.find((item) => item.id === node.id) : undefined;
+    if (existing && !existing.materialReference && JSON.stringify(fields(existing)) === JSON.stringify(fields(node, true))) continue;
+    const payload: GroupOpsNodeRequest = { expected_revision: detail.plan.revision, ...fields(node) };
+    if (existing) await call(updateGroupOpsPlanNode(planId, node.id!, payload, mutation('update-node', [node.id, payload])));
+    else await call(addGroupOpsPlanNode(planId, payload, mutation('add-node', payload)));
+    detail = await readGroupOpsDetail(planId);
+  }
   if ((detail.webhookReference || '') !== (input.webhookReference || '')) { await call(putGroupOpsWebhookDescriptor(planId, { expected_revision: detail.plan.revision, reference: input.webhookReference || undefined }, mutation('webhook', [detail.plan.revision, input.webhookReference]))); detail = await readGroupOpsDetail(planId); }
   const preview = await call(previewGroupOpsPlanContent(planId, opt));
   const result = groupOpsDetailDto(await call(getGroupOpsPlan(planId, opt)), preview);
   usedKeys.forEach((scope) => groupOpsSaveMutationKeys.delete(scope));
   return result;
 }
+type GroupOpsLifecycleAction = 'activate' | 'pause' | 'archive' | 'delete';
+const groupOpsLifecycleIntents = new Map<string, { revision: number; key: string }>();
+async function mutateGroupOpsLifecycle(planId: string, action: GroupOpsLifecycleAction): Promise<void> {
+  const scope = JSON.stringify([planId, action]);
+  let intent = groupOpsLifecycleIntents.get(scope);
+  if (!intent) {
+    const revision = (await readGroupOpsDetail(planId)).plan.revision;
+    intent = { revision, key: `groupops-${globalThis.crypto.randomUUID()}` };
+    groupOpsLifecycleIntents.set(scope, intent);
+  }
+  const body = { expected_revision: intent.revision };
+  const opt = apiRequestOptions({ headers: { 'Idempotency-Key': intent.key } });
+  try {
+    await call(action === 'activate' ? activateGroupOpsPlan(planId, body, opt)
+      : action === 'pause' ? pauseGroupOpsPlan(planId, body, opt)
+      : action === 'archive' ? archiveGroupOpsPlan(planId, body, opt)
+      : deleteGroupOpsPlan(planId, body, opt));
+    groupOpsLifecycleIntents.delete(scope);
+  } catch (error) {
+    // A confirmed CAS conflict did not execute; network/5xx remain unresolved.
+    if (error instanceof ApiError && error.status === 409) groupOpsLifecycleIntents.delete(scope);
+    throw error;
+  }
+}
 export async function transitionGroupOpsPlanDto(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void> {
-  const revision = (await readGroupOpsDetail(planId)).plan.revision;
-  const scope = JSON.stringify([planId, action, revision]), opt = groupOpsMutationOptions(scope);
-  await call(action === 'activate' ? activateGroupOpsPlan(planId, { expected_revision: revision }, opt) : action === 'pause' ? pauseGroupOpsPlan(planId, { expected_revision: revision }, opt) : archiveGroupOpsPlan(planId, { expected_revision: revision }, opt));
-  groupOpsSaveMutationKeys.delete(scope);
+  await mutateGroupOpsLifecycle(planId, action);
 }
 export async function deleteGroupOpsPlanDto(planId: string): Promise<void> {
-  const revision = (await readGroupOpsDetail(planId)).plan.revision;
-  const scope = JSON.stringify([planId, 'delete', revision]);
-  await call(deleteGroupOpsPlan(planId, { expected_revision: revision }, groupOpsMutationOptions(scope)));
-  groupOpsSaveMutationKeys.delete(scope);
+  await mutateGroupOpsLifecycle(planId, 'delete');
 }
 export type RefundIntentInput = { provider: string; orderNo: string; amount: string; reason: string; transactionIdConfirmation: string; checked: boolean; productId?: string; skuId?: string; refundCount?: number; reasonCode?: WechatShopRefundRequest['reason_code'] };
 export type RefundIntentResult = { id: string; state: string; provider: string; realExternalCallExecuted: boolean; deliveryProven: boolean };

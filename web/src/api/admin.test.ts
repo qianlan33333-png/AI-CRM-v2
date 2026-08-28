@@ -585,14 +585,15 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(saved.plan.id === '9' && saved.previewIssues[0] === 'member_required', 'group ops full detail/preview mapping');
     assert(groupOpsCalls[0].input.endsWith('/group-ops/plans') && groupOpsCalls[0].init?.method === 'POST', 'group ops create URL/method');
     assert(JSON.parse(String(groupOpsCalls[0].init?.body)).name === '欢迎计划', 'group ops create DTO mapping');
-    assert(groupOpsCalls[1].input.endsWith('/plans/9/content/preview') && groupOpsCalls[1].init?.method === 'POST' && groupOpsCalls[2].init?.method === 'GET', 'group ops preview/detail methods');
+    assert(groupOpsCalls[1].input.endsWith('/plans/9') && groupOpsCalls[1].init?.method === 'GET' && groupOpsCalls[2].input.endsWith('/plans/9/content/preview') && groupOpsCalls[2].init?.method === 'POST' && groupOpsCalls[3].init?.method === 'GET', 'group ops create rereads current detail before preview and final readback');
     assert(groupOpsDetailDto(groupOpsDetail).plan.revision === 1 && groupOpsDetailDto(groupOpsDetail).plan.queueCount === 2, 'group ops direct response mapping preserves local queue count');
   } finally { globalThis.fetch = savedFetch; }
   const typedGroupOpsCalls: Array<{ input: string; init?: RequestInit }> = [];
-  const typedGroupOpsDetail = { plan: { plan_id: '9', name: '欢迎计划', status: 'draft', revision: 2, queue_count: 2, created_by: 1, updated_by: 1, created_at: '', updated_at: '' }, members: [], group_assets: [], nodes: [{ node_id: '51', position: 1, kind: 'message', message_text: '素材消息', material_plan: { references: [{ kind: 'image', id: 7 }, { kind: 'miniprogram', id: 8 }, { kind: 'attachment', id: 9 }] } }], webhook_descriptor: { configured: false, description: 'not configured' }, provider_execution_eligible: false, real_external_call_executed: false };
+  const typedGroupOpsDetail = { plan: { plan_id: '9', name: '欢迎计划', status: 'draft', revision: 2, queue_count: 2, created_by: 1, updated_by: 1, created_at: '', updated_at: '' }, members: [], group_assets: [], nodes: [{ node_id: '51', position: 1, kind: 'message', message_text: '原消息', material_plan: { references: [{ kind: 'image', id: 7 }, { kind: 'miniprogram', id: 8 }, { kind: 'attachment', id: 9 }] } }], webhook_descriptor: { configured: false, description: 'not configured' }, provider_execution_eligible: false, real_external_call_executed: false };
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     typedGroupOpsCalls.push({ input: url, init });
+    if (init?.method === 'PATCH') Object.assign(typedGroupOpsDetail.nodes[0], JSON.parse(String(init.body)));
     const body = url.endsWith('/content/preview') ? { valid: true, issue_codes: [], preview_lines: ['message: 素材消息'], node_count: 1, group_asset_count: 0, provider_execution_eligible: false, real_external_call_executed: false } : typedGroupOpsDetail;
     return new Response(JSON.stringify(body), { status: 200 });
   };
