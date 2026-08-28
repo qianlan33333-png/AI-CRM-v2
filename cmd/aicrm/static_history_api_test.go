@@ -19,19 +19,22 @@ import (
 )
 
 type staticHistoryAPIStub struct {
-	calls     int
-	mediaQ    mediaport.StaticMediaHistoryQuery
-	productQ  productport.StaticProductHistoryQuery
-	cycleQ    cycleport.StaticCycleHistoryQuery
-	err       error
-	empty     bool
-	duplicate bool
-	badParent bool
-	group     mediaport.HistoricalGroupInvite
-	page      productport.HistoricalProductPageSlice
-	strategy  cycleport.HistoricalCycleStrategy
-	version   cycleport.HistoricalCycleVersion
-	document  cycleport.HistoricalCycleDocument
+	calls        int
+	mediaQ       mediaport.StaticMediaHistoryQuery
+	productQ     productport.StaticProductHistoryQuery
+	cycleQ       cycleport.StaticCycleHistoryQuery
+	observationQ cycleport.CycleObservationQuery
+	metric       cycleport.HistoricalCycleMetric
+	reference    cycleport.HistoricalCycleReference
+	err          error
+	empty        bool
+	duplicate    bool
+	badParent    bool
+	group        mediaport.HistoricalGroupInvite
+	page         productport.HistoricalProductPageSlice
+	strategy     cycleport.HistoricalCycleStrategy
+	version      cycleport.HistoricalCycleVersion
+	document     cycleport.HistoricalCycleDocument
 }
 
 func (s *staticHistoryAPIStub) GetHistoricalGroupInvite(context.Context, int64) (mediaport.HistoricalGroupInvite, error) {
@@ -118,16 +121,49 @@ func (s *staticHistoryAPIStub) ListHistoricalCycleDocument(_ context.Context, q 
 	return []cycleport.HistoricalCycleDocument{value}, 1, s.err
 }
 
+func (s *staticHistoryAPIStub) GetHistoricalCycleMetric(context.Context, int64) (cycleport.HistoricalCycleMetric, error) {
+	s.calls++
+	return s.metric, s.err
+}
+func (s *staticHistoryAPIStub) ListHistoricalCycleMetric(_ context.Context, q cycleport.CycleObservationQuery) ([]cycleport.HistoricalCycleMetric, int64, error) {
+	s.calls++
+	s.observationQ = q
+	if s.empty {
+		return nil, 0, s.err
+	}
+	if s.duplicate {
+		return []cycleport.HistoricalCycleMetric{s.metric, s.metric}, 2, s.err
+	}
+	return []cycleport.HistoricalCycleMetric{s.metric}, 1, s.err
+}
+func (s *staticHistoryAPIStub) GetHistoricalCycleReference(context.Context, int64) (cycleport.HistoricalCycleReference, error) {
+	s.calls++
+	return s.reference, s.err
+}
+func (s *staticHistoryAPIStub) ListHistoricalCycleReference(_ context.Context, q cycleport.CycleObservationQuery) ([]cycleport.HistoricalCycleReference, int64, error) {
+	s.calls++
+	s.observationQ = q
+	if s.empty {
+		return nil, 0, s.err
+	}
+	if s.duplicate {
+		return []cycleport.HistoricalCycleReference{s.reference, s.reference}, 2, s.err
+	}
+	return []cycleport.HistoricalCycleReference{s.reference}, 1, s.err
+}
+
 func staticHistoryAPIFixture() *staticHistoryAPIStub {
 	at := time.Date(2026, 8, 28, 1, 2, 3, 123456000, time.UTC)
 	key, payload := [32]byte{1}, [32]byte{2}
 	optional := at.Add(time.Second)
 	return &staticHistoryAPIStub{
-		group:    mediaport.HistoricalGroupInvite{ID: 7, SourceID: -1, SourceKeyDigest: key, SourcePayloadDigest: payload, Name: "", Title: "", Description: "", OriginalState: "", RoomBaseName: "", OriginalBindingState: "", CreatedAt: at, UpdatedAt: at.Add(-time.Second)},
-		page:     productport.HistoricalProductPageSlice{ID: 8, SourceID: -2, SourceKeyDigest: key, SourcePayloadDigest: payload, ProductSourceID: -3, ImageSourceID: -4, SortOrder: -5, CreatedAt: at, UpdatedAt: at.Add(-time.Second)},
-		strategy: cycleport.HistoricalCycleStrategy{ID: 9, SourceID: -6, SourceKeyDigest: key, SourcePayloadDigest: payload, StrategyKey: "", Title: "", Description: "", Cadence: "", Timezone: "", OriginalStatus: "", CurrentVersion: -7, CreatedAt: at, UpdatedAt: at.Add(-time.Second)},
-		version:  cycleport.HistoricalCycleVersion{ID: 10, SourceID: -8, SourceKeyDigest: key, SourcePayloadDigest: payload, StrategySourceID: -9, StrategyHistoryID: 9, Version: -10, Label: "", Objective: "", VersionHash: "", EffectiveFrom: &optional, OriginalGovernance: "", OperationSkillHash: "", CreatedAt: at},
-		document: cycleport.HistoricalCycleDocument{ID: 11, SourceID: -11, SourceKeyDigest: key, SourcePayloadDigest: payload, StrategyVersionSourceID: -12, VersionHistoryID: 10, SchemaVersion: "", ExecutionGuideSHA256: "", ExecutionGuideGeneratedAt: &optional, CopyGuideSHA256: "", MeasurementGuideSHA256: "", DocumentPackHash: "", CreatedAt: at},
+		metric:    cycleport.HistoricalCycleMetric{ID: 12, SourceID: -12, SourceKeyDigest: key, SourcePayloadDigest: payload, SourceFieldDigest: [32]byte{3}, RunSourceID: -7, LastSnapshotSourceID: -8, LimitationsJSON: []byte("null"), CreatedAt: at, UpdatedAt: at},
+		reference: cycleport.HistoricalCycleReference{ID: 13, SourceID: -13, SourceKeyDigest: key, SourcePayloadDigest: payload, SourceFieldDigest: [32]byte{3}, RunSourceID: -7, LastSnapshotSourceID: -8, Href: "https://private.invalid/never-fetch", CreatedAt: at, UpdatedAt: at},
+		group:     mediaport.HistoricalGroupInvite{ID: 7, SourceID: -1, SourceKeyDigest: key, SourcePayloadDigest: payload, Name: "", Title: "", Description: "", OriginalState: "", RoomBaseName: "", OriginalBindingState: "", CreatedAt: at, UpdatedAt: at.Add(-time.Second)},
+		page:      productport.HistoricalProductPageSlice{ID: 8, SourceID: -2, SourceKeyDigest: key, SourcePayloadDigest: payload, ProductSourceID: -3, ImageSourceID: -4, SortOrder: -5, CreatedAt: at, UpdatedAt: at.Add(-time.Second)},
+		strategy:  cycleport.HistoricalCycleStrategy{ID: 9, SourceID: -6, SourceKeyDigest: key, SourcePayloadDigest: payload, StrategyKey: "", Title: "", Description: "", Cadence: "", Timezone: "", OriginalStatus: "", CurrentVersion: -7, CreatedAt: at, UpdatedAt: at.Add(-time.Second)},
+		version:   cycleport.HistoricalCycleVersion{ID: 10, SourceID: -8, SourceKeyDigest: key, SourcePayloadDigest: payload, StrategySourceID: -9, StrategyHistoryID: 9, Version: -10, Label: "", Objective: "", VersionHash: "", EffectiveFrom: &optional, OriginalGovernance: "", OperationSkillHash: "", CreatedAt: at},
+		document:  cycleport.HistoricalCycleDocument{ID: 11, SourceID: -11, SourceKeyDigest: key, SourcePayloadDigest: payload, StrategyVersionSourceID: -12, VersionHistoryID: 10, SchemaVersion: "", ExecutionGuideSHA256: "", ExecutionGuideGeneratedAt: &optional, CopyGuideSHA256: "", MeasurementGuideSHA256: "", DocumentPackHash: "", CreatedAt: at},
 	}
 }
 
@@ -138,6 +174,7 @@ func staticHistoryAPIRouter(t *testing.T, media mediaport.StaticMediaHistoryRead
 		t.Fatal(err)
 	}
 	legacy.staticMediaHistory, legacy.staticProductHistory, legacy.staticCycleHistory = media, product, cycleReader
+	legacy.cycleObservationHistory, _ = cycleReader.(cycleport.CycleObservationReader)
 	a, err := authhttp.NewHandler(auth)
 	if err != nil {
 		t.Fatal(err)
@@ -159,6 +196,8 @@ func TestStaticHistoryFinalRoutesAdminReadOnly(t *testing.T) {
 		{"strategy", "/api/admin/static-history/cycle-strategies", "/api/admin/static-history/cycle-strategies/9", ""},
 		{"version", "/api/admin/static-history/cycle-versions", "/api/admin/static-history/cycle-versions/10", "&strategy_history_id=9"},
 		{"document", "/api/admin/static-history/cycle-documents", "/api/admin/static-history/cycle-documents/11", "&version_history_id=10"},
+		{"metric", "/api/admin/static-history/cycle-metrics", "/api/admin/static-history/cycle-metrics/12", ""},
+		{"reference", "/api/admin/static-history/cycle-references", "/api/admin/static-history/cycle-references/13", ""},
 	} {
 		t.Run(route.name, func(t *testing.T) {
 			reader, auth := staticHistoryAPIFixture(), &audienceHistoryAPIAuth{role: authport.RoleAdmin}
@@ -169,6 +208,16 @@ func TestStaticHistoryFinalRoutesAdminReadOnly(t *testing.T) {
 				if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" {
 					t.Fatalf("%s status=%d body=%s", path, response.Code, response.Body.String())
 				}
+				if route.name == "metric" || route.name == "reference" {
+					for _, private := range []string{"source_key_digest", "source_payload_digest", "source_field_digest", "href", "private.invalid"} {
+						if strings.Contains(response.Body.String(), private) {
+							t.Fatalf("private observation field leaked: %s", private)
+						}
+					}
+					if route.name == "metric" && !strings.Contains(response.Body.String(), `"limitations":null`) {
+						t.Fatal("literal JSON null lost")
+					}
+				}
 				for _, want := range []string{`"source":"v1_history"`, `"read_only":true`, `"real_external_call_executed":false`, `"source_id":-`} {
 					if !strings.Contains(response.Body.String(), want) {
 						t.Fatalf("%s missing %s", path, want)
@@ -177,6 +226,9 @@ func TestStaticHistoryFinalRoutesAdminReadOnly(t *testing.T) {
 			}
 			if auth.csrfCalls != 0 || len(auth.capabilities) != 2 || auth.capabilities[0] != authport.CapabilityAdminRead {
 				t.Fatalf("AdminRead/CSRF=%v/%d", auth.capabilities, auth.csrfCalls)
+			}
+			if (route.name == "metric" || route.name == "reference") && reader.observationQ != (cycleport.CycleObservationQuery{Limit: 1, Offset: 0}) {
+				t.Fatalf("observation pagination not bound: %+v", reader.observationQ)
 			}
 			if route.name == "version" && (reader.cycleQ.StrategyHistoryID == nil || *reader.cycleQ.StrategyHistoryID != 9 || reader.cycleQ.VersionHistoryID != nil) {
 				t.Fatalf("version parent not bound: %+v", reader.cycleQ)
@@ -197,7 +249,7 @@ func TestStaticHistoryFinalRoutesAdminReadOnly(t *testing.T) {
 }
 
 func TestStaticHistoryRejectsInvalidAndUnavailableResponses(t *testing.T) {
-	routes := []string{"group-invites", "page-slices", "cycle-strategies", "cycle-versions", "cycle-documents"}
+	routes := []string{"group-invites", "page-slices", "cycle-strategies", "cycle-versions", "cycle-documents", "cycle-metrics", "cycle-references"}
 	for _, route := range routes {
 		reader := staticHistoryAPIFixture()
 		router := staticHistoryAPIRouter(t, reader, reader, reader, &audienceHistoryAPIAuth{role: authport.RoleAdmin})
@@ -235,6 +287,9 @@ func TestStaticHistoryRejectsInvalidAndUnavailableResponses(t *testing.T) {
 		{"group-invites?limit=2", func(s *staticHistoryAPIStub) { s.duplicate = true }},
 		{"page-slices?limit=2", func(s *staticHistoryAPIStub) { s.duplicate = true }},
 		{"cycle-strategies?limit=2", func(s *staticHistoryAPIStub) { s.duplicate = true }},
+		{"cycle-metrics?limit=2", func(s *staticHistoryAPIStub) { s.duplicate = true }},
+		{"cycle-references?limit=2", func(s *staticHistoryAPIStub) { s.duplicate = true }},
+		{"cycle-metrics", func(s *staticHistoryAPIStub) { s.metric.LimitationsJSON = []byte("{") }},
 		{"cycle-versions?limit=1&strategy_history_id=9", func(s *staticHistoryAPIStub) { s.badParent = true }},
 		{"cycle-documents?limit=1&version_history_id=10", func(s *staticHistoryAPIStub) { s.badParent = true }},
 	} {
@@ -246,7 +301,7 @@ func TestStaticHistoryRejectsInvalidAndUnavailableResponses(t *testing.T) {
 			t.Fatalf("%s status=%d body=%s", test.path, response.Code, response.Body.String())
 		}
 	}
-	for _, path := range []string{"group-invites", "page-slices", "cycle-strategies", "cycle-versions", "cycle-documents"} {
+	for _, path := range []string{"group-invites", "page-slices", "cycle-strategies", "cycle-versions", "cycle-documents", "cycle-metrics", "cycle-references"} {
 		reader := staticHistoryAPIFixture()
 		reader.err = errors.New("private database detail")
 		response := httptest.NewRecorder()
@@ -265,6 +320,8 @@ func TestStaticHistoryRejectsInvalidAndUnavailableResponses(t *testing.T) {
 		{"cycle-strategies", func(s *staticHistoryAPIStub) { s.strategy.SourceKeyDigest = [32]byte{} }, func(s *staticHistoryAPIStub) { s.strategy.ID++ }},
 		{"cycle-versions", func(s *staticHistoryAPIStub) { s.version.SourcePayloadDigest = [32]byte{} }, func(s *staticHistoryAPIStub) { s.version.ID++ }},
 		{"cycle-documents", func(s *staticHistoryAPIStub) { s.document.SourceKeyDigest = [32]byte{} }, func(s *staticHistoryAPIStub) { s.document.ID++ }},
+		{"cycle-metrics", func(s *staticHistoryAPIStub) { s.metric.SourceFieldDigest = [32]byte{} }, func(s *staticHistoryAPIStub) { s.metric.ID++ }},
+		{"cycle-references", func(s *staticHistoryAPIStub) { s.reference.SourcePayloadDigest = [32]byte{} }, func(s *staticHistoryAPIStub) { s.reference.ID++ }},
 	} {
 		reader := staticHistoryAPIFixture()
 		test.corrupt(reader)
@@ -284,7 +341,7 @@ func TestStaticHistoryRejectsInvalidAndUnavailableResponses(t *testing.T) {
 }
 
 func TestStaticHistoryEmptyNilAuthorizationAndNoWrites(t *testing.T) {
-	paths := []string{"group-invites", "page-slices", "cycle-strategies", "cycle-versions", "cycle-documents"}
+	paths := []string{"group-invites", "page-slices", "cycle-strategies", "cycle-versions", "cycle-documents", "cycle-metrics", "cycle-references"}
 	for _, path := range paths {
 		reader := staticHistoryAPIFixture()
 		reader.empty = true
@@ -321,6 +378,7 @@ func TestStaticHistoryEmptyNilAuthorizationAndNoWrites(t *testing.T) {
 		path    string
 	}{
 		{nil, staticHistoryAPIFixture(), staticHistoryAPIFixture(), "group-invites"}, {staticHistoryAPIFixture(), nil, staticHistoryAPIFixture(), "page-slices"}, {staticHistoryAPIFixture(), staticHistoryAPIFixture(), nil, "cycle-strategies"},
+		{staticHistoryAPIFixture(), staticHistoryAPIFixture(), nil, "cycle-metrics"}, {staticHistoryAPIFixture(), staticHistoryAPIFixture(), nil, "cycle-references"},
 	} {
 		response := httptest.NewRecorder()
 		staticHistoryAPIRouter(t, dependencies.media, dependencies.product, dependencies.cycle, &audienceHistoryAPIAuth{role: authport.RoleAdmin}).ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/static-history/"+dependencies.path, legacyToken(140)))

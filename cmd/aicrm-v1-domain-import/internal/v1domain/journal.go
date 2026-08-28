@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	cyclehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1cycleobservationhistory"
 	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
 	runtimehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcruntimehistory"
 	invalidhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1invalidsourcehistory"
@@ -25,6 +26,125 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+// RunCycleObservationHistory materializes sealed source observations only.
+func RunCycleObservationHistory(ctx context.Context, pool *pgxpool.Pool, archive cyclehistory.ArchiveSource, run string, key []byte, reconcile bool) (CycleObservationHistoryResult, error) {
+	if ctx == nil || pool == nil || archive == nil || run == "" || len(key) < sha256.Size {
+		return CycleObservationHistoryResult{}, ErrInvalidScope
+	}
+	var result CycleObservationHistoryResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(bound context.Context) error {
+		result = CycleObservationHistoryResult{}
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+			return err
+		}
+		var ready bool
+		err = tx.QueryRow(bound, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_reconciliation_receipts a
+JOIN public.data_migration_runs r USING(run_id) WHERE a.run_id=$1 AND r.phase='reconciled'
+AND a.source_row_count=a.archive_record_count AND a.source_row_count=a.terminal_disposition_count
+AND a.source_table_count=a.archived_table_count)`, run).Scan(&ready)
+		if err != nil {
+			return err
+		}
+		if !ready {
+			return ErrConflict
+		}
+		selector, err := cyclehistory.NewSelector(archive, cycleObservationTerminalReader{})
+		if err != nil {
+			return err
+		}
+		selected, err := selector.Select(bound, cyclehistory.SelectionOptions{ArchiveRunID: run, SourceHMACKey: key})
+		if err != nil {
+			return err
+		}
+		for table, count := range map[string]int{cyclehistory.MetricsTableID: len(selected.Metrics), cyclehistory.ReferencesTableID: len(selected.References)} {
+			var expected int64
+			if err = tx.QueryRow(bound, "SELECT row_count FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=$2", run, table).Scan(&expected); err != nil || expected != int64(count) {
+				return ErrConflict
+			}
+		}
+		entries, err := cycleObservationEntries(bound, selected, run, tx)
+		if err != nil {
+			return err
+		}
+		result.Selected = len(entries)
+		if reconcile {
+			proof, err := reconcileCycleObservationEntries(bound, tx, entries, run)
+			if err != nil {
+				return err
+			}
+			result.Reconciliation = &proof
+			return nil
+		}
+		for _, entry := range entries {
+			receipt, err := entry.write(bound)
+			if err != nil {
+				return err
+			}
+			if receipt.Kind != entry.kind || receipt.SourceIdentifier != entry.source || receipt.PayloadDigest != entry.payload || receipt.TargetID < 1 {
+				return ErrConflict
+			}
+			terminal, found, err := entry.journal.LoadTerminal(bound, entry.source)
+			if err != nil || !found {
+				return ErrConflict
+			}
+			digest, err := entry.verify(bound, receipt.TargetID)
+			if err != nil || receipt.TargetDigest != digest || terminal.TargetDigest != digest || terminal.SourceKeyDigest != entry.key || terminal.PayloadDigest != entry.payload || terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetID != strconv.FormatInt(receipt.TargetID, 10) || len(terminal.Metadata) != 0 {
+				return ErrConflict
+			}
+			if receipt.Replayed {
+				result.Replayed++
+			} else {
+				result.Imported++
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return CycleObservationHistoryResult{}, err
+	}
+	return result, nil
+}
+
+type cycleObservationTerminalReader struct{}
+
+func (cycleObservationTerminalReader) EachArchiveTerminal(ctx context.Context, run, table string, visit func(cyclehistory.ArchiveTerminalReceipt) error) error {
+	if ctx == nil || run == "" || visit == nil || (table != cyclehistory.MetricsTableID && table != cyclehistory.ReferencesTableID) {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := tx.Query(ctx, `SELECT run_id,adapter_id,table_id,source_key_digest,payload_digest,field_digest,disposition,operation
+FROM public.data_migration_row_receipts WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 ORDER BY source_key_digest`, run, v1archive.DefaultAdapterID, table)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var value cyclehistory.ArchiveTerminalReceipt
+		var source, payload, field []byte
+		if err = rows.Scan(&value.ArchiveRunID, &value.AdapterID, &value.TableID, &source, &payload, &field, &value.Disposition, &value.Operation); err != nil {
+			return err
+		}
+		if len(source) != sha256.Size || len(payload) != sha256.Size || len(field) != sha256.Size {
+			return ErrConflict
+		}
+		copy(value.SourceKeyDigest[:], source)
+		copy(value.PayloadDigest[:], payload)
+		copy(value.FieldDigest[:], field)
+		if err = visit(value); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
 
 // RunHXCRuntimeHistory converts the two sealed runtime sources into immutable
 // HXC-owned facts. Import, replay and readback all use one caller transaction.
