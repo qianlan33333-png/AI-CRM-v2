@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"flag"
 	"testing"
@@ -34,9 +35,20 @@ func TestReconciledHXCMemberUsageArchivePreflight(t *testing.T) {
 	var ordinal [8]byte
 	digest := sha256.New()
 	started := time.Now()
+	failureReason := "archive_read"
 	err = archive.EachTableRow(ctx, "v1-full-archive-20260827", MemberUsageProjectionTableID, func(row v1archive.ArchivedRow) error {
 		result := AdaptMemberUsageObservation(row, []byte(env.SourceHMACKey), count+1)
 		if result.Disposition != DispositionCandidate || result.Fact == nil || result.Reason != "" {
+			failureReason = result.Reason
+			var fields map[string]json.RawMessage
+			var decoded sourceJSON
+			shapeDecoded := json.Unmarshal(row.Payload, &fields) == nil
+			typedDecoded := json.Unmarshal(row.Payload, &decoded) == nil
+			payload, payloadErr := v1archive.PayloadHMAC([]byte(env.SourceHMACKey), "ai_audience_hxc_member_usage_projection", row.Payload)
+			field, fieldErr := v1archive.FieldHMAC([]byte(env.SourceHMACKey), "ai_audience_hxc_member_usage_projection", row.RedactedFields)
+			keyJSON, _ := memberUsageSourceKeyJSON(decoded.Generation, decoded.UnionID, decoded.OwnerUserID)
+			key, keyErr := v1archive.SourceKeyHMAC([]byte(env.SourceHMACKey), "ai_audience_hxc_member_usage_projection", keyJSON)
+			t.Logf("reason=%s ordinal_match=%t shape_decode=%t exact_shape=%t typed_decode=%t redacted_count=%d projected_nonzero=%t payload_json_valid=%t key_match=%t payload_match=%t field_match=%t", result.Reason, row.SourceOrdinal == count+1, shapeDecoded, hasExactShape(fields), typedDecoded, len(row.RedactedFields), !decoded.ProjectedAt.IsZero(), json.Valid(decoded.PayloadJSON), keyErr == nil && key == row.SourceKeyHMAC, payloadErr == nil && payload == row.PayloadHMAC, fieldErr == nil && field == row.FieldHMAC)
 			return errors.New("member_usage_preflight_" + result.Reason)
 		}
 		binary.BigEndian.PutUint64(ordinal[:], uint64(row.SourceOrdinal))
@@ -51,7 +63,7 @@ func TestReconciledHXCMemberUsageArchivePreflight(t *testing.T) {
 		return nil
 	})
 	if err != nil || count != 810554 {
-		t.Fatalf("archive_preflight_failed accepted=%d expected=810554", count)
+		t.Fatalf("archive_preflight_failed accepted=%d expected=810554 reason=%s", count, failureReason)
 	}
 	t.Logf("table=%s rows=%d accepted=%d source_payload_field_hmac=verified ordered_digest=%x elapsed_seconds=%.2f target_writes=0", MemberUsageProjectionTableID, count, count, digest.Sum(nil), time.Since(started).Seconds())
 }
