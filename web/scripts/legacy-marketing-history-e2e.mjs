@@ -8,6 +8,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const output = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-legacy-marketing-history-'));
 const entry = path.join(root, 'src/admin/sections/legacyMarketingHistory.ts');
+const dist = path.join(root, 'dist');
+const pageFile = path.join(dist, 'admin/automation.html');
+const bundleFile = path.join(dist, 'assets/admin.js');
 const saved = { fetch: globalThis.fetch, document: globalThis.document, window: globalThis.window };
 let passed = 0;
 const ok = (value, message) => { if (!value) throw new Error(message); passed++; };
@@ -16,7 +19,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 try {
   await build({ entryPoints: [entry], bundle: true, platform: 'node', format: 'esm', outdir: output, logLevel: 'warning' });
   const { renderLegacyMarketingHistory, legacyMarketingHistoryApi } = await import(pathToFileURL(path.join(output, 'legacyMarketingHistory.js')).href);
-  const dom = new JSDOM('<main id="stage"></main>', { url: 'https://test.invalid/audience-packages.html?legacy_marketing_history=1', pretendToBeVisual: true });
+  const dom = new JSDOM('<main id="stage"></main>', { url: 'https://test.invalid/automation.html?legacy_marketing_history=1', pretendToBeVisual: true });
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
   const stage = dom.window.document.querySelector('#stage');
@@ -56,6 +59,44 @@ try {
   stage.querySelector('[data-legacy-marketing-load="state"]').click();
   await sleep(10);
   ok(stage.querySelector('[role="alert"]')?.textContent.includes('未显示历史数据，也未回退 Mock') && !stage.textContent.includes('高价值'), 'failed reads clear prior content without Mock fallback');
+  const boot = async (mode = 'normal') => {
+    if (!fs.existsSync(pageFile) || !fs.existsSync(bundleFile)) throw new Error('run npm run build before legacy marketing HTTP e2e');
+    const bundle = fs.readFileSync(bundleFile, 'utf8').replace(/<\/script/gi, '<\\/script');
+    const html = fs.readFileSync(pageFile, 'utf8').replace(/<script src="\.\.\/assets\/admin\.js"><\/script>/, () => `<script>${bundle}</script>`);
+    const bootCalls = [];
+    const bootDOM = new JSDOM(html, {
+      url: 'http://localhost/admin/automation.html?legacy_marketing_history=1', runScripts: 'dangerously', pretendToBeVisual: true,
+      beforeParse(window) {
+        window.Headers = Headers;
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          bootCalls.push({ path: url.pathname, query: url.search, method: init.method, body: init.body });
+          if (mode === 'failure') return { status: 503, headers: new Headers(), text: async () => JSON.stringify({ code: 'unavailable' }) };
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          return { status: 200, headers: new Headers(), text: async () => JSON.stringify({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: Array.from({ length: Math.min(limit, Math.max(0, 21 - offset)) }, (_, index) => state(offset + index + 1)), total: 21, limit, offset }) };
+        };
+      },
+    });
+    await sleep(20);
+    return { bootDOM, bootCalls };
+  };
+  {
+    const { bootDOM, bootCalls } = await boot();
+    const bootStage = bootDOM.window.document.querySelector('#stage');
+    bootStage.querySelector('[data-legacy-marketing-load="state"]').click();
+    await sleep(20);
+    ok(bootDOM.window.document.body.getAttribute('data-page') === 'automation' && bootStage.querySelector('[data-legacy-marketing-history]') && bootCalls.length === 1 && bootCalls[0].path === '/api/admin/legacy-marketing-history/states' && bootCalls[0].query === '?limit=20&offset=0', 'automation boot enters the read-only module and its manual load uses the generated GET');
+    bootDOM.window.close();
+  }
+  {
+    const { bootDOM, bootCalls } = await boot('failure');
+    const bootStage = bootDOM.window.document.querySelector('#stage');
+    bootStage.querySelector('[data-legacy-marketing-load="state"]').click();
+    await sleep(20);
+    ok(bootStage.querySelector('[data-legacy-marketing-history]') && bootStage.querySelector('[role="alert"]')?.textContent.includes('未显示历史数据，也未回退 Mock') && !bootStage.querySelector('[data-automation-history]') && bootCalls.length === 1, '503 remains in the legacy read-only module without current-controller or Mock fallback');
+    bootDOM.window.close();
+  }
   console.log(`legacy-marketing-history DOM checks: ${passed}`);
 } finally {
   globalThis.fetch = saved.fetch;
