@@ -5,6 +5,118 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface LegacyMarketingHistoryState {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  scenario_key: string;
+  marketing_phase: string;
+  phase_label: string;
+  phase_reason: string;
+  lifecycle_status: string;
+  last_batch_status: string;
+  last_batch_window_start: string;
+  last_batch_window_end: string;
+  last_trigger_message_at: string;
+  /** @nullable */
+  entered_at: string | null;
+  /** @nullable */
+  exited_at: string | null;
+  exit_reason: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyMarketingHistoryStatePageSource =
+  (typeof LegacyMarketingHistoryStatePageSource)[keyof typeof LegacyMarketingHistoryStatePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryStatePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryStatePage {
+  source: LegacyMarketingHistoryStatePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: LegacyMarketingHistoryState[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type LegacyMarketingHistoryStateDetailSource =
+  (typeof LegacyMarketingHistoryStateDetailSource)[keyof typeof LegacyMarketingHistoryStateDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryStateDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryStateDetail {
+  source: LegacyMarketingHistoryStateDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: LegacyMarketingHistoryState;
+}
+
+export interface LegacyMarketingHistoryValue {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  scenario_key: string;
+  value_segment: string;
+  segment_label: string;
+  score: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyMarketingHistoryValuePageSource =
+  (typeof LegacyMarketingHistoryValuePageSource)[keyof typeof LegacyMarketingHistoryValuePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryValuePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryValuePage {
+  source: LegacyMarketingHistoryValuePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: LegacyMarketingHistoryValue[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type LegacyMarketingHistoryValueDetailSource =
+  (typeof LegacyMarketingHistoryValueDetailSource)[keyof typeof LegacyMarketingHistoryValueDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryValueDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryValueDetail {
+  source: LegacyMarketingHistoryValueDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: LegacyMarketingHistoryValue;
+}
+
 /**
  * @minItems 32
  * @maxItems 32
@@ -18885,6 +18997,30 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListLegacyMarketingHistoryStatesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListLegacyMarketingHistoryValuesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListAutomationHistorySOPsParams = {
   /**
    * @minimum 1
@@ -21257,6 +21393,314 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type listLegacyMarketingHistoryStatesResponse200 = {
+  data: LegacyMarketingHistoryStatePage;
+  status: 200;
+};
+
+export type listLegacyMarketingHistoryStatesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyMarketingHistoryStatesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyMarketingHistoryStatesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyMarketingHistoryStatesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyMarketingHistoryStatesResponseSuccess =
+  listLegacyMarketingHistoryStatesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyMarketingHistoryStatesResponseError = (
+  | listLegacyMarketingHistoryStatesResponse400
+  | listLegacyMarketingHistoryStatesResponse401
+  | listLegacyMarketingHistoryStatesResponse403
+  | listLegacyMarketingHistoryStatesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyMarketingHistoryStatesResponse =
+  | listLegacyMarketingHistoryStatesResponseSuccess
+  | listLegacyMarketingHistoryStatesResponseError;
+
+export const getListLegacyMarketingHistoryStatesUrl = (
+  params?: ListLegacyMarketingHistoryStatesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/legacy-marketing-history/states?${stringifiedParams}`
+    : `/api/admin/legacy-marketing-history/states`;
+};
+
+export const listLegacyMarketingHistoryStates = async (
+  params?: ListLegacyMarketingHistoryStatesParams,
+  options?: RequestInit,
+): Promise<listLegacyMarketingHistoryStatesResponse> => {
+  const res = await fetch(getListLegacyMarketingHistoryStatesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyMarketingHistoryStatesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyMarketingHistoryStatesResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type getLegacyMarketingHistoryStateResponse200 = {
+  data: LegacyMarketingHistoryStateDetail;
+  status: 200;
+};
+
+export type getLegacyMarketingHistoryStateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyMarketingHistoryStateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyMarketingHistoryStateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyMarketingHistoryStateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyMarketingHistoryStateResponseSuccess =
+  getLegacyMarketingHistoryStateResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyMarketingHistoryStateResponseError = (
+  | getLegacyMarketingHistoryStateResponse400
+  | getLegacyMarketingHistoryStateResponse401
+  | getLegacyMarketingHistoryStateResponse403
+  | getLegacyMarketingHistoryStateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyMarketingHistoryStateResponse =
+  | getLegacyMarketingHistoryStateResponseSuccess
+  | getLegacyMarketingHistoryStateResponseError;
+
+export const getGetLegacyMarketingHistoryStateUrl = (historyId: number) => {
+  return `/api/admin/legacy-marketing-history/states/${historyId}`;
+};
+
+export const getLegacyMarketingHistoryState = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getLegacyMarketingHistoryStateResponse> => {
+  const res = await fetch(getGetLegacyMarketingHistoryStateUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyMarketingHistoryStateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyMarketingHistoryStateResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type listLegacyMarketingHistoryValuesResponse200 = {
+  data: LegacyMarketingHistoryValuePage;
+  status: 200;
+};
+
+export type listLegacyMarketingHistoryValuesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyMarketingHistoryValuesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyMarketingHistoryValuesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyMarketingHistoryValuesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyMarketingHistoryValuesResponseSuccess =
+  listLegacyMarketingHistoryValuesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyMarketingHistoryValuesResponseError = (
+  | listLegacyMarketingHistoryValuesResponse400
+  | listLegacyMarketingHistoryValuesResponse401
+  | listLegacyMarketingHistoryValuesResponse403
+  | listLegacyMarketingHistoryValuesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyMarketingHistoryValuesResponse =
+  | listLegacyMarketingHistoryValuesResponseSuccess
+  | listLegacyMarketingHistoryValuesResponseError;
+
+export const getListLegacyMarketingHistoryValuesUrl = (
+  params?: ListLegacyMarketingHistoryValuesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/legacy-marketing-history/values?${stringifiedParams}`
+    : `/api/admin/legacy-marketing-history/values`;
+};
+
+export const listLegacyMarketingHistoryValues = async (
+  params?: ListLegacyMarketingHistoryValuesParams,
+  options?: RequestInit,
+): Promise<listLegacyMarketingHistoryValuesResponse> => {
+  const res = await fetch(getListLegacyMarketingHistoryValuesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyMarketingHistoryValuesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyMarketingHistoryValuesResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type getLegacyMarketingHistoryValueResponse200 = {
+  data: LegacyMarketingHistoryValueDetail;
+  status: 200;
+};
+
+export type getLegacyMarketingHistoryValueResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyMarketingHistoryValueResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyMarketingHistoryValueResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyMarketingHistoryValueResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyMarketingHistoryValueResponseSuccess =
+  getLegacyMarketingHistoryValueResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyMarketingHistoryValueResponseError = (
+  | getLegacyMarketingHistoryValueResponse400
+  | getLegacyMarketingHistoryValueResponse401
+  | getLegacyMarketingHistoryValueResponse403
+  | getLegacyMarketingHistoryValueResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyMarketingHistoryValueResponse =
+  | getLegacyMarketingHistoryValueResponseSuccess
+  | getLegacyMarketingHistoryValueResponseError;
+
+export const getGetLegacyMarketingHistoryValueUrl = (historyId: number) => {
+  return `/api/admin/legacy-marketing-history/values/${historyId}`;
+};
+
+export const getLegacyMarketingHistoryValue = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getLegacyMarketingHistoryValueResponse> => {
+  const res = await fetch(getGetLegacyMarketingHistoryValueUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyMarketingHistoryValueResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyMarketingHistoryValueResponse;
 };
 
 /**

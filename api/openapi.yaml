@@ -6,6 +6,170 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/legacy-marketing-history/states:
+    get:
+      tags:
+        - p4-legacy-marketing-history
+      operationId: listLegacyMarketingHistoryStates
+      summary: Read immutable V1 legacy marketing snapshot without current-state changes
+      x-p4-decision-evidence: P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes:
+        admin: global
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_v1_legacy_marketing_history
+      x-aicrm-external-effect: none
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Immutable historical snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegacyMarketingHistoryStatePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/admin/legacy-marketing-history/states/{history_id}:
+    get:
+      tags:
+        - p4-legacy-marketing-history
+      operationId: getLegacyMarketingHistoryState
+      summary: Read immutable V1 legacy marketing snapshot without current-state changes
+      x-p4-decision-evidence: P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes:
+        admin: global
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_v1_legacy_marketing_history
+      x-aicrm-external-effect: none
+      parameters:
+        - name: history_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Immutable historical snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegacyMarketingHistoryStateDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/admin/legacy-marketing-history/values:
+    get:
+      tags:
+        - p4-legacy-marketing-history
+      operationId: listLegacyMarketingHistoryValues
+      summary: Read immutable V1 legacy marketing snapshot without current-state changes
+      x-p4-decision-evidence: P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes:
+        admin: global
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_v1_legacy_marketing_history
+      x-aicrm-external-effect: none
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Immutable historical snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegacyMarketingHistoryValuePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/admin/legacy-marketing-history/values/{history_id}:
+    get:
+      tags:
+        - p4-legacy-marketing-history
+      operationId: getLegacyMarketingHistoryValue
+      summary: Read immutable V1 legacy marketing snapshot without current-state changes
+      x-p4-decision-evidence: P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes:
+        admin: global
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_v1_legacy_marketing_history
+      x-aicrm-external-effect: none
+      parameters:
+        - name: history_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Immutable historical snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegacyMarketingHistoryValueDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /api/admin/automation-history/sops:
     get:
       tags: [p4-automation-history]
@@ -14031,6 +14195,227 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    LegacyMarketingHistoryState:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - source_id
+        - scenario_key
+        - marketing_phase
+        - phase_label
+        - phase_reason
+        - lifecycle_status
+        - last_batch_status
+        - last_batch_window_start
+        - last_batch_window_end
+        - last_trigger_message_at
+        - entered_at
+        - exited_at
+        - exit_reason
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        source_id:
+          type: integer
+          format: int64
+        scenario_key:
+          type: string
+        marketing_phase:
+          type: string
+        phase_label:
+          type: string
+        phase_reason:
+          type: string
+        lifecycle_status:
+          type: string
+        last_batch_status:
+          type: string
+        last_batch_window_start:
+          type: string
+        last_batch_window_end:
+          type: string
+        last_trigger_message_at:
+          type: string
+        entered_at:
+          type: string
+          format: date-time
+          nullable: true
+        exited_at:
+          type: string
+          format: date-time
+          nullable: true
+        exit_reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LegacyMarketingHistoryStatePage:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - read_only
+        - real_external_call_executed
+        - items
+        - total
+        - limit
+        - offset
+      properties:
+        source:
+          type: string
+          enum:
+            - v1_history
+        read_only:
+          type: boolean
+          enum:
+            - true
+        real_external_call_executed:
+          type: boolean
+          enum:
+            - false
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LegacyMarketingHistoryState"
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+    LegacyMarketingHistoryStateDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - read_only
+        - real_external_call_executed
+        - item
+      properties:
+        source:
+          type: string
+          enum:
+            - v1_history
+        read_only:
+          type: boolean
+          enum:
+            - true
+        real_external_call_executed:
+          type: boolean
+          enum:
+            - false
+        item:
+          $ref: "#/components/schemas/LegacyMarketingHistoryState"
+    LegacyMarketingHistoryValue:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - source_id
+        - scenario_key
+        - value_segment
+        - segment_label
+        - score
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        source_id:
+          type: integer
+          format: int64
+        scenario_key:
+          type: string
+        value_segment:
+          type: string
+        segment_label:
+          type: string
+        score:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LegacyMarketingHistoryValuePage:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - read_only
+        - real_external_call_executed
+        - items
+        - total
+        - limit
+        - offset
+      properties:
+        source:
+          type: string
+          enum:
+            - v1_history
+        read_only:
+          type: boolean
+          enum:
+            - true
+        real_external_call_executed:
+          type: boolean
+          enum:
+            - false
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LegacyMarketingHistoryValue"
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+    LegacyMarketingHistoryValueDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - read_only
+        - real_external_call_executed
+        - item
+      properties:
+        source:
+          type: string
+          enum:
+            - v1_history
+        read_only:
+          type: boolean
+          enum:
+            - true
+        real_external_call_executed:
+          type: boolean
+          enum:
+            - false
+        item:
+          $ref: "#/components/schemas/LegacyMarketingHistoryValue"
     AutomationHistoryDigest:
       type: array
       minItems: 32

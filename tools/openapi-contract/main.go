@@ -139,6 +139,10 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"listLegacyMarketingHistoryStates":          {"/api/admin/legacy-marketing-history/states", "GET", "P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_legacy_marketing_history", "none", map[string]string{"admin": "global"}},
+	"getLegacyMarketingHistoryState":            {"/api/admin/legacy-marketing-history/states/{history_id}", "GET", "P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_legacy_marketing_history", "none", map[string]string{"admin": "global"}},
+	"listLegacyMarketingHistoryValues":          {"/api/admin/legacy-marketing-history/values", "GET", "P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_legacy_marketing_history", "none", map[string]string{"admin": "global"}},
+	"getLegacyMarketingHistoryValue":            {"/api/admin/legacy-marketing-history/values/{history_id}", "GET", "P4-V1-LEGACY-MARKETING-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "segment.read_only_v1_legacy_marketing_history", "none", map[string]string{"admin": "global"}},
 	"listAutomationHistorySOPs":                 {"/api/admin/automation-history/sops", "GET", "P4-V1-AUTOMATION-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "automation.read_only_v1_configuration_history", "none", map[string]string{"admin": "global"}},
 	"getAutomationHistorySOP":                   {"/api/admin/automation-history/sops/{history_id}", "GET", "P4-V1-AUTOMATION-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "automation.read_only_v1_configuration_history", "none", map[string]string{"admin": "global"}},
 	"listAutomationHistoryConfigs":              {"/api/admin/automation-history/configs", "GET", "P4-V1-AUTOMATION-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "automation.read_only_v1_configuration_history", "none", map[string]string{"admin": "global"}},

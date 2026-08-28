@@ -22,6 +22,7 @@ import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
+import { renderLegacyMarketingHistory } from './sections/legacyMarketingHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
@@ -36,6 +37,10 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'automation' && historyQuery.get('legacy_marketing_history') === '1') {
+    void renderLegacyMarketingHistory(stage).catch(() => { stage.innerHTML = '<section data-legacy-marketing-history><h1>V1 旧版营销历史（只读）</h1><p role="alert">历史数据读取失败；未更改当前分层。</p></section>'; });
+    return;
+  }
   if (page === 'config' && historyQuery.get('automation_history') === '1') {
     void mountAutomationHistory(stage, {
       kind: historyQuery.get('history_kind') ?? undefined,
@@ -176,6 +181,9 @@ function boot(): void {
   void controller.init()
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
+      if (page === 'automation') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?legacy_marketing_history=1">V1 旧版营销快照（只读）</a></p>');
+      }
       if (page === 'groupops') {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
       }

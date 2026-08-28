@@ -51,6 +51,8 @@ QUERY_PLAN_BASE_SHA="$query_base" \
 QUERY_PLAN_HEAD_SHA="$query_head" \
 make --no-print-directory ci-go
 
+go test ./internal/segment/store -run '^TestLegacyMarketingHistoryPostgresRoundTripRollback$' -legacy-marketing-history-postgres-dsn="$database_url"
+
 ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 \
 ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
 MIGRATION_TEST_DATABASE_URL="$database_url" \
