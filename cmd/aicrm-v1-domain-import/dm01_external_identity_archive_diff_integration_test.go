@@ -85,18 +85,29 @@ func (reader dm01ExternalIdentityReceiptReader) EachDM01ExternalIdentityReceipt(
 	}
 	return reader.uow.Within(ctx, func(tx context.Context) error {
 		mode, state, err := reader.repo.ReadHistoricalImportRun(tx, runID)
-		if err != nil || mode != "full" || state != "imported" {
-			return errors.New("DM01 run is not a full imported run")
+		if err != nil {
+			return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_run_read_lock"}
+		}
+		if mode != "full" || state != "imported" {
+			return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_run_state"}
 		}
 		var ordinal int64
-		return reader.repo.StreamReconcileReceipts(tx, runID, contactmigration.ReconcileExternalIdentity, func(receipt contactmigration.ReconcileReceipt) error {
+		err = reader.repo.StreamReconcileReceipts(tx, runID, contactmigration.ReconcileExternalIdentity, func(receipt contactmigration.ReconcileReceipt) error {
 			if len(receipt.SourceFact.SourceKeyHMAC) != sha256.Size {
-				return errors.New("DM01 receipt source key is invalid")
+				return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_adapter"}
 			}
 			ordinal++
 			var sourceKey [sha256.Size]byte
 			copy(sourceKey[:], receipt.SourceFact.SourceKeyHMAC)
 			return emit(v1domain.DM01ExternalIdentityReceipt{SourceOrdinal: ordinal, SourceKeyHMAC: sourceKey, Disposition: receipt.Disposition})
 		})
+		if err == nil {
+			return nil
+		}
+		var failure *v1domain.DM01ExternalIdentityArchiveDiffError
+		if errors.As(err, &failure) {
+			return failure
+		}
+		return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_stream_repository"}
 	})
 }
