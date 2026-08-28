@@ -483,7 +483,7 @@ owners:
 
   hxc:
     package: internal/hxc
-    tables: [hxc_sender_configs, hxc_sender_config_receipts, hxc_v1_dashboard_refresh_history, hxc_v1_dashboard_observations, hxc_v1_activation_observations, hxc_v1_experience_lead_history, hxc_v1_import_batch_history, hxc_v1_sender_config_history, hxc_v1_send_record_history]
+    tables: [hxc_sender_configs, hxc_sender_config_receipts, hxc_v1_dashboard_refresh_history, hxc_v1_dashboard_observations, hxc_v1_activation_observations, hxc_v1_experience_lead_history, hxc_v1_import_batch_history, hxc_v1_sender_config_history, hxc_v1_send_record_history, hxc_v1_chat_job_history]
     constraints:
       hxc_sender_configs: single_instance_local_sender_configuration_without_provider_directory_or_broadcast_execution
       hxc_sender_config_receipts: actor_scoped_transactional_sender_configuration_idempotency_receipts

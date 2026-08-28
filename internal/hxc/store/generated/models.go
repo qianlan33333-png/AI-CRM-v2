@@ -21,6 +21,34 @@ type HxcV1ActivationObservation struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
+type HxcV1ChatJobHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	QueueSourceID       pgtype.Int8        `json:"queue_source_id"`
+	MemberSourceID      pgtype.Int8        `json:"member_source_id"`
+	ExternalContactID   string             `json:"external_contact_id"`
+	Phone               string             `json:"phone"`
+	ExternalMessageID   string             `json:"external_message_id"`
+	ExternalSessionID   string             `json:"external_session_id"`
+	LaohuangTaskID      string             `json:"laohuang_task_id"`
+	RequestPayloadJson  string             `json:"request_payload_json"`
+	AcceptedPayloadJson string             `json:"accepted_payload_json"`
+	CallbackPayloadJson string             `json:"callback_payload_json"`
+	OriginalStatus      string             `json:"original_status"`
+	ReplyText           string             `json:"reply_text"`
+	ErrorCode           string             `json:"error_code"`
+	ErrorMessage        string             `json:"error_message"`
+	SendChannel         string             `json:"send_channel"`
+	SendRecordSourceID  pgtype.Int8        `json:"send_record_source_id"`
+	SendResultJson      string             `json:"send_result_json"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	FinishedAtSource    string             `json:"finished_at_source"`
+}
+
 type HxcV1DashboardObservation struct {
 	ID                      int64              `json:"id"`
 	SourceID                int64              `json:"source_id"`
