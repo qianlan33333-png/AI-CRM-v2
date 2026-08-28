@@ -110,11 +110,11 @@ func validCampaignDefinitionDisposition(disposition, reason string) bool {
 func validCampaignDefinitionStepParent(value campaignport.HistoricalCampaignDefinitionStep) bool {
 	switch value.SourceParentState {
 	case "history_definition":
-		return value.HistoryDefinitionID != nil && *value.HistoryDefinitionID > 0 && value.CurrentCampaignID == nil
+		return value.HistoryDefinitionID != nil && *value.HistoryDefinitionID > 0 && value.CurrentCampaignCode == nil
 	case "current_definition":
-		return value.HistoryDefinitionID == nil && value.CurrentCampaignID != nil && *value.CurrentCampaignID > 0
+		return value.HistoryDefinitionID == nil && value.CurrentCampaignCode != nil && *value.CurrentCampaignCode != "" && validCampaignHistoryText(*value.CurrentCampaignCode)
 	case "unresolved_definition":
-		return value.HistoryDefinitionID == nil && value.CurrentCampaignID == nil
+		return value.HistoryDefinitionID == nil && value.CurrentCampaignCode == nil
 	default:
 		return false
 	}
@@ -140,10 +140,18 @@ func normalizeHistoricalCampaignDefinition(value campaignport.HistoricalCampaign
 
 func normalizeHistoricalCampaignDefinitionStep(value campaignport.HistoricalCampaignDefinitionStep) campaignport.HistoricalCampaignDefinitionStep {
 	value.HistoryDefinitionID = cloneCampaignHistoryID(value.HistoryDefinitionID)
-	value.CurrentCampaignID = cloneCampaignHistoryID(value.CurrentCampaignID)
+	value.CurrentCampaignCode = cloneCampaignDefinitionHistoryString(value.CurrentCampaignCode)
 	value.CreatedAt, value.UpdatedAt = normalizeCampaignHistoryTime(value.CreatedAt), normalizeCampaignHistoryTime(value.UpdatedAt)
 	value.RedactedRoots = append([]string{}, value.RedactedRoots...)
 	return value
+}
+
+func cloneCampaignDefinitionHistoryString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }
 
 func campaignDefinitionHistoryReady(writer *CampaignDefinitionHistoryWriter, ctx context.Context) bool {

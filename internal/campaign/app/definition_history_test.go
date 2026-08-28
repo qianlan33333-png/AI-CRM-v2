@@ -59,7 +59,12 @@ func TestCampaignDefinitionHistoryWriterRejectsTargetDriftAndUnsafeFacts(t *test
 	for name, mutate := range map[string]func(*campaignport.HistoricalCampaignDefinitionStep){
 		"missing history parent": func(value *campaignport.HistoricalCampaignDefinitionStep) { value.HistoryDefinitionID = nil },
 		"both parents": func(value *campaignport.HistoricalCampaignDefinitionStep) {
-			value.CurrentCampaignID = campaignDefinitionHistoryPointer(9)
+			value.CurrentCampaignCode = campaignDefinitionHistoryString("current-code")
+		},
+		"empty current code": func(value *campaignport.HistoricalCampaignDefinitionStep) {
+			value.HistoryDefinitionID = nil
+			value.SourceParentState = "current_definition"
+			value.CurrentCampaignCode = campaignDefinitionHistoryString("")
 		},
 		"bad disposition":     func(value *campaignport.HistoricalCampaignDefinitionStep) { value.OriginalDisposition = "import" },
 		"empty reason":        func(value *campaignport.HistoricalCampaignDefinitionStep) { value.OriginalReason = "" },
@@ -130,7 +135,7 @@ func TestCampaignDefinitionHistoryDigestIncludesPrivateAndParentFields(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	step.CurrentCampaignID = nil
+	step.CurrentCampaignCode = nil
 	step.HistoryDefinitionID = nil
 	step.SourceParentState = "unresolved_definition"
 	parentChanged, err := HistoricalCampaignDefinitionStepDigest(step)
@@ -143,6 +148,20 @@ func TestCampaignDefinitionHistoryDigestIncludesPrivateAndParentFields(t *testin
 	contentChanged, err := HistoricalCampaignDefinitionStepDigest(step)
 	if err != nil || contentChanged == stepDigest {
 		t.Fatalf("content digest omitted: %x %v", contentChanged, err)
+	}
+	step = campaignDefinitionHistoryFixturesStep()
+	step.ID = 8
+	step.HistoryDefinitionID = nil
+	step.SourceParentState = "current_definition"
+	step.CurrentCampaignCode = campaignDefinitionHistoryString("legacy-current-code")
+	currentCodeDigest, err := HistoricalCampaignDefinitionStepDigest(step)
+	if err != nil {
+		t.Fatal(err)
+	}
+	*step.CurrentCampaignCode = "different-current-code"
+	changedCurrentCode, err := HistoricalCampaignDefinitionStepDigest(step)
+	if err != nil || currentCodeDigest == changedCurrentCode {
+		t.Fatalf("current campaign code omitted: %x %v", changedCurrentCode, err)
 	}
 }
 
@@ -218,5 +237,6 @@ func campaignDefinitionHistoryFixturesDefinition() campaignport.HistoricalCampai
 	}
 }
 
-func campaignDefinitionHistoryDigest(value byte) [32]byte { return sha256.Sum256([]byte{value}) }
-func campaignDefinitionHistoryPointer(value int64) *int64 { return &value }
+func campaignDefinitionHistoryDigest(value byte) [32]byte  { return sha256.Sum256([]byte{value}) }
+func campaignDefinitionHistoryPointer(value int64) *int64  { return &value }
+func campaignDefinitionHistoryString(value string) *string { return &value }
