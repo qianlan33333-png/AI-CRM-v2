@@ -480,6 +480,7 @@ class WorkflowWiringTests(unittest.TestCase):
         nightly_runner_source = (REPO_ROOT / "scripts/ci/run_full_regression.sh").read_text(encoding="utf-8")
         self.assertIn("p4-dm01-migration-acceptance", nightly_runner_source)
         self.assertIn("p4-dm01-two-pg-acceptance", nightly_runner_source)
+        self.assertIn('-survey-unresolved-history-postgres-dsn="$database_url"', nightly_runner_source)
         for flag in (
             "automation-history-test-database-url",
             "signup-tag-history-store-postgres-dsn",

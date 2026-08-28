@@ -43,6 +43,10 @@ ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
 MIGRATION_TEST_DATABASE_URL="$database_url" \
 make --no-print-directory migration-integration
 
+go test -count=1 ./internal/survey/store -run '^TestSurveyUnresolvedHistoryPostgresRoundTripRollback$' -survey-unresolved-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/contact/store -run '^TestLockVerifiedDM01CustomerRootPostgresRollback$' -archive-identity-root-postgres-dsn="$database_url"
+go test -count=1 ./internal/identity/store -run '^TestArchiveIdentityRepositoryPostgresRoundTripRollback$' -archive-identity-repository-postgres-dsn="$database_url"
+go test -count=1 ./cmd/aicrm-v1-domain-import -run '^TestExternalIdentityGapTargetPostgresBoundRollback$' -external-identity-gap-target-postgres-dsn="$database_url"
 # Exercise the newly landed history stores against the migrated PostgreSQL,
 # rather than letting their opt-in round-trip/rollback tests silently skip.
 go test -count=1 ./internal/automation/store -run '^TestAutomationHistoryPostgreSQLRoundTripRollback$' -automation-history-test-database-url="$database_url"
@@ -52,6 +56,8 @@ go test -count=1 ./internal/hxc/store -run '^TestHXCHistoryPostgresRoundTripRoll
 go test -count=1 ./internal/product/store -run '^TestStaticProductHistoryPostgresRoundTripRollback$' -static-product-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/media/store -run '^TestStaticMediaHistoryPostgresRoundTripRollback$' -static-media-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/operationcycle/store -run '^TestStaticCycleHistoryPostgresRoundTripRollback$' -static-cycle-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/outbound/store -run '^TestBroadcastJobHistoryPostgresRoundTripRollback$' -broadcast-job-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/segment/store -run '^TestLegacyMarketingHistoryPostgresRoundTripRollback$' -legacy-marketing-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/contact/store -run '^TestWeComContactHistoryPostgresRoundTripRollback$' -wecom-contact-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/radar/store -run '^TestRadarClickHistoryPostgresRoundTripRollback$' -radar-click-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/automation/store -run '^TestMarketingConfigHistoryPostgresRoundTripRollback$' -marketing-config-history-postgres-dsn="$database_url"
@@ -63,6 +69,8 @@ QUERY_PLAN_TEST_DATABASE_URL="$database_url" \
 QUERY_PLAN_BASE_SHA="$query_base" \
 QUERY_PLAN_HEAD_SHA="$query_head" \
 make --no-print-directory ci-go
+
+go test ./internal/segment/store -run '^TestLegacyMarketingHistoryPostgresRoundTripRollback$' -legacy-marketing-history-postgres-dsn="$database_url"
 
 ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 \
 ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \

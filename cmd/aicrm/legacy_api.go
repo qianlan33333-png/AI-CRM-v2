@@ -36,6 +36,7 @@ import (
 	operationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/app"
 	cycleport "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/port"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
+	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -199,6 +200,8 @@ type Handler struct {
 	campaign                http.Handler
 	aiAudience              http.Handler
 	audienceHistory         segmentport.AudienceHistoryReader
+	legacyMarketingHistory  segmentport.LegacyMarketingHistoryReader
+	broadcastJobHistory     outboundport.BroadcastJobHistoryReader
 	profileCatalogHistory   segmentport.ProfileCatalogHistoryReader
 	signupTagHistory        contactport.SignupTagHistoryReader
 	automationHistory       automationport.AutomationHistoryReader
@@ -229,6 +232,7 @@ type Handler struct {
 	miniPrograms            miniProgramApplication
 	surveys                 legacySurveyApplication
 	surveySubmissions       legacySurveySubmissionApplication
+	surveyUnresolvedHistory surveyport.SurveyUnresolvedHistoryReader
 	surveySafeAdmin         surveySafeAdminHTTP
 	surveyOperations        surveyOperationsHTTP
 	groupOps                groupOpsHTTP

@@ -21,6 +21,7 @@ type Querier interface {
 	CreateVerifiedIdentityFixture(ctx context.Context, arg CreateVerifiedIdentityFixtureParams) error
 	DeferPendingReplay(ctx context.Context, arg DeferPendingReplayParams) (int64, error)
 	HasVerifiedWeComIdentityForBindCustomer(ctx context.Context, customerID int64) (bool, error)
+	ImportArchiveWeComIdentity(ctx context.Context, arg ImportArchiveWeComIdentityParams) (Identity, error)
 	InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAutoCustomerMergeAuditParams) (int64, error)
 	InsertManualCustomerMergeAudit(ctx context.Context, arg InsertManualCustomerMergeAuditParams) (int64, error)
 	InsertPendingIngest(ctx context.Context, arg InsertPendingIngestParams) (int64, error)
@@ -46,6 +47,7 @@ type Querier interface {
 	LockVerifiedAcquisitionEntrantIdentity(ctx context.Context, arg LockVerifiedAcquisitionEntrantIdentityParams) (pgtype.Int8, error)
 	LookupMessageArchiveUnionIDCustomers(ctx context.Context, normalizedValue string) ([]pgtype.Int8, error)
 	LookupNormalizedIdentity(ctx context.Context, arg LookupNormalizedIdentityParams) (LookupNormalizedIdentityRow, error)
+	ReadArchiveWeComIdentity(ctx context.Context, identityID int64) (Identity, error)
 	RebindIdentitiesForCustomerMerge(ctx context.Context, arg RebindIdentitiesForCustomerMergeParams) (int64, error)
 	ReserveBindReceipt(ctx context.Context, arg ReserveBindReceiptParams) (int64, error)
 	ReserveIngestReceipt(ctx context.Context, arg ReserveIngestReceiptParams) (int64, error)

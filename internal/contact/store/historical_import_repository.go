@@ -534,6 +534,36 @@ func (HistoricalImportRepository) ReadHistoricalImportRun(ctx context.Context, r
 	return row.Mode, row.State, nil
 }
 
+// ReadHistoricalImportRunSnapshot supports repeatable-read, read-only audits.
+// Import writers continue to use ReadHistoricalImportRun's FOR SHARE lock.
+func (HistoricalImportRepository) ReadHistoricalImportRunSnapshot(ctx context.Context, runID int64) (string, string, error) {
+	if runID < 1 {
+		return "", "", ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	row, err := contactdb.New(tx).ReadHistoricalImportRunSnapshot(ctx, runID)
+	if err != nil {
+		return "", "", err
+	}
+	return row.Mode, row.State, nil
+}
+
+// VerifyDM01CustomerIdentitySnapshot proves only a local root mapping, without
+// locks or writes. A later identity bind must still validate in its own transaction.
+func (HistoricalImportRepository) VerifyDM01CustomerIdentitySnapshot(ctx context.Context, runID int64, sourceKeyHMAC [32]byte) (bool, error) {
+	if runID < 1 || sourceKeyHMAC == ([32]byte{}) {
+		return false, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	return contactdb.New(tx).VerifyDM01CustomerIdentitySnapshot(ctx, contactdb.VerifyDM01CustomerIdentitySnapshotParams{RunID: runID, SourceKeyHmac: sourceKeyHMAC[:]})
+}
+
 func (HistoricalImportRepository) LockHistoricalImportSource(ctx context.Context, source contactport.HistoricalImportSource, sourceKeyHMAC []byte) error {
 	sourceTable, ok := historicalImportSourceTable(source)
 	if !ok || len(sourceKeyHMAC) != 32 {
