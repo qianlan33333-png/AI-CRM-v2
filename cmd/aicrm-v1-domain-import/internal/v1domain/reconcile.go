@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
+	memberusage "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcmemberusagehistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -23,6 +24,106 @@ import (
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+// Reconciliation keeps targets and receipts in one consistent transaction,
+// with no per-row advisory locks. The sealed archive has its own read-only
+// snapshot; full source summaries must match across the two passes.
+func reconcileHXCMemberUsageStream(ctx context.Context, pool *pgxpool.Pool, archive memberusage.ArchiveSource, options memberusage.StreamOptions, preflight memberusage.StreamSummary) (HXCMemberUsageHistoryResult, error) {
+	var result HXCMemberUsageHistoryResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(bound context.Context) error {
+		result = HXCMemberUsageHistoryResult{}
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts, public.hxc_v1_member_usage_history IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+			return err
+		}
+		expected, err := hxcMemberUsageSourceCount(bound, tx, options.ArchiveRunID)
+		if err != nil || expected != preflight.SourceCount {
+			return ErrConflict
+		}
+		if err = hxcMemberUsageTargetCount(bound, tx, options.ArchiveRunID, expected); err != nil {
+			return err
+		}
+		streamer, err := memberusage.NewStreamer(archive, NewHXCMemberUsageTerminalReader(tx))
+		if err != nil {
+			return err
+		}
+		hash := sha256.New()
+		encoder := json.NewEncoder(hash)
+		var batchCause error
+		actual, err := streamer.Stream(bound, options, func(ctx context.Context, batch []memberusage.MemberUsageObservationFact) error {
+			entries, err := hxcMemberUsageEntries(ctx, batch, options.ArchiveRunID, tx, hxcstore.NewHXCHistoryStore(), hxcstore.NewHXCHistoryReader(tx))
+			if err != nil {
+				batchCause = err
+				return err
+			}
+			for _, entry := range entries {
+				var target string
+				var payload, targetDigest []byte
+				err = tx.QueryRow(ctx, `SELECT target_id,payload_digest,target_digest FROM public.v1_domain_import_receipts
+WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 AND source_key_digest=$5
+AND target_domain='hxc' AND target_table='hxc_v1_member_usage_history'
+AND disposition='import' AND reason='' AND metadata='{}'::jsonb AND verified`,
+					HXCMemberUsageHistoryVersion, options.ArchiveRunID, v1archive.DefaultAdapterID, memberusage.MemberUsageProjectionTableID, entry.key[:]).Scan(&target, &payload, &targetDigest)
+				if err != nil || !equalDigest(payload, entry.payload) {
+					batchCause = ErrConflict
+					return batchCause
+				}
+				id, err := positiveID(target)
+				if err != nil || target != strconv.FormatInt(id, 10) {
+					batchCause = ErrConflict
+					return batchCause
+				}
+				digest, err := entry.verify(ctx, id)
+				if err != nil || !equalDigest(targetDigest, digest) {
+					batchCause = ErrConflict
+					return batchCause
+				}
+				if err = encoder.Encode([]any{entry.ordinal, entry.scope.TableID, entry.source, hex.EncodeToString(entry.payload[:]), hex.EncodeToString(entry.field[:]), entry.scope.TargetDomain, entry.scope.TargetTable, target, hex.EncodeToString(digest[:])}); err != nil {
+					batchCause = err
+					return err
+				}
+			}
+			return nil
+		})
+		if batchCause != nil {
+			return batchCause
+		}
+		if err != nil {
+			return err
+		}
+		if actual != preflight {
+			return ErrConflict
+		}
+		digest := hash.Sum(nil)
+		proof := ReconciliationResult{SelectedSourceCount: expected, ReceiptCount: expected, ImportedCount: expected, VerifiedCount: expected, ComparisonDigest: hex.EncodeToString(digest)}
+		command, err := tx.Exec(bound, `INSERT INTO public.v1_domain_import_reconciliation_receipts
+(import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest)
+VALUES($1,$2,$3,$3,$3,0,0,$3,$4) ON CONFLICT(import_version,archive_run_id) DO NOTHING`, HXCMemberUsageHistoryVersion, options.ArchiveRunID, expected, digest)
+		if err != nil {
+			return err
+		}
+		proof.Replayed = command.RowsAffected() == 0
+		if proof.Replayed {
+			var selected, receipts, imported, archived, quarantined, verified int64
+			var old []byte
+			err = tx.QueryRow(bound, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
+FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, HXCMemberUsageHistoryVersion, options.ArchiveRunID).Scan(&selected, &receipts, &imported, &archived, &quarantined, &verified, &old)
+			if err != nil || selected != expected || receipts != expected || imported != expected || verified != expected || archived != 0 || quarantined != 0 || !equalBytes(old, digest) {
+				return ErrConflict
+			}
+		}
+		result = HXCMemberUsageHistoryResult{Selected: int(expected), Reconciliation: &proof}
+		return nil
+	})
+	if err != nil {
+		return HXCMemberUsageHistoryResult{}, err
+	}
+	return result, nil
+}
 
 func reconcileHXCRuntimeEntries(ctx context.Context, tx pgx.Tx, entries []hxcRuntimeEntry, run string) (ReconciliationResult, error) {
 	if ctx == nil || tx == nil || run == "" {

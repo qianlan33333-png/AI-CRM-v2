@@ -7,6 +7,29 @@ import (
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 )
 
+func TestHXCMemberUsageHistoryRequiresLocalKeysBeforeConnecting(t *testing.T) {
+	for _, mode := range []string{"import", "reconcile"} {
+		for _, kind := range []string{"source", "hmac", "aes"} {
+			env := appconfig.V1ArchiveRuntime{TargetDatabaseURL: "postgres:///must-not-connect", ArchiveKey: strings.Repeat("k", 32), SourceHMACKey: strings.Repeat("h", 32)}
+			switch kind {
+			case "source":
+				env.SourceDatabaseURL = "postgres:///forbidden-v1"
+			case "hmac":
+				env.SourceHMACKey = ""
+			case "aes":
+				env.ArchiveKey = ""
+			}
+			err := run([]string{"--domain=hxc-member-usage-history", "--mode=" + mode, "--archive-run-id=archive"}, env)
+			if err == nil || (!strings.Contains(err.Error(), "local-only archive keys") && !strings.Contains(err.Error(), "32-byte archive key")) {
+				t.Fatalf("%s/%s: %v", mode, kind, err)
+			}
+		}
+	}
+	if !validDomain("hxc-member-usage-history") {
+		t.Fatal("domain not selectable")
+	}
+}
+
 func TestParseActorIDs(t *testing.T) {
 	actors, err := parseActorIDs("QianLan=1,ZhaoYanFang=2")
 	if err != nil || actors["QianLan"] != 1 || actors["ZhaoYanFang"] != 2 {

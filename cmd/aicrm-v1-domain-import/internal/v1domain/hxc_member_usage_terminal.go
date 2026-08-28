@@ -122,68 +122,6 @@ func verifyHXCMemberUsageTerminalBatch(run string, expected map[[sha256.Size]byt
 	return nil
 }
 
-func (source hxcMemberUsageTerminalSQL) archiveRecords(ctx context.Context, run string, keys [][]byte) ([]hxcMemberUsageArchiveRecord, error) {
-	if source.db == nil {
-		return nil, ErrInvalidScope
-	}
-	rows, err := source.db.Query(ctx, `SELECT run_id,adapter_id,table_id,source_ordinal,source_key_digest,payload_digest,field_digest,schema_digest
-FROM public.v1_archive_records
-WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=ANY($4::bytea[])`, run, v1archive.DefaultAdapterID, memberusage.MemberUsageProjectionTableID, keys)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	result := make([]hxcMemberUsageArchiveRecord, 0, len(keys))
-	for rows.Next() {
-		var value hxcMemberUsageArchiveRecord
-		var sourceKey, payload, field, schema []byte
-		if err = rows.Scan(&value.RunID, &value.AdapterID, &value.TableID, &value.SourceOrdinal, &sourceKey, &payload, &field, &schema); err != nil || len(sourceKey) != sha256.Size || len(payload) != sha256.Size || len(field) != sha256.Size || len(schema) != sha256.Size {
-			return nil, ErrConflict
-		}
-		copy(value.SourceKeyDigest[:], sourceKey)
-		copy(value.PayloadDigest[:], payload)
-		copy(value.FieldDigest[:], field)
-		copy(value.SchemaDigest[:], schema)
-		result = append(result, value)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (source hxcMemberUsageTerminalSQL) archiveReceipts(ctx context.Context, run string, keys [][]byte) ([]hxcMemberUsageArchiveReceipt, error) {
-	if source.db == nil {
-		return nil, ErrInvalidScope
-	}
-	rows, err := source.db.Query(ctx, `SELECT run_id,adapter_id,table_id,source_key_digest,payload_digest,field_digest,disposition,operation,mapping_digest,policy_digest,mutation_digest
-FROM public.data_migration_row_receipts
-WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=ANY($4::bytea[])`, run, v1archive.DefaultAdapterID, memberusage.MemberUsageProjectionTableID, keys)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	result := make([]hxcMemberUsageArchiveReceipt, 0, len(keys))
-	for rows.Next() {
-		var value hxcMemberUsageArchiveReceipt
-		var sourceKey, payload, field, mapping, policy, mutation []byte
-		if err = rows.Scan(&value.RunID, &value.AdapterID, &value.TableID, &sourceKey, &payload, &field, &value.Disposition, &value.Operation, &mapping, &policy, &mutation); err != nil || len(sourceKey) != sha256.Size || len(payload) != sha256.Size || len(field) != sha256.Size || len(mapping) != sha256.Size || len(policy) != sha256.Size || len(mutation) != sha256.Size {
-			return nil, ErrConflict
-		}
-		copy(value.SourceKeyDigest[:], sourceKey)
-		copy(value.PayloadDigest[:], payload)
-		copy(value.FieldDigest[:], field)
-		copy(value.MappingDigest[:], mapping)
-		copy(value.PolicyDigest[:], policy)
-		copy(value.MutationDigest[:], mutation)
-		result = append(result, value)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
 type hxcMemberUsageTerminalSQL struct{ db hxcMemberUsageTerminalDB }
 
 func hxcMemberUsageArchiveMappingDigest(schema [sha256.Size]byte) [sha256.Size]byte {
