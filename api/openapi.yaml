@@ -12843,6 +12843,52 @@ paths:
       parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
       responses: {'200': {description: CAS-updated local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/message-history:
+    get:
+      tags: [p4-message-history]
+      operationId: listMessageHistory
+      summary: Read masked historical messages without current sync or dispatch
+      x-p4-decision-evidence: P4-V1-MESSAGE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: wecom.read_only_v1_message_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: chat_type, in: query, schema: { type: string, enum: [private, group] } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Masked immutable history, content: { application/json: { schema: { $ref: "#/components/schemas/MessageHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/message-history/{history_id}:
+    get:
+      tags: [p4-message-history]
+      operationId: getMessageHistory
+      summary: Read one masked historical message by actual V2 history ID
+      x-p4-decision-evidence: P4-V1-MESSAGE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: wecom.read_only_v1_message_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Masked immutable history, content: { application/json: { schema: { $ref: "#/components/schemas/MessageHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
   /api/admin/audience-history/groups:
     get:
       tags: [p4-audience-history]
@@ -13071,6 +13117,93 @@ paths:
         - { name: definition_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
       responses:
         "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryDefinitionDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/sidebar-profiles:
+    get:
+      tags: [p4-contact-history]
+      operationId: listSidebarProfileHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/SidebarProfileHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/sidebar-profiles/{history_id}:
+    get:
+      tags: [p4-contact-history]
+      operationId: getSidebarProfileHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/SidebarProfileHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/owner-migration-results:
+    get:
+      tags: [p4-contact-history]
+      operationId: listOwnerMigrationResultHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMigrationResultHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/contact-history/owner-migration-results/{history_id}:
+    get:
+      tags: [p4-contact-history]
+      operationId: getOwnerMigrationResultHistory
+      summary: Read immutable V1 contact history without current mutations
+      x-p4-decision-evidence: P4-V1-CONTACT-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_contact_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Read-only historical facts, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMigrationResultHistoryDetail" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -22019,6 +22152,44 @@ components:
         page: { type: integer, format: int32, minimum: 1 }
         page_size: { type: integer, format: int32, minimum: 1, maximum: 100 }
         visibility: { type: string, enum: [masked] }
+    MessageHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, sequence, customer_id, chat_type, message_type, content_masked, original_send_time, send_time_basis, sent_at, created_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        sequence: { type: integer, format: int64, nullable: true }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        chat_type: { type: string }
+        message_type: { type: string }
+        content_masked: { type: string, nullable: true }
+        original_send_time: { type: string }
+        send_time_basis: { type: string, enum: [civil_unzoned, explicit_offset] }
+        sent_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    MessageHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/MessageHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    MessageHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/MessageHistoryItem" }
     AudienceHistoryGroup:
       type: object
       additionalProperties: false
@@ -22276,3 +22447,81 @@ components:
         total: { type: integer, format: int64, minimum: 0 }
         limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
         offset: { type: integer, format: int32, minimum: 0 }
+    SidebarProfileHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, customer_id, source, industry, industry_description, needs_blockers_followup, updated_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        source: { type: string }
+        industry: { type: string }
+        industry_description: { type: string }
+        needs_blockers_followup: { type: string }
+        updated_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    SidebarProfileHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/SidebarProfileHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    SidebarProfileHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/SidebarProfileHistoryItem" }
+    OwnerMigrationResultHistoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, source_key_digest, scope_type, file_hash, preview_hash, transfer_welcome_message, total_rows, eligible_count, wecom_success, wecom_failed, crm_updated, include_wecom_transfer, session_relation, preview_relation, created_at, executed_at, source_payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+        scope_type: { type: string }
+        file_hash: { type: string }
+        preview_hash: { type: string }
+        transfer_welcome_message: { type: string }
+        total_rows: { type: integer, format: int64, minimum: 0 }
+        eligible_count: { type: integer, format: int64, minimum: 0 }
+        wecom_success: { type: integer, format: int64, minimum: 0 }
+        wecom_failed: { type: integer, format: int64, minimum: 0 }
+        crm_updated: { type: integer, format: int64, minimum: 0 }
+        include_wecom_transfer: { type: boolean }
+        session_relation: { type: string, enum: [resolved, unresolved] }
+        preview_relation: { type: string, enum: [resolved, unresolved] }
+        created_at: { type: string, format: date-time }
+        executed_at: { type: string, format: date-time }
+        source_payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    OwnerMigrationResultHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/OwnerMigrationResultHistoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    OwnerMigrationResultHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/OwnerMigrationResultHistoryItem" }

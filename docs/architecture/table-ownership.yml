@@ -54,6 +54,8 @@ owners:
       - channel_acquisition_entrant_receipts
       - channel_historical_contacts
       - channel_historical_assignees
+      - contact_v1_sidebar_profile_history
+      - contact_v1_owner_migration_result_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -464,9 +466,10 @@ owners:
 
   wecom:
     package: internal/wecom
-    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts, wecom_contact_inbox, wecom_tag_effects, wecom_tag_catalog_snapshots, wecom_tag_catalog_groups, wecom_tag_catalog_tags, wecom_contact_profile_effects]
+    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts, wecom_v1_message_history, wecom_contact_inbox, wecom_tag_effects, wecom_tag_catalog_snapshots, wecom_tag_catalog_groups, wecom_tag_catalog_tags, wecom_contact_profile_effects]
     constraints:
       wecom_message_archive_records: local_redacted_message_projection_with_logical_OneID_customer_attribution_and_no_cross_domain_foreign_key
+      wecom_v1_message_history: immutable_masked_V1_history_with_nullable_DM01_customer_and_unzoned_source_clock_without_current_sync_or_dispatch
       wecom_message_archive_sync_receipts: actor_scoped_accepted_only_sync_command_idempotency_without_provider_or_worker_execution
       wecom_contact_inbox: verified_local_inbound_fact_lease_and_handoff_state_without_provider_effect
       wecom_tag_effects: typed_provider_effect_projection_with_eer_receipts_and_manual_reconciliation
