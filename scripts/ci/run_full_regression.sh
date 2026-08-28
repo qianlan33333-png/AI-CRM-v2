@@ -49,6 +49,7 @@ go test -count=1 ./internal/identity/store -run '^TestArchiveIdentityRepositoryP
 go test -count=1 ./cmd/aicrm-v1-domain-import -run '^TestExternalIdentityGapTargetPostgresBoundRollback$' -external-identity-gap-target-postgres-dsn="$database_url"
 # Exercise the newly landed history stores against the migrated PostgreSQL,
 # rather than letting their opt-in round-trip/rollback tests silently skip.
+go test -count=1 ./internal/campaign/store -run '^TestCampaignDefinitionHistoryPostgresRoundTripRollback$' -campaign-definition-history-store-postgres-dsn="$database_url"
 go test -count=1 ./internal/automation/store -run '^TestAutomationHistoryPostgreSQLRoundTripRollback$' -automation-history-test-database-url="$database_url"
 go test -count=1 ./internal/contact/store -run '^Test(SignupTagHistory|CustomerStateHistory)PostgresRoundTripRollback$' -signup-tag-history-store-postgres-dsn="$database_url" -customer-state-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/segment/store -run '^Test(ProfileCatalogHistory|MarketingStateHistory)PostgresRoundTripRollback$' -profile-catalog-history-store-postgres-dsn="$database_url" -marketing-state-history-postgres-dsn="$database_url"

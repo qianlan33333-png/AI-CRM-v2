@@ -1624,6 +1624,75 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/definitions:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistoryDefinitions
+      summary: Read non-executable V1 Campaign definitions and steps
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-DEFINITION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; never permits execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalCampaignDefinitionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/definitions/{history_id}:
+    get:
+      tags: [p4-campaign-history]
+      operationId: getCampaignHistoryDefinition
+      summary: Read non-executable V1 Campaign definitions and steps
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-DEFINITION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: History only; never permits execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalCampaignDefinitionDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/campaign-history/definition-steps:
+    get:
+      tags: [p4-campaign-history]
+      operationId: listCampaignHistoryDefinitionSteps
+      summary: Read non-executable V1 Campaign definitions and steps
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CAMPAIGN-DEFINITION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: campaign.read_only_v1_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: campaign_source_id, in: query, required: false, schema: { type: integer, format: int64 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; never permits execution, content: { application/json: { schema: { $ref: "#/components/schemas/HistoricalCampaignDefinitionStepPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/campaign-history/segments:
     get:
       tags: [p4-campaign-history]
@@ -17170,6 +17239,85 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/AutomationHistoryAgent" }
+    HistoricalCampaignDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, code, display_name, intent, anchor_mode, anchor_date, review_status, run_status, approved_at, started_at, finished_at, paused_at, paused_reason, created_at, updated_at, original_disposition, original_reason]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        code: { type: string }
+        display_name: { type: string }
+        intent: { type: string }
+        anchor_mode: { type: string }
+        anchor_date: { type: string }
+        review_status: { type: string }
+        run_status: { type: string }
+        approved_at: { type: string, format: date-time, nullable: true }
+        started_at: { type: string, format: date-time, nullable: true }
+        finished_at: { type: string, format: date-time, nullable: true }
+        paused_at: { type: string, format: date-time, nullable: true }
+        paused_reason: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        original_disposition: { type: string, enum: [archive, quarantine] }
+        original_reason: { type: string }
+    HistoricalCampaignDefinitionStep:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_code, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        campaign_source_id: { type: integer, format: int64 }
+        segment_source_id: { type: integer, format: int64 }
+        history_definition_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        current_campaign_code: { type: string, minLength: 1, nullable: true }
+        source_parent_state: { type: string, enum: [history_definition, current_definition, unresolved_definition] }
+        step_index: { type: integer, format: int32 }
+        day_offset: { type: integer, format: int32 }
+        send_time: { type: string }
+        timezone: { type: string }
+        content_masked: { type: string }
+        stop_on_reply: { type: boolean }
+        skip_recent_days: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        original_disposition: { type: string, enum: [archive, quarantine] }
+        original_reason: { type: string }
+    HistoricalCampaignDefinitionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalCampaignDefinition" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    HistoricalCampaignDefinitionDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HistoricalCampaignDefinition" }
+    HistoricalCampaignDefinitionStepPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HistoricalCampaignDefinitionStep" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
     HistoricalCampaignSegment:
       type: object
       additionalProperties: false

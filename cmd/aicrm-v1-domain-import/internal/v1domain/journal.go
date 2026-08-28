@@ -15,7 +15,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -25,6 +27,125 @@ var (
 	ErrInvalidScope = errors.New("invalid V1 domain import scope")
 	ErrConflict     = errors.New("V1 domain import receipt conflict")
 )
+
+type CampaignDefinitionReceiptReader struct{ pool *pgxpool.Pool }
+
+func NewCampaignDefinitionReceiptReader(pool *pgxpool.Pool) *CampaignDefinitionReceiptReader {
+	return &CampaignDefinitionReceiptReader{pool: pool}
+}
+
+func (reader *CampaignDefinitionReceiptReader) EachCampaignDefinitionPriorReceipt(ctx context.Context, run, table string, emit func(CampaignDefinitionPriorReceipt) error) error {
+	if reader == nil || reader.pool == nil || ctx == nil || run == "" || emit == nil || (table != campaignTableID && table != campaignStepTableID) {
+		return ErrInvalidScope
+	}
+	tx, err := reader.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+	rows, err := tx.Query(ctx, `SELECT import_version,archive_run_id,adapter_id,table_id,COALESCE(target_domain,''),COALESCE(target_table,''),
+source_key_digest,payload_digest,disposition,reason
+FROM public.v1_domain_import_receipts
+WHERE import_version='v1-domain-a1' AND archive_run_id=$1 AND table_id=$2
+AND verified
+AND EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts s WHERE s.import_version='v1-domain-a1'
+AND s.archive_run_id=$1 AND s.selected_source_count=s.receipt_count AND s.verified_count=s.receipt_count)
+AND (disposition='import' OR (target_domain IS NULL AND target_table IS NULL AND target_id IS NULL AND target_digest IS NULL))
+ORDER BY source_key_digest`, run, table)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var value CampaignDefinitionPriorReceipt
+		var key, payload []byte
+		if err := rows.Scan(&value.ImportVersion, &value.ArchiveRunID, &value.AdapterID, &value.TableID, &value.TargetDomain, &value.TargetTable, &key, &payload, &value.Disposition, &value.Reason); err != nil {
+			return err
+		}
+		if len(key) != sha256.Size || len(payload) != sha256.Size {
+			return ErrConflict
+		}
+		copy(value.SourceKey[:], key)
+		copy(value.PayloadDigest[:], payload)
+		if err := emit(value); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+type CampaignDefinitionCurrentResolver struct {
+	run        string
+	repository campaignport.CampaignDefinitionCurrentReader
+	boundTx    pgx.Tx
+}
+
+func NewCampaignDefinitionCurrentResolver(run string, repository campaignport.CampaignDefinitionCurrentReader) *CampaignDefinitionCurrentResolver {
+	return &CampaignDefinitionCurrentResolver{run: run, repository: repository}
+}
+
+// Reconciliation already owns a serializable transaction. The owner reader
+// supplied to this copy must use that same transaction.
+func (resolver *CampaignDefinitionCurrentResolver) WithTx(tx pgx.Tx) *CampaignDefinitionCurrentResolver {
+	copy := *resolver
+	copy.boundTx = tx
+	return &copy
+}
+
+// A code is used only after exact source provenance and an actual Campaign
+// read agree. No V1 numeric ID is treated as a V2 key.
+func (resolver *CampaignDefinitionCurrentResolver) ResolveVerifiedCurrentCampaignDefinition(ctx context.Context, _ int64, sourceKey [sha256.Size]byte) (string, bool, error) {
+	if resolver == nil || resolver.run == "" || resolver.repository == nil || sourceKey == ([sha256.Size]byte{}) {
+		return "", false, ErrInvalidScope
+	}
+	tx := resolver.boundTx
+	if tx == nil {
+		var err error
+		tx, err = platformstore.TxFromContext(ctx)
+		if err != nil {
+			return "", false, err
+		}
+	}
+	var code *string
+	var payload, targetDigest []byte
+	var disposition string
+	var verified, archived, sealed bool
+	err := tx.QueryRow(ctx, `SELECT r.target_id,r.payload_digest,r.target_digest,r.disposition,r.verified,
+EXISTS(SELECT 1 FROM public.v1_archive_records a WHERE a.run_id=r.archive_run_id AND a.adapter_id=r.adapter_id
+AND a.table_id=r.table_id AND a.source_key_digest=r.source_key_digest AND a.payload_digest=r.payload_digest),
+EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts s WHERE s.archive_run_id=r.archive_run_id
+AND s.import_version=r.import_version AND s.selected_source_count=s.receipt_count AND s.verified_count=s.receipt_count)
+FROM public.v1_domain_import_receipts r WHERE r.import_version='v1-domain-a1' AND r.archive_run_id=$1
+AND r.adapter_id=$2 AND r.table_id='public/campaigns' AND r.source_key_digest=$3
+AND r.target_domain='campaign' AND r.target_table='cloud_campaigns'`, resolver.run, v1archive.DefaultAdapterID, sourceKey[:]).Scan(&code, &payload, &targetDigest, &disposition, &verified, &archived, &sealed)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if !archived || !sealed || !verified {
+		return "", false, ErrConflict
+	}
+	if disposition == "archive" || disposition == "quarantine" {
+		return "", false, nil
+	}
+	if disposition != "import" || code == nil || *code == "" || len(payload) != sha256.Size || len(targetDigest) != sha256.Size {
+		return "", false, ErrConflict
+	}
+	expected := sha256.Sum256([]byte("campaign\x00cloud_campaigns\x00" + *code + "\x00" + hex.EncodeToString(payload)))
+	if !equalBytes(expected[:], targetDigest) {
+		return "", false, ErrConflict
+	}
+	actual, err := resolver.repository.GetCurrentCampaignDefinitionHistoryParent(ctx, *code)
+	if err != nil {
+		return "", false, err
+	}
+	if actual.Code != *code || actual.ApprovalStatus != "rejected" || actual.RuntimeStatus != "paused" || actual.Version != 1 {
+		return "", false, ErrConflict
+	}
+	return *code, true, nil
+}
 
 type Scope struct {
 	ImportVersion string

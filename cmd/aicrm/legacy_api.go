@@ -276,6 +276,7 @@ type Handler struct {
 	hxcSender                   *hxcSenderHandler
 	deliveryLineage             legacyDeliveryLineageReaders
 	externalCustomerRead        *legacyExternalCustomerReadHandler
+	campaignDefinitionHistory   campaignport.CampaignDefinitionHistoryReader
 }
 
 type aiAudienceInboundRoutes struct {
