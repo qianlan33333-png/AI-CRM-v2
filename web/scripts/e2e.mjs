@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, contactHistoryHttp, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,41 @@ async function loadPage(rel, { id, q, groupDirectoryHttp = false, channelHttp = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(contactHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      if (contactHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__contactHistoryHttpTest = { calls: [], fail: contactHistoryHttp.fail || false };
+        const at = '2026-08-27T10:11:12.123456Z';
+        const digest = (seed) => Array.from({ length: 32 }, (_, index) => (seed + index) % 256);
+        const sidebars = Array.from({ length: 21 }, (_, i) => ({ id: 31 + i, source_key_digest: digest(i + 1), customer_id: i ? 7 : null, source: i ? '历史来源' : '', industry: '行业 <历史>', industry_description: '<img src=x onerror=alert(1)>', needs_blockers_followup: '', updated_at: at, source_payload_digest: digest(i + 2) }));
+        const owners = Array.from({ length: 21 }, (_, i) => ({ id: 61 + i, source_key_digest: digest(i + 20), scope_type: '', file_hash: `file-${i + 1}`, preview_hash: '', transfer_welcome_message: '<b>原欢迎语</b>', total_rows: 4, eligible_count: 3, wecom_success: 2, wecom_failed: 1, crm_updated: 2, include_wecom_transfer: true, session_relation: 'unresolved', preview_relation: 'resolved', created_at: at, executed_at: at, source_payload_digest: digest(i + 21) }));
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const sidebar = url.pathname === '/api/admin/contact-history/sidebar-profiles';
+          const owner = url.pathname === '/api/admin/contact-history/owner-migration-results';
+          const sidebarDetail = /^\/api\/admin\/contact-history\/sidebar-profiles\/[1-9]\d*$/.test(url.pathname);
+          const ownerDetail = /^\/api\/admin\/contact-history\/owner-migration-results\/[1-9]\d*$/.test(url.pathname);
+          if (!sidebar && !owner && !sidebarDetail && !ownerDetail) return json({ code: 'unexpected_contact_history_request' }, 500);
+          const rows = sidebar || sidebarDetail ? sidebars : owners;
+          if (sidebarDetail || ownerDetail) {
+            const item = rows.find((entry) => entry.id === Number(url.pathname.split('/').at(-1)));
+            if (!item) return json({ code: 'not_found' }, 404);
+            const result = contactHistoryHttp.wrongID ? { ...item, id: item.id + 1 } : contactHistoryHttp.wrongCustomer && sidebarDetail ? { ...item, customer_id: null } : item;
+            return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, item: contactHistoryHttp.raw ? { ...result, raw_identity: 'must-not-render' } : result });
+          }
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          const customer = url.searchParams.get('customer_id');
+          if (owner && customer !== null) return json({ code: 'unexpected_owner_customer_filter' }, 400);
+          const filtered = sidebar && customer !== null ? rows.filter((entry) => entry.customer_id === Number(customer)) : rows;
+          const body = { source: 'v1_history', read_only: true, real_external_call_executed: false, items: filtered.slice(offset, offset + limit), total: filtered.length, limit, offset };
+          return json(contactHistoryHttp.raw ? { ...body, raw_identity: 'must-not-render' } : body);
+        };
+        return;
+      }
       if (groupDirectoryHttp) {
         window.Headers = Headers;
         window.document.cookie = 'aicrm_csrf=group-directory-csrf';
@@ -1766,6 +1800,7 @@ console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
   const dom = await loadPage('admin/ownerMig.html');
   const d = dom.window.document;
   const csv = d.querySelector('#ownerMigCsv');
+  ok('当前负责人迁移页提供独立 V1 历史只读入口', d.querySelector('a[href="ownerMig.html?contact_history=1"]')?.textContent.includes('历史'));
   ok('接受 CSV/XLSX 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && csv?.getAttribute('accept')?.includes('.xlsx') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
   ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
 
@@ -1792,6 +1827,66 @@ console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
   click(dom, parseButton);
   await sleep(500);
   ok('上传真实 XLSX 第一张表后生成服务端持久预览投影', d.body.textContent.includes('服务端持久预览') && d.body.textContent.includes('preview_id: cor_0123456789012345678901') && d.body.textContent.includes('预览已生成'));
+  dom.window.close();
+}
+
+console.log('admin/ownerMig.html?contact_history=1（V1 联系人历史只读）');
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1', contactHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__contactHistoryHttpTest;
+  const section = d.querySelector('#contact-history-content');
+  ok('默认负责人旧结果只读取真实20行，明确不是 V2/Provider 成功', section.querySelectorAll('tbody tr').length === 20 && section.textContent.includes('V1 企微成功记录 2') && d.body.textContent.includes('不是 V2 迁移执行，也不是 Provider 成功证据') && test.calls.length === 1 && test.calls[0].path === '/api/admin/contact-history/owner-migration-results' && test.calls[0].query === '?limit=20&offset=0' && test.calls[0].method === 'GET');
+  ok('历史结果不提供执行按钮', [...section.querySelectorAll('button')].every((button) => ['上一页', '下一页'].includes(button.textContent.trim())));
+  click(dom, section.querySelector('[data-history-next]'));
+  await sleep(30);
+  ok('负责人旧结果下一页仍为同一只读 GET', section.querySelectorAll('tbody tr').length === 1 && section.textContent.includes('历史结果 #81') && test.calls.at(-1)?.query === '?limit=20&offset=20' && test.calls.every((call) => call.path === '/api/admin/contact-history/owner-migration-results' && call.method === 'GET'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1&history_kind=sidebar&customer_id=7', contactHistoryHttp: {} });
+  const d = dom.window.document;
+  const section = d.querySelector('#contact-history-content');
+  const test = dom.window.__contactHistoryHttpTest;
+  ok('Sidebar 历史保留客户过滤、空文本和转义原文字', section.querySelectorAll('tbody tr').length === 20 && section.textContent.includes('行业 <历史>') && section.textContent.includes('<img src=x onerror=alert(1)>') && !section.querySelector('img') && d.querySelector('#contact-history-customer-filter input')?.value === '7' && test.calls.length === 1 && test.calls[0].path === '/api/admin/contact-history/sidebar-profiles' && test.calls[0].query === '?limit=20&offset=0&customer_id=7');
+  click(dom, d.querySelector('[data-contact-history-clear]'));
+  await sleep(30);
+  ok('Sidebar 筛选可清除并重读未过滤历史', test.calls.at(-1)?.query === '?limit=20&offset=0' && d.querySelector('#contact-history-customer-filter input')?.value === '');
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: {} });
+  const d = dom.window.document;
+  const section = d.querySelector('#contact-history-content');
+  const test = dom.window.__contactHistoryHttpTest;
+  ok('单条历史结果只请求真实详情并保留原欢迎文字', section.textContent.includes('<b>原欢迎语</b>') && !section.querySelector('b') && test.calls.length === 1 && test.calls[0].path === '/api/admin/contact-history/owner-migration-results/61' && test.calls[0].method === 'GET');
+  ok('详情切换类型回各自列表，不沿用另一张表的历史 ID', d.querySelector('a[href="ownerMig.html?contact_history=1&history_kind=sidebar"]') && section.querySelector('a[href="ownerMig.html?contact_history=1&history_kind=owner"]'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1', contactHistoryHttp: { fail: true } });
+  const d = dom.window.document;
+  ok('历史读取失败明确关闭，不回退当前迁移或 Mock', d.querySelector('#contact-history-content')?.textContent.includes('HTTP 503') && !d.body.textContent.includes('尚未生成迁移预览') && !d.body.textContent.includes('历史结果 #61'));
+  dom.window.close();
+}
+for (const fixture of [
+  { q: 'contact_history=1', contactHistoryHttp: { raw: true }, text: '额外 raw 字段在列表响应中失败关闭' },
+  { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: { raw: true }, text: '额外 raw 字段在详情响应中失败关闭' },
+  { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: { wrongID: true }, text: '详情返回错 ID 时失败关闭' },
+  { q: 'contact_history=1&history_kind=sidebar&history_id=32&customer_id=7', contactHistoryHttp: { wrongCustomer: true }, text: 'Sidebar 详情返回错客户时失败关闭' },
+]) {
+  const dom = await loadPage('admin/ownerMig.html', fixture);
+  ok(fixture.text, dom.window.document.querySelector('#contact-history-content [role="alert"]')?.textContent.includes('响应无效') && !dom.window.document.body.textContent.includes('must-not-render'));
+  dom.window.close();
+}
+{
+  const dom = await loadPage('admin/ownerMig.html', { q: 'contact_history=1&history_kind=owner&history_id=61', contactHistoryHttp: { fail: true } });
+  const d = dom.window.document;
+  const test = dom.window.__contactHistoryHttpTest;
+  test.fail = false;
+  click(dom, d.querySelector('#contact-history-content [data-history-retry]'));
+  await sleep(30);
+  ok('详情失败后可按同一 GET 重试', d.querySelector('#contact-history-content')?.textContent.includes('<b>原欢迎语</b>') && test.calls.length === 2 && test.calls.every((call) => call.path === '/api/admin/contact-history/owner-migration-results/61' && call.method === 'GET'));
   dom.window.close();
 }
 

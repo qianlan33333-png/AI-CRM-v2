@@ -6742,6 +6742,132 @@ func (e OutboundCampaignHandoffSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for OwnerMigrationResultHistoryDetailReadOnly.
+const (
+	OwnerMigrationResultHistoryDetailReadOnlyTrue OwnerMigrationResultHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryDetailReadOnly enum.
+func (e OwnerMigrationResultHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryDetailRealExternalCallExecuted.
+const (
+	OwnerMigrationResultHistoryDetailRealExternalCallExecutedFalse OwnerMigrationResultHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryDetailRealExternalCallExecuted enum.
+func (e OwnerMigrationResultHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryDetailSource.
+const (
+	OwnerMigrationResultHistoryDetailSourceV1History OwnerMigrationResultHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryDetailSource enum.
+func (e OwnerMigrationResultHistoryDetailSource) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryItemPreviewRelation.
+const (
+	OwnerMigrationResultHistoryItemPreviewRelationResolved   OwnerMigrationResultHistoryItemPreviewRelation = "resolved"
+	OwnerMigrationResultHistoryItemPreviewRelationUnresolved OwnerMigrationResultHistoryItemPreviewRelation = "unresolved"
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryItemPreviewRelation enum.
+func (e OwnerMigrationResultHistoryItemPreviewRelation) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryItemPreviewRelationResolved:
+		return true
+	case OwnerMigrationResultHistoryItemPreviewRelationUnresolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryItemSessionRelation.
+const (
+	OwnerMigrationResultHistoryItemSessionRelationResolved   OwnerMigrationResultHistoryItemSessionRelation = "resolved"
+	OwnerMigrationResultHistoryItemSessionRelationUnresolved OwnerMigrationResultHistoryItemSessionRelation = "unresolved"
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryItemSessionRelation enum.
+func (e OwnerMigrationResultHistoryItemSessionRelation) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryItemSessionRelationResolved:
+		return true
+	case OwnerMigrationResultHistoryItemSessionRelationUnresolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryPageReadOnly.
+const (
+	OwnerMigrationResultHistoryPageReadOnlyTrue OwnerMigrationResultHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryPageReadOnly enum.
+func (e OwnerMigrationResultHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryPageRealExternalCallExecuted.
+const (
+	OwnerMigrationResultHistoryPageRealExternalCallExecutedFalse OwnerMigrationResultHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryPageRealExternalCallExecuted enum.
+func (e OwnerMigrationResultHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OwnerMigrationResultHistoryPageSource.
+const (
+	OwnerMigrationResultHistoryPageSourceV1History OwnerMigrationResultHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the OwnerMigrationResultHistoryPageSource enum.
+func (e OwnerMigrationResultHistoryPageSource) Valid() bool {
+	switch e {
+	case OwnerMigrationResultHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PublicServicePeriodMemberGridSummaryLimit.
 const (
 	N50 PublicServicePeriodMemberGridSummaryLimit = 50
@@ -7341,13 +7467,13 @@ func (e ServicePeriodHistoryEventPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for ServicePeriodHistoryEventPageSource.
 const (
-	V1History ServicePeriodHistoryEventPageSource = "v1_history"
+	ServicePeriodHistoryEventPageSourceV1History ServicePeriodHistoryEventPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageSource enum.
 func (e ServicePeriodHistoryEventPageSource) Valid() bool {
 	switch e {
-	case V1History:
+	case ServicePeriodHistoryEventPageSourceV1History:
 		return true
 	default:
 		return false
@@ -8653,6 +8779,96 @@ func (e SidebarPhoneBindingResponseStatus) Valid() bool {
 	case SidebarPhoneBindingResponseStatusBound:
 		return true
 	case SidebarPhoneBindingResponseStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarProfileHistoryDetailReadOnly.
+const (
+	SidebarProfileHistoryDetailReadOnlyTrue SidebarProfileHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileHistoryDetailReadOnly enum.
+func (e SidebarProfileHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case SidebarProfileHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarProfileHistoryDetailRealExternalCallExecuted.
+const (
+	SidebarProfileHistoryDetailRealExternalCallExecutedFalse SidebarProfileHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileHistoryDetailRealExternalCallExecuted enum.
+func (e SidebarProfileHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SidebarProfileHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarProfileHistoryDetailSource.
+const (
+	SidebarProfileHistoryDetailSourceV1History SidebarProfileHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileHistoryDetailSource enum.
+func (e SidebarProfileHistoryDetailSource) Valid() bool {
+	switch e {
+	case SidebarProfileHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarProfileHistoryPageReadOnly.
+const (
+	SidebarProfileHistoryPageReadOnlyTrue SidebarProfileHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileHistoryPageReadOnly enum.
+func (e SidebarProfileHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case SidebarProfileHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarProfileHistoryPageRealExternalCallExecuted.
+const (
+	SidebarProfileHistoryPageRealExternalCallExecutedFalse SidebarProfileHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileHistoryPageRealExternalCallExecuted enum.
+func (e SidebarProfileHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SidebarProfileHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarProfileHistoryPageSource.
+const (
+	V1History SidebarProfileHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileHistoryPageSource enum.
+func (e SidebarProfileHistoryPageSource) Valid() bool {
+	switch e {
+	case V1History:
 		return true
 	default:
 		return false
@@ -13182,6 +13398,70 @@ type OutboundMediaReconcileResponse struct {
 	State            string `json:"state"`
 }
 
+// OwnerMigrationResultHistoryDetail defines model for OwnerMigrationResultHistoryDetail.
+type OwnerMigrationResultHistoryDetail struct {
+	Item                     OwnerMigrationResultHistoryItem                           `json:"item"`
+	ReadOnly                 OwnerMigrationResultHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted OwnerMigrationResultHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   OwnerMigrationResultHistoryDetailSource                   `json:"source"`
+}
+
+// OwnerMigrationResultHistoryDetailReadOnly defines model for OwnerMigrationResultHistoryDetail.ReadOnly.
+type OwnerMigrationResultHistoryDetailReadOnly bool
+
+// OwnerMigrationResultHistoryDetailRealExternalCallExecuted defines model for OwnerMigrationResultHistoryDetail.RealExternalCallExecuted.
+type OwnerMigrationResultHistoryDetailRealExternalCallExecuted bool
+
+// OwnerMigrationResultHistoryDetailSource defines model for OwnerMigrationResultHistoryDetail.Source.
+type OwnerMigrationResultHistoryDetailSource string
+
+// OwnerMigrationResultHistoryItem defines model for OwnerMigrationResultHistoryItem.
+type OwnerMigrationResultHistoryItem struct {
+	CreatedAt              time.Time                                      `json:"created_at"`
+	CrmUpdated             int64                                          `json:"crm_updated"`
+	EligibleCount          int64                                          `json:"eligible_count"`
+	ExecutedAt             time.Time                                      `json:"executed_at"`
+	FileHash               string                                         `json:"file_hash"`
+	Id                     int64                                          `json:"id"`
+	IncludeWecomTransfer   bool                                           `json:"include_wecom_transfer"`
+	PreviewHash            string                                         `json:"preview_hash"`
+	PreviewRelation        OwnerMigrationResultHistoryItemPreviewRelation `json:"preview_relation"`
+	ScopeType              string                                         `json:"scope_type"`
+	SessionRelation        OwnerMigrationResultHistoryItemSessionRelation `json:"session_relation"`
+	SourceKeyDigest        []int                                          `json:"source_key_digest"`
+	SourcePayloadDigest    []int                                          `json:"source_payload_digest"`
+	TotalRows              int64                                          `json:"total_rows"`
+	TransferWelcomeMessage string                                         `json:"transfer_welcome_message"`
+	WecomFailed            int64                                          `json:"wecom_failed"`
+	WecomSuccess           int64                                          `json:"wecom_success"`
+}
+
+// OwnerMigrationResultHistoryItemPreviewRelation defines model for OwnerMigrationResultHistoryItem.PreviewRelation.
+type OwnerMigrationResultHistoryItemPreviewRelation string
+
+// OwnerMigrationResultHistoryItemSessionRelation defines model for OwnerMigrationResultHistoryItem.SessionRelation.
+type OwnerMigrationResultHistoryItemSessionRelation string
+
+// OwnerMigrationResultHistoryPage defines model for OwnerMigrationResultHistoryPage.
+type OwnerMigrationResultHistoryPage struct {
+	Items                    []OwnerMigrationResultHistoryItem                       `json:"items"`
+	Limit                    int32                                                   `json:"limit"`
+	Offset                   int32                                                   `json:"offset"`
+	ReadOnly                 OwnerMigrationResultHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted OwnerMigrationResultHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   OwnerMigrationResultHistoryPageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// OwnerMigrationResultHistoryPageReadOnly defines model for OwnerMigrationResultHistoryPage.ReadOnly.
+type OwnerMigrationResultHistoryPageReadOnly bool
+
+// OwnerMigrationResultHistoryPageRealExternalCallExecuted defines model for OwnerMigrationResultHistoryPage.RealExternalCallExecuted.
+type OwnerMigrationResultHistoryPageRealExternalCallExecuted bool
+
+// OwnerMigrationResultHistoryPageSource defines model for OwnerMigrationResultHistoryPage.Source.
+type OwnerMigrationResultHistoryPageSource string
+
 // Product defines model for Product.
 type Product struct {
 	CreatedAt     time.Time `json:"created_at"`
@@ -14589,6 +14869,56 @@ type SidebarProfile struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+// SidebarProfileHistoryDetail defines model for SidebarProfileHistoryDetail.
+type SidebarProfileHistoryDetail struct {
+	Item                     SidebarProfileHistoryItem                           `json:"item"`
+	ReadOnly                 SidebarProfileHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SidebarProfileHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SidebarProfileHistoryDetailSource                   `json:"source"`
+}
+
+// SidebarProfileHistoryDetailReadOnly defines model for SidebarProfileHistoryDetail.ReadOnly.
+type SidebarProfileHistoryDetailReadOnly bool
+
+// SidebarProfileHistoryDetailRealExternalCallExecuted defines model for SidebarProfileHistoryDetail.RealExternalCallExecuted.
+type SidebarProfileHistoryDetailRealExternalCallExecuted bool
+
+// SidebarProfileHistoryDetailSource defines model for SidebarProfileHistoryDetail.Source.
+type SidebarProfileHistoryDetailSource string
+
+// SidebarProfileHistoryItem defines model for SidebarProfileHistoryItem.
+type SidebarProfileHistoryItem struct {
+	CustomerId            *int64    `json:"customer_id"`
+	Id                    int64     `json:"id"`
+	Industry              string    `json:"industry"`
+	IndustryDescription   string    `json:"industry_description"`
+	NeedsBlockersFollowup string    `json:"needs_blockers_followup"`
+	Source                string    `json:"source"`
+	SourceKeyDigest       []int     `json:"source_key_digest"`
+	SourcePayloadDigest   []int     `json:"source_payload_digest"`
+	UpdatedAt             time.Time `json:"updated_at"`
+}
+
+// SidebarProfileHistoryPage defines model for SidebarProfileHistoryPage.
+type SidebarProfileHistoryPage struct {
+	Items                    []SidebarProfileHistoryItem                       `json:"items"`
+	Limit                    int32                                             `json:"limit"`
+	Offset                   int32                                             `json:"offset"`
+	ReadOnly                 SidebarProfileHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SidebarProfileHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SidebarProfileHistoryPageSource                   `json:"source"`
+	Total                    int64                                             `json:"total"`
+}
+
+// SidebarProfileHistoryPageReadOnly defines model for SidebarProfileHistoryPage.ReadOnly.
+type SidebarProfileHistoryPageReadOnly bool
+
+// SidebarProfileHistoryPageRealExternalCallExecuted defines model for SidebarProfileHistoryPage.RealExternalCallExecuted.
+type SidebarProfileHistoryPageRealExternalCallExecuted bool
+
+// SidebarProfileHistoryPageSource defines model for SidebarProfileHistoryPage.Source.
+type SidebarProfileHistoryPageSource string
+
 // SidebarProfileUpdateResponse defines model for SidebarProfileUpdateResponse.
 type SidebarProfileUpdateResponse struct {
 	Profile SidebarProfile             `json:"profile"`
@@ -15592,6 +15922,19 @@ type ValidateAdminOpsReleaseParams struct {
 
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ListOwnerMigrationResultHistoryParams defines parameters for ListOwnerMigrationResultHistory.
+type ListOwnerMigrationResultHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListSidebarProfileHistoryParams defines parameters for ListSidebarProfileHistory.
+type ListSidebarProfileHistoryParams struct {
+	CustomerId *int64 `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	Limit      *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset     *int   `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // CreateMediaContentPackageParams defines parameters for CreateMediaContentPackage.
@@ -18513,6 +18856,18 @@ type ServerInterface interface {
 	// Validate one local release without executing external effects
 	// (POST /api/admin/config/releases/{release_id}/validate)
 	ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params ValidateAdminOpsReleaseParams)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/owner-migration-results)
+	ListOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request, params ListOwnerMigrationResultHistoryParams)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/owner-migration-results/{history_id})
+	GetOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/sidebar-profiles)
+	ListSidebarProfileHistory(w http.ResponseWriter, r *http.Request, params ListSidebarProfileHistoryParams)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/sidebar-profiles/{history_id})
+	GetSidebarProfileHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Persist one local content package
 	// (POST /api/admin/content-packages)
 	CreateMediaContentPackage(w http.ResponseWriter, r *http.Request, params CreateMediaContentPackageParams)
@@ -19533,6 +19888,30 @@ func (_ Unimplemented) CompareAdminOpsReleaseShadow(w http.ResponseWriter, r *ht
 // Validate one local release without executing external effects
 // (POST /api/admin/config/releases/{release_id}/validate)
 func (_ Unimplemented) ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params ValidateAdminOpsReleaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 contact history without current mutations
+// (GET /api/admin/contact-history/owner-migration-results)
+func (_ Unimplemented) ListOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request, params ListOwnerMigrationResultHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 contact history without current mutations
+// (GET /api/admin/contact-history/owner-migration-results/{history_id})
+func (_ Unimplemented) GetOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 contact history without current mutations
+// (GET /api/admin/contact-history/sidebar-profiles)
+func (_ Unimplemented) ListSidebarProfileHistory(w http.ResponseWriter, r *http.Request, params ListSidebarProfileHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 contact history without current mutations
+// (GET /api/admin/contact-history/sidebar-profiles/{history_id})
+func (_ Unimplemented) GetSidebarProfileHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -24416,6 +24795,158 @@ func (siw *ServerInterfaceWrapper) ValidateAdminOpsRelease(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ValidateAdminOpsRelease(w, r, releaseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOwnerMigrationResultHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOwnerMigrationResultHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOwnerMigrationResultHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOwnerMigrationResultHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOwnerMigrationResultHistory(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSidebarProfileHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListSidebarProfileHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSidebarProfileHistoryParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSidebarProfileHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSidebarProfileHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetSidebarProfileHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSidebarProfileHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -36951,6 +37482,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/config/releases/{release_id}/validate", wrapper.ValidateAdminOpsRelease)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-history/owner-migration-results", wrapper.ListOwnerMigrationResultHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-history/owner-migration-results/{history_id}", wrapper.GetOwnerMigrationResultHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-history/sidebar-profiles", wrapper.ListSidebarProfileHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/contact-history/sidebar-profiles/{history_id}", wrapper.GetSidebarProfileHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/content-packages", wrapper.CreateMediaContentPackage)
 	})
 	r.Group(func(r chi.Router) {
@@ -41602,6 +42145,218 @@ func (response ValidateAdminOpsRelease409JSONResponse) VisitValidateAdminOpsRele
 type ValidateAdminOpsRelease503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ValidateAdminOpsRelease503JSONResponse) VisitValidateAdminOpsReleaseResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOwnerMigrationResultHistoryRequestObject struct {
+	Params ListOwnerMigrationResultHistoryParams
+}
+
+type ListOwnerMigrationResultHistoryResponseObject interface {
+	VisitListOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListOwnerMigrationResultHistory200JSONResponse OwnerMigrationResultHistoryPage
+
+func (response ListOwnerMigrationResultHistory200JSONResponse) VisitListOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOwnerMigrationResultHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListOwnerMigrationResultHistory400JSONResponse) VisitListOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOwnerMigrationResultHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListOwnerMigrationResultHistory401JSONResponse) VisitListOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOwnerMigrationResultHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListOwnerMigrationResultHistory403JSONResponse) VisitListOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListOwnerMigrationResultHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListOwnerMigrationResultHistory503JSONResponse) VisitListOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOwnerMigrationResultHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetOwnerMigrationResultHistoryResponseObject interface {
+	VisitGetOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetOwnerMigrationResultHistory200JSONResponse OwnerMigrationResultHistoryDetail
+
+func (response GetOwnerMigrationResultHistory200JSONResponse) VisitGetOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOwnerMigrationResultHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetOwnerMigrationResultHistory400JSONResponse) VisitGetOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOwnerMigrationResultHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOwnerMigrationResultHistory401JSONResponse) VisitGetOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOwnerMigrationResultHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetOwnerMigrationResultHistory403JSONResponse) VisitGetOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOwnerMigrationResultHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetOwnerMigrationResultHistory503JSONResponse) VisitGetOwnerMigrationResultHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarProfileHistoryRequestObject struct {
+	Params ListSidebarProfileHistoryParams
+}
+
+type ListSidebarProfileHistoryResponseObject interface {
+	VisitListSidebarProfileHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListSidebarProfileHistory200JSONResponse SidebarProfileHistoryPage
+
+func (response ListSidebarProfileHistory200JSONResponse) VisitListSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarProfileHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSidebarProfileHistory400JSONResponse) VisitListSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarProfileHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSidebarProfileHistory401JSONResponse) VisitListSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarProfileHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSidebarProfileHistory403JSONResponse) VisitListSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarProfileHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSidebarProfileHistory503JSONResponse) VisitListSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarProfileHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetSidebarProfileHistoryResponseObject interface {
+	VisitGetSidebarProfileHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetSidebarProfileHistory200JSONResponse SidebarProfileHistoryDetail
+
+func (response GetSidebarProfileHistory200JSONResponse) VisitGetSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarProfileHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSidebarProfileHistory400JSONResponse) VisitGetSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarProfileHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSidebarProfileHistory401JSONResponse) VisitGetSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarProfileHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSidebarProfileHistory403JSONResponse) VisitGetSidebarProfileHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarProfileHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSidebarProfileHistory503JSONResponse) VisitGetSidebarProfileHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -54843,6 +55598,18 @@ type StrictServerInterface interface {
 	// Validate one local release without executing external effects
 	// (POST /api/admin/config/releases/{release_id}/validate)
 	ValidateAdminOpsRelease(ctx context.Context, request ValidateAdminOpsReleaseRequestObject) (ValidateAdminOpsReleaseResponseObject, error)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/owner-migration-results)
+	ListOwnerMigrationResultHistory(ctx context.Context, request ListOwnerMigrationResultHistoryRequestObject) (ListOwnerMigrationResultHistoryResponseObject, error)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/owner-migration-results/{history_id})
+	GetOwnerMigrationResultHistory(ctx context.Context, request GetOwnerMigrationResultHistoryRequestObject) (GetOwnerMigrationResultHistoryResponseObject, error)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/sidebar-profiles)
+	ListSidebarProfileHistory(ctx context.Context, request ListSidebarProfileHistoryRequestObject) (ListSidebarProfileHistoryResponseObject, error)
+	// Read immutable V1 contact history without current mutations
+	// (GET /api/admin/contact-history/sidebar-profiles/{history_id})
+	GetSidebarProfileHistory(ctx context.Context, request GetSidebarProfileHistoryRequestObject) (GetSidebarProfileHistoryResponseObject, error)
 	// Persist one local content package
 	// (POST /api/admin/content-packages)
 	CreateMediaContentPackage(ctx context.Context, request CreateMediaContentPackageRequestObject) (CreateMediaContentPackageResponseObject, error)
@@ -57433,6 +58200,110 @@ func (sh *strictHandler) ValidateAdminOpsRelease(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ValidateAdminOpsReleaseResponseObject); ok {
 		if err := validResponse.VisitValidateAdminOpsReleaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOwnerMigrationResultHistory operation middleware
+func (sh *strictHandler) ListOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request, params ListOwnerMigrationResultHistoryParams) {
+	var request ListOwnerMigrationResultHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOwnerMigrationResultHistory(ctx, request.(ListOwnerMigrationResultHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOwnerMigrationResultHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOwnerMigrationResultHistoryResponseObject); ok {
+		if err := validResponse.VisitListOwnerMigrationResultHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOwnerMigrationResultHistory operation middleware
+func (sh *strictHandler) GetOwnerMigrationResultHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetOwnerMigrationResultHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOwnerMigrationResultHistory(ctx, request.(GetOwnerMigrationResultHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOwnerMigrationResultHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOwnerMigrationResultHistoryResponseObject); ok {
+		if err := validResponse.VisitGetOwnerMigrationResultHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSidebarProfileHistory operation middleware
+func (sh *strictHandler) ListSidebarProfileHistory(w http.ResponseWriter, r *http.Request, params ListSidebarProfileHistoryParams) {
+	var request ListSidebarProfileHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSidebarProfileHistory(ctx, request.(ListSidebarProfileHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSidebarProfileHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSidebarProfileHistoryResponseObject); ok {
+		if err := validResponse.VisitListSidebarProfileHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSidebarProfileHistory operation middleware
+func (sh *strictHandler) GetSidebarProfileHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetSidebarProfileHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSidebarProfileHistory(ctx, request.(GetSidebarProfileHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSidebarProfileHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSidebarProfileHistoryResponseObject); ok {
+		if err := validResponse.VisitGetSidebarProfileHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

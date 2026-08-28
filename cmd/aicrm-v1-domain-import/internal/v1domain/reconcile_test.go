@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes) {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+2 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -36,6 +36,7 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 			t.Fatalf("audience history mapping mismatch for %s", scope.source)
 		}
 	}
+	all = append(all, "public/sidebar_customer_profile_fields", "public/owner_migration_results")
 	for _, table := range all {
 		if seen[table] {
 			t.Fatalf("duplicate source table %s", table)
@@ -53,6 +54,11 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 		_, mapped := targetBySourceTable[table]
 		if mapped != (table == "public/automation_channel" || table == "public/automation_channel_contact" || table == "public/automation_channel_assignee") {
 			t.Fatalf("only channel definitions and readonly relations may have a canonical import target: %s", table)
+		}
+	}
+	for _, table := range []string{"public/owner_migration_import_sessions", "public/owner_migration_previews"} {
+		if _, mapped := targetBySourceTable[table]; mapped {
+			t.Fatalf("owner context must stay archive-only: %s", table)
 		}
 	}
 }

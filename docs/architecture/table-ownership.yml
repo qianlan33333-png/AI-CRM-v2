@@ -54,6 +54,8 @@ owners:
       - channel_acquisition_entrant_receipts
       - channel_historical_contacts
       - channel_historical_assignees
+      - contact_v1_sidebar_profile_history
+      - contact_v1_owner_migration_result_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
