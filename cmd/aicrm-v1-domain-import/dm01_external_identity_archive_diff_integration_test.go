@@ -68,6 +68,11 @@ func TestDM01ExternalIdentityArchiveDiffReadOnly(t *testing.T) {
 		t.Fatal("read-only archive-only shape check failed")
 	}
 	t.Logf("dm01 archive-only shape: only_archive=%d canonical_source_shape=%d required_field_redacted=%d empty_external=%d empty_union=%d empty_corp=%d invalid_updated_at=%d summary_sha256=%x", shape.OnlyArchive, shape.CanonicalSourceShape, shape.RequiredFieldRedacted, shape.ExternalUserIDMissingOrBlank, shape.UnionIDMissingOrBlank, shape.CorpIDMissingOrBlank, shape.UpdatedAtMissingOrInvalid, shape.SummaryDigest)
+	roots, err := v1domain.AggregateDM01ExternalIdentityArchiveOnlyRootCandidates(ctx, archive, receipts, receipts, *dm01ExternalIdentityArchiveDiffArchiveRun, *dm01ExternalIdentityArchiveDiffRun, []byte(archiveEnvironment.SourceHMACKey), []byte(dm01Environment.SourceHMACKey))
+	if err != nil || roots.OnlyArchive != shape.OnlyArchive || roots.UnionIDNotVerifiable+roots.SourceShapeNotEligible+roots.CustomerRootVerified+roots.CustomerRootMissing != roots.OnlyArchive {
+		t.Fatal("read-only archive-only root candidate check failed")
+	}
+	t.Logf("dm01 archive-only root candidates: only_archive=%d union_not_verifiable=%d source_shape_not_eligible=%d customer_root_verified=%d customer_root_missing=%d summary_sha256=%x", roots.OnlyArchive, roots.UnionIDNotVerifiable, roots.SourceShapeNotEligible, roots.CustomerRootVerified, roots.CustomerRootMissing, roots.SummaryDigest)
 }
 
 type dm01ReadOnlyBeginner struct{ pool *pgxpool.Pool }
@@ -82,6 +87,19 @@ func (beginner dm01ReadOnlyBeginner) BeginTx(ctx context.Context, _ pgx.TxOption
 type dm01ExternalIdentityReceiptReader struct {
 	uow  *platformstore.UnitOfWork
 	repo contactstore.HistoricalImportRepository
+}
+
+func (reader dm01ExternalIdentityReceiptReader) VerifyDM01CustomerIdentitySnapshot(ctx context.Context, runID int64, key [32]byte) (bool, error) {
+	if reader.uow == nil {
+		return false, errors.New("DM01 read-only root verifier is invalid")
+	}
+	var verified bool
+	err := reader.uow.Within(ctx, func(tx context.Context) error {
+		var err error
+		verified, err = reader.repo.VerifyDM01CustomerIdentitySnapshot(tx, runID, key)
+		return err
+	})
+	return verified, err
 }
 
 func (reader dm01ExternalIdentityReceiptReader) EachDM01ExternalIdentityReceipt(ctx context.Context, runID int64, emit func(v1domain.DM01ExternalIdentityReceipt) error) error {
