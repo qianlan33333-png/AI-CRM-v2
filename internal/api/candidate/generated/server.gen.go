@@ -1660,6 +1660,96 @@ func (e BindIdentityRejectedStatus) Valid() bool {
 	}
 }
 
+// Defines values for BroadcastJobHistoryDetailReadOnly.
+const (
+	BroadcastJobHistoryDetailReadOnlyTrue BroadcastJobHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryDetailReadOnly enum.
+func (e BroadcastJobHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryDetailRealExternalCallExecuted.
+const (
+	BroadcastJobHistoryDetailRealExternalCallExecutedFalse BroadcastJobHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryDetailRealExternalCallExecuted enum.
+func (e BroadcastJobHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryDetailSource.
+const (
+	BroadcastJobHistoryDetailSourceV1History BroadcastJobHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryDetailSource enum.
+func (e BroadcastJobHistoryDetailSource) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryPageReadOnly.
+const (
+	BroadcastJobHistoryPageReadOnlyTrue BroadcastJobHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryPageReadOnly enum.
+func (e BroadcastJobHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryPageRealExternalCallExecuted.
+const (
+	BroadcastJobHistoryPageRealExternalCallExecutedFalse BroadcastJobHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryPageRealExternalCallExecuted enum.
+func (e BroadcastJobHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryPageSource.
+const (
+	BroadcastJobHistoryPageSourceV1History BroadcastJobHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryPageSource enum.
+func (e BroadcastJobHistoryPageSource) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChannelHistoryResponseOk.
 const (
 	ChannelHistoryResponseOkTrue ChannelHistoryResponseOk = true
@@ -13792,6 +13882,79 @@ type BindIdentityResponse struct {
 	union json.RawMessage
 }
 
+// BroadcastJobHistory defines model for BroadcastJobHistory.
+type BroadcastJobHistory struct {
+	ApprovedAt                     *time.Time `json:"approved_at"`
+	AttemptCount                   int32      `json:"attempt_count"`
+	BusinessDomain                 *string    `json:"business_domain"`
+	CancelledAt                    *time.Time `json:"cancelled_at"`
+	Channel                        *string    `json:"channel"`
+	ClaimedAt                      *time.Time `json:"claimed_at"`
+	CompletedAt                    *time.Time `json:"completed_at"`
+	ContentType                    string     `json:"content_type"`
+	CreatedAt                      time.Time  `json:"created_at"`
+	DispatchStartedAt              *time.Time `json:"dispatch_started_at"`
+	FailedCount                    int32      `json:"failed_count"`
+	FailureType                    *string    `json:"failure_type"`
+	HoldAt                         *time.Time `json:"hold_at"`
+	Id                             int64      `json:"id"`
+	LeaseExpiresAt                 *time.Time `json:"lease_expires_at"`
+	MaxAttempts                    int32      `json:"max_attempts"`
+	NextRetryAt                    *time.Time `json:"next_retry_at"`
+	OriginalProviderResultReceived bool       `json:"original_provider_result_received"`
+	OriginalReconciliationRequired bool       `json:"original_reconciliation_required"`
+	OriginalSideEffectExecuted     bool       `json:"original_side_effect_executed"`
+	OriginalSourceType             string     `json:"original_source_type"`
+	OriginalStatus                 string     `json:"original_status"`
+	Priority                       int32      `json:"priority"`
+	RequiresApproval               bool       `json:"requires_approval"`
+	ScheduledFor                   time.Time  `json:"scheduled_for"`
+	SentAt                         *time.Time `json:"sent_at"`
+	SentCount                      int32      `json:"sent_count"`
+	SourceId                       int64      `json:"source_id"`
+	SourceTable                    string     `json:"source_table"`
+	TargetCount                    int32      `json:"target_count"`
+	TargetKind                     *string    `json:"target_kind"`
+	UpdatedAt                      time.Time  `json:"updated_at"`
+}
+
+// BroadcastJobHistoryDetail defines model for BroadcastJobHistoryDetail.
+type BroadcastJobHistoryDetail struct {
+	Item                     BroadcastJobHistory                               `json:"item"`
+	ReadOnly                 BroadcastJobHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted BroadcastJobHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   BroadcastJobHistoryDetailSource                   `json:"source"`
+}
+
+// BroadcastJobHistoryDetailReadOnly defines model for BroadcastJobHistoryDetail.ReadOnly.
+type BroadcastJobHistoryDetailReadOnly bool
+
+// BroadcastJobHistoryDetailRealExternalCallExecuted defines model for BroadcastJobHistoryDetail.RealExternalCallExecuted.
+type BroadcastJobHistoryDetailRealExternalCallExecuted bool
+
+// BroadcastJobHistoryDetailSource defines model for BroadcastJobHistoryDetail.Source.
+type BroadcastJobHistoryDetailSource string
+
+// BroadcastJobHistoryPage defines model for BroadcastJobHistoryPage.
+type BroadcastJobHistoryPage struct {
+	Items                    []BroadcastJobHistory                           `json:"items"`
+	Limit                    int32                                           `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 BroadcastJobHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted BroadcastJobHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   BroadcastJobHistoryPageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// BroadcastJobHistoryPageReadOnly defines model for BroadcastJobHistoryPage.ReadOnly.
+type BroadcastJobHistoryPageReadOnly bool
+
+// BroadcastJobHistoryPageRealExternalCallExecuted defines model for BroadcastJobHistoryPage.RealExternalCallExecuted.
+type BroadcastJobHistoryPageRealExternalCallExecuted bool
+
+// BroadcastJobHistoryPageSource defines model for BroadcastJobHistoryPage.Source.
+type BroadcastJobHistoryPageSource string
+
 // ChannelHistoryAssignee defines model for ChannelHistoryAssignee.
 type ChannelHistoryAssignee struct {
 	ChannelId           int64  `json:"channel_id"`
@@ -20841,6 +21004,12 @@ type ListAutomationHistorySOPsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListBroadcastJobHistoryParams defines parameters for ListBroadcastJobHistory.
+type ListBroadcastJobHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // RunAdminOpsFeishuHourlyReportPlanParams defines parameters for RunAdminOpsFeishuHourlyReportPlan.
 type RunAdminOpsFeishuHourlyReportPlanParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -24116,6 +24285,12 @@ type ServerInterface interface {
 	// Read immutable V1 automation configuration without execution or publication
 	// (GET /api/admin/automation-history/sops/{history_id})
 	GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history)
+	ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request, params ListBroadcastJobHistoryParams)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history/{history_id})
+	GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request)
@@ -25247,6 +25422,18 @@ func (_ Unimplemented) ListAutomationHistorySOPs(w http.ResponseWriter, r *http.
 // Read immutable V1 automation configuration without execution or publication
 // (GET /api/admin/automation-history/sops/{history_id})
 func (_ Unimplemented) GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 job observations without rescheduling or Provider calls
+// (GET /api/admin/broadcast-job-history)
+func (_ Unimplemented) ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request, params ListBroadcastJobHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 job observations without rescheduling or Provider calls
+// (GET /api/admin/broadcast-job-history/{history_id})
+func (_ Unimplemented) GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -28593,6 +28780,78 @@ func (siw *ServerInterfaceWrapper) GetAutomationHistorySOP(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAutomationHistorySOP(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBroadcastJobHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBroadcastJobHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBroadcastJobHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBroadcastJobHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBroadcastJobHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45942,6 +46201,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/automation-history/sops/{history_id}", wrapper.GetAutomationHistorySOP)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-job-history", wrapper.ListBroadcastJobHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-job-history/{history_id}", wrapper.GetBroadcastJobHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/broadcast-jobs", wrapper.ListAdminOpsBroadcastJobs)
 	})
 	r.Group(func(r chi.Router) {
@@ -48772,6 +49037,112 @@ func (response GetAutomationHistorySOP403JSONResponse) VisitGetAutomationHistory
 type GetAutomationHistorySOP503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetAutomationHistorySOP503JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistoryRequestObject struct {
+	Params ListBroadcastJobHistoryParams
+}
+
+type ListBroadcastJobHistoryResponseObject interface {
+	VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListBroadcastJobHistory200JSONResponse BroadcastJobHistoryPage
+
+func (response ListBroadcastJobHistory200JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListBroadcastJobHistory400JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListBroadcastJobHistory401JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListBroadcastJobHistory403JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListBroadcastJobHistory503JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetBroadcastJobHistoryResponseObject interface {
+	VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetBroadcastJobHistory200JSONResponse BroadcastJobHistoryDetail
+
+func (response GetBroadcastJobHistory200JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetBroadcastJobHistory400JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetBroadcastJobHistory401JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetBroadcastJobHistory403JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetBroadcastJobHistory503JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -67816,6 +68187,12 @@ type StrictServerInterface interface {
 	// Read immutable V1 automation configuration without execution or publication
 	// (GET /api/admin/automation-history/sops/{history_id})
 	GetAutomationHistorySOP(ctx context.Context, request GetAutomationHistorySOPRequestObject) (GetAutomationHistorySOPResponseObject, error)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history)
+	ListBroadcastJobHistory(ctx context.Context, request ListBroadcastJobHistoryRequestObject) (ListBroadcastJobHistoryResponseObject, error)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history/{history_id})
+	GetBroadcastJobHistory(ctx context.Context, request GetBroadcastJobHistoryRequestObject) (GetBroadcastJobHistoryResponseObject, error)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(ctx context.Context, request ListAdminOpsBroadcastJobsRequestObject) (ListAdminOpsBroadcastJobsResponseObject, error)
@@ -69666,6 +70043,58 @@ func (sh *strictHandler) GetAutomationHistorySOP(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAutomationHistorySOPResponseObject); ok {
 		if err := validResponse.VisitGetAutomationHistorySOPResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListBroadcastJobHistory operation middleware
+func (sh *strictHandler) ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request, params ListBroadcastJobHistoryParams) {
+	var request ListBroadcastJobHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListBroadcastJobHistory(ctx, request.(ListBroadcastJobHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListBroadcastJobHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListBroadcastJobHistoryResponseObject); ok {
+		if err := validResponse.VisitListBroadcastJobHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBroadcastJobHistory operation middleware
+func (sh *strictHandler) GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetBroadcastJobHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBroadcastJobHistory(ctx, request.(GetBroadcastJobHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBroadcastJobHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBroadcastJobHistoryResponseObject); ok {
+		if err := validResponse.VisitGetBroadcastJobHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

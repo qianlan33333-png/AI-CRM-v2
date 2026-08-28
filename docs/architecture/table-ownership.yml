@@ -147,7 +147,7 @@ owners:
 
   outbound:
     package: internal/outbound
-    tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts, outbound_send_attempt_history, outbound_task_job_links, outbound_control_receipts, outbound_campaign_handoffs, outbound_campaign_handoff_steps, outbound_campaign_handoff_customer_tasks, outbound_campaign_handoff_receipts, outbound_campaign_dispatches, outbound_campaign_dispatch_receipts, outbound_campaign_provider_attempt_receipts]
+    tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts, outbound_send_attempt_history, outbound_task_job_links, outbound_control_receipts, outbound_campaign_handoffs, outbound_campaign_handoff_steps, outbound_campaign_handoff_customer_tasks, outbound_campaign_handoff_receipts, outbound_campaign_dispatches, outbound_campaign_dispatch_receipts, outbound_campaign_provider_attempt_receipts, outbound_v1_broadcast_job_history]
     constraints:
       outbound_tasks: provider_result_driven_status_projection_without_retry_scheduling
       outbound_send_attempts: stable_provider_attempt_receipts_owned_by_outbound

@@ -6,6 +6,49 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/broadcast-job-history:
+    get:
+      tags: [p4-broadcast-job-history]
+      operationId: listBroadcastJobHistory
+      summary: Read inert V1 job observations without rescheduling or Provider calls
+      x-p4-decision-evidence: P4-V1-BROADCAST-JOB-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound.read_only_v1_broadcast_job_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable broadcast job history, content: { application/json: { schema: { $ref: "#/components/schemas/BroadcastJobHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-job-history/{history_id}:
+    get:
+      tags: [p4-broadcast-job-history]
+      operationId: getBroadcastJobHistory
+      summary: Read inert V1 job observations without rescheduling or Provider calls
+      x-p4-decision-evidence: P4-V1-BROADCAST-JOB-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound.read_only_v1_broadcast_job_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable broadcast job history, content: { application/json: { schema: { $ref: "#/components/schemas/BroadcastJobHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/survey-history/submissions:
     get:
       tags: [p4-survey-unresolved-history]
@@ -15117,6 +15160,64 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    BroadcastJobHistory:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, original_source_type, source_table, scheduled_for, priority, original_status, requires_approval, approved_at, cancelled_at, target_count, content_type, attempt_count, sent_count, failed_count, created_at, updated_at, claimed_at, sent_at, lease_expires_at, business_domain, channel, target_kind, failure_type, max_attempts, next_retry_at, dispatch_started_at, original_side_effect_executed, original_provider_result_received, original_reconciliation_required, completed_at, hold_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        original_source_type: { type: string }
+        source_table: { type: string }
+        scheduled_for: { type: string, format: date-time }
+        priority: { type: integer, format: int32 }
+        original_status: { type: string }
+        requires_approval: { type: boolean }
+        approved_at: { type: string, format: date-time, nullable: true }
+        cancelled_at: { type: string, format: date-time, nullable: true }
+        target_count: { type: integer, format: int32 }
+        content_type: { type: string }
+        attempt_count: { type: integer, format: int32 }
+        sent_count: { type: integer, format: int32 }
+        failed_count: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        claimed_at: { type: string, format: date-time, nullable: true }
+        sent_at: { type: string, format: date-time, nullable: true }
+        lease_expires_at: { type: string, format: date-time, nullable: true }
+        business_domain: { type: string, nullable: true }
+        channel: { type: string, nullable: true }
+        target_kind: { type: string, nullable: true }
+        failure_type: { type: string, nullable: true }
+        max_attempts: { type: integer, format: int32 }
+        next_retry_at: { type: string, format: date-time, nullable: true }
+        dispatch_started_at: { type: string, format: date-time, nullable: true }
+        original_side_effect_executed: { type: boolean }
+        original_provider_result_received: { type: boolean }
+        original_reconciliation_required: { type: boolean }
+        completed_at: { type: string, format: date-time, nullable: true }
+        hold_at: { type: string, format: date-time, nullable: true }
+    BroadcastJobHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/BroadcastJobHistory" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    BroadcastJobHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/BroadcastJobHistory" }
     SurveyUnresolvedHistorySubmission:
       type: object
       additionalProperties: false
