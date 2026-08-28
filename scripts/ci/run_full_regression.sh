@@ -43,6 +43,16 @@ ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
 MIGRATION_TEST_DATABASE_URL="$database_url" \
 make --no-print-directory migration-integration
 
+# Exercise the newly landed history stores against the migrated PostgreSQL,
+# rather than letting their opt-in round-trip/rollback tests silently skip.
+go test -count=1 ./internal/automation/store -run '^TestAutomationHistoryPostgreSQLRoundTripRollback$' -automation-history-test-database-url="$database_url"
+go test -count=1 ./internal/contact/store -run '^Test(SignupTagHistory|CustomerStateHistory)PostgresRoundTripRollback$' -signup-tag-history-store-postgres-dsn="$database_url" -customer-state-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/segment/store -run '^Test(ProfileCatalogHistory|MarketingStateHistory)PostgresRoundTripRollback$' -profile-catalog-history-store-postgres-dsn="$database_url" -marketing-state-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/hxc/store -run '^TestHXCHistoryPostgresRoundTripRollback$' -hxc-history-store-postgres-dsn="$database_url"
+go test -count=1 ./internal/product/store -run '^TestStaticProductHistoryPostgresRoundTripRollback$' -static-product-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/media/store -run '^TestStaticMediaHistoryPostgresRoundTripRollback$' -static-media-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/operationcycle/store -run '^TestStaticCycleHistoryPostgresRoundTripRollback$' -static-cycle-history-postgres-dsn="$database_url"
+
 P0S03_PG_INTEGRATION=1 \
 P0S03_TEST_DATABASE_URL="$database_url" \
 ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$database_url" \

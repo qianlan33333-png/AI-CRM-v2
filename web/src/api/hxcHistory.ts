@@ -1,0 +1,91 @@
+import {
+  getHXCHistoryActivation, getHXCHistoryBatch, getHXCHistoryLead, getHXCHistoryMeta, getHXCHistorySnapshot,
+  listHXCHistoryActivation, listHXCHistoryBatch, listHXCHistoryLead, listHXCHistoryMeta, listHXCHistorySnapshot,
+  type HXCHistoryActivation, type HXCHistoryBatch, type HXCHistoryLead, type HXCHistoryMeta, type HXCHistorySnapshot,
+} from './generated/health';
+import { apiRequestOptions, unwrapGenerated } from './transport';
+
+export type HxcHistoryKind = 'meta' | 'snapshot' | 'activation' | 'lead' | 'batch';
+export type HxcHistoryItem = HXCHistoryMeta | HXCHistorySnapshot | HXCHistoryActivation | HXCHistoryLead | HXCHistoryBatch;
+export type HxcHistoryPage = { items: HxcHistoryItem[]; total: number; limit: number; offset: number };
+type Row = Record<string, unknown>;
+const invalid = (): never => { throw new Error('HXC 历史响应不完整，未显示历史数据'); };
+const integer = (value: unknown, min?: number): value is number => typeof value === 'number' && Number.isSafeInteger(value) && (min === undefined || value >= min);
+const text = (value: unknown): value is string => typeof value === 'string';
+const instant = (value: unknown): value is string => text(value) && /(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value));
+const nullable = (value: unknown, check: (input: unknown) => boolean): boolean => value === null || check(value);
+const digest = (value: unknown): value is number[] => Array.isArray(value) && value.length === 32 && value.every((byte) => integer(byte, 0) && byte <= 255) && value.some((byte) => byte !== 0);
+const date = (value: unknown): value is string => {
+  if (!text(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  return month >= 1 && month <= 12 && day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
+};
+function object(value: unknown, keys: string[]): Row {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== keys.length || Object.keys(value).some((key) => !keys.includes(key))) invalid();
+  return value as Row;
+}
+function envelope(value: unknown, keys: string[]): Row {
+  const row = object(value, ['source', 'read_only', 'real_external_call_executed', ...keys]);
+  if (row.source !== 'v1_history' || row.read_only !== true || row.real_external_call_executed !== false) invalid();
+  return row;
+}
+function base(row: Row): boolean { return integer(row.id, 1) && integer(row.source_id) && digest(row.source_key_digest) && digest(row.source_payload_digest); }
+const kinds: Record<HxcHistoryKind, string[]> = {
+  meta: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'started_at', 'finished_at', 'status', 'row_count', 'member_hit', 'user_hit', 'only_member', 'trigger_source'],
+  snapshot: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'customer_id', 'observation', 'observed_at', 'in_lead_pool', 'in_people', 'in_questionnaire', 'class_term_no', 'class_term_label', 'crm_hxc_state', 'crm_created_at', 'last_questionnaire_at', 'hxc_member_hit', 'hxc_user_hit', 'funnel_state', 'hxc_member_status', 'hxc_registered_at', 'hxc_last_login_at', 'membership_type', 'membership_status', 'membership_end_at', 'membership_days_left', 'consultation_used', 'consultation_limit', 'conversation_chat', 'conversation_consult', 'conversation_lesson', 'messages_user', 'messages_ai', 'consult_completed', 'last_message_at', 'subscription_tier', 'subscription_expires', 'subscription_quota', 'subscription_used', 'subscription_period_start'],
+  activation: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'source_table', 'original_state', 'is_active', 'legacy_import_batch_ref', 'created_at', 'updated_at'],
+  lead: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'original_type', 'is_active', 'legacy_import_batch_ref', 'created_at', 'updated_at'],
+  batch: ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'import_type', 'total_rows', 'success_rows', 'failed_rows', 'created_at'],
+};
+function item(kind: HxcHistoryKind, value: unknown): HxcHistoryItem {
+  const row = object(value, kinds[kind]);
+  if (!base(row)) invalid();
+  if (kind === 'meta') {
+    if (!instant(row.started_at) || !nullable(row.finished_at, instant) || !text(row.status) || !integer(row.row_count) || !integer(row.member_hit) || !integer(row.user_hit) || !integer(row.only_member) || !text(row.trigger_source)) invalid();
+  } else if (kind === 'snapshot') {
+    const ints = ['conversation_chat', 'conversation_consult', 'conversation_lesson', 'messages_user', 'messages_ai', 'consult_completed'];
+    const nullableInts = ['class_term_no', 'membership_days_left', 'consultation_used', 'consultation_limit', 'subscription_quota', 'subscription_used'];
+    const instants = ['observed_at']; const nullableInstants = ['hxc_registered_at', 'hxc_last_login_at', 'membership_end_at', 'last_message_at', 'subscription_expires'];
+    const texts = ['class_term_label', 'crm_hxc_state', 'funnel_state', 'hxc_member_status', 'membership_type', 'membership_status', 'subscription_tier'];
+    if (row.observation !== 'observed_snapshot' || !nullable(row.customer_id, (x) => integer(x, 1)) || !ints.every((key) => integer(row[key])) || !nullableInts.every((key) => nullable(row[key], integer)) || !instants.every((key) => instant(row[key])) || !nullableInstants.every((key) => nullable(row[key], instant)) || !texts.every((key) => text(row[key])) || !nullable(row.crm_created_at, date) || !nullable(row.last_questionnaire_at, date) || !nullable(row.subscription_period_start, date) || typeof row.in_lead_pool !== 'boolean' || typeof row.in_people !== 'boolean' || typeof row.in_questionnaire !== 'boolean' || typeof row.hxc_member_hit !== 'boolean' || typeof row.hxc_user_hit !== 'boolean') invalid();
+  } else if (kind === 'activation') {
+    if (!['public/user_ops_activation_status_source', 'public/user_ops_huangxiaocan_activation_source'].includes(String(row.source_table)) || !text(row.original_state) || typeof row.is_active !== 'boolean' || !nullable(row.legacy_import_batch_ref, text) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
+  } else if (kind === 'lead') {
+    if (!text(row.original_type) || typeof row.is_active !== 'boolean' || !nullable(row.legacy_import_batch_ref, text) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
+  } else if (!text(row.import_type) || !integer(row.total_rows) || !integer(row.success_rows) || !integer(row.failed_rows) || !instant(row.created_at)) invalid();
+  return row as unknown as HxcHistoryItem;
+}
+function pagination(limit: number, offset: number): { limit: number; offset: number } {
+  if (!integer(limit, 1) || limit > 100 || !integer(offset, 0)) throw new Error('HXC 历史分页无效');
+  return { limit, offset };
+}
+function historyID(value: number): number { if (!integer(value, 1)) throw new Error('HXC 历史 ID 无效'); return value; }
+function page(kind: HxcHistoryKind, value: unknown, limit: number, offset: number): HxcHistoryPage {
+  const row = envelope(value, ['items', 'total', 'limit', 'offset']);
+  if (!Array.isArray(row.items) || !integer(row.total, 0) || row.limit !== limit || row.offset !== offset) invalid();
+  const total = row.total as number;
+  const items = (row.items as unknown[]).map((entry) => item(kind, entry));
+  if (items.length !== Math.min(limit, Math.max(0, total - offset)) || new Set(items.map((entry) => entry.id)).size !== items.length) invalid();
+  return { items, total, limit, offset };
+}
+function detail(kind: HxcHistoryKind, value: unknown, id: number): HxcHistoryItem { const row = envelope(value, ['item']); const result = item(kind, row.item); if (result.id !== id) invalid(); return result; }
+export async function readHxcHistory(kind: HxcHistoryKind, offset = 0, limit = 20, customerID?: number, sourceTable?: 'public/user_ops_activation_status_source' | 'public/user_ops_huangxiaocan_activation_source'): Promise<HxcHistoryPage> {
+  const query = pagination(limit, offset); if (customerID !== undefined && (!integer(customerID, 1) || kind !== 'snapshot')) throw new Error('历史 customer_id 无效'); if (sourceTable !== undefined && kind !== 'activation') throw new Error('历史 source_table 无效');
+  switch (kind) {
+    case 'meta': return page(kind, unwrapGenerated(await listHXCHistoryMeta(query, apiRequestOptions())), limit, offset);
+    case 'snapshot': { const result = page(kind, unwrapGenerated(await listHXCHistorySnapshot({ ...query, ...(customerID === undefined ? {} : { customer_id: customerID }) }, apiRequestOptions())), limit, offset); if (customerID !== undefined && result.items.some((item) => (item as HXCHistorySnapshot).customer_id !== customerID)) invalid(); return result; }
+    case 'activation': { const result = page(kind, unwrapGenerated(await listHXCHistoryActivation({ ...query, ...(sourceTable === undefined ? {} : { source_table: sourceTable }) }, apiRequestOptions())), limit, offset); if (sourceTable !== undefined && result.items.some((item) => (item as HXCHistoryActivation).source_table !== sourceTable)) invalid(); return result; }
+    case 'lead': return page(kind, unwrapGenerated(await listHXCHistoryLead(query, apiRequestOptions())), limit, offset);
+    case 'batch': return page(kind, unwrapGenerated(await listHXCHistoryBatch(query, apiRequestOptions())), limit, offset);
+  }
+}
+export async function getHxcHistory(kind: HxcHistoryKind, id: number): Promise<HxcHistoryItem> {
+  id = historyID(id);
+  switch (kind) {
+    case 'meta': return detail(kind, unwrapGenerated(await getHXCHistoryMeta(id, apiRequestOptions())), id);
+    case 'snapshot': return detail(kind, unwrapGenerated(await getHXCHistorySnapshot(id, apiRequestOptions())), id);
+    case 'activation': return detail(kind, unwrapGenerated(await getHXCHistoryActivation(id, apiRequestOptions())), id);
+    case 'lead': return detail(kind, unwrapGenerated(await getHXCHistoryLead(id, apiRequestOptions())), id);
+    case 'batch': return detail(kind, unwrapGenerated(await getHXCHistoryBatch(id, apiRequestOptions())), id);
+  }
+}

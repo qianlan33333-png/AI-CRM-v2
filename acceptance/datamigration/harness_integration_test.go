@@ -172,7 +172,8 @@ PRIMARY KEY(adapter_id,id),UNIQUE(adapter_id,mutation_digest))`); err != nil {
 
 	t.Run("crash resumes from durable cursor with new generation", func(t *testing.T) {
 		source := newSource("resume", 1, "one", "two", "three")
-		h := newHarness(t, pool, target, source, migration.DispositionImport, 40*time.Millisecond, 2)
+		const leaseDuration = 2 * time.Second
+		h := newHarness(t, pool, target, source, migration.DispositionImport, leaseDuration, 2)
 		if _, runErr := h.runner.Run(ctx, migration.RunRequest{ID: "resume-run", Adapter: "resume"}); !errors.Is(runErr, errInjectedSourceCrash) {
 			t.Fatalf("first crash err=%v", runErr)
 		}
@@ -180,7 +181,7 @@ PRIMARY KEY(adapter_id,id),UNIQUE(adapter_id,mutation_digest))`); err != nil {
 		if loadErr != nil || state.Tables["records"].Processed != 1 || state.Tables["records"].Cursor != "000001" {
 			t.Fatalf("crash state=%#v err=%v", state, loadErr)
 		}
-		time.Sleep(80 * time.Millisecond)
+		time.Sleep(leaseDuration + 100*time.Millisecond)
 		resumed, resumeErr := h.runner.Run(ctx, migration.RunRequest{ID: "resume-run", Adapter: "resume"})
 		if resumeErr != nil || resumed.Imported != 2 {
 			t.Fatalf("resume=%#v err=%v", resumed, resumeErr)
