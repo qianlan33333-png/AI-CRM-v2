@@ -6,6 +6,8 @@ package surveydb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -14,9 +16,13 @@ type Querier interface {
 	CompleteQuestionnaireOperationReceipt(ctx context.Context, arg CompleteQuestionnaireOperationReceiptParams) (CompleteQuestionnaireOperationReceiptRow, error)
 	CompleteQuestionnaireOperationsReceipt(ctx context.Context, arg CompleteQuestionnaireOperationsReceiptParams) (CompleteQuestionnaireOperationsReceiptRow, error)
 	CountGlobalQuestionnaireExternalPushTests(ctx context.Context) (int64, error)
+	CountHistoricalUnresolvedSurveyAnswers(ctx context.Context, submissionID int64) (int64, error)
+	CountHistoricalUnresolvedSurveySubmissions(ctx context.Context, questionnaireID pgtype.Int8) (int64, error)
 	CountQuestionnaireExternalPushTests(ctx context.Context, questionnaireID int64) (int64, error)
 	CountQuestionnaireSubmissions(ctx context.Context, questionnaireID int64) (int64, error)
 	CountQuestionnaires(ctx context.Context) (int64, error)
+	CreateHistoricalUnresolvedSurveyAnswer(ctx context.Context, arg CreateHistoricalUnresolvedSurveyAnswerParams) (SurveyV1UnresolvedAnswer, error)
+	CreateHistoricalUnresolvedSurveySubmission(ctx context.Context, arg CreateHistoricalUnresolvedSurveySubmissionParams) (SurveyV1UnresolvedSubmission, error)
 	CreateQuestionnaire(ctx context.Context, arg CreateQuestionnaireParams) (int64, error)
 	CreateQueuedQuestionnaireExternalPushTest(ctx context.Context, arg CreateQueuedQuestionnaireExternalPushTestParams) (int64, error)
 	DecrementQuestionnaireCount(ctx context.Context) (int64, error)
@@ -25,6 +31,8 @@ type Querier interface {
 	FinalizeQuestionnaireSlug(ctx context.Context, questionnaireID int64) (string, error)
 	FindPublicSurveyDefinitionBySlug(ctx context.Context, slug string) (FindPublicSurveyDefinitionBySlugRow, error)
 	FindPublicSurveyDefinitionByVersion(ctx context.Context, arg FindPublicSurveyDefinitionByVersionParams) (FindPublicSurveyDefinitionByVersionRow, error)
+	GetHistoricalUnresolvedSurveyAnswer(ctx context.Context, id int64) (SurveyV1UnresolvedAnswer, error)
+	GetHistoricalUnresolvedSurveySubmission(ctx context.Context, id int64) (SurveyV1UnresolvedSubmission, error)
 	GetQuestionnaire(ctx context.Context, questionnaireID int64) (GetQuestionnaireRow, error)
 	GetQuestionnaireExternalPushTest(ctx context.Context, arg GetQuestionnaireExternalPushTestParams) (GetQuestionnaireExternalPushTestRow, error)
 	GetQuestionnaireManagementReceipt(ctx context.Context, arg GetQuestionnaireManagementReceiptParams) (GetQuestionnaireManagementReceiptRow, error)
@@ -45,6 +53,8 @@ type Querier interface {
 	InsertQuestionnaireQuestion(ctx context.Context, arg InsertQuestionnaireQuestionParams) (int64, error)
 	InsertSurveyExternalPushDeliveryReceipt(ctx context.Context, arg InsertSurveyExternalPushDeliveryReceiptParams) error
 	ListGlobalQuestionnaireExternalPushTests(ctx context.Context, arg ListGlobalQuestionnaireExternalPushTestsParams) ([]ListGlobalQuestionnaireExternalPushTestsRow, error)
+	ListHistoricalUnresolvedSurveyAnswers(ctx context.Context, arg ListHistoricalUnresolvedSurveyAnswersParams) ([]SurveyV1UnresolvedAnswer, error)
+	ListHistoricalUnresolvedSurveySubmissions(ctx context.Context, arg ListHistoricalUnresolvedSurveySubmissionsParams) ([]SurveyV1UnresolvedSubmission, error)
 	ListQuestionnaireExternalPushTests(ctx context.Context, arg ListQuestionnaireExternalPushTestsParams) ([]ListQuestionnaireExternalPushTestsRow, error)
 	ListQuestionnaireSubmissionExportRows(ctx context.Context, arg ListQuestionnaireSubmissionExportRowsParams) ([]ListQuestionnaireSubmissionExportRowsRow, error)
 	ListQuestionnaireSubmissions(ctx context.Context, arg ListQuestionnaireSubmissionsParams) ([]ListQuestionnaireSubmissionsRow, error)

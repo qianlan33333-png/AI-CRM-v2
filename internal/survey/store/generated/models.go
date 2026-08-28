@@ -3,3 +3,50 @@
 //   sqlc v1.28.0
 
 package surveydb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type SurveyV1UnresolvedAnswer struct {
+	ID                    int64              `json:"id"`
+	SourceKeyDigest       []byte             `json:"source_key_digest"`
+	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
+	SourceFieldDigest     []byte             `json:"source_field_digest"`
+	SourceID              int64              `json:"source_id"`
+	SubmissionID          int64              `json:"submission_id"`
+	SubmissionSourceID    int64              `json:"submission_source_id"`
+	QuestionSourceID      int64              `json:"question_source_id"`
+	QuestionType          string             `json:"question_type"`
+	QuestionTitleSnapshot string             `json:"question_title_snapshot"`
+	SelectedOptionIds     []byte             `json:"selected_option_ids"`
+	SelectedOptionTexts   []byte             `json:"selected_option_texts"`
+	SelectedOptionScores  []byte             `json:"selected_option_scores"`
+	SelectedOptionTags    []byte             `json:"selected_option_tags"`
+	TextValue             string             `json:"text_value"`
+	ScoreContribution     float64            `json:"score_contribution"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+}
+
+type SurveyV1UnresolvedSubmission struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+	SourceFieldDigest      []byte             `json:"source_field_digest"`
+	SourceID               int64              `json:"source_id"`
+	QuestionnaireSourceID  int64              `json:"questionnaire_source_id"`
+	QuestionnaireID        pgtype.Int8        `json:"questionnaire_id"`
+	CustomerID             pgtype.Int8        `json:"customer_id"`
+	MatchedBy              string             `json:"matched_by"`
+	SourceChannel          string             `json:"source_channel"`
+	TotalScore             float64            `json:"total_score"`
+	FinalTags              []byte             `json:"final_tags"`
+	SubmittedAt            pgtype.Timestamptz `json:"submitted_at"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UnionIDDigest          []byte             `json:"union_id_digest"`
+	FollowUserUserIDDigest []byte             `json:"follow_user_user_id_digest"`
+	CampaignIDDigest       []byte             `json:"campaign_id_digest"`
+	StaffIDDigest          []byte             `json:"staff_id_digest"`
+	RedirectUrlDigest      []byte             `json:"redirect_url_digest"`
+	AssessmentResultDigest []byte             `json:"assessment_result_digest"`
+}
