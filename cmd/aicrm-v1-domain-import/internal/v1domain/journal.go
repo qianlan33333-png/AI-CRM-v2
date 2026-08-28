@@ -47,6 +47,9 @@ func (reader *CampaignDefinitionReceiptReader) EachCampaignDefinitionPriorReceip
 source_key_digest,payload_digest,disposition,reason
 FROM public.v1_domain_import_receipts
 WHERE import_version='v1-domain-a1' AND archive_run_id=$1 AND table_id=$2
+AND verified
+AND EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts s WHERE s.import_version='v1-domain-a1'
+AND s.archive_run_id=$1 AND s.selected_source_count=s.receipt_count AND s.verified_count=s.receipt_count)
 AND (disposition='import' OR (target_domain IS NULL AND target_table IS NULL AND target_id IS NULL AND target_digest IS NULL))
 ORDER BY source_key_digest`, run, table)
 	if err != nil {
