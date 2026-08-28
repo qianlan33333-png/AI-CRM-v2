@@ -40,7 +40,7 @@ type CampaignV1DefinitionStepHistory struct {
 	CampaignSourceID    int64              `json:"campaign_source_id"`
 	SegmentSourceID     int64              `json:"segment_source_id"`
 	HistoryDefinitionID pgtype.Int8        `json:"history_definition_id"`
-	CurrentCampaignID   pgtype.Int8        `json:"current_campaign_id"`
+	CurrentCampaignCode pgtype.Text        `json:"current_campaign_code"`
 	SourceParentState   string             `json:"source_parent_state"`
 	StepIndex           int32              `json:"step_index"`
 	DayOffset           int32              `json:"day_offset"`

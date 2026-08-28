@@ -43,7 +43,7 @@ type HistoricalCampaignDefinitionStep struct {
 	CampaignSourceID    int64
 	SegmentSourceID     int64
 	HistoryDefinitionID *int64
-	CurrentCampaignID   *int64
+	CurrentCampaignCode *string
 	SourceParentState   string
 	StepIndex           int32
 	DayOffset           int32

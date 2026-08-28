@@ -32,7 +32,7 @@ CREATE TABLE campaign_v1_definition_step_history (
     campaign_source_id BIGINT NOT NULL,
     segment_source_id BIGINT NOT NULL,
     history_definition_id BIGINT REFERENCES campaign_v1_definition_history(id),
-    current_campaign_id BIGINT REFERENCES cloud_campaigns(id),
+    current_campaign_code TEXT REFERENCES cloud_campaigns(campaign_code),
     source_parent_state TEXT NOT NULL CHECK (source_parent_state IN ('history_definition', 'current_definition', 'unresolved_definition')),
     step_index INTEGER NOT NULL,
     day_offset INTEGER NOT NULL,
@@ -52,9 +52,9 @@ CREATE TABLE campaign_v1_definition_step_history (
     source_field_digest BYTEA NOT NULL CHECK (octet_length(source_field_digest) = 32),
     redacted_roots TEXT[] NOT NULL,
     CHECK (
-        (source_parent_state = 'history_definition' AND history_definition_id IS NOT NULL AND current_campaign_id IS NULL)
-        OR (source_parent_state = 'current_definition' AND current_campaign_id IS NOT NULL AND history_definition_id IS NULL)
-        OR (source_parent_state = 'unresolved_definition' AND history_definition_id IS NULL AND current_campaign_id IS NULL)
+        (source_parent_state = 'history_definition' AND history_definition_id IS NOT NULL AND current_campaign_code IS NULL)
+        OR (source_parent_state = 'current_definition' AND current_campaign_code IS NOT NULL AND history_definition_id IS NULL)
+        OR (source_parent_state = 'unresolved_definition' AND history_definition_id IS NULL AND current_campaign_code IS NULL)
     )
 );
 CREATE INDEX campaign_v1_definition_step_history_source_parent

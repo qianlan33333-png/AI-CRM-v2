@@ -120,9 +120,9 @@ func (q *Queries) CreateHistoricalCampaignDefinition(ctx context.Context, arg Cr
 }
 
 const createHistoricalCampaignDefinitionStep = `-- name: CreateHistoricalCampaignDefinitionStep :one
-INSERT INTO public.campaign_v1_definition_step_history (source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_id, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots)
+INSERT INTO public.campaign_v1_definition_step_history (source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_code, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
-RETURNING id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_id, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots
+RETURNING id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_code, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots
 `
 
 type CreateHistoricalCampaignDefinitionStepParams struct {
@@ -130,7 +130,7 @@ type CreateHistoricalCampaignDefinitionStepParams struct {
 	CampaignSourceID    int64              `json:"campaign_source_id"`
 	SegmentSourceID     int64              `json:"segment_source_id"`
 	HistoryDefinitionID pgtype.Int8        `json:"history_definition_id"`
-	CurrentCampaignID   pgtype.Int8        `json:"current_campaign_id"`
+	CurrentCampaignCode pgtype.Text        `json:"current_campaign_code"`
 	SourceParentState   string             `json:"source_parent_state"`
 	StepIndex           int32              `json:"step_index"`
 	DayOffset           int32              `json:"day_offset"`
@@ -157,7 +157,7 @@ func (q *Queries) CreateHistoricalCampaignDefinitionStep(ctx context.Context, ar
 		arg.CampaignSourceID,
 		arg.SegmentSourceID,
 		arg.HistoryDefinitionID,
-		arg.CurrentCampaignID,
+		arg.CurrentCampaignCode,
 		arg.SourceParentState,
 		arg.StepIndex,
 		arg.DayOffset,
@@ -184,7 +184,7 @@ func (q *Queries) CreateHistoricalCampaignDefinitionStep(ctx context.Context, ar
 		&i.CampaignSourceID,
 		&i.SegmentSourceID,
 		&i.HistoryDefinitionID,
-		&i.CurrentCampaignID,
+		&i.CurrentCampaignCode,
 		&i.SourceParentState,
 		&i.StepIndex,
 		&i.DayOffset,
@@ -243,7 +243,7 @@ func (q *Queries) GetHistoricalCampaignDefinition(ctx context.Context, id int64)
 }
 
 const getHistoricalCampaignDefinitionStep = `-- name: GetHistoricalCampaignDefinitionStep :one
-SELECT id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_id, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots FROM public.campaign_v1_definition_step_history WHERE id = $1
+SELECT id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_code, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots FROM public.campaign_v1_definition_step_history WHERE id = $1
 `
 
 func (q *Queries) GetHistoricalCampaignDefinitionStep(ctx context.Context, id int64) (CampaignV1DefinitionStepHistory, error) {
@@ -255,7 +255,7 @@ func (q *Queries) GetHistoricalCampaignDefinitionStep(ctx context.Context, id in
 		&i.CampaignSourceID,
 		&i.SegmentSourceID,
 		&i.HistoryDefinitionID,
-		&i.CurrentCampaignID,
+		&i.CurrentCampaignCode,
 		&i.SourceParentState,
 		&i.StepIndex,
 		&i.DayOffset,
@@ -279,7 +279,7 @@ func (q *Queries) GetHistoricalCampaignDefinitionStep(ctx context.Context, id in
 }
 
 const listHistoricalCampaignDefinitionSteps = `-- name: ListHistoricalCampaignDefinitionSteps :many
-SELECT id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_id, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots FROM public.campaign_v1_definition_step_history
+SELECT id, source_id, campaign_source_id, segment_source_id, history_definition_id, current_campaign_code, source_parent_state, step_index, day_offset, send_time, timezone, content_masked, stop_on_reply, skip_recent_days, created_at, updated_at, original_disposition, original_reason, content_digest, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots FROM public.campaign_v1_definition_step_history
 WHERE ($1::bigint IS NULL OR campaign_source_id = $1::bigint)
 ORDER BY id LIMIT $3::integer OFFSET $2::integer
 `
@@ -305,7 +305,7 @@ func (q *Queries) ListHistoricalCampaignDefinitionSteps(ctx context.Context, arg
 			&i.CampaignSourceID,
 			&i.SegmentSourceID,
 			&i.HistoryDefinitionID,
-			&i.CurrentCampaignID,
+			&i.CurrentCampaignCode,
 			&i.SourceParentState,
 			&i.StepIndex,
 			&i.DayOffset,
