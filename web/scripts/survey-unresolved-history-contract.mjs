@@ -21,10 +21,16 @@ try {
   const values = await reader.listSubmissions();
   assert(received.limit === 20 && received.offset === 0 && values.items[0].source_id === -1, 'adapter did not preserve source signed facts');
   try { await reader.listAnswers('0'); throw new Error('invalid submission ID reached adapter'); } catch (error) { assert(error instanceof Error && error.message.includes('ID 无效'), 'invalid ID error changed'); }
+  const rejects = async (call, message) => { try { await call(); } catch (error) { assert(error instanceof Error && error.message.includes(message), 'unexpected adapter rejection'); return; } throw new Error('invalid association was accepted'); };
+  await rejects(() => api.surveyUnresolvedHistoryReader({ listSubmissions: async () => page([{ ...submission, questionnaire_id: null }]), getSubmission: async () => detail, listAnswers: async () => page([answer]) }).listSubmissions(20, 0, 9), '响应无效');
+  await rejects(() => api.surveyUnresolvedHistoryReader({ listSubmissions: async () => page([submission]), getSubmission: async () => detail, listAnswers: async () => page([{ ...answer, submission_id: 9 }]) }).listAnswers(7), '响应无效');
   const dom = new JSDOM('<main></main>');
   await (await import(pathToFileURL(path.join(outdir, 'section.js')).href)).mountSurveyUnresolvedHistory(dom.window.document.querySelector('main'), { listSubmissions: async () => page([submission]), getSubmission: async () => detail, listAnswers: async () => page([answer]) });
   const html = dom.window.document.body.innerHTML;
   assert(html.includes('历史提交') && html.includes('来源定义（未映射）'), 'history list did not render');
   assert(!html.includes('source_key_digest') && !html.includes('redirect_url'), 'private identity or URL details rendered');
+  const detailDom = new JSDOM('<main></main>');
+  await (await import(pathToFileURL(path.join(outdir, 'section.js')).href)).mountSurveyUnresolvedHistory(detailDom.window.document.querySelector('main'), { listSubmissions: async () => page([submission]), getSubmission: async () => detail, listAnswers: async () => page([answer]) }, { historyID: '7' });
+  assert(detailDom.window.document.body.innerHTML.includes('答案快照') && detailDom.window.document.body.innerHTML.includes('共 1 条'), 'detail did not render paged answers');
   console.log('survey-unresolved-history-contract: PASS');
 } finally { fs.rmSync(outdir, { recursive: true, force: true }); }
