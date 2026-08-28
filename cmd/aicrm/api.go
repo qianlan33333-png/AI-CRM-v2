@@ -2154,6 +2154,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.couponBoard = couponService
 	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
 	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
+	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
@@ -3675,6 +3676,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/contact-history/owner-migration-results/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetOwnerMigrationResultHistory)},
 			{http.MethodGet, "/api/admin/message-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMessageHistory)},
 			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
+			{http.MethodGet, "/api/admin/campaign-history/segments", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistorySegments)},
+			{http.MethodGet, "/api/admin/campaign-history/segments/{segment_history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistorySegment)},
+			{http.MethodGet, "/api/admin/campaign-history/members", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryMembers)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastPlans)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans/{plan_history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistoryBroadcastPlan)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastRecipients)},
+			{http.MethodGet, "/api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryBroadcastMessages)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryClaims)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/redemptions", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryRedemptions)},
 			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},

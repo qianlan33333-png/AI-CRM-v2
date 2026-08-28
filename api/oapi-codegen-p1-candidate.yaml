@@ -7,6 +7,7 @@ generate:
 output-options:
   include-tags:
     - p4-audience-history
+    - p4-campaign-history
     - p1-core-candidate
     - p2-stages
     - p3-contact

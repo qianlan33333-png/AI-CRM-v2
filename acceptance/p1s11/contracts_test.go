@@ -217,6 +217,13 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
 		"ListAudienceHistoryGroups", "ListAudienceHistoryPackages", "ListAudienceHistoryVersions", "ListAudienceHistorySenders", "ListAudienceHistoryRules", "ListAudienceHistoryRuleVersions", "ListAudienceHistoryDefinitions", "ListAudienceHistoryMembers", "GetAudienceHistoryPackage", "GetAudienceHistoryDefinition",
 		"GetChannelHistory",
+		"ListCampaignHistorySegments",
+		"GetCampaignHistorySegment",
+		"ListCampaignHistoryMembers",
+		"ListCampaignHistoryBroadcastPlans",
+		"GetCampaignHistoryBroadcastPlan",
+		"ListCampaignHistoryBroadcastRecipients",
+		"ListCampaignHistoryBroadcastMessages",
 		"ListServicePeriodHistoryDefinitions", "ListServicePeriodHistoryEntitlements", "ListServicePeriodHistoryEvents",
 		"ListCouponHistoryDefinitions", "ListCouponHistoryClaims", "ListCouponHistoryRedemptions",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",

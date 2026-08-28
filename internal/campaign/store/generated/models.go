@@ -8,6 +8,101 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type CampaignV1HistoryBroadcastMessage struct {
+	ID                   int64              `json:"id"`
+	SourceID             int64              `json:"source_id"`
+	PlanHistoryID        int64              `json:"plan_history_id"`
+	RecipientHistoryID   int64              `json:"recipient_history_id"`
+	CustomerID           pgtype.Int8        `json:"customer_id"`
+	SequenceIndex        int64              `json:"sequence_index"`
+	DayOffset            int64              `json:"day_offset"`
+	OriginalSendTime     string             `json:"original_send_time"`
+	ContentMasked        string             `json:"content_masked"`
+	OriginalStatus       string             `json:"original_status"`
+	SentAt               pgtype.Timestamptz `json:"sent_at"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ContentPayloadDigest []byte             `json:"content_payload_digest"`
+	AttachmentsDigest    []byte             `json:"attachments_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+}
+
+type CampaignV1HistoryBroadcastPlan struct {
+	ID                    int64              `json:"id"`
+	SourceID              int64              `json:"source_id"`
+	SourcePlanID          string             `json:"source_plan_id"`
+	CampaignSourceID      pgtype.Int8        `json:"campaign_source_id"`
+	SegmentSourceID       pgtype.Int8        `json:"segment_source_id"`
+	DisplayName           string             `json:"display_name"`
+	Intent                string             `json:"intent"`
+	ContentStrategy       string             `json:"content_strategy"`
+	ContentTemplateMasked string             `json:"content_template_masked"`
+	MaxRecipients         int64              `json:"max_recipients"`
+	CandidateCount        int64              `json:"candidate_count"`
+	SkippedCount          int64              `json:"skipped_count"`
+	RequiresManualCopy    bool               `json:"requires_manual_copy"`
+	OriginalStatus        string             `json:"original_status"`
+	OriginalReviewStatus  string             `json:"original_review_status"`
+	OriginalRunStatus     string             `json:"original_run_status"`
+	CommittedAt           pgtype.Timestamptz `json:"committed_at"`
+	ExpiresAt             pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	RuntimeDigest         []byte             `json:"runtime_digest"`
+	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
+}
+
+type CampaignV1HistoryBroadcastRecipient struct {
+	ID                     int64              `json:"id"`
+	SourceID               int64              `json:"source_id"`
+	PlanHistoryID          int64              `json:"plan_history_id"`
+	CustomerID             pgtype.Int8        `json:"customer_id"`
+	DisplayName            string             `json:"display_name"`
+	PlannedMessageCount    int64              `json:"planned_message_count"`
+	OriginalApprovalStatus string             `json:"original_approval_status"`
+	OriginalSendStatus     string             `json:"original_send_status"`
+	ApprovedAt             pgtype.Timestamptz `json:"approved_at"`
+	RejectedAt             pgtype.Timestamptz `json:"rejected_at"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+}
+
+type CampaignV1HistoryMember struct {
+	ID                      int64              `json:"id"`
+	SourceID                int64              `json:"source_id"`
+	CampaignSourceID        int64              `json:"campaign_source_id"`
+	CampaignSegmentSourceID int64              `json:"campaign_segment_source_id"`
+	SegmentSourceID         int64              `json:"segment_source_id"`
+	MemberSourceID          int64              `json:"member_source_id"`
+	SegmentHistoryID        int64              `json:"segment_history_id"`
+	CustomerID              pgtype.Int8        `json:"customer_id"`
+	JoinedAt                pgtype.Timestamptz `json:"joined_at"`
+	AnchorDate              string             `json:"anchor_date"`
+	CurrentStepIndex        int32              `json:"current_step_index"`
+	NextDueAt               pgtype.Timestamptz `json:"next_due_at"`
+	OriginalStatus          string             `json:"original_status"`
+	StopReason              string             `json:"stop_reason"`
+	LastStepSentAt          pgtype.Timestamptz `json:"last_step_sent_at"`
+	RetryCount              int32              `json:"retry_count"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	SourcePayloadDigest     []byte             `json:"source_payload_digest"`
+}
+
+type CampaignV1HistorySegment struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	CampaignSourceID    int64              `json:"campaign_source_id"`
+	SegmentSourceID     int64              `json:"segment_source_id"`
+	SourceParentState   string             `json:"source_parent_state"`
+	Code                string             `json:"code"`
+	Priority            int32              `json:"priority"`
+	Label               string             `json:"label"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+}
+
 // Campaign-owned immutable local handoff pending later Outbound acceptance; no Provider execution fact.
 type CloudCampaignTouchPlanHandoff struct {
 	PlanID                    string             `json:"plan_id"`

@@ -23,6 +23,7 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
+	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -174,6 +175,7 @@ type runtimeConfigDeclaration struct {
 
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
+	campaignHistory         campaignport.CampaignHistoryReader
 	auth                    authport.Service
 	customers               customerListApplication
 	customerDetail          customerDetailApplication

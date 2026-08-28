@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(memberGridHistoryReconciledTables) != 5 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+5 {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(memberGridHistoryReconciledTables) != 5 || len(campaignHistoryReconciledTables) != 5 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+5+len(campaignHistoryReconciledTables) {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -48,6 +48,7 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 		}
 	}
 	all = append(all, "public/sidebar_customer_profile_fields", "public/owner_migration_results")
+	all = append(all, campaignHistoryReconciledTables...)
 	for _, table := range all {
 		if seen[table] {
 			t.Fatalf("duplicate source table %s", table)
