@@ -59,6 +59,7 @@ go test -count=1 ./internal/operationcycle/store -run '^TestStaticCycleHistoryPo
 go test -count=1 ./internal/outbound/store -run '^TestBroadcastJobHistoryPostgresRoundTripRollback$' -broadcast-job-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/segment/store -run '^TestLegacyMarketingHistoryPostgresRoundTripRollback$' -legacy-marketing-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/contact/store -run '^TestWeComContactHistoryPostgresRoundTripRollback$' -wecom-contact-history-postgres-dsn="$database_url"
+go test -count=1 ./internal/contact/store -run '^TestDeferredIdentityHistoryPostgresRoundTripRollback$' -deferred-identity-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/radar/store -run '^TestRadarClickHistoryPostgresRoundTripRollback$' -radar-click-history-postgres-dsn="$database_url"
 go test -count=1 ./internal/automation/store -run '^TestMarketingConfigHistoryPostgresRoundTripRollback$' -marketing-config-history-postgres-dsn="$database_url"
 

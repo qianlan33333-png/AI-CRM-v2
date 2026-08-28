@@ -180,6 +180,7 @@ type runtimeConfigDeclaration struct {
 // Handler is deliberately a thin transport adapter over existing v2 services.
 type Handler struct {
 	wecomContactHistory     contactport.WeComContactHistoryReader
+	deferredIdentityHistory contactport.DeferredIdentityHistoryReader
 	campaignHistory         campaignport.CampaignHistoryReader
 	auth                    authport.Service
 	customers               customerListApplication

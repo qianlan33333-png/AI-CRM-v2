@@ -176,6 +176,167 @@ export interface MarketingConfigHistoryRuleDetail {
   item: MarketingConfigHistoryRule;
 }
 
+export interface DeferredIdentityHistoryPerson {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DeferredIdentityHistoryPersonPageSource =
+  (typeof DeferredIdentityHistoryPersonPageSource)[keyof typeof DeferredIdentityHistoryPersonPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryPersonPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface DeferredIdentityHistoryPersonPage {
+  source: DeferredIdentityHistoryPersonPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: DeferredIdentityHistoryPerson[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type DeferredIdentityHistoryPersonDetailSource =
+  (typeof DeferredIdentityHistoryPersonDetailSource)[keyof typeof DeferredIdentityHistoryPersonDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryPersonDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface DeferredIdentityHistoryPersonDetail {
+  source: DeferredIdentityHistoryPersonDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: DeferredIdentityHistoryPerson;
+}
+
+export interface DeferredIdentityHistoryConflict {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  conflict_type: string;
+  source_type: string;
+  status: string;
+  resolution_status: string;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  resolved_at: string | null;
+}
+
+export type DeferredIdentityHistoryConflictPageSource =
+  (typeof DeferredIdentityHistoryConflictPageSource)[keyof typeof DeferredIdentityHistoryConflictPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryConflictPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface DeferredIdentityHistoryConflictPage {
+  source: DeferredIdentityHistoryConflictPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: DeferredIdentityHistoryConflict[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type DeferredIdentityHistoryConflictDetailSource =
+  (typeof DeferredIdentityHistoryConflictDetailSource)[keyof typeof DeferredIdentityHistoryConflictDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryConflictDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface DeferredIdentityHistoryConflictDetail {
+  source: DeferredIdentityHistoryConflictDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: DeferredIdentityHistoryConflict;
+}
+
+export type DeferredIdentityHistoryMissingRootQuarantineReason =
+  (typeof DeferredIdentityHistoryMissingRootQuarantineReason)[keyof typeof DeferredIdentityHistoryMissingRootQuarantineReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryMissingRootQuarantineReason = {
+  missing_customer_root: "missing_customer_root",
+} as const;
+
+export interface DeferredIdentityHistoryMissingRoot {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  quarantine_reason: DeferredIdentityHistoryMissingRootQuarantineReason;
+  /** @nullable */
+  type: number | null;
+  status: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DeferredIdentityHistoryMissingRootPageSource =
+  (typeof DeferredIdentityHistoryMissingRootPageSource)[keyof typeof DeferredIdentityHistoryMissingRootPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryMissingRootPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface DeferredIdentityHistoryMissingRootPage {
+  source: DeferredIdentityHistoryMissingRootPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: DeferredIdentityHistoryMissingRoot[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type DeferredIdentityHistoryMissingRootDetailSource =
+  (typeof DeferredIdentityHistoryMissingRootDetailSource)[keyof typeof DeferredIdentityHistoryMissingRootDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DeferredIdentityHistoryMissingRootDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface DeferredIdentityHistoryMissingRootDetail {
+  source: DeferredIdentityHistoryMissingRootDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: DeferredIdentityHistoryMissingRoot;
+}
+
 export interface WeComContactHistoryEvent {
   /** @minimum 1 */
   id: number;
@@ -20797,6 +20958,42 @@ export type ListMarketingConfigHistoryRulesParams = {
   offset?: number;
 };
 
+export type ListDeferredPeopleParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListDeferredIdentityConflictsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListMissingRootIdentitiesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListWeComContactHistoryEventsParams = {
   /**
    * @minimum 1
@@ -23993,6 +24190,458 @@ export const getMarketingConfigHistoryRule = async (
     status: res.status,
     headers: res.headers,
   } as getMarketingConfigHistoryRuleResponse;
+};
+
+/**
+ * @summary Read unbound V1 evidence without creating or binding a Customer
+ */
+export type listDeferredPeopleResponse200 = {
+  data: DeferredIdentityHistoryPersonPage;
+  status: 200;
+};
+
+export type listDeferredPeopleResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listDeferredPeopleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listDeferredPeopleResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listDeferredPeopleResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listDeferredPeopleResponseSuccess =
+  listDeferredPeopleResponse200 & {
+    headers: Headers;
+  };
+export type listDeferredPeopleResponseError = (
+  | listDeferredPeopleResponse400
+  | listDeferredPeopleResponse401
+  | listDeferredPeopleResponse403
+  | listDeferredPeopleResponse503
+) & {
+  headers: Headers;
+};
+
+export type listDeferredPeopleResponse =
+  listDeferredPeopleResponseSuccess | listDeferredPeopleResponseError;
+
+export const getListDeferredPeopleUrl = (params?: ListDeferredPeopleParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/deferred-identity-history/people?${stringifiedParams}`
+    : `/api/admin/deferred-identity-history/people`;
+};
+
+export const listDeferredPeople = async (
+  params?: ListDeferredPeopleParams,
+  options?: RequestInit,
+): Promise<listDeferredPeopleResponse> => {
+  const res = await fetch(getListDeferredPeopleUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listDeferredPeopleResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listDeferredPeopleResponse;
+};
+
+/**
+ * @summary Read unbound V1 evidence without creating or binding a Customer
+ */
+export type getDeferredPersonResponse200 = {
+  data: DeferredIdentityHistoryPersonDetail;
+  status: 200;
+};
+
+export type getDeferredPersonResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getDeferredPersonResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getDeferredPersonResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getDeferredPersonResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getDeferredPersonResponseSuccess = getDeferredPersonResponse200 & {
+  headers: Headers;
+};
+export type getDeferredPersonResponseError = (
+  | getDeferredPersonResponse400
+  | getDeferredPersonResponse401
+  | getDeferredPersonResponse403
+  | getDeferredPersonResponse503
+) & {
+  headers: Headers;
+};
+
+export type getDeferredPersonResponse =
+  getDeferredPersonResponseSuccess | getDeferredPersonResponseError;
+
+export const getGetDeferredPersonUrl = (historyId: number) => {
+  return `/api/admin/deferred-identity-history/people/${historyId}`;
+};
+
+export const getDeferredPerson = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getDeferredPersonResponse> => {
+  const res = await fetch(getGetDeferredPersonUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDeferredPersonResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getDeferredPersonResponse;
+};
+
+/**
+ * @summary Read unbound V1 evidence without creating or binding a Customer
+ */
+export type listDeferredIdentityConflictsResponse200 = {
+  data: DeferredIdentityHistoryConflictPage;
+  status: 200;
+};
+
+export type listDeferredIdentityConflictsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listDeferredIdentityConflictsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listDeferredIdentityConflictsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listDeferredIdentityConflictsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listDeferredIdentityConflictsResponseSuccess =
+  listDeferredIdentityConflictsResponse200 & {
+    headers: Headers;
+  };
+export type listDeferredIdentityConflictsResponseError = (
+  | listDeferredIdentityConflictsResponse400
+  | listDeferredIdentityConflictsResponse401
+  | listDeferredIdentityConflictsResponse403
+  | listDeferredIdentityConflictsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listDeferredIdentityConflictsResponse =
+  | listDeferredIdentityConflictsResponseSuccess
+  | listDeferredIdentityConflictsResponseError;
+
+export const getListDeferredIdentityConflictsUrl = (
+  params?: ListDeferredIdentityConflictsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/deferred-identity-history/conflicts?${stringifiedParams}`
+    : `/api/admin/deferred-identity-history/conflicts`;
+};
+
+export const listDeferredIdentityConflicts = async (
+  params?: ListDeferredIdentityConflictsParams,
+  options?: RequestInit,
+): Promise<listDeferredIdentityConflictsResponse> => {
+  const res = await fetch(getListDeferredIdentityConflictsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listDeferredIdentityConflictsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listDeferredIdentityConflictsResponse;
+};
+
+/**
+ * @summary Read unbound V1 evidence without creating or binding a Customer
+ */
+export type getDeferredIdentityConflictResponse200 = {
+  data: DeferredIdentityHistoryConflictDetail;
+  status: 200;
+};
+
+export type getDeferredIdentityConflictResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getDeferredIdentityConflictResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getDeferredIdentityConflictResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getDeferredIdentityConflictResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getDeferredIdentityConflictResponseSuccess =
+  getDeferredIdentityConflictResponse200 & {
+    headers: Headers;
+  };
+export type getDeferredIdentityConflictResponseError = (
+  | getDeferredIdentityConflictResponse400
+  | getDeferredIdentityConflictResponse401
+  | getDeferredIdentityConflictResponse403
+  | getDeferredIdentityConflictResponse503
+) & {
+  headers: Headers;
+};
+
+export type getDeferredIdentityConflictResponse =
+  | getDeferredIdentityConflictResponseSuccess
+  | getDeferredIdentityConflictResponseError;
+
+export const getGetDeferredIdentityConflictUrl = (historyId: number) => {
+  return `/api/admin/deferred-identity-history/conflicts/${historyId}`;
+};
+
+export const getDeferredIdentityConflict = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getDeferredIdentityConflictResponse> => {
+  const res = await fetch(getGetDeferredIdentityConflictUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getDeferredIdentityConflictResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getDeferredIdentityConflictResponse;
+};
+
+/**
+ * @summary Read unbound V1 evidence without creating or binding a Customer
+ */
+export type listMissingRootIdentitiesResponse200 = {
+  data: DeferredIdentityHistoryMissingRootPage;
+  status: 200;
+};
+
+export type listMissingRootIdentitiesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listMissingRootIdentitiesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listMissingRootIdentitiesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listMissingRootIdentitiesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listMissingRootIdentitiesResponseSuccess =
+  listMissingRootIdentitiesResponse200 & {
+    headers: Headers;
+  };
+export type listMissingRootIdentitiesResponseError = (
+  | listMissingRootIdentitiesResponse400
+  | listMissingRootIdentitiesResponse401
+  | listMissingRootIdentitiesResponse403
+  | listMissingRootIdentitiesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listMissingRootIdentitiesResponse =
+  | listMissingRootIdentitiesResponseSuccess
+  | listMissingRootIdentitiesResponseError;
+
+export const getListMissingRootIdentitiesUrl = (
+  params?: ListMissingRootIdentitiesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/deferred-identity-history/missing-roots?${stringifiedParams}`
+    : `/api/admin/deferred-identity-history/missing-roots`;
+};
+
+export const listMissingRootIdentities = async (
+  params?: ListMissingRootIdentitiesParams,
+  options?: RequestInit,
+): Promise<listMissingRootIdentitiesResponse> => {
+  const res = await fetch(getListMissingRootIdentitiesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMissingRootIdentitiesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listMissingRootIdentitiesResponse;
+};
+
+/**
+ * @summary Read unbound V1 evidence without creating or binding a Customer
+ */
+export type getMissingRootIdentityResponse200 = {
+  data: DeferredIdentityHistoryMissingRootDetail;
+  status: 200;
+};
+
+export type getMissingRootIdentityResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getMissingRootIdentityResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getMissingRootIdentityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getMissingRootIdentityResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getMissingRootIdentityResponseSuccess =
+  getMissingRootIdentityResponse200 & {
+    headers: Headers;
+  };
+export type getMissingRootIdentityResponseError = (
+  | getMissingRootIdentityResponse400
+  | getMissingRootIdentityResponse401
+  | getMissingRootIdentityResponse403
+  | getMissingRootIdentityResponse503
+) & {
+  headers: Headers;
+};
+
+export type getMissingRootIdentityResponse =
+  getMissingRootIdentityResponseSuccess | getMissingRootIdentityResponseError;
+
+export const getGetMissingRootIdentityUrl = (historyId: number) => {
+  return `/api/admin/deferred-identity-history/missing-roots/${historyId}`;
+};
+
+export const getMissingRootIdentity = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getMissingRootIdentityResponse> => {
+  const res = await fetch(getGetMissingRootIdentityUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMissingRootIdentityResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getMissingRootIdentityResponse;
 };
 
 /**

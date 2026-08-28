@@ -2169,6 +2169,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
 	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
 	legacyHandler.wecomContactHistory = contactstore.NewWeComContactHistoryReader(pool)
+	legacyHandler.deferredIdentityHistory = contactstore.NewDeferredIdentityHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
@@ -3764,6 +3765,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/message-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMessageHistory)},
 			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
 			{http.MethodGet, "/api/admin/campaign-history/segments", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistorySegments)},
+			{http.MethodGet, "/api/admin/deferred-identity-history/people", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListDeferredPeople)},
+			{http.MethodGet, "/api/admin/deferred-identity-history/people/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetDeferredPerson)},
+			{http.MethodGet, "/api/admin/deferred-identity-history/conflicts", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListDeferredIdentityConflicts)},
+			{http.MethodGet, "/api/admin/deferred-identity-history/conflicts/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetDeferredIdentityConflict)},
+			{http.MethodGet, "/api/admin/deferred-identity-history/missing-roots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMissingRootIdentities)},
+			{http.MethodGet, "/api/admin/deferred-identity-history/missing-roots/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMissingRootIdentity)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryEvent)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/relations", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryRelations)},
