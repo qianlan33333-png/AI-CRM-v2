@@ -193,6 +193,7 @@ type Querier interface {
 	LockHistoricalTagImportByProviderID(ctx context.Context, providerTagID string) (LockHistoricalTagImportByProviderIDRow, error)
 	LockHistoricalTagImportGroup(ctx context.Context, groupID int64) (TagGroup, error)
 	LockUniqueActiveStaffForHistoricalImport(ctx context.Context, wecomUserid string) (int64, error)
+	LockVerifiedDM01CustomerRoot(ctx context.Context, arg LockVerifiedDM01CustomerRootParams) (int64, error)
 	MarkChannelAcquisitionAssetAttempted(ctx context.Context, arg MarkChannelAcquisitionAssetAttemptedParams) (ChannelAcquisitionAssetBinding, error)
 	MarkChannelAcquisitionAssetQueued(ctx context.Context, arg MarkChannelAcquisitionAssetQueuedParams) (ChannelAcquisitionAssetBinding, error)
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
