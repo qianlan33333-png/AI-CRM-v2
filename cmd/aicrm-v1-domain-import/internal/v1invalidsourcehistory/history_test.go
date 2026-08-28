@@ -9,7 +9,10 @@ import (
 	"testing"
 	"time"
 
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
+	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
 )
 
 func TestSelectPreservesSixteenSealedInvalidFacts(t *testing.T) {
@@ -48,6 +51,115 @@ func TestSelectRejectsEnvelopeAndTerminalDrift(t *testing.T) {
 		if _, err := Select(context.Background(), archive, terminals, Options{ArchiveRunID: "archive-run", SourceHMACKey: key}); err == nil {
 			t.Fatal("sealed drift accepted")
 		}
+	}
+}
+
+func TestSelectionFactsPassEachOwnerTypedDigest(t *testing.T) {
+	key := []byte("01234567890123456789012345678901")
+	archive, terminals := invalidSourceFixture(t, key)
+	selected, err := Select(context.Background(), archive, terminals, Options{ArchiveRunID: "archive-run", SourceHMACKey: key})
+	if err != nil || selected.Summary().Total() != 16 {
+		t.Fatalf("select: summary=%+v err=%v", selected.Summary(), err)
+	}
+	for _, selected := range selected.UnboundTags {
+		fact := selected.Fact
+		fact.ID = 1
+		if _, err := contactapp.DigestHistoricalUnboundTag(fact); err != nil {
+			t.Fatalf("tag %d: %v", selected.SourceOrdinal, err)
+		}
+	}
+	for _, selected := range selected.InvalidChannels {
+		fact := selected.Fact
+		fact.ID = 1
+		if _, err := contactapp.DigestHistoricalInvalidChannel(fact); err != nil {
+			t.Fatalf("channel %d: %v", selected.SourceOrdinal, err)
+		}
+	}
+	for _, selected := range selected.InvalidAssets {
+		fact := selected.Fact
+		fact.ID = 1
+		if _, err := mediaapp.DigestHistoricalInvalidAsset(fact); err != nil {
+			t.Fatalf("asset %s/%d: %v", fact.Kind, selected.SourceOrdinal, err)
+		}
+	}
+	for _, selected := range selected.InvalidRadar {
+		fact := selected.Fact
+		fact.ID = 1
+		if _, err := radarapp.DigestHistoricalInvalidRadarLink(fact); err != nil {
+			t.Fatalf("radar %d: %v", selected.SourceOrdinal, err)
+		}
+	}
+}
+
+func TestSelectDistinguishesMissingNullAndEmptyUnionID(t *testing.T) {
+	key := []byte("01234567890123456789012345678901")
+	var digests [][sha256.Size]byte
+	for _, union := range []struct {
+		name  string
+		value any
+		set   bool
+	}{{"missing", nil, false}, {"null", nil, true}, {"empty", "", true}} {
+		t.Run(union.name, func(t *testing.T) {
+			archive, terminals := invalidSourceFixture(t, key)
+			payload := invalidSourcePayload(ContactTagsTable, 1, time.Date(2026, 8, 29, 9, 0, 0, 0, time.UTC))
+			if union.set {
+				payload["unionid"] = union.value
+			} else {
+				delete(payload, "unionid")
+			}
+			row := invalidSourceRow(t, key, ContactTagsTable, 1, payload)
+			archive.rows[ContactTagsTable][0] = row
+			scope := invalidSourceSpecs[0].scope
+			terminalKey := terminalKey(scope, sourceIdentifier(row.SourceKeyHMAC))
+			receipt := terminals.receipts[terminalKey]
+			receipt.PayloadDigest = row.PayloadHMAC
+			terminals.receipts[terminalKey] = receipt
+			selected, err := Select(context.Background(), archive, terminals, Options{ArchiveRunID: "archive-run", SourceHMACKey: key})
+			if err != nil {
+				t.Fatal(err)
+			}
+			fact := selected.UnboundTags[0].Fact
+			fact.ID = 1
+			if fact.UnionIDDigest == ([sha256.Size]byte{}) {
+				t.Fatal("missing identity evidence digest")
+			}
+			if _, err := contactapp.DigestHistoricalUnboundTag(fact); err != nil {
+				t.Fatalf("owner rejected source-only tag: %v", err)
+			}
+			digests = append(digests, fact.UnionIDDigest)
+		})
+	}
+	if digests[0] == digests[1] || digests[0] == digests[2] || digests[1] == digests[2] {
+		t.Fatalf("missing/null/empty unionid collapsed: %x", digests)
+	}
+}
+
+func TestSelectPreservesInvalidBase64AsPrivateEvidence(t *testing.T) {
+	key := []byte("01234567890123456789012345678901")
+	archive, terminals := invalidSourceFixture(t, key)
+	payload := invalidSourcePayload(ImageLibraryTable, 1, time.Date(2026, 8, 29, 9, 0, 0, 0, time.UTC))
+	payload["data_base64"] = "not-valid-base64$"
+	row := invalidSourceRow(t, key, ImageLibraryTable, 1, payload)
+	archive.rows[ImageLibraryTable][0] = row
+	scope := invalidSourceSpecs[2].scope
+	keyName := terminalKey(scope, sourceIdentifier(row.SourceKeyHMAC))
+	receipt := terminals.receipts[keyName]
+	receipt.PayloadDigest = row.PayloadHMAC
+	terminals.receipts[keyName] = receipt
+	selected, err := Select(context.Background(), archive, terminals, Options{ArchiveRunID: "archive-run", SourceHMACKey: key})
+	if err != nil {
+		t.Fatalf("invalid base64 was treated as selector drift: %v", err)
+	}
+	fact := selected.InvalidAssets[0].Fact
+	fact.ID = 1
+	if fact.ContentDigest == ([sha256.Size]byte{}) {
+		t.Fatal("invalid content lost its private evidence")
+	}
+	if _, err := mediaapp.DigestHistoricalInvalidAsset(fact); err != nil {
+		t.Fatalf("owner rejected invalid source-only content: %v", err)
+	}
+	if _, err := base64.StdEncoding.Strict().DecodeString("not-valid-base64$"); err == nil {
+		t.Fatal("fixture is unexpectedly decodable")
 	}
 }
 
