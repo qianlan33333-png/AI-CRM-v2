@@ -47,6 +47,12 @@ try {
   unsafe = true;
   await api.readWeComContactHistoryEvents().then(() => { throw new Error('extra private field was accepted'); }, (error) => assert(error instanceof Error && error.message.includes('只读契约'), 'unsafe DTO did not fail closed'));
   unsafe = false;
+  events[0].retry_count = 2147483648;
+  await api.readWeComContactHistoryEvents().then(() => { throw new Error('int32 retry overflow accepted'); }, (error) => assert(error.message.includes('只读契约'), 'retry overflow not rejected'));
+  events[0].retry_count = 0;
+  relations[0].add_way = -2147483649;
+  await api.readWeComContactHistoryRelations().then(() => { throw new Error('int32 add-way overflow accepted'); }, (error) => assert(error.message.includes('只读契约'), 'add-way overflow not rejected'));
+  relations[0].add_way = null;
   const dom = new JSDOM('<main id="stage"></main>', { url: 'https://test.invalid/admin/config.html?wecom_contact_history=1', pretendToBeVisual: true });
   const stage = dom.window.document.querySelector('#stage');
   await section.mountWeComContactHistory(stage, { kind: 'event' });

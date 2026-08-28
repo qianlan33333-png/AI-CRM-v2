@@ -15,6 +15,7 @@ export type WeComContactHistoryPage<T> = { items: T[]; total: number; limit: num
 type Row = Record<string, unknown>;
 const invalid = (): never => { throw new Error('企微联系人历史响应不符合只读契约'); };
 const integer = (value: unknown, minimum?: number): value is number => typeof value === 'number' && Number.isSafeInteger(value) && (minimum === undefined || value >= minimum);
+const int32 = (value: unknown): value is number => integer(value) && value >= -2147483648 && value <= 2147483647;
 const instant = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 function object(value: unknown, keys: string[]): Row {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== keys.length || Object.keys(value).some((key) => !keys.includes(key))) invalid();
@@ -23,13 +24,13 @@ function object(value: unknown, keys: string[]): Row {
 function event(value: unknown): WeComContactHistoryEvent {
   const row = object(value, ['id', 'source_id', 'event_type', 'change_type', 'event_time', 'process_status', 'retry_count', 'created_at', 'updated_at', 'identity_sync_status']);
   if (!integer(row.id, 1) || !integer(row.source_id) || !['event_type', 'change_type', 'process_status', 'identity_sync_status'].every((key) => typeof row[key] === 'string') ||
-    (row.event_time !== null && !integer(row.event_time)) || !integer(row.retry_count) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
+    (row.event_time !== null && !integer(row.event_time)) || !int32(row.retry_count) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
   return row as unknown as WeComContactHistoryEvent;
 }
 function relation(value: unknown): WeComContactHistoryRelation {
   const row = object(value, ['id', 'source_id', 'relation_status', 'is_primary', 'add_way', 'create_time', 'first_seen_at', 'last_seen_at', 'created_at', 'updated_at']);
   if (!integer(row.id, 1) || !integer(row.source_id) || typeof row.relation_status !== 'string' || typeof row.is_primary !== 'boolean' ||
-    (row.add_way !== null && !integer(row.add_way)) || (row.create_time !== null && !integer(row.create_time)) ||
+    (row.add_way !== null && !int32(row.add_way)) || (row.create_time !== null && !integer(row.create_time)) ||
     !instant(row.first_seen_at) || !instant(row.last_seen_at) || !instant(row.created_at) || !instant(row.updated_at)) invalid();
   return row as unknown as WeComContactHistoryRelation;
 }
