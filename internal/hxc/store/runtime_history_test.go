@@ -81,8 +81,22 @@ func TestHXCRuntimeHistoryPostgresRoundTripRollback(t *testing.T) {
 		if loaded, err := reader.GetHistoricalHXCSenderConfig(txCtx, sender.ID); err != nil || !reflect.DeepEqual(loaded, sender) {
 			return fmt.Errorf("stage sender get: %v", err)
 		}
-		if _, err := store.CreateHistoricalHXCSenderConfig(txCtx, runtimeStoreSenderFixture(10, at)); !errors.Is(err, hxc.ErrHXCHistoryConflict) {
-			return fmt.Errorf("stage sender conflict: %v", err)
+		tx, err := platformstore.TxFromContext(txCtx)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(txCtx, "SAVEPOINT hxc_runtime_sender_conflict"); err != nil {
+			return err
+		}
+		_, conflictErr := store.CreateHistoricalHXCSenderConfig(txCtx, runtimeStoreSenderFixture(10, at))
+		if _, err = tx.Exec(txCtx, "ROLLBACK TO SAVEPOINT hxc_runtime_sender_conflict"); err != nil {
+			return err
+		}
+		if _, err = tx.Exec(txCtx, "RELEASE SAVEPOINT hxc_runtime_sender_conflict"); err != nil {
+			return err
+		}
+		if !errors.Is(conflictErr, hxc.ErrHXCHistoryConflict) {
+			return fmt.Errorf("stage sender conflict: %v", conflictErr)
 		}
 		record, err := store.CreateHistoricalHXCSendRecord(txCtx, runtimeStoreSendFixture(11, at))
 		if err != nil {
@@ -90,10 +104,6 @@ func TestHXCRuntimeHistoryPostgresRoundTripRollback(t *testing.T) {
 		}
 		if loaded, err := reader.GetHistoricalHXCSendRecord(txCtx, record.ID); err != nil || !reflect.DeepEqual(loaded, record) {
 			return fmt.Errorf("stage record get: %v", err)
-		}
-		tx, err := platformstore.TxFromContext(txCtx)
-		if err != nil {
-			return err
 		}
 		if loaded, err := NewHXCHistoryReader(tx).GetHistoricalHXCSendRecord(context.Background(), record.ID); err != nil || !reflect.DeepEqual(loaded, record) {
 			return fmt.Errorf("stage bare transaction get: %v", err)
