@@ -95,6 +95,11 @@ var targetBySourceTable = map[string]struct {
 	"public/archived_messages":                         {"wecom", "wecom_v1_message_history"},
 	"public/sidebar_customer_profile_fields":           {"contact", "contact_v1_sidebar_profile_history"},
 	"public/owner_migration_results":                   {"contact", "contact_v1_owner_migration_result_history"},
+	"public/campaign_segments":                         {"campaign", "campaign_v1_history_segments"},
+	"public/campaign_members":                          {"campaign", "campaign_v1_history_members"},
+	"public/cloud_broadcast_plans":                     {"campaign", "campaign_v1_history_broadcast_plans"},
+	"public/cloud_broadcast_plan_recipients":           {"campaign", "campaign_v1_history_broadcast_recipients"},
+	"public/cloud_broadcast_plan_recipient_messages":   {"campaign", "campaign_v1_history_broadcast_messages"},
 }
 
 type ReconciliationResult struct {
@@ -235,7 +240,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -300,6 +305,9 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 }
 
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
+	if isCampaignHistorySource(row.TableID) {
+		return verifyCampaignHistoryTarget(ctx, tx, row)
+	}
 	expected, ok := targetBySourceTable[row.TableID]
 	if !ok || row.TargetDomain == nil || row.TargetTable == nil || row.TargetID == nil ||
 		*row.TargetDomain != expected.domain || *row.TargetTable != expected.table || len(row.TargetDigest) != sha256.Size {

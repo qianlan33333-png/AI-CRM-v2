@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, memberGridHistoryHttp, contactHistoryHttp,
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (contactHistoryHttp) {
         window.Headers = Headers;
         const test = window.__contactHistoryHttpTest = { calls: [], fail: contactHistoryHttp.fail || false };
@@ -130,6 +130,32 @@ async function loadPage(rel, { id, q, memberGridHistoryHttp, contactHistoryHttp,
           if (filter && filter !== (viewList ? 91 : 7)) return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: [], total: 0, limit: Number(url.searchParams.get('limit')), offset: Number(url.searchParams.get('offset')) });
           const limit = Number(url.searchParams.get('limit')); const offset = Number(url.searchParams.get('offset'));
           return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+        };
+        return;
+      }
+      if (campaignHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__campaignHistoryHttpTest = { calls: [], fail: campaignHistoryHttp.fail || false };
+        const date = '2026-08-28T01:02:03.123456Z', digest = Array.from({ length: 32 }, (_, i) => i);
+        const segment = { id: 11, source_id: 101, campaign_source_id: 1001, segment_source_id: -9, source_parent_state: 'missing_campaign', code: ' code ', priority: -3, label: '<legacy>', created_at: date, source_payload_digest: digest };
+        const member = { id: 21, source_id: 102, campaign_source_id: -1, campaign_segment_source_id: -2, segment_source_id: -3, member_source_id: -4, segment_history_id: 11, customer_id: null, joined_at: date, anchor_date: '', current_step_index: -5, next_due_at: null, original_status: '', stop_reason: '', last_step_sent_at: date, retry_count: -6, created_at: date, updated_at: date, source_payload_digest: digest };
+        const plan = { id: 31, source_id: 103, source_plan_id: ' plan ', campaign_source_id: -1, segment_source_id: null, display_name: '<plan>', intent: '', content_strategy: 'legacy', content_template_masked: 'masked', max_recipients: -1, candidate_count: -2, skipped_count: -3, requires_manual_copy: true, original_status: '', original_review_status: '', original_run_status: '', committed_at: null, expires_at: date, created_at: date, updated_at: date, runtime_digest: digest, source_payload_digest: digest };
+        const recipient = { id: 41, source_id: 104, plan_history_id: 31, customer_id: 7, display_name: '', planned_message_count: -1, original_approval_status: '', original_send_status: '', approved_at: null, rejected_at: date, created_at: date, updated_at: date, source_payload_digest: digest };
+        const message = { id: 51, source_id: 105, plan_history_id: campaignHistoryHttp.wrongPlan ? 99 : 31, recipient_history_id: 41, customer_id: null, sequence_index: -1, day_offset: -2, original_send_time: 'old civil', content_masked: '<old>', original_status: '', sent_at: null, created_at: date, updated_at: date, content_payload_digest: digest, attachments_digest: digest, source_payload_digest: digest };
+        const prefix = '/api/admin/campaign-history';
+        const json = (body, status = 200) => ({ status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(body) });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials, body: init.body });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+          if (url.pathname === `${prefix}/segments/11`) return json({ ...safety, item: segment });
+          if (url.pathname === `${prefix}/broadcast-plans/31`) return json({ ...safety, item: plan });
+          const kind = url.pathname === `${prefix}/segments` ? segment : url.pathname === `${prefix}/members` ? member : url.pathname === `${prefix}/broadcast-plans` ? plan : url.pathname === `${prefix}/broadcast-plans/31/recipients` ? recipient : url.pathname === `${prefix}/broadcast-recipients/41/messages` ? message : undefined;
+          if (!kind) return json({ code: 'unexpected_history_request' }, 500);
+          const limit = Number(url.searchParams.get('limit')), offset = Number(url.searchParams.get('offset')), total = campaignHistoryHttp.empty ? 0 : 21;
+          const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, i) => ({ ...kind, id: kind.id + offset + i, source_id: kind.source_id + offset + i }));
+          return json({ ...safety, items, total, limit, offset, ...(kind === recipient ? { plan_history_id: 31 } : kind === message ? { recipient_history_id: 41 } : {}) });
         };
         return;
       }
@@ -2300,6 +2326,53 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
   await sleep(30);
   ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
   failed.window.close();
+}
+
+console.log('admin/campaigns.html?history=1（七个真实GET只读历史）');
+{
+  const dom = await loadPage('admin/campaigns.html', { q: 'history=1', campaignHistoryHttp: {} });
+  const d = dom.window.document, test = dom.window.__campaignHistoryHttpTest;
+  const segments = d.querySelector('#campaign-history-segments');
+  ok('Campaign历史列表读取分群与群发计划，不走当前任务接口', test.calls.length === 2 && segments?.querySelectorAll('tbody tr').length === 20 && d.querySelector('#campaign-history-plans tbody tr'));
+  ok('源孤儿父关系明确标注且源文本转义', segments?.textContent.includes('missing_campaign') && segments.textContent.includes('<legacy>') && !segments.querySelector('legacy'));
+  click(dom, segments.querySelector('[data-history-next]')); await sleep(30);
+  ok('Campaign历史独立分页请求offset=20', segments.querySelectorAll('tbody tr').length === 1 && test.calls.at(-1).query === '?limit=20&offset=20');
+  test.fail = '/api/admin/campaign-history/segments';
+  click(dom, segments.querySelector('[data-history-retry]')); await sleep(30);
+  ok('Campaign历史读取失败清空旧行并提供重试', !segments.querySelector('tbody') && segments.textContent.includes('未显示旧数据或演示数据'));
+  test.fail = false;
+  click(dom, segments.querySelector('[data-history-retry]')); await sleep(30);
+  ok('Campaign历史重试保留失败页offset', segments.querySelectorAll('tbody tr').length === 1 && test.calls.at(-1).query === '?limit=20&offset=20');
+  ok('Campaign历史所有请求均为携带会话的无body GET', test.calls.every((call) => call.method === 'GET' && call.credentials === 'include' && call.body === undefined));
+  dom.window.close();
+
+  const segment = await loadPage('admin/campaigns.html', { q: 'history=1&segment=11', campaignHistoryHttp: {} });
+  const sd = segment.window.document, st = segment.window.__campaignHistoryHttpTest;
+  ok('历史成员由服务端分群详情后按父ID查询', st.calls.length === 2 && st.calls[0].path.endsWith('/segments/11') && st.calls[1].query === '?limit=20&offset=0&segment_history_id=11' && sd.querySelector('#campaign-history-members tbody tr'));
+  ok('缺失客户引用不猜配Customer360，负数源计数保留', !sd.querySelector('#campaign-history-members a') && sd.querySelector('#campaign-history-members').textContent.includes('retry：-6'));
+  segment.window.close();
+
+  const plan = await loadPage('admin/campaigns.html', { q: 'history=1&plan=31&recipient=41', campaignHistoryHttp: {} });
+  const pd = plan.window.document, pt = plan.window.__campaignHistoryHttpTest;
+  ok('历史群发计划、收件人、消息顺序使用三个独立GET', pt.calls.length === 3 && pt.calls[0].path.endsWith('/broadcast-plans/31') && pt.calls[1].path.endsWith('/broadcast-plans/31/recipients') && pt.calls[2].path.endsWith('/broadcast-recipients/41/messages'));
+  ok('历史正文转义并保留原civil时间，已验证客户链接可见', pd.querySelector('#campaign-history-messages').textContent.includes('<old>') && pd.querySelector('#campaign-history-messages').textContent.includes('old civil') && !pd.querySelector('old') && pd.querySelector('#campaign-history-recipients a[href="customerDetail.html?id=7"]'));
+  ok('历史页面没有审批、启动、发送写操作', [...pd.querySelectorAll('button')].every((button) => ['上一页', '下一页', '刷新本页'].includes(button.textContent.trim())));
+  plan.window.close();
+
+  const wrong = await loadPage('admin/campaigns.html', { q: 'history=1&plan=31&recipient=41', campaignHistoryHttp: { wrongPlan: true } });
+  ok('消息跨计划不一致失败关闭，不展示正文', wrong.window.document.querySelector('#campaign-history-messages').textContent.includes('不一致') && !wrong.window.document.querySelector('#campaign-history-messages tbody'));
+  wrong.window.close();
+  const failed = await loadPage('admin/campaigns.html', { q: 'history=1&segment=11', campaignHistoryHttp: { fail: true } });
+  ok('历史父详情失败时不读取子表', failed.window.__campaignHistoryHttpTest.calls.length === 1 && !failed.window.document.querySelector('#campaign-history-members'));
+  failed.window.close();
+  const empty = await loadPage('admin/campaigns.html', { q: 'history=1', campaignHistoryHttp: { empty: true } });
+  ok('历史空页显示真实零条，不使用种子数据', empty.window.document.querySelector('#campaign-history-segments').textContent.includes('共 0 条'));
+  empty.window.close();
+  for (const q of ['history=1&segment=01', 'history=1&plan=31&segment=11', 'history=1&recipient=41', 'history=1&plan=31&plan=32', 'history=1&unknown=1']) {
+    const invalid = await loadPage('admin/campaigns.html', { q, campaignHistoryHttp: {} });
+    ok(`历史非法URL不发出请求: ${q}`, invalid.window.__campaignHistoryHttpTest.calls.length === 0 && !invalid.window.document.querySelector('#campaign-history-detail'));
+    invalid.window.close();
+  }
 }
 
 console.log('admin/campaigns.html（External Effects / Push Center 本地边界）');

@@ -421,6 +421,11 @@ owners:
   campaign:
     package: internal/campaign
     tables:
+      - campaign_v1_history_segments
+      - campaign_v1_history_members
+      - campaign_v1_history_broadcast_plans
+      - campaign_v1_history_broadcast_recipients
+      - campaign_v1_history_broadcast_messages
       - cloud_campaigns
       - cloud_campaign_steps
       - cloud_campaign_local_plans
