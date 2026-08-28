@@ -897,13 +897,13 @@ func (e ChannelHistoryResponseRealExternalCallExecuted) Valid() bool {
 
 // Defines values for ChannelHistoryResponseSource.
 const (
-	V1History ChannelHistoryResponseSource = "v1_history"
+	ChannelHistoryResponseSourceV1History ChannelHistoryResponseSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the ChannelHistoryResponseSource enum.
 func (e ChannelHistoryResponseSource) Valid() bool {
 	switch e {
-	case V1History:
+	case ChannelHistoryResponseSourceV1History:
 		return true
 	default:
 		return false
@@ -6333,13 +6333,13 @@ func (e ServicePeriodHistoryEventPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for ServicePeriodHistoryEventPageSource.
 const (
-	V1History ServicePeriodHistoryEventPageSource = "v1_history"
+	ServicePeriodHistoryEventPageSourceV1History ServicePeriodHistoryEventPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageSource enum.
 func (e ServicePeriodHistoryEventPageSource) Valid() bool {
 	switch e {
-	case V1History:
+	case ServicePeriodHistoryEventPageSourceV1History:
 		return true
 	default:
 		return false
@@ -7716,13 +7716,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
