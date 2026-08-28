@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const outdir = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-deferred-identity-history-'));
+const dist = path.join(root, 'dist');
 const at = '2026-08-29T01:02:03.123456Z';
 const people = Array.from({ length: 51 }, (_, index) => ({ id: index + 1, source_id: index ? -index : 0, created_at: at, updated_at: at }));
 const conflicts = Array.from({ length: 51 }, (_, index) => ({ id: index + 101, source_id: index ? -index : 0, conflict_type: index ? '' : '<img src=x>', source_type: '', status: '', resolution_status: '', created_at: at, updated_at: at, resolved_at: index ? at : null }));
@@ -88,6 +89,35 @@ try {
   fail = true;
   await section.mountDeferredIdentityHistory(stage, { kind: 'people' });
   assert(stage.querySelector('[role="alert"]')?.textContent.includes('未显示旧数据，也未回退 Mock'), 'failed page retained data or used a mock fallback');
+  fail = false;
+
+  const html = fs.readFileSync(path.join(dist, 'admin/config.html'), 'utf8');
+  const bundle = fs.readFileSync(path.join(dist, 'assets/admin.js'), 'utf8');
+  for (const [kind, endpoint] of [['people', 'people'], ['conflicts', 'conflicts'], ['missing-roots', 'missing-roots']]) {
+    const bootCalls = [];
+    const boot = new JSDOM(html, {
+      url: `http://localhost/admin/config.html?deferred_identity_history=1&history_kind=${kind}`,
+      runScripts: 'outside-only',
+      pretendToBeVisual: true,
+      beforeParse(window) {
+        window.__AICRM_TEST_MOCK__ = false;
+        window.Headers = Headers;
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          bootCalls.push({ path: url.pathname, query: url.search, method: init.method, credentials: init.credentials, body: init.body });
+          const rows = source(url.pathname);
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          return { status: 200, headers: new Headers(), text: async () => JSON.stringify({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: rows.slice(offset, offset + limit), total: rows.length, limit, offset }) };
+        };
+      },
+    });
+    boot.window.eval(bundle);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const bootStage = boot.window.document.querySelector('#stage');
+    assert(bootStage?.querySelector('[data-deferred-identity-history]') && bootCalls.length === 1 && bootCalls[0].path === `/api/admin/deferred-identity-history/${endpoint}` && bootCalls[0].query === '?offset=0&limit=50' && bootCalls[0].method === 'GET' && bootCalls[0].credentials === 'include' && bootCalls[0].body === undefined, `built config boot did not use only the ${kind} generated GET`);
+    boot.window.close();
+  }
   console.log('e2e_deferred_identity_history: PASS');
 } finally {
   globalThis.fetch = saved.fetch;
