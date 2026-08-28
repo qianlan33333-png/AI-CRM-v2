@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -72,11 +73,20 @@ ORDER BY source_key_digest`, run, table)
 
 type CampaignDefinitionCurrentResolver struct {
 	run        string
-	repository campaign.Repository
+	repository campaignport.CampaignDefinitionCurrentReader
+	boundTx    pgx.Tx
 }
 
-func NewCampaignDefinitionCurrentResolver(run string, repository campaign.Repository) *CampaignDefinitionCurrentResolver {
+func NewCampaignDefinitionCurrentResolver(run string, repository campaignport.CampaignDefinitionCurrentReader) *CampaignDefinitionCurrentResolver {
 	return &CampaignDefinitionCurrentResolver{run: run, repository: repository}
+}
+
+// Reconciliation already owns a serializable transaction. The owner reader
+// supplied to this copy must use that same transaction.
+func (resolver *CampaignDefinitionCurrentResolver) WithTx(tx pgx.Tx) *CampaignDefinitionCurrentResolver {
+	copy := *resolver
+	copy.boundTx = tx
+	return &copy
 }
 
 // A code is used only after exact source provenance and an actual Campaign
@@ -85,15 +95,19 @@ func (resolver *CampaignDefinitionCurrentResolver) ResolveVerifiedCurrentCampaig
 	if resolver == nil || resolver.run == "" || resolver.repository == nil || sourceKey == ([sha256.Size]byte{}) {
 		return "", false, ErrInvalidScope
 	}
-	tx, err := platformstore.TxFromContext(ctx)
-	if err != nil {
-		return "", false, err
+	tx := resolver.boundTx
+	if tx == nil {
+		var err error
+		tx, err = platformstore.TxFromContext(ctx)
+		if err != nil {
+			return "", false, err
+		}
 	}
 	var code *string
 	var payload, targetDigest []byte
 	var disposition string
 	var verified, archived, sealed bool
-	err = tx.QueryRow(ctx, `SELECT r.target_id,r.payload_digest,r.target_digest,r.disposition,r.verified,
+	err := tx.QueryRow(ctx, `SELECT r.target_id,r.payload_digest,r.target_digest,r.disposition,r.verified,
 EXISTS(SELECT 1 FROM public.v1_archive_records a WHERE a.run_id=r.archive_run_id AND a.adapter_id=r.adapter_id
 AND a.table_id=r.table_id AND a.source_key_digest=r.source_key_digest AND a.payload_digest=r.payload_digest),
 EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts s WHERE s.archive_run_id=r.archive_run_id
@@ -120,11 +134,11 @@ AND r.target_domain='campaign' AND r.target_table='cloud_campaigns'`, resolver.r
 	if !equalBytes(expected[:], targetDigest) {
 		return "", false, ErrConflict
 	}
-	actual, _, err := resolver.repository.Get(ctx, *code)
+	actual, err := resolver.repository.GetCurrentCampaignDefinitionHistoryParent(ctx, *code)
 	if err != nil {
 		return "", false, err
 	}
-	if actual.Code != *code || actual.ApprovalStatus != campaign.ApprovalRejected || actual.RuntimeStatus != campaign.RuntimePaused || actual.Version != 1 {
+	if actual.Code != *code || actual.ApprovalStatus != "rejected" || actual.RuntimeStatus != "paused" || actual.Version != 1 {
 		return "", false, ErrConflict
 	}
 	return *code, true, nil

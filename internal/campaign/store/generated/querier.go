@@ -36,6 +36,7 @@ type Querier interface {
 	GetCampaignTouchPlanReview(ctx context.Context, arg GetCampaignTouchPlanReviewParams) (CloudCampaignTouchPlanReview, error)
 	GetCampaignTouchPlanReviewReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReviewReceiptForUpdateParams) (GetCampaignTouchPlanReviewReceiptForUpdateRow, error)
 	GetCampaignTouchPlanReviewRecipient(ctx context.Context, arg GetCampaignTouchPlanReviewRecipientParams) (CloudCampaignTouchPlanTarget, error)
+	GetCurrentCampaignDefinitionHistoryParent(ctx context.Context, campaignCode string) (GetCurrentCampaignDefinitionHistoryParentRow, error)
 	GetHistoricalBroadcastMessage(ctx context.Context, id int64) (CampaignV1HistoryBroadcastMessage, error)
 	GetHistoricalBroadcastPlan(ctx context.Context, id int64) (CampaignV1HistoryBroadcastPlan, error)
 	GetHistoricalBroadcastRecipient(ctx context.Context, id int64) (CampaignV1HistoryBroadcastRecipient, error)

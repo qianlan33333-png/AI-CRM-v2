@@ -85,3 +85,14 @@ type CampaignDefinitionHistoryJournal interface {
 	LoadCampaignDefinitionHistory(context.Context, string, string) (CampaignHistoryReceipt, bool, error)
 	RecordCampaignDefinitionHistory(context.Context, string, CampaignHistoryReceipt) error
 }
+
+// Current parent lookup validates a historical relation; it never changes
+// the current Campaign lifecycle or returns executable content.
+type CampaignDefinitionCurrentParent struct {
+	Code, ApprovalStatus, RuntimeStatus string
+	Version                             int64
+}
+
+type CampaignDefinitionCurrentReader interface {
+	GetCurrentCampaignDefinitionHistoryParent(context.Context, string) (CampaignDefinitionCurrentParent, error)
+}

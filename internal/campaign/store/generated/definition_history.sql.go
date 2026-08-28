@@ -207,6 +207,30 @@ func (q *Queries) CreateHistoricalCampaignDefinitionStep(ctx context.Context, ar
 	return i, err
 }
 
+const getCurrentCampaignDefinitionHistoryParent = `-- name: GetCurrentCampaignDefinitionHistoryParent :one
+SELECT campaign_code,approval_status,runtime_status,version FROM public.cloud_campaigns
+WHERE campaign_code=$1
+`
+
+type GetCurrentCampaignDefinitionHistoryParentRow struct {
+	CampaignCode   string `json:"campaign_code"`
+	ApprovalStatus string `json:"approval_status"`
+	RuntimeStatus  string `json:"runtime_status"`
+	Version        int64  `json:"version"`
+}
+
+func (q *Queries) GetCurrentCampaignDefinitionHistoryParent(ctx context.Context, campaignCode string) (GetCurrentCampaignDefinitionHistoryParentRow, error) {
+	row := q.db.QueryRow(ctx, getCurrentCampaignDefinitionHistoryParent, campaignCode)
+	var i GetCurrentCampaignDefinitionHistoryParentRow
+	err := row.Scan(
+		&i.CampaignCode,
+		&i.ApprovalStatus,
+		&i.RuntimeStatus,
+		&i.Version,
+	)
+	return i, err
+}
+
 const getHistoricalCampaignDefinition = `-- name: GetHistoricalCampaignDefinition :one
 SELECT id, source_id, code, display_name, intent, anchor_mode, anchor_date, review_status, run_status, approved_at, started_at, finished_at, paused_at, paused_reason, created_at, updated_at, original_disposition, original_reason, private_digest, source_key_digest, source_payload_digest, source_field_digest, redacted_roots FROM public.campaign_v1_definition_history WHERE id = $1
 `

@@ -21,6 +21,22 @@ type CampaignDefinitionHistoryReader struct{ db campaigndb.DBTX }
 
 var _ campaignport.CampaignDefinitionHistoryStore = (*CampaignDefinitionHistoryStore)(nil)
 var _ campaignport.CampaignDefinitionHistoryReader = (*CampaignDefinitionHistoryReader)(nil)
+var _ campaignport.CampaignDefinitionCurrentReader = (*CampaignDefinitionHistoryReader)(nil)
+
+func (reader *CampaignDefinitionHistoryReader) GetCurrentCampaignDefinitionHistoryParent(ctx context.Context, code string) (campaignport.CampaignDefinitionCurrentParent, error) {
+	if code == "" {
+		return campaignport.CampaignDefinitionCurrentParent{}, campaignport.ErrCampaignHistoryInvalid
+	}
+	queries, err := reader.queries(ctx)
+	if err != nil {
+		return campaignport.CampaignDefinitionCurrentParent{}, err
+	}
+	row, err := queries.GetCurrentCampaignDefinitionHistoryParent(ctx, code)
+	if err != nil {
+		return campaignport.CampaignDefinitionCurrentParent{}, campaignDefinitionHistoryError(err)
+	}
+	return campaignport.CampaignDefinitionCurrentParent{Code: row.CampaignCode, ApprovalStatus: row.ApprovalStatus, RuntimeStatus: row.RuntimeStatus, Version: row.Version}, nil
+}
 
 func NewCampaignDefinitionHistoryStore() *CampaignDefinitionHistoryStore {
 	return &CampaignDefinitionHistoryStore{}
