@@ -80,6 +80,13 @@ FROM identities
 WHERE id = sqlc.arg(identity_id)::bigint
 FOR UPDATE;
 
+-- name: LockHistoricalScopedWeComIdentityEvidence :one
+SELECT id, customer_id, kind, scope, normalized_value, assurance,
+       fingerprint_key_version, review_fingerprint
+FROM identities
+WHERE id = sqlc.arg(identity_id)::bigint
+FOR SHARE;
+
 -- name: UpdateHistoricalScopedWeComIdentityCAS :execrows
 UPDATE identities
 SET scope = sqlc.arg(next_scope)::text,
