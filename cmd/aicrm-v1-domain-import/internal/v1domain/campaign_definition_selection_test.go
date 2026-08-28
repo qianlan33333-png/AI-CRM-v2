@@ -24,7 +24,7 @@ func TestCampaignDefinitionSelectorSelectsOnlyPriorNonImportRowsInSourceOrder(t 
 		},
 		campaignStepTableID: {
 			campaignDefinitionSelectionReceipt(stepOne, "quarantine", "step_unresolved"),
-			campaignDefinitionSelectionReceipt(stepTwo, "import", "old_current_code"),
+			campaignDefinitionSelectionReceipt(stepTwo, "import", ""),
 		},
 	}}
 	selector, err := NewCampaignDefinitionSelector(archive, receipts)
@@ -71,11 +71,24 @@ func TestCampaignDefinitionSelectorFailsClosedOnArchiveOrReceiptMismatch(t *test
 			value.PayloadDigest = other.PayloadHMAC
 			return value
 		}()}},
-		"wrong scope": {rows: []v1archive.ArchivedRow{row}, receipts: []CampaignDefinitionPriorReceipt{func() CampaignDefinitionPriorReceipt {
+		"archive has target scope": {rows: []v1archive.ArchivedRow{row}, receipts: []CampaignDefinitionPriorReceipt{func() CampaignDefinitionPriorReceipt {
 			value := validReceipt
+			value.TargetDomain = "campaign"
 			value.TargetTable = "wrong"
 			return value
 		}()}},
+		"quarantine missing reason": {rows: []v1archive.ArchivedRow{row}, receipts: []CampaignDefinitionPriorReceipt{func() CampaignDefinitionPriorReceipt {
+			value := validReceipt
+			value.Disposition = "quarantine"
+			value.Reason = ""
+			return value
+		}()}},
+		"import missing target scope": {rows: []v1archive.ArchivedRow{row}, receipts: []CampaignDefinitionPriorReceipt{func() CampaignDefinitionPriorReceipt {
+			value := campaignDefinitionSelectionReceipt(row, "import", "")
+			value.TargetTable = ""
+			return value
+		}()}},
+		"import has reason": {rows: []v1archive.ArchivedRow{row}, receipts: []CampaignDefinitionPriorReceipt{campaignDefinitionSelectionReceipt(row, "import", "unexpected")}},
 		"unknown disposition": {rows: []v1archive.ArchivedRow{row}, receipts: []CampaignDefinitionPriorReceipt{func() CampaignDefinitionPriorReceipt {
 			value := validReceipt
 			value.Disposition = "pending"
@@ -154,9 +167,15 @@ func campaignDefinitionSelectionReceipt(row v1archive.ArchivedRow, disposition, 
 	if row.TableID == campaignStepTableID {
 		targetTable = "cloud_campaign_steps"
 	}
-	return CampaignDefinitionPriorReceipt{
+	receipt := CampaignDefinitionPriorReceipt{
 		ImportVersion: campaignDefinitionSelectionImportVersion, ArchiveRunID: "run", AdapterID: v1archive.DefaultAdapterID,
-		TableID: row.TableID, TargetDomain: "campaign", TargetTable: targetTable, SourceKey: row.SourceKeyHMAC,
+		TableID: row.TableID, SourceKey: row.SourceKeyHMAC,
 		PayloadDigest: row.PayloadHMAC, Disposition: disposition, Reason: reason,
 	}
+	if disposition == "import" {
+		receipt.TargetDomain = "campaign"
+		receipt.TargetTable = targetTable
+		receipt.Reason = reason
+	}
+	return receipt
 }

@@ -98,11 +98,19 @@ func (selector *CampaignDefinitionSelector) selectTable(ctx context.Context, arc
 	if err := selector.receipts.EachCampaignDefinitionPriorReceipt(ctx, archiveRunID, scope.tableID, func(receipt CampaignDefinitionPriorReceipt) error {
 		if receipt.ImportVersion != campaignDefinitionSelectionImportVersion || receipt.ArchiveRunID != archiveRunID ||
 			receipt.AdapterID != v1archive.DefaultAdapterID || receipt.TableID != scope.tableID ||
-			receipt.TargetDomain != scope.targetDomain || receipt.TargetTable != scope.targetTable ||
 			receipt.SourceKey == ([sha256.Size]byte{}) || receipt.PayloadDigest == ([sha256.Size]byte{}) {
 			return ErrConflict
 		}
-		if receipt.Disposition != "import" && receipt.Disposition != "archive" && receipt.Disposition != "quarantine" {
+		switch receipt.Disposition {
+		case "import":
+			if receipt.TargetDomain != scope.targetDomain || receipt.TargetTable != scope.targetTable || receipt.Reason != "" {
+				return ErrConflict
+			}
+		case "archive", "quarantine":
+			if receipt.TargetDomain != "" || receipt.TargetTable != "" || receipt.Reason == "" {
+				return ErrConflict
+			}
+		default:
 			return ErrConflict
 		}
 		if _, found := receipts[receipt.SourceKey]; found {
