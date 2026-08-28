@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes) {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(automationHistoryReconciledTables) != 4 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+4 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -34,6 +34,12 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 		mapping := targetBySourceTable[scope.source]
 		if mapping.domain != "segment" || mapping.table != scope.target {
 			t.Fatalf("audience history mapping mismatch for %s", scope.source)
+		}
+	}
+	for _, table := range automationHistoryReconciledTables {
+		all = append(all, table)
+		if targetBySourceTable[table].domain != "automation" || !isAutomationHistorySource(table) {
+			t.Fatalf("automation mapping mismatch: %s", table)
 		}
 	}
 	for _, table := range all {

@@ -2118,6 +2118,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
+	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
 	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
 		webhook: inboundWebhookHandler, retiredSubscriptions: retiredOutboundSubscriptionHandler,
 	}
@@ -3662,6 +3663,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/wecom/tag-effects/{effect_id}/reconcile", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.ReconcileWeComTagEffect)},
 			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
 			{http.MethodGet, "/api/admin/coupon-history", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryDefinitions)},
+			{http.MethodGet, "/api/admin/automation-history/sops", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistorySOPs)},
+			{http.MethodGet, "/api/admin/automation-history/sops/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistorySOP)},
+			{http.MethodGet, "/api/admin/automation-history/configs", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryConfigs)},
+			{http.MethodGet, "/api/admin/automation-history/configs/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryConfig)},
+			{http.MethodGet, "/api/admin/automation-history/prompts", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryPrompts)},
+			{http.MethodGet, "/api/admin/automation-history/prompts/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryPrompt)},
+			{http.MethodGet, "/api/admin/automation-history/agents", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListAutomationHistoryAgents)},
+			{http.MethodGet, "/api/admin/automation-history/agents/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetAutomationHistoryAgent)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/claims", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryClaims)},
 			{http.MethodGet, "/api/admin/coupon-history/{coupon_id}/redemptions", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCouponHistoryRedemptions)},
 			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},

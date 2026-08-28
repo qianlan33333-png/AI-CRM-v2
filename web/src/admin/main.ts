@@ -20,6 +20,7 @@ import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from '
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
+import { mountAutomationHistory } from './sections/automationHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -29,6 +30,15 @@ function boot(): void {
   const page = document.body.getAttribute('data-page') || 'customers';
   const stage = document.getElementById('stage');
   if (!stage) return;
+
+  const historyQuery = new URLSearchParams(location.search);
+  if (page === 'config' && historyQuery.get('automation_history') === '1') {
+    void mountAutomationHistory(stage, {
+      kind: historyQuery.get('history_kind') ?? undefined,
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch(() => { stage.innerHTML = '<section data-automation-history><h1>V1 自动化历史（只读）</h1><p role="alert">历史参数或读取失败；未进入当前配置。</p></section>'; });
+    return;
+  }
 
   const rawId = Number(new URLSearchParams(location.search).get('id') || '');
   const id = rawId || undefined;
@@ -132,6 +142,7 @@ function boot(): void {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
       }
       if (page === 'config') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?automation_history=1">V1 自动化历史（只读）</a></p>');
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);
         const adminAccess = stage.querySelector<HTMLElement>('#admin-access-card');
