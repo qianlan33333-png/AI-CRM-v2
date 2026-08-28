@@ -1,6 +1,6 @@
 # 自动化四表历史包（119，暂不部署）
 
-前序118已通过PR575候选Full33153339004，合并为dcf28fecb3d2e30ea1046e4c76fb8ecc87602eca；合并后exact-main33154862936仍运行。当前已对齐该代码，待exact-main绿灯后进入119集中PR；不跳号部署。
+前序118已通过PR575候选Full33153339004，合并为dcf28fecb3d2e30ea1046e4c76fb8ecc87602eca；合并后exact-main33154862936已成功，TARGET_SHA与TESTED_SHA均核对为dcf28fecb3d2e30ea1046e4c76fb8ecc87602eca，commit compatibility状态成功。当前已对齐该代码，可进入119集中PR；不跳号部署。
 
 冻结V2封存归档run v1-full-archive-20260827实际只读预检：SOP16、agent config12、prompt registry6、agents6，共40历史候选，0隔离，无脱敏占位输入。V1不连接、不修改。
 
