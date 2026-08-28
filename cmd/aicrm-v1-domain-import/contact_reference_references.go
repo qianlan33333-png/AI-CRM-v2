@@ -237,10 +237,16 @@ func (r *contactReferenceResolver) resolveIdentityMap(ctx context.Context, value
 	if err != nil {
 		return empty, false, err
 	}
-	if !lineageFound && !receiptFound {
-		return empty, false, nil
+	if !lineageFound {
+		if !receiptFound {
+			return empty, false, nil
+		}
+		if receipt.Disposition == contactport.HistoricalImportQuarantined && len(receipt.PayloadHMAC) == sha256.Size && len(receipt.FieldDigest) == sha256.Size {
+			return empty, false, nil
+		}
+		return empty, false, v1domain.ErrConflict
 	}
-	if !lineageFound || !receiptFound || lineage.TargetID < 1 || lineage.LastRunID != r.dm01Run || len(lineage.PayloadHMAC) != sha256.Size || len(lineage.FieldDigest) != sha256.Size ||
+	if !receiptFound || lineage.TargetID < 1 || lineage.LastRunID != r.dm01Run || len(lineage.PayloadHMAC) != sha256.Size || len(lineage.FieldDigest) != sha256.Size ||
 		receipt.Disposition != contactport.HistoricalImportImported || !hmac.Equal(lineage.PayloadHMAC, receipt.PayloadHMAC) || !hmac.Equal(lineage.FieldDigest, receipt.FieldDigest) {
 		return empty, false, v1domain.ErrConflict
 	}

@@ -70,6 +70,49 @@ func TestContactReferenceResolverDoesNotChooseAmbiguousOrDriftedIdentity(t *test
 	}
 }
 
+func TestContactReferenceResolverIdentityReceiptStates(t *testing.T) {
+	archiveKey := []byte(strings.Repeat("a", sha256.Size))
+	dm01Key := []byte(strings.Repeat("d", sha256.Size))
+	candidate := contactReferenceMap{sourceID: 1, corpID: "corp", externalUserID: "external"}.withDigest()
+	source := contactReferenceDM01Source(t, dm01Key, candidate.sourceID)
+	validLineage := contactport.HistoricalImportLineage{TargetID: 70, PayloadHMAC: contactReferenceBytes("payload"), FieldDigest: contactReferenceBytes("field"), LastRunID: 2}
+	validImported := contactport.HistoricalImportRowReceipt{PayloadHMAC: contactReferenceBytes("payload"), FieldDigest: contactReferenceBytes("field"), Disposition: contactport.HistoricalImportImported}
+	validQuarantine := contactport.HistoricalImportRowReceipt{PayloadHMAC: contactReferenceBytes("payload"), FieldDigest: contactReferenceBytes("field"), Disposition: contactport.HistoricalImportQuarantined}
+	for _, test := range []struct {
+		name    string
+		lineage bool
+		receipt *contactport.HistoricalImportRowReceipt
+		wantErr bool
+	}{
+		{name: "no evidence"},
+		{name: "quarantined without lineage", receipt: &validQuarantine},
+		{name: "imported without lineage", receipt: &validImported, wantErr: true},
+		{name: "lineage without receipt", lineage: true, wantErr: true},
+		{name: "quarantined with claimed lineage", lineage: true, receipt: &validQuarantine, wantErr: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			target := contactReferenceTargetFake{lineages: map[string]contactport.HistoricalImportLineage{}, receipts: map[string]contactport.HistoricalImportRowReceipt{}}
+			if test.lineage {
+				target.lineages[string(source)] = validLineage
+			}
+			if test.receipt != nil {
+				target.receipts[string(source)] = *test.receipt
+			}
+			resolver := contactReferenceTestResolver(t, archiveKey, dm01Key, []contactReferenceIdentityMap{candidate}, target, contactReferenceIdentityFake{}, contactReferenceStaffFake{}, &contactReferenceTerminalFake{}, contactport.HistoricalDeferredPerson{})
+			result, err := resolver.ResolveBinding(context.Background(), referencehistory.ExternalContactBindingFact{Source: contactReferenceBindingEnvelope(), ExternalUserID: "external"})
+			if test.wantErr {
+				if !errors.Is(err, v1domain.ErrConflict) {
+					t.Fatalf("error=%v", err)
+				}
+				return
+			}
+			if err != nil || result.IdentityID != nil || result.IdentityAssurance != "unresolved" {
+				t.Fatalf("result=%+v err=%v", result, err)
+			}
+		})
+	}
+}
+
 func TestContactReferenceResolverDirectoryRequiresBothCorporations(t *testing.T) {
 	resolver := contactReferenceTestResolver(t, []byte(strings.Repeat("a", sha256.Size)), []byte(strings.Repeat("d", sha256.Size)), nil, contactReferenceTargetFake{}, contactReferenceIdentityFake{}, contactReferenceStaffFake{id: 99}, &contactReferenceTerminalFake{}, contactport.HistoricalDeferredPerson{})
 	matched, err := resolver.ResolveDirectory(context.Background(), referencehistory.DirectoryMemberFact{Source: contactReferenceBindingEnvelope(), CorpID: "corp", WeComCorpID: "corp", WeComUserID: "staff"})
