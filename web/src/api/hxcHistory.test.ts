@@ -23,6 +23,17 @@ export async function runHxcHistoryAdapterTests(): Promise<void> {
     body = { ...safety, items: [{ ...snapshot, customer_id: 8 }], total: 1, limit: 20, offset: 0 }; await rejects(() => readHxcHistory('snapshot', 0, 20, 9));
     const activation = { id: 5, source_id: 0, source_key_digest: digest, source_payload_digest: digest, source_table: 'public/user_ops_huangxiaocan_activation_source', original_state: '', is_active: false, legacy_import_batch_ref: null, created_at: stamp, updated_at: stamp };
     body = { ...safety, items: [activation], total: 1, limit: 20, offset: 0 }; await rejects(() => readHxcHistory('activation', 0, 20, undefined, 'public/user_ops_activation_status_source'));
+    const sender = { id: 6, source_id: -8, priority: -2, original_is_active: false, created_at: stamp, updated_at: stamp };
+    body = { ...safety, items: [sender], total: 1, limit: 20, offset: 0 };
+    assert((await readHxcHistory('sender_config')).items[0].source_id === -8 && calls[calls.length - 1].url === '/api/admin/hxc-history/sender-configs?limit=20&offset=0', 'sender config preserves signed source ID through generated GET');
+    body = { ...safety, item: sender };
+    assert((await getHxcHistory('sender_config', 6)).id === 6 && calls[calls.length - 1].url === '/api/admin/hxc-history/sender-configs/6', 'sender config detail uses generated GET');
+    const record = { id: 7, source_id: 0, task_type: '', original_status: '', selected_count: -1, eligible_count: 0, sent_count: 1, skipped_count: -2, planned_count: 3, queued_count: 4, dispatching_count: 5, succeeded_count: 6, failed_count: 7, blocked_count: 8, cancelled_count: 9, image_count: 10, include_do_not_disturb: false, target_source: '', target_source_id: -9, created_at: stamp, last_status_sync_at: null, last_refreshed_at: stamp };
+    body = { ...safety, items: [record], total: 1, limit: 20, offset: 0 };
+    assert((await readHxcHistory('send_record')).items[0].source_id === 0 && calls[calls.length - 1].url === '/api/admin/hxc-history/send-records?limit=20&offset=0', 'send record preserves signed IDs and counts');
+    body = { ...safety, item: record };
+    assert((await getHxcHistory('send_record', 7)).id === 7 && calls[calls.length - 1].url === '/api/admin/hxc-history/send-records/7', 'send record detail uses generated GET');
+    for (const patch of [{ target_source_id: 1.5 }, { last_status_sync_at: '' }, { selected_count: 1.5 }, { source_payload_digest: digest }]) { body = { ...safety, item: { ...record, ...patch } }; await rejects(() => getHxcHistory('send_record', 7)); }
     status = 503; await rejects(() => readHxcHistory('meta')); assert(calls[calls.length - 1]?.init?.method === 'GET' && calls.every((call) => call.init?.credentials === 'include' && call.init?.body === undefined), 'history is same-origin GET only');
   } finally { globalThis.fetch = previous; }
 }
