@@ -37,3 +37,64 @@ type OutboundCampaignHandoff struct {
 	RealExternalCallExecuted  bool               `json:"real_external_call_executed"`
 	DeliveryProven            bool               `json:"delivery_proven"`
 }
+
+type OutboundV1BroadcastJobHistory struct {
+	ID                             int64              `json:"id"`
+	SourceID                       int64              `json:"source_id"`
+	OriginalSourceType             string             `json:"original_source_type"`
+	SourceReferenceDigest          []byte             `json:"source_reference_digest"`
+	SourceTable                    string             `json:"source_table"`
+	ScheduledFor                   pgtype.Timestamptz `json:"scheduled_for"`
+	Priority                       int32              `json:"priority"`
+	BatchKeyDigest                 []byte             `json:"batch_key_digest"`
+	OriginalStatus                 string             `json:"original_status"`
+	RequiresApproval               bool               `json:"requires_approval"`
+	ApprovedByDigest               []byte             `json:"approved_by_digest"`
+	ApprovedAt                     pgtype.Timestamptz `json:"approved_at"`
+	CancelledByDigest              []byte             `json:"cancelled_by_digest"`
+	CancelledAt                    pgtype.Timestamptz `json:"cancelled_at"`
+	CancelReasonDigest             []byte             `json:"cancel_reason_digest"`
+	TargetCount                    int32              `json:"target_count"`
+	TargetSummaryDigest            []byte             `json:"target_summary_digest"`
+	ContentType                    string             `json:"content_type"`
+	ContentPayloadDigest           []byte             `json:"content_payload_digest"`
+	ContentSummaryDigest           []byte             `json:"content_summary_digest"`
+	AttemptCount                   int32              `json:"attempt_count"`
+	LastErrorDigest                []byte             `json:"last_error_digest"`
+	LegacyOutboundTaskID           pgtype.Int8        `json:"legacy_outbound_task_id"`
+	SentCount                      int32              `json:"sent_count"`
+	FailedCount                    int32              `json:"failed_count"`
+	TraceIDDigest                  []byte             `json:"trace_id_digest"`
+	CreatedByDigest                []byte             `json:"created_by_digest"`
+	CreatedAt                      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                      pgtype.Timestamptz `json:"updated_at"`
+	ClaimedAt                      pgtype.Timestamptz `json:"claimed_at"`
+	SentAt                         pgtype.Timestamptz `json:"sent_at"`
+	ClaimTokenDigest               []byte             `json:"claim_token_digest"`
+	LeaseExpiresAt                 pgtype.Timestamptz `json:"lease_expires_at"`
+	BusinessDomain                 pgtype.Text        `json:"business_domain"`
+	IdempotencyKeyDigest           []byte             `json:"idempotency_key_digest"`
+	Channel                        pgtype.Text        `json:"channel"`
+	TargetKind                     pgtype.Text        `json:"target_kind"`
+	FailureType                    pgtype.Text        `json:"failure_type"`
+	RetryPolicyDigest              []byte             `json:"retry_policy_digest"`
+	MetadataDigest                 []byte             `json:"metadata_digest"`
+	TargetUnionIDsDigest           []byte             `json:"target_union_i_ds_digest"`
+	MaxAttempts                    int32              `json:"max_attempts"`
+	NextRetryAt                    pgtype.Timestamptz `json:"next_retry_at"`
+	DispatchStartedAt              pgtype.Timestamptz `json:"dispatch_started_at"`
+	OriginalSideEffectExecuted     bool               `json:"original_side_effect_executed"`
+	OriginalProviderResultReceived bool               `json:"original_provider_result_received"`
+	ResultSummaryDigest            []byte             `json:"result_summary_digest"`
+	OriginalReconciliationRequired bool               `json:"original_reconciliation_required"`
+	CompletedAt                    pgtype.Timestamptz `json:"completed_at"`
+	HoldReasonDigest               []byte             `json:"hold_reason_digest"`
+	HoldAt                         pgtype.Timestamptz `json:"hold_at"`
+	LegacyExternalEffectJobID      pgtype.Int8        `json:"legacy_external_effect_job_id"`
+	ExecutionIDDigest              []byte             `json:"execution_id_digest"`
+	ExecutionOwnerDigest           []byte             `json:"execution_owner_digest"`
+	SourceKeyDigest                []byte             `json:"source_key_digest"`
+	SourcePayloadDigest            []byte             `json:"source_payload_digest"`
+	SourceFieldDigest              []byte             `json:"source_field_digest"`
+	RedactedRoots                  []string           `json:"redacted_roots"`
+}
