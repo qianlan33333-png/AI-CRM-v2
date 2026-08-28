@@ -15153,7 +15153,7 @@ components:
         id: { type: integer, format: int64, minimum: 1 }
         source_id: { type: integer, format: int64 }
         task_type: { type: string }
-        status: { type: string, description: Original V1 observation, not current executable state }
+        status: { type: string, description: "Original V1 observation, not current executable state" }
         created_at: { type: string, format: date-time }
         broadcast_job_history_id: { type: integer, format: int64, minimum: 1, nullable: true }
     OutboundTaskHistoryPage:
