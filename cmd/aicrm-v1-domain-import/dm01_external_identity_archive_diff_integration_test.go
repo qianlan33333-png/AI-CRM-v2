@@ -84,9 +84,9 @@ func (reader dm01ExternalIdentityReceiptReader) EachDM01ExternalIdentityReceipt(
 		return errors.New("DM01 read-only receipt reader is invalid")
 	}
 	return reader.uow.Within(ctx, func(tx context.Context) error {
-		mode, state, err := reader.repo.ReadHistoricalImportRun(tx, runID)
+		mode, state, err := reader.repo.ReadHistoricalImportRunSnapshot(tx, runID)
 		if err != nil {
-			return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_run_read_lock"}
+			return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_run_snapshot"}
 		}
 		if mode != "full" || state != "imported" {
 			return &v1domain.DM01ExternalIdentityArchiveDiffError{Stage: "receipt_run_state"}
