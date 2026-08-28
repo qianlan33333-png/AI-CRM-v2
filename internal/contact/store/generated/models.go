@@ -186,6 +186,51 @@ type ContactV1DeferredPersonHistory struct {
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ContactV1DirectoryMemberHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	SourceID            int64              `json:"source_id"`
+	WecomCorpIDDigest   []byte             `json:"wecom_corp_id_digest"`
+	CorpIDDigest        []byte             `json:"corp_id_digest"`
+	WecomUserIDDigest   []byte             `json:"wecom_user_id_digest"`
+	CorpAttribution     string             `json:"corp_attribution"`
+	MatchedStaffID      pgtype.Int8        `json:"matched_staff_id"`
+	DisplayName         string             `json:"display_name"`
+	DepartmentIdsDigest []byte             `json:"department_ids_digest"`
+	DepartmentName      string             `json:"department_name"`
+	Position            string             `json:"position"`
+	WecomStatus         pgtype.Int4        `json:"wecom_status"`
+	IsActive            bool               `json:"is_active"`
+	SyncedAt            pgtype.Timestamptz `json:"synced_at"`
+	RawPayloadDigest    []byte             `json:"raw_payload_digest"`
+	MobileDigest        []byte             `json:"mobile_digest"`
+	AvatarUrlDigest     []byte             `json:"avatar_url_digest"`
+	UpdatedByDigest     []byte             `json:"updated_by_digest"`
+	FirstSeenAt         pgtype.Timestamptz `json:"first_seen_at"`
+	LastSyncedAt        pgtype.Timestamptz `json:"last_synced_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ContactV1ExternalBindingHistory struct {
+	ID                       int64              `json:"id"`
+	SourceKeyDigest          []byte             `json:"source_key_digest"`
+	SourcePayloadDigest      []byte             `json:"source_payload_digest"`
+	SourceFieldDigest        []byte             `json:"source_field_digest"`
+	ExternalUserIDDigest     []byte             `json:"external_user_id_digest"`
+	SourcePersonID           int64              `json:"source_person_id"`
+	PersonHistoryID          pgtype.Int8        `json:"person_history_id"`
+	IdentityID               pgtype.Int8        `json:"identity_id"`
+	IdentityAssurance        string             `json:"identity_assurance"`
+	FirstBoundByUserIDDigest []byte             `json:"first_bound_by_user_id_digest"`
+	FirstOwnerUserIDDigest   []byte             `json:"first_owner_user_id_digest"`
+	LastOwnerUserIDDigest    []byte             `json:"last_owner_user_id_digest"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ContactV1InvalidChannelHistory struct {
 	ID                  int64              `json:"id"`
 	SourceKeyDigest     []byte             `json:"source_key_digest"`
