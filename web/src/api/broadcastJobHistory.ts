@@ -20,8 +20,8 @@ const keys = [
   'id', 'source_id', 'original_source_type', 'source_table', 'scheduled_for', 'priority', 'original_status', 'requires_approval',
   'approved_at', 'cancelled_at', 'target_count', 'content_type', 'attempt_count', 'sent_count', 'failed_count', 'created_at', 'updated_at',
   'claimed_at', 'sent_at', 'lease_expires_at', 'business_domain', 'channel', 'target_kind', 'failure_type', 'max_attempts', 'next_retry_at',
-  'dispatch_started_at', 'original_original_side_effect_executed', 'original_original_provider_result_received',
-  'original_original_reconciliation_required', 'completed_at', 'hold_at',
+  'dispatch_started_at', 'original_side_effect_executed', 'original_provider_result_received',
+  'original_reconciliation_required', 'completed_at', 'hold_at',
 ];
 
 function object(value: unknown, allowed: string[]): Row {
@@ -30,7 +30,7 @@ function object(value: unknown, allowed: string[]): Row {
 }
 function item(value: unknown): BroadcastJobHistory {
   const row = object(value, keys);
-  if (!integer(row.id, 1) || !integer(row.source_id, 1) || !['priority', 'target_count', 'attempt_count', 'sent_count', 'failed_count', 'max_attempts'].every((key) => int32(row[key])) || !['original_source_type', 'source_table', 'original_status', 'content_type'].every((key) => text(row[key])) || !['scheduled_for', 'created_at', 'updated_at'].every((key) => instant(row[key])) || !['approved_at', 'cancelled_at', 'claimed_at', 'sent_at', 'lease_expires_at', 'next_retry_at', 'dispatch_started_at', 'completed_at', 'hold_at'].every((key) => nullableInstant(row[key])) || !['business_domain', 'channel', 'target_kind', 'failure_type'].every((key) => nullableText(row[key])) || !['requires_approval', 'original_original_side_effect_executed', 'original_original_provider_result_received', 'original_original_reconciliation_required'].every((key) => bool(row[key]))) invalid();
+  if (!integer(row.id, 1) || !integer(row.source_id, 1) || !['priority', 'target_count', 'attempt_count', 'sent_count', 'failed_count', 'max_attempts'].every((key) => int32(row[key])) || !['original_source_type', 'source_table', 'original_status', 'content_type'].every((key) => text(row[key])) || !['scheduled_for', 'created_at', 'updated_at'].every((key) => instant(row[key])) || !['approved_at', 'cancelled_at', 'claimed_at', 'sent_at', 'lease_expires_at', 'next_retry_at', 'dispatch_started_at', 'completed_at', 'hold_at'].every((key) => nullableInstant(row[key])) || !['business_domain', 'channel', 'target_kind', 'failure_type'].every((key) => nullableText(row[key])) || !['requires_approval', 'original_side_effect_executed', 'original_provider_result_received', 'original_reconciliation_required'].every((key) => bool(row[key]))) invalid();
   return row as unknown as BroadcastJobHistory;
 }
 function envelope(value: unknown, payload: string[]): Row {

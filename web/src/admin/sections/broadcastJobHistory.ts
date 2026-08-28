@@ -18,7 +18,7 @@ function input(options: Options): number | undefined {
 function url(id?: number): string {
   const query = new URLSearchParams({ broadcast_job_history: '1' });
   if (id !== undefined) query.set('history_id', String(id));
-  return `broadcast-jobs.html?${query.toString()}`;
+  return `automation.html?${query.toString()}`;
 }
 function shown(value: unknown): string { return value === null ? 'NULL' : value === '' ? '（空字符串）' : esc(String(value)); }
 function summary(item: BroadcastJobHistory): string {
@@ -29,7 +29,7 @@ function detail(item: BroadcastJobHistory): string {
 }
 
 export async function mountBroadcastJobHistory(stage: HTMLElement, options: Options = {}): Promise<void> {
-  stage.innerHTML = `<main data-broadcast-job-history style="padding:20px;display:grid;gap:14px"><a href="broadcast-jobs.html">返回当前群发任务</a><h1 style="margin:0;font-size:20px">V1 群发任务历史（只读）</h1><p style="color:#8F5A16">仅展示 V1 封存的原始任务观察；原状态、审批、计数、Provider 标记与时间不代表本次发送、重试或外部效果。页面不会创建任务、发送消息、重试或调用 Provider。</p><section data-broadcast-job-history-results></section></main>`;
+  stage.innerHTML = `<main data-broadcast-job-history style="padding:20px;display:grid;gap:14px"><a href="automation.html">返回当前自动化</a><h1 style="margin:0;font-size:20px">V1 群发任务历史（只读）</h1><p style="color:#8F5A16">仅展示 V1 封存的原始任务观察；原状态、审批、计数、Provider 标记与时间不代表本次发送、重试或外部效果。页面不会创建任务、发送消息、重试或调用 Provider。</p><section data-broadcast-job-history-results></section></main>`;
   const results = stage.querySelector<HTMLElement>('[data-broadcast-job-history-results]')!;
   let id: number | undefined;
   try { id = input(options); } catch (error) { results.innerHTML = `<p role="alert">${esc(error instanceof Error ? error.message : '群发任务历史参数无效')}；未读取数据。</p>`; return; }
