@@ -49,12 +49,65 @@ func TestHumanOAuthProviderAdapterUsesFrozenAuthorizationAndIdentityExchange(t *
 		t.Fatal(err)
 	}
 	if query.Get("appid") != "corp-fixture" || query.Get("redirect_uri") != "https://crm.example.test/auth/wecom/callback" ||
-		query.Get("response_type") != "code" || query.Get("scope") != "snsapi_base" || query.Get("state") != state {
+		query.Get("response_type") != "code" || query.Get("scope") != "snsapi_base" || query.Get("state") != state || query.Get("agentid") != "" {
 		t.Fatalf("authorization query = %q", parsed.RawQuery)
 	}
 	identity, err := client.Exchange(context.Background(), "provider-code-fixture")
 	if err != nil || identity.CorpID != "corp-fixture" || identity.UserID != "member-fixture" || tokenCalls.Load() != 1 || identityCalls.Load() != 1 {
 		t.Fatalf("Exchange()=%+v err=%v calls=%d/%d", identity, err, tokenCalls.Load(), identityCalls.Load())
+	}
+}
+
+func TestHumanOAuthProviderAdapterBuildsDesktopAuthorizationAndExchangesCode(t *testing.T) {
+	var tokenCalls, identityCalls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/cgi-bin/gettoken":
+			tokenCalls.Add(1)
+			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"access-fixture","expires_in":7200}`))
+		case "/cgi-bin/auth/getuserinfo":
+			identityCalls.Add(1)
+			if request.URL.Query().Get("access_token") != "access-fixture" || request.URL.Query().Get("code") != "desktop-code" {
+				t.Fatalf("identity query=%q", request.URL.RawQuery)
+			}
+			_, _ = writer.Write([]byte(`{"errcode":0,"userid":"member-fixture"}`))
+		default:
+			t.Fatalf("unexpected provider path %q", request.URL.Path)
+		}
+	}))
+	defer server.Close()
+	credentials, err := NewCredentials("corp-fixture", "secret-fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens, err := NewTokenProvider(TokenProviderConfig{BaseURL: server.URL, Credentials: credentials, HTTPClient: server.Client(), Now: time.Now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := NewHumanOAuthClient(HumanOAuthConfig{
+		BaseURL: server.URL, AuthorizeURL: server.URL + "/connect/oauth2/authorize", CallbackURL: "https://crm.example.test/auth/wecom/callback",
+		CorpID: "corp-fixture", DesktopAgentID: 1000025, HTTPClient: server.Client(), TokenProvider: tokens,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := base64.RawURLEncoding.EncodeToString(make([]byte, 32))
+	authorization, err := client.AuthorizationURL(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(authorization)
+	if err != nil || parsed.Scheme != "https" || parsed.Host != "login.work.weixin.qq.com" || parsed.Path != "/wwlogin/sso/login" || parsed.Fragment != "" {
+		t.Fatalf("desktop authorization=%q err=%v", authorization, err)
+	}
+	query, err := url.ParseQuery(parsed.RawQuery)
+	if err != nil || len(query) != 5 || query.Get("login_type") != "CorpApp" || query.Get("appid") != "corp-fixture" || query.Get("agentid") != "1000025" ||
+		query.Get("redirect_uri") != "https://crm.example.test/auth/wecom/callback" || query.Get("state") != state || query.Get("scope") != "" || query.Get("response_type") != "" {
+		t.Fatalf("desktop authorization query=%q err=%v", parsed.RawQuery, err)
+	}
+	identity, err := client.Exchange(context.Background(), "desktop-code")
+	if err != nil || identity.CorpID != "corp-fixture" || identity.UserID != "member-fixture" || tokenCalls.Load() != 1 || identityCalls.Load() != 1 {
+		t.Fatalf("desktop Exchange=%+v err=%v calls=%d/%d", identity, err, tokenCalls.Load(), identityCalls.Load())
 	}
 }
 
@@ -119,6 +172,18 @@ func TestHumanOAuthProviderAdapterAcceptsOnlyExplicitSidebarCallbackPath(t *test
 		CorpID: "corp-fixture", HTTPClient: server.Client(), TokenProvider: tokens,
 	}); !errors.Is(err, ErrInvalidConfig) {
 		t.Fatalf("wrong callback-path error = %v", err)
+	}
+	if _, err = NewHumanOAuthClient(HumanOAuthConfig{
+		BaseURL: server.URL, AuthorizeURL: server.URL + "/connect/oauth2/authorize", CallbackURL: "https://crm.example.test/api/sidebar/v2/oauth/callback", CallbackPath: "/api/sidebar/v2/oauth/callback",
+		CorpID: "corp-fixture", DesktopAgentID: 1000025, HTTPClient: server.Client(), TokenProvider: tokens,
+	}); !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("desktop sidebar combination error = %v", err)
+	}
+	if _, err = NewHumanOAuthClient(HumanOAuthConfig{
+		BaseURL: server.URL, AuthorizeURL: server.URL + "/connect/oauth2/authorize", CallbackURL: "https://crm.example.test/auth/wecom/callback",
+		CorpID: "corp-fixture", DesktopAgentID: -1, HTTPClient: server.Client(), TokenProvider: tokens,
+	}); !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("negative desktop agent error = %v", err)
 	}
 }
 
