@@ -236,6 +236,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListHXCHistoryMeta", "GetHXCHistoryMeta", "ListHXCHistorySnapshot", "GetHXCHistorySnapshot", "ListHXCHistoryActivation", "GetHXCHistoryActivation", "ListHXCHistoryLead", "GetHXCHistoryLead", "ListHXCHistoryBatch", "GetHXCHistoryBatch",
 		"ListCustomerStateHistorySnapshot", "GetCustomerStateHistorySnapshot", "ListCustomerStateHistoryChange", "GetCustomerStateHistoryChange", "ListCustomerStateHistoryClassTermTagMapping", "GetCustomerStateHistoryClassTermTagMapping",
 		"ListStaticHistoryGroupInvite", "GetStaticHistoryGroupInvite", "ListStaticHistoryProductPageSlice", "GetStaticHistoryProductPageSlice", "ListStaticHistoryCycleStrategy", "GetStaticHistoryCycleStrategy", "ListStaticHistoryCycleVersion", "GetStaticHistoryCycleVersion", "ListStaticHistoryCycleDocument", "GetStaticHistoryCycleDocument",
+		"ListRadarClickHistory", "GetRadarClickHistory", "ListMarketingConfigHistoryConfigs", "GetMarketingConfigHistoryConfig", "ListMarketingConfigHistoryRules", "GetMarketingConfigHistoryRule",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",
 		"ListMemberViewHistory", "GetMemberViewHistory", "ListMemberUsageHistory", "GetMemberUsageHistory",
 		"ListSidebarProfileHistory", "GetSidebarProfileHistory", "ListOwnerMigrationResultHistory", "GetOwnerMigrationResultHistory",

@@ -43,3 +43,34 @@ type RadarLinkEvent struct {
 	PayloadDigest []byte             `json:"payload_digest"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
+
+type RadarV1ClickHistory struct {
+	ID                     int64              `json:"id"`
+	SourceKeyDigest        []byte             `json:"source_key_digest"`
+	SourcePayloadDigest    []byte             `json:"source_payload_digest"`
+	SourceFieldDigest      []byte             `json:"source_field_digest"`
+	SourceID               int64              `json:"source_id"`
+	LinkSourceID           int64              `json:"link_source_id"`
+	RadarLinkID            pgtype.Int8        `json:"radar_link_id"`
+	CustomerID             pgtype.Int8        `json:"customer_id"`
+	Code                   string             `json:"code"`
+	RawStage               string             `json:"raw_stage"`
+	SourceChannel          string             `json:"source_channel"`
+	TargetTypeSnapshot     string             `json:"target_type_snapshot"`
+	SourceChannelSnapshot  string             `json:"source_channel_snapshot"`
+	ErrorCode              string             `json:"error_code"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	OpenIDDigest           []byte             `json:"open_id_digest"`
+	UnionIDDigest          []byte             `json:"union_id_digest"`
+	ExternalUserIDDigest   []byte             `json:"external_user_id_digest"`
+	CampaignIDDigest       []byte             `json:"campaign_id_digest"`
+	StaffIDDigest          []byte             `json:"staff_id_digest"`
+	UserAgentDigest        []byte             `json:"user_agent_digest"`
+	IpDigest               []byte             `json:"ip_digest"`
+	PersonIDDigest         []byte             `json:"person_id_digest"`
+	IpHashDigest           []byte             `json:"ip_hash_digest"`
+	CampaignSnapshotDigest []byte             `json:"campaign_snapshot_digest"`
+	StaffSnapshotDigest    []byte             `json:"staff_snapshot_digest"`
+	RefererDigest          []byte             `json:"referer_digest"`
+	QueryParamsDigest      []byte             `json:"query_params_digest"`
+}
