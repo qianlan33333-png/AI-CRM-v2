@@ -58,6 +58,12 @@ AND imported_count+archived_count+quarantined_count=receipt_count)`, run).Scan(&
 		if err != nil {
 			return err
 		}
+		for table, count := range map[string]int{runtimehistory.SenderConfigTableID: len(selected.SenderConfigs), runtimehistory.SendRecordsTableID: len(selected.SendRecords)} {
+			var expected int64
+			if err = tx.QueryRow(bound, "SELECT row_count FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=$2", run, table).Scan(&expected); err != nil || expected != int64(count) {
+				return ErrConflict
+			}
+		}
 		entries, err := hxcRuntimeEntries(selected, run, tx)
 		if err != nil {
 			return err
