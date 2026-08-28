@@ -534,6 +534,23 @@ func (HistoricalImportRepository) ReadHistoricalImportRun(ctx context.Context, r
 	return row.Mode, row.State, nil
 }
 
+// ReadHistoricalImportRunSnapshot supports repeatable-read, read-only audits.
+// Import writers continue to use ReadHistoricalImportRun's FOR SHARE lock.
+func (HistoricalImportRepository) ReadHistoricalImportRunSnapshot(ctx context.Context, runID int64) (string, string, error) {
+	if runID < 1 {
+		return "", "", ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	row, err := contactdb.New(tx).ReadHistoricalImportRunSnapshot(ctx, runID)
+	if err != nil {
+		return "", "", err
+	}
+	return row.Mode, row.State, nil
+}
+
 func (HistoricalImportRepository) LockHistoricalImportSource(ctx context.Context, source contactport.HistoricalImportSource, sourceKeyHMAC []byte) error {
 	sourceTable, ok := historicalImportSourceTable(source)
 	if !ok || len(sourceKeyHMAC) != 32 {

@@ -43,6 +43,8 @@ ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
 MIGRATION_TEST_DATABASE_URL="$database_url" \
 make --no-print-directory migration-integration
 
+go test -count=1 ./internal/survey/store -run '^TestSurveyUnresolvedHistoryPostgresRoundTripRollback$' -survey-unresolved-history-postgres-dsn="$database_url"
+
 P0S03_PG_INTEGRATION=1 \
 P0S03_TEST_DATABASE_URL="$database_url" \
 ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$database_url" \

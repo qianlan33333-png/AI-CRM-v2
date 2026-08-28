@@ -6,6 +6,7 @@ generate:
   strict-server: true
 output-options:
   include-tags:
+    - p4-survey-unresolved-history
     - p4-audience-history
     - p4-campaign-history
     - p1-core-candidate

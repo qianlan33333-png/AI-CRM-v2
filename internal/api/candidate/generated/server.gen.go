@@ -10057,6 +10057,186 @@ func (e SidebarThumbnailPendingResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for SurveyUnresolvedHistoryAnswerPageDefinitionMapping.
+const (
+	SurveyUnresolvedHistoryAnswerPageDefinitionMappingHistoricalSourceOnly SurveyUnresolvedHistoryAnswerPageDefinitionMapping = "historical_source_only"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageDefinitionMapping enum.
+func (e SurveyUnresolvedHistoryAnswerPageDefinitionMapping) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageDefinitionMappingHistoricalSourceOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistoryAnswerPageReadOnly.
+const (
+	SurveyUnresolvedHistoryAnswerPageReadOnlyTrue SurveyUnresolvedHistoryAnswerPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageReadOnly enum.
+func (e SurveyUnresolvedHistoryAnswerPageReadOnly) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted.
+const (
+	SurveyUnresolvedHistoryAnswerPageRealExternalCallExecutedFalse SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted enum.
+func (e SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistoryAnswerPageSource.
+const (
+	SurveyUnresolvedHistoryAnswerPageSourceV1History SurveyUnresolvedHistoryAnswerPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageSource enum.
+func (e SurveyUnresolvedHistoryAnswerPageSource) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailDefinitionMapping.
+const (
+	SurveyUnresolvedHistorySubmissionDetailDefinitionMappingHistoricalSourceOnly SurveyUnresolvedHistorySubmissionDetailDefinitionMapping = "historical_source_only"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailDefinitionMapping enum.
+func (e SurveyUnresolvedHistorySubmissionDetailDefinitionMapping) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailDefinitionMappingHistoricalSourceOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailReadOnly.
+const (
+	SurveyUnresolvedHistorySubmissionDetailReadOnlyTrue SurveyUnresolvedHistorySubmissionDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailReadOnly enum.
+func (e SurveyUnresolvedHistorySubmissionDetailReadOnly) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted.
+const (
+	SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecutedFalse SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted enum.
+func (e SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailSource.
+const (
+	SurveyUnresolvedHistorySubmissionDetailSourceV1History SurveyUnresolvedHistorySubmissionDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailSource enum.
+func (e SurveyUnresolvedHistorySubmissionDetailSource) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageDefinitionMapping.
+const (
+	HistoricalSourceOnly SurveyUnresolvedHistorySubmissionPageDefinitionMapping = "historical_source_only"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageDefinitionMapping enum.
+func (e SurveyUnresolvedHistorySubmissionPageDefinitionMapping) Valid() bool {
+	switch e {
+	case HistoricalSourceOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageReadOnly.
+const (
+	True SurveyUnresolvedHistorySubmissionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageReadOnly enum.
+func (e SurveyUnresolvedHistorySubmissionPageReadOnly) Valid() bool {
+	switch e {
+	case True:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted.
+const (
+	False SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted enum.
+func (e SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageSource.
+const (
+	V1History SurveyUnresolvedHistorySubmissionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageSource enum.
+func (e SurveyUnresolvedHistorySubmissionPageSource) Valid() bool {
+	switch e {
+	case V1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateSegmentRequestRefreshMode.
 const (
 	Manual    UpdateSegmentRequestRefreshMode = "manual"
@@ -16746,6 +16926,108 @@ type SurveyExternalPushReconcileRequest struct {
 	ProviderAccepted bool      `json:"provider_accepted"`
 }
 
+// SurveyUnresolvedHistoryAnswer defines model for SurveyUnresolvedHistoryAnswer.
+type SurveyUnresolvedHistoryAnswer struct {
+	CreatedAt             time.Time      `json:"created_at"`
+	Id                    int64          `json:"id"`
+	QuestionSourceId      int64          `json:"question_source_id"`
+	QuestionTitleSnapshot string         `json:"question_title_snapshot"`
+	QuestionType          string         `json:"question_type"`
+	ScoreContribution     float64        `json:"score_contribution"`
+	SelectedOptionIds     *[]interface{} `json:"selected_option_ids"`
+	SelectedOptionScores  *[]interface{} `json:"selected_option_scores"`
+	SelectedOptionTags    *[]interface{} `json:"selected_option_tags"`
+	SelectedOptionTexts   *[]interface{} `json:"selected_option_texts"`
+	SourceId              int64          `json:"source_id"`
+	SubmissionId          int64          `json:"submission_id"`
+	SubmissionSourceId    int64          `json:"submission_source_id"`
+	TextValue             string         `json:"text_value"`
+}
+
+// SurveyUnresolvedHistoryAnswerPage defines model for SurveyUnresolvedHistoryAnswerPage.
+type SurveyUnresolvedHistoryAnswerPage struct {
+	DefinitionMapping        SurveyUnresolvedHistoryAnswerPageDefinitionMapping        `json:"definition_mapping"`
+	Items                    []SurveyUnresolvedHistoryAnswer                           `json:"items"`
+	Limit                    int                                                       `json:"limit"`
+	Offset                   int                                                       `json:"offset"`
+	ReadOnly                 SurveyUnresolvedHistoryAnswerPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SurveyUnresolvedHistoryAnswerPageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// SurveyUnresolvedHistoryAnswerPageDefinitionMapping defines model for SurveyUnresolvedHistoryAnswerPage.DefinitionMapping.
+type SurveyUnresolvedHistoryAnswerPageDefinitionMapping string
+
+// SurveyUnresolvedHistoryAnswerPageReadOnly defines model for SurveyUnresolvedHistoryAnswerPage.ReadOnly.
+type SurveyUnresolvedHistoryAnswerPageReadOnly bool
+
+// SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted defines model for SurveyUnresolvedHistoryAnswerPage.RealExternalCallExecuted.
+type SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted bool
+
+// SurveyUnresolvedHistoryAnswerPageSource defines model for SurveyUnresolvedHistoryAnswerPage.Source.
+type SurveyUnresolvedHistoryAnswerPageSource string
+
+// SurveyUnresolvedHistorySubmission defines model for SurveyUnresolvedHistorySubmission.
+type SurveyUnresolvedHistorySubmission struct {
+	CreatedAt             time.Time      `json:"created_at"`
+	CustomerId            *int64         `json:"customer_id"`
+	FinalTags             *[]interface{} `json:"final_tags"`
+	Id                    int64          `json:"id"`
+	MatchedBy             string         `json:"matched_by"`
+	QuestionnaireId       *int64         `json:"questionnaire_id"`
+	QuestionnaireSourceId int64          `json:"questionnaire_source_id"`
+	SourceChannel         string         `json:"source_channel"`
+	SourceId              int64          `json:"source_id"`
+	SubmittedAt           time.Time      `json:"submitted_at"`
+	TotalScore            float64        `json:"total_score"`
+}
+
+// SurveyUnresolvedHistorySubmissionDetail defines model for SurveyUnresolvedHistorySubmissionDetail.
+type SurveyUnresolvedHistorySubmissionDetail struct {
+	DefinitionMapping        SurveyUnresolvedHistorySubmissionDetailDefinitionMapping        `json:"definition_mapping"`
+	Item                     SurveyUnresolvedHistorySubmission                               `json:"item"`
+	ReadOnly                 SurveyUnresolvedHistorySubmissionDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SurveyUnresolvedHistorySubmissionDetailSource                   `json:"source"`
+}
+
+// SurveyUnresolvedHistorySubmissionDetailDefinitionMapping defines model for SurveyUnresolvedHistorySubmissionDetail.DefinitionMapping.
+type SurveyUnresolvedHistorySubmissionDetailDefinitionMapping string
+
+// SurveyUnresolvedHistorySubmissionDetailReadOnly defines model for SurveyUnresolvedHistorySubmissionDetail.ReadOnly.
+type SurveyUnresolvedHistorySubmissionDetailReadOnly bool
+
+// SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted defines model for SurveyUnresolvedHistorySubmissionDetail.RealExternalCallExecuted.
+type SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted bool
+
+// SurveyUnresolvedHistorySubmissionDetailSource defines model for SurveyUnresolvedHistorySubmissionDetail.Source.
+type SurveyUnresolvedHistorySubmissionDetailSource string
+
+// SurveyUnresolvedHistorySubmissionPage defines model for SurveyUnresolvedHistorySubmissionPage.
+type SurveyUnresolvedHistorySubmissionPage struct {
+	DefinitionMapping        SurveyUnresolvedHistorySubmissionPageDefinitionMapping        `json:"definition_mapping"`
+	Items                    []SurveyUnresolvedHistorySubmission                           `json:"items"`
+	Limit                    int                                                           `json:"limit"`
+	Offset                   int                                                           `json:"offset"`
+	ReadOnly                 SurveyUnresolvedHistorySubmissionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SurveyUnresolvedHistorySubmissionPageSource                   `json:"source"`
+	Total                    int64                                                         `json:"total"`
+}
+
+// SurveyUnresolvedHistorySubmissionPageDefinitionMapping defines model for SurveyUnresolvedHistorySubmissionPage.DefinitionMapping.
+type SurveyUnresolvedHistorySubmissionPageDefinitionMapping string
+
+// SurveyUnresolvedHistorySubmissionPageReadOnly defines model for SurveyUnresolvedHistorySubmissionPage.ReadOnly.
+type SurveyUnresolvedHistorySubmissionPageReadOnly bool
+
+// SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted defines model for SurveyUnresolvedHistorySubmissionPage.RealExternalCallExecuted.
+type SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted bool
+
+// SurveyUnresolvedHistorySubmissionPageSource defines model for SurveyUnresolvedHistorySubmissionPage.Source.
+type SurveyUnresolvedHistorySubmissionPageSource string
+
 // Tag defines model for Tag.
 type Tag struct {
 	GroupId   *int64  `json:"group_id,omitempty"`
@@ -18112,6 +18394,19 @@ type SaveSetupWizardParams struct {
 
 	// IdempotencyKey Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
 	IdempotencyKey SetupWizardIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListSurveyUnresolvedHistorySubmissionsParams defines parameters for ListSurveyUnresolvedHistorySubmissions.
+type ListSurveyUnresolvedHistorySubmissionsParams struct {
+	QuestionnaireId *int64 `form:"questionnaire_id,omitempty" json:"questionnaire_id,omitempty"`
+	Limit           *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset          *int   `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListSurveyUnresolvedHistoryAnswersParams defines parameters for ListSurveyUnresolvedHistoryAnswers.
+type ListSurveyUnresolvedHistoryAnswersParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // DeleteLegacyWechatPayProductParams defines parameters for DeleteLegacyWechatPayProduct.
@@ -20892,6 +21187,15 @@ type ServerInterface interface {
 	// Atomically save two local setup-wizard settings
 	// (POST /api/admin/setup-wizard)
 	SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions)
+	ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request, params ListSurveyUnresolvedHistorySubmissionsParams)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id})
+	GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id}/answers)
+	ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request, historyId int64, params ListSurveyUnresolvedHistoryAnswersParams)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
@@ -22311,6 +22615,24 @@ func (_ Unimplemented) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
 // Atomically save two local setup-wizard settings
 // (POST /api/admin/setup-wizard)
 func (_ Unimplemented) SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical source answer snapshots without resolving current definitions or executing effects
+// (GET /api/admin/survey-history/submissions)
+func (_ Unimplemented) ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request, params ListSurveyUnresolvedHistorySubmissionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical source answer snapshots without resolving current definitions or executing effects
+// (GET /api/admin/survey-history/submissions/{history_id})
+func (_ Unimplemented) GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical source answer snapshots without resolving current definitions or executing effects
+// (GET /api/admin/survey-history/submissions/{history_id}/answers)
+func (_ Unimplemented) ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request, historyId int64, params ListSurveyUnresolvedHistoryAnswersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -32686,6 +33008,136 @@ func (siw *ServerInterfaceWrapper) SaveSetupWizard(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListSurveyUnresolvedHistorySubmissions operation middleware
+func (siw *ServerInterfaceWrapper) ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSurveyUnresolvedHistorySubmissionsParams
+
+	// ------------- Optional query parameter "questionnaire_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "questionnaire_id", r.URL.Query(), &params.QuestionnaireId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSurveyUnresolvedHistorySubmissions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSurveyUnresolvedHistorySubmission operation middleware
+func (siw *ServerInterfaceWrapper) GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSurveyUnresolvedHistorySubmission(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSurveyUnresolvedHistoryAnswers operation middleware
+func (siw *ServerInterfaceWrapper) ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSurveyUnresolvedHistoryAnswersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSurveyUnresolvedHistoryAnswers(w, r, historyId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeleteLegacyWechatPayProduct operation middleware
 func (siw *ServerInterfaceWrapper) DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request) {
 
@@ -40550,6 +41002,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/setup-wizard", wrapper.SaveSetupWizard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/survey-history/submissions", wrapper.ListSurveyUnresolvedHistorySubmissions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/survey-history/submissions/{history_id}", wrapper.GetSurveyUnresolvedHistorySubmission)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/survey-history/submissions/{history_id}/answers", wrapper.ListSurveyUnresolvedHistoryAnswers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
@@ -51616,6 +52077,166 @@ func (response SaveSetupWizard503JSONResponse) VisitSaveSetupWizardResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListSurveyUnresolvedHistorySubmissionsRequestObject struct {
+	Params ListSurveyUnresolvedHistorySubmissionsParams
+}
+
+type ListSurveyUnresolvedHistorySubmissionsResponseObject interface {
+	VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error
+}
+
+type ListSurveyUnresolvedHistorySubmissions200JSONResponse SurveyUnresolvedHistorySubmissionPage
+
+func (response ListSurveyUnresolvedHistorySubmissions200JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions400JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions401JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions403JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions503JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmissionRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetSurveyUnresolvedHistorySubmissionResponseObject interface {
+	VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error
+}
+
+type GetSurveyUnresolvedHistorySubmission200JSONResponse SurveyUnresolvedHistorySubmissionDetail
+
+func (response GetSurveyUnresolvedHistorySubmission200JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission400JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission401JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission403JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission503JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswersRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+	Params    ListSurveyUnresolvedHistoryAnswersParams
+}
+
+type ListSurveyUnresolvedHistoryAnswersResponseObject interface {
+	VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error
+}
+
+type ListSurveyUnresolvedHistoryAnswers200JSONResponse SurveyUnresolvedHistoryAnswerPage
+
+func (response ListSurveyUnresolvedHistoryAnswers200JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers400JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers401JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers403JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers503JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteLegacyWechatPayProductRequestObject struct {
 	ProductId ProductID `json:"product_id"`
 	Params    DeleteLegacyWechatPayProductParams
@@ -59846,6 +60467,15 @@ type StrictServerInterface interface {
 	// Atomically save two local setup-wizard settings
 	// (POST /api/admin/setup-wizard)
 	SaveSetupWizard(ctx context.Context, request SaveSetupWizardRequestObject) (SaveSetupWizardResponseObject, error)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions)
+	ListSurveyUnresolvedHistorySubmissions(ctx context.Context, request ListSurveyUnresolvedHistorySubmissionsRequestObject) (ListSurveyUnresolvedHistorySubmissionsResponseObject, error)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id})
+	GetSurveyUnresolvedHistorySubmission(ctx context.Context, request GetSurveyUnresolvedHistorySubmissionRequestObject) (GetSurveyUnresolvedHistorySubmissionResponseObject, error)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id}/answers)
+	ListSurveyUnresolvedHistoryAnswers(ctx context.Context, request ListSurveyUnresolvedHistoryAnswersRequestObject) (ListSurveyUnresolvedHistoryAnswersResponseObject, error)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
@@ -65296,6 +65926,85 @@ func (sh *strictHandler) SaveSetupWizard(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SaveSetupWizardResponseObject); ok {
 		if err := validResponse.VisitSaveSetupWizardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSurveyUnresolvedHistorySubmissions operation middleware
+func (sh *strictHandler) ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request, params ListSurveyUnresolvedHistorySubmissionsParams) {
+	var request ListSurveyUnresolvedHistorySubmissionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSurveyUnresolvedHistorySubmissions(ctx, request.(ListSurveyUnresolvedHistorySubmissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSurveyUnresolvedHistorySubmissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSurveyUnresolvedHistorySubmissionsResponseObject); ok {
+		if err := validResponse.VisitListSurveyUnresolvedHistorySubmissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSurveyUnresolvedHistorySubmission operation middleware
+func (sh *strictHandler) GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetSurveyUnresolvedHistorySubmissionRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSurveyUnresolvedHistorySubmission(ctx, request.(GetSurveyUnresolvedHistorySubmissionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSurveyUnresolvedHistorySubmission")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSurveyUnresolvedHistorySubmissionResponseObject); ok {
+		if err := validResponse.VisitGetSurveyUnresolvedHistorySubmissionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSurveyUnresolvedHistoryAnswers operation middleware
+func (sh *strictHandler) ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request, historyId int64, params ListSurveyUnresolvedHistoryAnswersParams) {
+	var request ListSurveyUnresolvedHistoryAnswersRequestObject
+
+	request.HistoryId = historyId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSurveyUnresolvedHistoryAnswers(ctx, request.(ListSurveyUnresolvedHistoryAnswersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSurveyUnresolvedHistoryAnswers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSurveyUnresolvedHistoryAnswersResponseObject); ok {
+		if err := validResponse.VisitListSurveyUnresolvedHistoryAnswersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -191,6 +191,18 @@ WHERE migration.run_id=$1`, archiveRunID).Scan(&phase, &adapterID); err != nil |
 		if err = tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4`, importVersion, archiveRunID, v1archive.DefaultAdapterID, tableID).Scan(&receiptCount); err != nil {
 			return ReconciliationResult{}, err
 		}
+		if importVersion == SurveyUnresolvedHistoryImportVersion {
+			if selectedCount != sourceCount || surveyUnresolvedTargets[tableID] == "" {
+				return ReconciliationResult{}, ErrConflict
+			}
+			if err = tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts
+WHERE import_version='v1-domain-a1' AND archive_run_id=$1 AND adapter_id=$2 AND table_id=$3
+AND verified AND disposition='quarantine' AND reason='survey_definition_history_unresolved'`,
+				archiveRunID, v1archive.DefaultAdapterID, tableID).Scan(&sourceCount); err != nil {
+				return ReconciliationResult{}, err
+			}
+			selectedCount = sourceCount
+		}
 		if selectedCount != sourceCount || sourceCount != receiptCount {
 			return ReconciliationResult{}, fmt.Errorf("receipt count mismatch for %s: selected=%d source=%d receipt=%d", tableID, selectedCount, sourceCount, receiptCount)
 		}
@@ -259,13 +271,32 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 		switch row.Disposition {
 		case "import":
 			result.ImportedCount++
-			proof, err = verifyImportedTarget(ctx, tx, row, importedTargets)
+			if importVersion == SurveyUnresolvedHistoryImportVersion {
+				var fieldDigest []byte
+				err = tx.QueryRow(ctx, `SELECT archive.field_digest FROM public.v1_archive_records archive
+JOIN public.v1_domain_import_receipts old ON old.archive_run_id=archive.run_id AND old.adapter_id=archive.adapter_id
+AND old.table_id=archive.table_id AND old.source_key_digest=archive.source_key_digest AND old.payload_digest=archive.payload_digest
+WHERE archive.run_id=$1 AND archive.adapter_id=$2 AND archive.table_id=$3 AND archive.source_key_digest=$4 AND archive.payload_digest=$5
+AND old.import_version='v1-domain-a1' AND old.verified AND old.disposition='quarantine' AND old.reason='survey_definition_history_unresolved'`,
+					archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&fieldDigest)
+				if err == nil {
+					proof, err = verifySurveyUnresolvedHistoryTarget(ctx, tx, row, fieldDigest, importedTargets)
+				}
+			} else {
+				proof, err = verifyImportedTarget(ctx, tx, row, importedTargets)
+			}
 			if err != nil {
 				return ReconciliationResult{}, err
 			}
 		case "archive":
+			if importVersion == SurveyUnresolvedHistoryImportVersion {
+				return ReconciliationResult{}, ErrConflict
+			}
 			result.ArchivedCount++
 		case "quarantine":
+			if importVersion == SurveyUnresolvedHistoryImportVersion {
+				return ReconciliationResult{}, ErrConflict
+			}
 			result.QuarantinedCount++
 		default:
 			return ReconciliationResult{}, fmt.Errorf("unknown disposition for %s", row.TableID)

@@ -75,6 +75,10 @@ SELECT mode, state FROM legacy_contact_identity_import_runs
 WHERE id = sqlc.arg(run_id)::bigint
 FOR SHARE;
 
+-- name: ReadHistoricalImportRunSnapshot :one
+SELECT mode, state FROM legacy_contact_identity_import_runs
+WHERE id = sqlc.arg(run_id)::bigint;
+
 -- name: RenewHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
 SET lease_expires_at = sqlc.arg(lease_expires_at)::timestamptz

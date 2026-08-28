@@ -6,6 +6,76 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/survey-history/submissions:
+    get:
+      tags: [p4-survey-unresolved-history]
+      operationId: listSurveyUnresolvedHistorySubmissions
+      summary: Read historical source answer snapshots without resolving current definitions or executing effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: survey.read_only_v1_unresolved_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: questionnaire_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Historical source snapshots only, content: { application/json: { schema: { $ref: "#/components/schemas/SurveyUnresolvedHistorySubmissionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/survey-history/submissions/{history_id}:
+    get:
+      tags: [p4-survey-unresolved-history]
+      operationId: getSurveyUnresolvedHistorySubmission
+      summary: Read historical source answer snapshots without resolving current definitions or executing effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: survey.read_only_v1_unresolved_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Historical source snapshots only, content: { application/json: { schema: { $ref: "#/components/schemas/SurveyUnresolvedHistorySubmissionDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/survey-history/submissions/{history_id}/answers:
+    get:
+      tags: [p4-survey-unresolved-history]
+      operationId: listSurveyUnresolvedHistoryAnswers
+      summary: Read historical source answer snapshots without resolving current definitions or executing effects
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: survey.read_only_v1_unresolved_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Historical source snapshots only, content: { application/json: { schema: { $ref: "#/components/schemas/SurveyUnresolvedHistoryAnswerPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/automation-history/sops:
     get:
       tags: [p4-automation-history]
@@ -14031,6 +14101,77 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    SurveyUnresolvedHistorySubmission:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, questionnaire_source_id, questionnaire_id, customer_id, matched_by, source_channel, total_score, final_tags, submitted_at, created_at]
+      properties:
+        id: {"type":"integer","format":"int64","minimum":1}
+        source_id: {"type":"integer","format":"int64"}
+        questionnaire_source_id: {"type":"integer","format":"int64"}
+        questionnaire_id: {"type":"integer","format":"int64","nullable":true}
+        customer_id: {"type":"integer","format":"int64","nullable":true}
+        matched_by: {"type":"string"}
+        source_channel: {"type":"string"}
+        total_score: {"type":"number","format":"double"}
+        final_tags: {"type":"array","nullable":true,"items":{}}
+        submitted_at: {"type":"string","format":"date-time"}
+        created_at: {"type":"string","format":"date-time"}
+    SurveyUnresolvedHistorySubmissionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, definition_mapping, items, total, limit, offset]
+      properties:
+        source: {"type":"string","enum":["v1_history"]}
+        read_only: {"type":"boolean","enum":[true]}
+        real_external_call_executed: {"type":"boolean","enum":[false]}
+        definition_mapping: {"type":"string","enum":["historical_source_only"]}
+        items: {"type":"array","items":{"$ref":"#/components/schemas/SurveyUnresolvedHistorySubmission"}}
+        total: {"type":"integer","format":"int64","minimum":0}
+        limit: {"type":"integer","minimum":1,"maximum":100}
+        offset: {"type":"integer","minimum":0}
+    SurveyUnresolvedHistorySubmissionDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, definition_mapping, item]
+      properties:
+        source: {"type":"string","enum":["v1_history"]}
+        read_only: {"type":"boolean","enum":[true]}
+        real_external_call_executed: {"type":"boolean","enum":[false]}
+        definition_mapping: {"type":"string","enum":["historical_source_only"]}
+        item: {"$ref":"#/components/schemas/SurveyUnresolvedHistorySubmission"}
+    SurveyUnresolvedHistoryAnswer:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, submission_id, submission_source_id, question_source_id, question_type, question_title_snapshot, selected_option_ids, selected_option_texts, selected_option_scores, selected_option_tags, text_value, score_contribution, created_at]
+      properties:
+        id: {"type":"integer","format":"int64","minimum":1}
+        source_id: {"type":"integer","format":"int64"}
+        submission_id: {"type":"integer","format":"int64"}
+        submission_source_id: {"type":"integer","format":"int64"}
+        question_source_id: {"type":"integer","format":"int64"}
+        question_type: {"type":"string"}
+        question_title_snapshot: {"type":"string"}
+        selected_option_ids: {"type":"array","nullable":true,"items":{}}
+        selected_option_texts: {"type":"array","nullable":true,"items":{}}
+        selected_option_scores: {"type":"array","nullable":true,"items":{}}
+        selected_option_tags: {"type":"array","nullable":true,"items":{}}
+        text_value: {"type":"string"}
+        score_contribution: {"type":"number","format":"double"}
+        created_at: {"type":"string","format":"date-time"}
+    SurveyUnresolvedHistoryAnswerPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, definition_mapping, items, total, limit, offset]
+      properties:
+        source: {"type":"string","enum":["v1_history"]}
+        read_only: {"type":"boolean","enum":[true]}
+        real_external_call_executed: {"type":"boolean","enum":[false]}
+        definition_mapping: {"type":"string","enum":["historical_source_only"]}
+        items: {"type":"array","items":{"$ref":"#/components/schemas/SurveyUnresolvedHistoryAnswer"}}
+        total: {"type":"integer","format":"int64","minimum":0}
+        limit: {"type":"integer","minimum":1,"maximum":100}
+        offset: {"type":"integer","minimum":0}
     AutomationHistoryDigest:
       type: array
       minItems: 32

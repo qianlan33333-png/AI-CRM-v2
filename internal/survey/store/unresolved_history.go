@@ -163,6 +163,21 @@ func (s *SurveyUnresolvedHistoryStore) GetHistoricalUnresolvedSurveyAnswer(ctx c
 	}
 	return answerValue(row)
 }
+func (r *SurveyUnresolvedHistoryReader) GetHistoricalUnresolvedSurveyAnswer(ctx context.Context, id int64) (survey.HistoricalUnresolvedSurveyAnswer, error) {
+	if id < 1 {
+		return survey.HistoricalUnresolvedSurveyAnswer{}, survey.ErrSurveyUnresolvedHistoryInvalid
+	}
+	q, err := r.q(ctx)
+	if err != nil {
+		return survey.HistoricalUnresolvedSurveyAnswer{}, err
+	}
+	row, err := q.GetHistoricalUnresolvedSurveyAnswer(ctx, id)
+	if err != nil {
+		return survey.HistoricalUnresolvedSurveyAnswer{}, unresolvedDBError(err)
+	}
+	return answerValue(row)
+}
+
 func (r *SurveyUnresolvedHistoryReader) ListHistoricalUnresolvedSurveyAnswers(ctx context.Context, submissionID int64, x survey.SurveyUnresolvedHistoryQuery) ([]survey.HistoricalUnresolvedSurveyAnswer, int64, error) {
 	if submissionID < 1 || badQuery(x) {
 		return nil, 0, survey.ErrSurveyUnresolvedHistoryInvalid

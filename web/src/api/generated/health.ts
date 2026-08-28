@@ -5,6 +5,136 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface SurveyUnresolvedHistorySubmission {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  questionnaire_source_id: number;
+  /** @nullable */
+  questionnaire_id: number | null;
+  /** @nullable */
+  customer_id: number | null;
+  matched_by: string;
+  source_channel: string;
+  total_score: number;
+  /** @nullable */
+  final_tags: unknown[] | null;
+  submitted_at: string;
+  created_at: string;
+}
+
+export type SurveyUnresolvedHistorySubmissionPageSource =
+  (typeof SurveyUnresolvedHistorySubmissionPageSource)[keyof typeof SurveyUnresolvedHistorySubmissionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export type SurveyUnresolvedHistorySubmissionPageDefinitionMapping =
+  (typeof SurveyUnresolvedHistorySubmissionPageDefinitionMapping)[keyof typeof SurveyUnresolvedHistorySubmissionPageDefinitionMapping];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionPageDefinitionMapping = {
+  historical_source_only: "historical_source_only",
+} as const;
+
+export interface SurveyUnresolvedHistorySubmissionPage {
+  source: SurveyUnresolvedHistorySubmissionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  definition_mapping: SurveyUnresolvedHistorySubmissionPageDefinitionMapping;
+  items: SurveyUnresolvedHistorySubmission[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type SurveyUnresolvedHistorySubmissionDetailSource =
+  (typeof SurveyUnresolvedHistorySubmissionDetailSource)[keyof typeof SurveyUnresolvedHistorySubmissionDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export type SurveyUnresolvedHistorySubmissionDetailDefinitionMapping =
+  (typeof SurveyUnresolvedHistorySubmissionDetailDefinitionMapping)[keyof typeof SurveyUnresolvedHistorySubmissionDetailDefinitionMapping];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionDetailDefinitionMapping = {
+  historical_source_only: "historical_source_only",
+} as const;
+
+export interface SurveyUnresolvedHistorySubmissionDetail {
+  source: SurveyUnresolvedHistorySubmissionDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  definition_mapping: SurveyUnresolvedHistorySubmissionDetailDefinitionMapping;
+  item: SurveyUnresolvedHistorySubmission;
+}
+
+export interface SurveyUnresolvedHistoryAnswer {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  submission_id: number;
+  submission_source_id: number;
+  question_source_id: number;
+  question_type: string;
+  question_title_snapshot: string;
+  /** @nullable */
+  selected_option_ids: unknown[] | null;
+  /** @nullable */
+  selected_option_texts: unknown[] | null;
+  /** @nullable */
+  selected_option_scores: unknown[] | null;
+  /** @nullable */
+  selected_option_tags: unknown[] | null;
+  text_value: string;
+  score_contribution: number;
+  created_at: string;
+}
+
+export type SurveyUnresolvedHistoryAnswerPageSource =
+  (typeof SurveyUnresolvedHistoryAnswerPageSource)[keyof typeof SurveyUnresolvedHistoryAnswerPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistoryAnswerPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export type SurveyUnresolvedHistoryAnswerPageDefinitionMapping =
+  (typeof SurveyUnresolvedHistoryAnswerPageDefinitionMapping)[keyof typeof SurveyUnresolvedHistoryAnswerPageDefinitionMapping];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistoryAnswerPageDefinitionMapping = {
+  historical_source_only: "historical_source_only",
+} as const;
+
+export interface SurveyUnresolvedHistoryAnswerPage {
+  source: SurveyUnresolvedHistoryAnswerPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  definition_mapping: SurveyUnresolvedHistoryAnswerPageDefinitionMapping;
+  items: SurveyUnresolvedHistoryAnswer[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
 /**
  * @minItems 32
  * @maxItems 32
@@ -18885,6 +19015,34 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListSurveyUnresolvedHistorySubmissionsParams = {
+  /**
+   * @minimum 1
+   */
+  questionnaire_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListSurveyUnresolvedHistoryAnswersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListAutomationHistorySOPsParams = {
   /**
    * @minimum 1
@@ -21257,6 +21415,257 @@ export type ListMemberUsageHistoryParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read historical source answer snapshots without resolving current definitions or executing effects
+ */
+export type listSurveyUnresolvedHistorySubmissionsResponse200 = {
+  data: SurveyUnresolvedHistorySubmissionPage;
+  status: 200;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponseSuccess =
+  listSurveyUnresolvedHistorySubmissionsResponse200 & {
+    headers: Headers;
+  };
+export type listSurveyUnresolvedHistorySubmissionsResponseError = (
+  | listSurveyUnresolvedHistorySubmissionsResponse400
+  | listSurveyUnresolvedHistorySubmissionsResponse401
+  | listSurveyUnresolvedHistorySubmissionsResponse403
+  | listSurveyUnresolvedHistorySubmissionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse =
+  | listSurveyUnresolvedHistorySubmissionsResponseSuccess
+  | listSurveyUnresolvedHistorySubmissionsResponseError;
+
+export const getListSurveyUnresolvedHistorySubmissionsUrl = (
+  params?: ListSurveyUnresolvedHistorySubmissionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/survey-history/submissions?${stringifiedParams}`
+    : `/api/admin/survey-history/submissions`;
+};
+
+export const listSurveyUnresolvedHistorySubmissions = async (
+  params?: ListSurveyUnresolvedHistorySubmissionsParams,
+  options?: RequestInit,
+): Promise<listSurveyUnresolvedHistorySubmissionsResponse> => {
+  const res = await fetch(
+    getListSurveyUnresolvedHistorySubmissionsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSurveyUnresolvedHistorySubmissionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSurveyUnresolvedHistorySubmissionsResponse;
+};
+
+/**
+ * @summary Read historical source answer snapshots without resolving current definitions or executing effects
+ */
+export type getSurveyUnresolvedHistorySubmissionResponse200 = {
+  data: SurveyUnresolvedHistorySubmissionDetail;
+  status: 200;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponseSuccess =
+  getSurveyUnresolvedHistorySubmissionResponse200 & {
+    headers: Headers;
+  };
+export type getSurveyUnresolvedHistorySubmissionResponseError = (
+  | getSurveyUnresolvedHistorySubmissionResponse400
+  | getSurveyUnresolvedHistorySubmissionResponse401
+  | getSurveyUnresolvedHistorySubmissionResponse403
+  | getSurveyUnresolvedHistorySubmissionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse =
+  | getSurveyUnresolvedHistorySubmissionResponseSuccess
+  | getSurveyUnresolvedHistorySubmissionResponseError;
+
+export const getGetSurveyUnresolvedHistorySubmissionUrl = (
+  historyId: number,
+) => {
+  return `/api/admin/survey-history/submissions/${historyId}`;
+};
+
+export const getSurveyUnresolvedHistorySubmission = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getSurveyUnresolvedHistorySubmissionResponse> => {
+  const res = await fetch(
+    getGetSurveyUnresolvedHistorySubmissionUrl(historyId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSurveyUnresolvedHistorySubmissionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSurveyUnresolvedHistorySubmissionResponse;
+};
+
+/**
+ * @summary Read historical source answer snapshots without resolving current definitions or executing effects
+ */
+export type listSurveyUnresolvedHistoryAnswersResponse200 = {
+  data: SurveyUnresolvedHistoryAnswerPage;
+  status: 200;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponseSuccess =
+  listSurveyUnresolvedHistoryAnswersResponse200 & {
+    headers: Headers;
+  };
+export type listSurveyUnresolvedHistoryAnswersResponseError = (
+  | listSurveyUnresolvedHistoryAnswersResponse400
+  | listSurveyUnresolvedHistoryAnswersResponse401
+  | listSurveyUnresolvedHistoryAnswersResponse403
+  | listSurveyUnresolvedHistoryAnswersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse =
+  | listSurveyUnresolvedHistoryAnswersResponseSuccess
+  | listSurveyUnresolvedHistoryAnswersResponseError;
+
+export const getListSurveyUnresolvedHistoryAnswersUrl = (
+  historyId: number,
+  params?: ListSurveyUnresolvedHistoryAnswersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/survey-history/submissions/${historyId}/answers?${stringifiedParams}`
+    : `/api/admin/survey-history/submissions/${historyId}/answers`;
+};
+
+export const listSurveyUnresolvedHistoryAnswers = async (
+  historyId: number,
+  params?: ListSurveyUnresolvedHistoryAnswersParams,
+  options?: RequestInit,
+): Promise<listSurveyUnresolvedHistoryAnswersResponse> => {
+  const res = await fetch(
+    getListSurveyUnresolvedHistoryAnswersUrl(historyId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSurveyUnresolvedHistoryAnswersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSurveyUnresolvedHistoryAnswersResponse;
 };
 
 /**

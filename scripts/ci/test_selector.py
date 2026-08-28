@@ -480,6 +480,7 @@ class WorkflowWiringTests(unittest.TestCase):
         nightly_runner_source = (REPO_ROOT / "scripts/ci/run_full_regression.sh").read_text(encoding="utf-8")
         self.assertIn("p4-dm01-migration-acceptance", nightly_runner_source)
         self.assertIn("p4-dm01-two-pg-acceptance", nightly_runner_source)
+        self.assertIn('-survey-unresolved-history-postgres-dsn="$database_url"', nightly_runner_source)
 
     def test_events_selected_database_runner_is_migration_gated(self) -> None:
         source = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")

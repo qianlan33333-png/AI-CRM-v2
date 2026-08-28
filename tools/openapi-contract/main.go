@@ -139,6 +139,9 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"listSurveyUnresolvedHistorySubmissions":    {"/api/admin/survey-history/submissions", "GET", "P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28", "questionnaires.read", "human_session", "internal_pii", "survey.read_only_v1_unresolved_history", "none", map[string]string{"admin": "global"}},
+	"getSurveyUnresolvedHistorySubmission":      {"/api/admin/survey-history/submissions/{history_id}", "GET", "P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28", "questionnaires.read", "human_session", "internal_pii", "survey.read_only_v1_unresolved_history", "none", map[string]string{"admin": "global"}},
+	"listSurveyUnresolvedHistoryAnswers":        {"/api/admin/survey-history/submissions/{history_id}/answers", "GET", "P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28", "questionnaires.read", "human_session", "internal_pii", "survey.read_only_v1_unresolved_history", "none", map[string]string{"admin": "global"}},
 	"listAutomationHistorySOPs":                 {"/api/admin/automation-history/sops", "GET", "P4-V1-AUTOMATION-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "automation.read_only_v1_configuration_history", "none", map[string]string{"admin": "global"}},
 	"getAutomationHistorySOP":                   {"/api/admin/automation-history/sops/{history_id}", "GET", "P4-V1-AUTOMATION-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "automation.read_only_v1_configuration_history", "none", map[string]string{"admin": "global"}},
 	"listAutomationHistoryConfigs":              {"/api/admin/automation-history/configs", "GET", "P4-V1-AUTOMATION-HISTORY-2026-08-28", "admin.read", "human_session", "internal_pii", "automation.read_only_v1_configuration_history", "none", map[string]string{"admin": "global"}},

@@ -18,15 +18,18 @@ var errSurveyUnresolvedRollback = errors.New("rollback unresolved survey history
 
 func unresolvedStoreDigest(value string) [32]byte { return sha256.Sum256([]byte(value)) }
 func unresolvedStoreSubmission() survey.HistoricalUnresolvedSurveySubmission {
-	at := time.Date(2026, 8, 28, 10, 0, 0, 123456, time.UTC)
+	at := time.Date(2026, 8, 28, 10, 0, 0, 123456000, time.UTC)
 	return survey.HistoricalUnresolvedSurveySubmission{SourceKeyDigest: unresolvedStoreDigest("key"), SourcePayloadDigest: unresolvedStoreDigest("payload"), SourceFieldDigest: unresolvedStoreDigest("field"), FinalTags: []byte("null"), SubmittedAt: at, CreatedAt: at, UnionIDDigest: unresolvedStoreDigest("union"), FollowUserUserIDDigest: unresolvedStoreDigest("follow"), CampaignIDDigest: unresolvedStoreDigest("campaign"), StaffIDDigest: unresolvedStoreDigest("staff"), RedirectURLDigest: unresolvedStoreDigest("redirect"), AssessmentResultDigest: unresolvedStoreDigest("assessment")}
 }
 func unresolvedStoreAnswer(submissionID int64) survey.HistoricalUnresolvedSurveyAnswer {
-	at := time.Date(2026, 8, 28, 10, 0, 0, 123456, time.UTC)
+	at := time.Date(2026, 8, 28, 10, 0, 0, 123456000, time.UTC)
 	return survey.HistoricalUnresolvedSurveyAnswer{SourceKeyDigest: unresolvedStoreDigest("answer-key"), SourcePayloadDigest: unresolvedStoreDigest("answer-payload"), SourceFieldDigest: unresolvedStoreDigest("answer-field"), SubmissionID: submissionID, SelectedOptionIDs: []byte("null"), SelectedOptionTexts: []byte("[]"), SelectedOptionScores: []byte("[]"), SelectedOptionTags: []byte("[]"), CreatedAt: at}
 }
 
 func TestSurveyUnresolvedHistoryQueryValidation(t *testing.T) {
+	if badSubmission(unresolvedStoreSubmission()) || badAnswer(unresolvedStoreAnswer(1)) {
+		t.Fatal("invalid PostgreSQL round-trip fixture")
+	}
 	for _, q := range []survey.SurveyUnresolvedHistoryQuery{{}, {Limit: 101}, {Limit: 1, Offset: -1}} {
 		if !badQuery(q) {
 			t.Fatalf("accepted %+v", q)

@@ -2168,6 +2168,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.externalEffects = externalEffectsHandler
 	legacyHandler.surveySubmissions = surveySubmissionService
+	legacyHandler.surveyUnresolvedHistory = surveystore.NewSurveyUnresolvedHistoryReader(pool)
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.surveyOperations = surveyOperationsHandler
 	legacyHandler.groupOps = groupOpsHandler
@@ -3629,6 +3630,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, surveyoperationshttp.OperationsPagePath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetSurveyOperationsPage)},
 			{http.MethodGet, surveyoperationshttp.QuestionnaireExternalPushLogsPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyQuestionnaireExternalPushLogs)},
 			{http.MethodGet, "/api/admin/questionnaires", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaires)},
+			{http.MethodGet, "/api/admin/survey-history/submissions", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyUnresolvedHistorySubmissions)},
+			{http.MethodGet, "/api/admin/survey-history/submissions/{history_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetSurveyUnresolvedHistorySubmission)},
+			{http.MethodGet, "/api/admin/survey-history/submissions/{history_id}/answers", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyUnresolvedHistoryAnswers)},
 			{http.MethodPost, "/api/admin/questionnaires", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.CreateQuestionnaire)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaire)},
 			{http.MethodPut, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.UpdateQuestionnaire)},

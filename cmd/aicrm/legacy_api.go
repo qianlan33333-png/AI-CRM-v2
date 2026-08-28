@@ -215,6 +215,7 @@ type Handler struct {
 	miniPrograms            miniProgramApplication
 	surveys                 legacySurveyApplication
 	surveySubmissions       legacySurveySubmissionApplication
+	surveyUnresolvedHistory surveyport.SurveyUnresolvedHistoryReader
 	surveySafeAdmin         surveySafeAdminHTTP
 	surveyOperations        surveyOperationsHTTP
 	groupOps                groupOpsHTTP

@@ -1065,6 +1065,23 @@ func (q *Queries) ReadHistoricalImportRun(ctx context.Context, runID int64) (Rea
 	return i, err
 }
 
+const readHistoricalImportRunSnapshot = `-- name: ReadHistoricalImportRunSnapshot :one
+SELECT mode, state FROM legacy_contact_identity_import_runs
+WHERE id = $1::bigint
+`
+
+type ReadHistoricalImportRunSnapshotRow struct {
+	Mode  string `json:"mode"`
+	State string `json:"state"`
+}
+
+func (q *Queries) ReadHistoricalImportRunSnapshot(ctx context.Context, runID int64) (ReadHistoricalImportRunSnapshotRow, error) {
+	row := q.db.QueryRow(ctx, readHistoricalImportRunSnapshot, runID)
+	var i ReadHistoricalImportRunSnapshotRow
+	err := row.Scan(&i.Mode, &i.State)
+	return i, err
+}
+
 const renewHistoricalImportLease = `-- name: RenewHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
 SET lease_expires_at = $1::timestamptz

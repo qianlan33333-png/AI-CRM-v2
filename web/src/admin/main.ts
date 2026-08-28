@@ -25,6 +25,8 @@ import { mountAudienceHistory } from './sections/audienceHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
+import { mountSurveyUnresolvedHistory } from './sections/surveyUnresolvedHistory';
+import { surveyUnresolvedHistoryHttp } from '../api/surveyUnresolvedHistoryHttp';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -36,6 +38,12 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'questionnaires' && historyQuery.get('unresolved_history') === '1') {
+    void mountSurveyUnresolvedHistory(stage, surveyUnresolvedHistoryHttp, {
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
   if (page === 'config' && historyQuery.get('automation_history') === '1') {
     void mountAutomationHistory(stage, {
       kind: historyQuery.get('history_kind') ?? undefined,

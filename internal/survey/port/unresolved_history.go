@@ -79,6 +79,7 @@ type SurveyUnresolvedHistoryStore interface {
 }
 type SurveyUnresolvedHistoryReader interface {
 	GetHistoricalUnresolvedSurveySubmission(context.Context, int64) (HistoricalUnresolvedSurveySubmission, error)
+	GetHistoricalUnresolvedSurveyAnswer(context.Context, int64) (HistoricalUnresolvedSurveyAnswer, error)
 	ListHistoricalUnresolvedSurveySubmissions(context.Context, SurveyUnresolvedHistoryQuery) ([]HistoricalUnresolvedSurveySubmission, int64, error)
 	ListHistoricalUnresolvedSurveyAnswers(context.Context, int64, SurveyUnresolvedHistoryQuery) ([]HistoricalUnresolvedSurveyAnswer, int64, error)
 }
