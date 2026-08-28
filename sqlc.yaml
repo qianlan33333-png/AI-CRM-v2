@@ -88,6 +88,7 @@ sql:
       - internal/contact/store/queries/event_partitions.sql
       - internal/contact/store/queries/external_events.sql
       - internal/contact/store/queries/historical_import.sql
+      - internal/contact/store/queries/archive_identity_root.sql
       - internal/contact/store/queries/historical_tag_import.sql
       - internal/contact/store/queries/historical_channel.sql
       - internal/contact/store/queries/historical_channel_relations.sql
