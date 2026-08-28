@@ -2123,6 +2123,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.profileCatalogHistory = segmentstore.NewProfileCatalogHistoryReader(pool)
 	legacyHandler.signupTagHistory = contactstore.NewSignupTagHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
+	legacyHandler.outboundTaskHistory = outboundstore.NewOutboundTaskHistoryReader(pool)
 	legacyHandler.hxcHistory = hxcstore.NewHXCHistoryReader(pool)
 	legacyHandler.staticMediaHistory = mediastore.NewStaticMediaHistoryReader(pool)
 	legacyHandler.customerStateHistory = contactstore.NewCustomerStateHistoryReader(pool)
@@ -3765,6 +3766,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/message-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMessageHistory)},
 			{http.MethodGet, "/api/admin/campaign-history/segments", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistorySegments)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
+			{http.MethodGet, "/api/admin/outbound-task-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListOutboundTaskHistory)},
+			{http.MethodGet, "/api/admin/outbound-task-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetOutboundTaskHistory)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryEvent)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/relations", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryRelations)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/relations/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetWeComContactHistoryRelation)},
