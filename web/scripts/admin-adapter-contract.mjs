@@ -7,11 +7,12 @@ import { zipSync } from 'fflate';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const outdir = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-admin-adapter-'));
-await build({ entryPoints: { 'admin.test': path.join(root, 'src/api/admin.test.ts'), 'external_effects.test': path.join(root, 'src/api/external_effects.test.ts'), 'push_observability.test': path.join(root, 'src/api/push_observability.test.ts'), 'servicePeriodHistory.test': path.join(root, 'src/api/servicePeriodHistory.test.ts'), 'couponHistory.test': path.join(root, 'src/api/couponHistory.test.ts'), 'groupOpsHistory.test': path.join(root, 'src/api/groupOpsHistory.test.ts'), 'groupOpsDirectory.test': path.join(root, 'src/api/groupOpsDirectory.test.ts'), ownerReassignmentFile: path.join(root, 'src/admin/ownerReassignmentFile.ts') }, bundle: true, platform: 'node', format: 'esm', outdir, logLevel: 'warning' });
+await build({ entryPoints: { 'audienceHistory.test': path.join(root, 'src/api/audienceHistory.test.ts'), 'admin.test': path.join(root, 'src/api/admin.test.ts'), 'external_effects.test': path.join(root, 'src/api/external_effects.test.ts'), 'push_observability.test': path.join(root, 'src/api/push_observability.test.ts'), 'servicePeriodHistory.test': path.join(root, 'src/api/servicePeriodHistory.test.ts'), 'couponHistory.test': path.join(root, 'src/api/couponHistory.test.ts'), 'groupOpsHistory.test': path.join(root, 'src/api/groupOpsHistory.test.ts'), 'groupOpsDirectory.test': path.join(root, 'src/api/groupOpsDirectory.test.ts'), ownerReassignmentFile: path.join(root, 'src/admin/ownerReassignmentFile.ts') }, bundle: true, platform: 'node', format: 'esm', outdir, logLevel: 'warning' });
 try {
   await (await import(pathToFileURL(path.join(outdir, 'groupOpsHistory.test.js')).href)).runGroupOpsHistoryAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'groupOpsDirectory.test.js')).href)).runGroupOpsDirectoryAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'admin.test.js')).href)).runAdminAdapterTests();
+  await (await import(pathToFileURL(path.join(outdir, 'audienceHistory.test.js')).href)).runAudienceHistoryAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'external_effects.test.js')).href)).runExternalEffectsAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'push_observability.test.js')).href)).runPushObservabilityAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'servicePeriodHistory.test.js')).href)).runServicePeriodHistoryAdapterTests();

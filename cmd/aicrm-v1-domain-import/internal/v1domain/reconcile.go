@@ -82,6 +82,14 @@ var targetBySourceTable = map[string]struct {
 	"public/wecom_group_chat_snapshots":       {"groupops", "group_ops_v1_history_directory"},
 	"public/automation_group_ops_plan_groups": {"groupops", "group_ops_v1_history_groups"},
 	"public/automation_group_ops_plan_nodes":  {"groupops", "group_ops_v1_history_nodes"},
+	"public/ai_audience_package_group":        {"segment", "segment_v1_audience_groups"},
+	"public/ai_audience_package":              {"segment", "segment_v1_audience_packages"},
+	"public/ai_audience_package_version":      {"segment", "segment_v1_audience_versions"},
+	"public/ai_audience_package_sender":       {"segment", "segment_v1_audience_senders"},
+	"public/audience_rule":                    {"segment", "segment_v1_audience_rules"},
+	"public/audience_rule_version":            {"segment", "segment_v1_audience_rule_versions"},
+	"public/segments":                         {"segment", "segment_v1_definitions"},
+	"public/ai_audience_member_current":       {"segment", "segment_v1_audience_members"},
 }
 
 type ReconciliationResult struct {
@@ -222,7 +230,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -293,6 +301,9 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 		return "", fmt.Errorf("invalid imported target for %s", row.TableID)
 	}
 	var proof string
+	if isAudienceHistorySource(row.TableID) {
+		return verifyAudienceHistoryTarget(ctx, tx, row, importedTargets)
+	}
 	switch expected.table {
 	case "product_service_period_history", "product_service_period_entitlement_history", "product_service_period_event_history":
 		return verifyServicePeriodTarget(ctx, tx, row, importedTargets)

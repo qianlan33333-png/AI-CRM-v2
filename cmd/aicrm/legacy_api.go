@@ -36,6 +36,7 @@ import (
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
@@ -189,6 +190,7 @@ type Handler struct {
 	radar                   http.Handler
 	campaign                http.Handler
 	aiAudience              http.Handler
+	audienceHistory         segmentport.AudienceHistoryReader
 	aiAudienceInbound       *aiAudienceInboundRoutes
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler

@@ -12843,6 +12843,238 @@ paths:
       parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
       responses: {'200': {description: CAS-updated local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/audience-history/groups:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryGroups
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryGroupPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/packages:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryPackages
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryPackagePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/packages/{package_id}/versions:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryVersions
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryVersionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/packages/{package_id}/senders:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistorySenders
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistorySenderPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/rules:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryRules
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryRulePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/rules/{rule_id}/versions:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryRuleVersions
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: rule_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryRuleVersionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/definitions:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryDefinitions
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryDefinitionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/packages/{package_id}/members:
+    get:
+      tags: [p4-audience-history]
+      operationId: listAudienceHistoryMembers
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryMemberPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/packages/{package_id}:
+    get:
+      tags: [p4-audience-history]
+      operationId: getAudienceHistoryPackage
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryPackageDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/audience-history/definitions/{definition_id}:
+    get:
+      tags: [p4-audience-history]
+      operationId: getAudienceHistoryDefinition
+      summary: Read immutable V1 Audience facts without activating queries or members
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-AUDIENCE-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: segment.read_only_audience_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: definition_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: History only; original flags never activate V2 runtime, content: { application/json: { schema: { $ref: "#/components/schemas/AudienceHistoryDefinitionDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -21620,3 +21852,260 @@ components:
         page: { type: integer, format: int32, minimum: 1 }
         page_size: { type: integer, format: int32, minimum: 1, maximum: 100 }
         visibility: { type: string, enum: [masked] }
+    AudienceHistoryGroup:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, name, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AudienceHistoryGroupPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryGroup" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistoryPackage:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, group_history_id, current_version_source_id, package_key, name, natural_language_definition, original_status, query_mode, identity_policy, incremental_enabled, daily_enabled, incremental_interval_seconds, daily_refresh_time, timezone, lookback_seconds, last_incremental_at, last_daily_refreshed_at, next_incremental_at, next_daily_at, paused_reason, created_at, updated_at, runtime_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        group_history_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        current_version_source_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        package_key: { type: string }
+        name: { type: string }
+        natural_language_definition: { type: string }
+        original_status: { type: string }
+        query_mode: { type: string }
+        identity_policy: { type: string }
+        incremental_enabled: { type: boolean }
+        daily_enabled: { type: boolean }
+        incremental_interval_seconds: { type: integer, format: int64 }
+        daily_refresh_time: { type: string }
+        timezone: { type: string }
+        lookback_seconds: { type: integer, format: int64 }
+        last_incremental_at: { type: string, format: date-time, nullable: true }
+        last_daily_refreshed_at: { type: string, format: date-time, nullable: true }
+        next_incremental_at: { type: string, format: date-time, nullable: true }
+        next_daily_at: { type: string, format: date-time, nullable: true }
+        paused_reason: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        runtime_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    AudienceHistoryPackagePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryPackage" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistoryPackageDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/AudienceHistoryPackage" }
+    AudienceHistoryVersion:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, package_history_id, version_number, original_status, ai_prompt, ai_rationale, natural_language_explanation, created_at, published_at, template_key, template_version, template_fingerprint, definition_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        package_history_id: { type: integer, format: int64, minimum: 1 }
+        version_number: { type: integer, format: int64 }
+        original_status: { type: string }
+        ai_prompt: { type: string }
+        ai_rationale: { type: string }
+        natural_language_explanation: { type: string }
+        created_at: { type: string, format: date-time }
+        published_at: { type: string, format: date-time, nullable: true }
+        template_key: { type: string }
+        template_version: { type: integer, format: int64, nullable: true }
+        template_fingerprint: { type: string }
+        definition_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    AudienceHistoryVersionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, package_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        package_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryVersion" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistorySender:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, package_history_id, staff_id, display_name, priority, original_status, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        package_history_id: { type: integer, format: int64, minimum: 1 }
+        staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        display_name: { type: string }
+        priority: { type: integer, format: int64 }
+        original_status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AudienceHistorySenderPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, package_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        package_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistorySender" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistoryRule:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, rule_key, display_name, description, rule_type, owner_staff_id, original_status, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        rule_key: { type: string }
+        display_name: { type: string }
+        description: { type: string }
+        rule_type: { type: string }
+        owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        original_status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AudienceHistoryRulePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryRule" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistoryRuleVersion:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, rule_history_id, version, executor_type, original_status, published_at, created_at, definition_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        rule_history_id: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64 }
+        executor_type: { type: string }
+        original_status: { type: string }
+        published_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        definition_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    AudienceHistoryRuleVersionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, rule_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        rule_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryRuleVersion" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistoryDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, code, display_name, description, source_type, sql_dialect, original_status, version, cached_headcount, last_refreshed_at, usage_count, created_at, updated_at, definition_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        code: { type: string }
+        display_name: { type: string }
+        description: { type: string }
+        source_type: { type: string }
+        sql_dialect: { type: string }
+        original_status: { type: string }
+        version: { type: integer, format: int64 }
+        cached_headcount: { type: integer, format: int64 }
+        last_refreshed_at: { type: string, format: date-time, nullable: true }
+        usage_count: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        definition_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    AudienceHistoryDefinitionPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryDefinition" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    AudienceHistoryDefinitionDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/AudienceHistoryDefinition" }
+    AudienceHistoryMember:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, package_history_id, customer_id, identity_kind, original_status, first_entered_at, last_seen_at, last_updated_at, exited_at, created_at, updated_at, payload_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        package_history_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        identity_kind: { type: string }
+        original_status: { type: string }
+        first_entered_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        last_updated_at: { type: string, format: date-time }
+        exited_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        payload_digest: { type: array, minItems: 32, maxItems: 32, items: { type: integer, minimum: 0, maximum: 255 } }
+    AudienceHistoryMemberPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, package_id, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        package_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, items: { $ref: "#/components/schemas/AudienceHistoryMember" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }

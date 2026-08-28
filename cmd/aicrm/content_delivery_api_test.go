@@ -11,10 +11,11 @@ import (
 )
 
 type contentDeliveryStub struct {
-	initiated bool
-	part      bool
-	completed bool
-	bound     bool
+	initiated       bool
+	initiateCommand mediaport.AttachmentUploadInitiateCommand
+	part            bool
+	completed       bool
+	bound           bool
 }
 
 func (s *contentDeliveryStub) Preview(context.Context, mediaport.ContentPackageCommand) (mediaport.ContentPackage, error) {
@@ -46,8 +47,9 @@ func TestContentDeliveryBindingWriteUsesService(t *testing.T) {
 		t.Fatalf("code=%d bound=%v", w.Code, stub.bound)
 	}
 }
-func (s *contentDeliveryStub) InitiatePDF(context.Context, mediaport.AttachmentUploadInitiateCommand) (int64, error) {
+func (s *contentDeliveryStub) InitiatePDF(_ context.Context, command mediaport.AttachmentUploadInitiateCommand) (int64, error) {
 	s.initiated = true
+	s.initiateCommand = command
 	return 11, nil
 }
 func (s *contentDeliveryStub) PutPDFPart(context.Context, mediaport.AttachmentUploadPartCommand) error {
@@ -98,5 +100,17 @@ func TestPDFMultipartHandlersRequireIdempotencyAndUseService(t *testing.T) {
 	}
 	if !stub.initiated || !stub.part || !stub.completed {
 		t.Fatal("service calls missing")
+	}
+}
+
+func TestPDFMultipartInitiateDecodesOpenAPIFileName(t *testing.T) {
+	stub := &contentDeliveryStub{}
+	handler := &Handler{contentDelivery: stub}
+	response := httptest.NewRecorder()
+	request := contentRequest(t, http.MethodPost, "/api/admin/attachment-library/uploads", `{"file_name":"uat.pdf","name":"UAT","description":"disabled test","size":1872,"sha256":"sha256:0000000000000000000000000000000000000000000000000000000000000000","enabled":false,"actor":999,"idempotency_key":"untrusted-body-key"}`)
+	handler.PDFMultipartInitiate(response, request)
+	want := mediaport.AttachmentUploadInitiateCommand{FileName: "uat.pdf", Name: "UAT", Description: "disabled test", Size: 1872, SHA256: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Enabled: false, Actor: 7, IdempotencyKey: "content-delivery-key-0001"}
+	if response.Code != http.StatusCreated || stub.initiateCommand != want {
+		t.Fatalf("status=%d command=%+v want=%+v", response.Code, stub.initiateCommand, want)
 	}
 }
