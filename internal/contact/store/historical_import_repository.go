@@ -551,6 +551,19 @@ func (HistoricalImportRepository) ReadHistoricalImportRunSnapshot(ctx context.Co
 	return row.Mode, row.State, nil
 }
 
+// VerifyDM01CustomerIdentitySnapshot proves only a local root mapping, without
+// locks or writes. A later identity bind must still validate in its own transaction.
+func (HistoricalImportRepository) VerifyDM01CustomerIdentitySnapshot(ctx context.Context, runID int64, sourceKeyHMAC [32]byte) (bool, error) {
+	if runID < 1 || sourceKeyHMAC == ([32]byte{}) {
+		return false, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	return contactdb.New(tx).VerifyDM01CustomerIdentitySnapshot(ctx, contactdb.VerifyDM01CustomerIdentitySnapshotParams{RunID: runID, SourceKeyHmac: sourceKeyHMAC[:]})
+}
+
 func (HistoricalImportRepository) LockHistoricalImportSource(ctx context.Context, source contactport.HistoricalImportSource, sourceKeyHMAC []byte) error {
 	sourceTable, ok := historicalImportSourceTable(source)
 	if !ok || len(sourceKeyHMAC) != 32 {

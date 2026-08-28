@@ -212,6 +212,7 @@ type Querier interface {
 	UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error)
 	UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSidebarCustomerProfileParams) (UpdateSidebarCustomerProfileRow, error)
 	UpsertCurrentChannelAcquisitionAsset(ctx context.Context, arg UpsertCurrentChannelAcquisitionAssetParams) error
+	VerifyDM01CustomerIdentitySnapshot(ctx context.Context, arg VerifyDM01CustomerIdentitySnapshotParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)
