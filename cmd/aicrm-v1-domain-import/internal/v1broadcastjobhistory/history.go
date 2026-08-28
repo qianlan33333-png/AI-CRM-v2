@@ -254,6 +254,7 @@ func Preflight(ctx context.Context, archive ArchiveReader, runID string) (Prefli
 	}
 	report := PreflightReport{Reasons: map[string]int{}, RedactedRoots: map[string]int{}}
 	seen := map[[sha256.Size]byte]bool{}
+	sourceIDs := map[int64]bool{}
 	var ordinal int64
 	err := archive.EachTableRow(ctx, runID, BroadcastJobsTableID, func(row v1archive.ArchivedRow) error {
 		ordinal++
@@ -271,6 +272,10 @@ func Preflight(ctx context.Context, archive ArchiveReader, runID string) (Prefli
 		}
 		result := AdaptHistory(row)
 		if result.Disposition == DispositionCandidate {
+			if sourceIDs[result.Fact.SourceID] {
+				return ErrInvalidArchiveRow
+			}
+			sourceIDs[result.Fact.SourceID] = true
 			report.Candidates++
 			return nil
 		}

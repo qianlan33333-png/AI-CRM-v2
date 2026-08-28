@@ -92,6 +92,10 @@ func TestPreflightConservesRowsAndRejectsDuplicateSourceKeys(t *testing.T) {
 	if _, err := Preflight(context.Background(), archiveRows{rows: []v1archive.ArchivedRow{first, second}}, "run-1"); !errors.Is(err, ErrInvalidArchiveRow) {
 		t.Fatalf("duplicate_source_key_accepted=%v", err)
 	}
+	second = broadcastJobRow(t, 2, broadcastJobPayload(at))
+	if _, err := Preflight(context.Background(), archiveRows{rows: []v1archive.ArchivedRow{first, second}}, "run-1"); !errors.Is(err, ErrInvalidArchiveRow) {
+		t.Fatalf("duplicate_source_id_accepted=%v", err)
+	}
 	quarantined := broadcastJobRow(t, 1, broadcastJobPayload(at), "status")
 	report, err = Preflight(context.Background(), archiveRows{rows: []v1archive.ArchivedRow{quarantined}}, "run-1")
 	if err != nil || report.Quarantined != 1 || report.RedactedRoots["status"] != 1 || report.Reasons[ReasonRequiredRedacted] != 1 {
