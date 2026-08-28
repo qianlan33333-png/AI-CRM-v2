@@ -25,7 +25,7 @@ type RootRoute string
 
 const (
 	// RootRouteUnbound keeps an authenticated V1 external identity without a
-	// Customer binding. It must not create a Customer or current identity.
+	// Customer binding. It must not create a Customer or infer a binding.
 	RootRouteUnbound RootRoute = "unbound"
 	// RootRouteRequiresVerifiedRoot asks a later caller-owned transaction to
 	// prove the existing DM01 root and scoped-identity conflict rules.

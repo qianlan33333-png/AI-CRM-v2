@@ -9,7 +9,7 @@ INSERT INTO identities (
   sqlc.arg(fingerprint_key_version)::smallint,
   CASE WHEN sqlc.narg(customer_id)::bigint IS NULL THEN NULL ELSE now() END
 )
-ON CONFLICT (kind, scope, normalized_value) DO UPDATE SET id = identities.id
+ON CONFLICT (kind, scope, normalized_value) DO UPDATE SET source = identities.source
 WHERE identities.customer_id IS NOT DISTINCT FROM EXCLUDED.customer_id
   AND identities.source = EXCLUDED.source AND identities.assurance = 'declared'
   AND identities.normalizer_version = 1

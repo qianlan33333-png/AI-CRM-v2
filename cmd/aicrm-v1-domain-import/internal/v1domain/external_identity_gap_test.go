@@ -85,6 +85,25 @@ func TestExternalIdentityGapImporterImportsUnboundAndVerifiedRootsThenReplays(t 
 	}
 }
 
+func TestExternalIdentityGapReplayRejectsNoncanonicalTargetID(t *testing.T) {
+	fixture := newExternalIdentityGapFixture(t)
+	importer, err := NewExternalIdentityGapImporter(fixture.archive, fixture.uow, fixture.target, fixture.roots, fixture.dm01, fixture.journal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importer.Import(context.Background(), fixture.options); err != nil {
+		t.Fatal(err)
+	}
+	for key, receipt := range fixture.journal.rows {
+		receipt.TargetID = "0" + receipt.TargetID
+		fixture.journal.rows[key] = receipt
+		break
+	}
+	if err := importer.Verify(context.Background(), fixture.options); !errors.Is(err, ErrConflict) {
+		t.Fatalf("noncanonical receipt target accepted: %v", err)
+	}
+}
+
 func TestExternalIdentityGapImporterFailsClosedAndRollsBack(t *testing.T) {
 	t.Parallel()
 	fixture := newExternalIdentityGapFixture(t)

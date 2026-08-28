@@ -340,14 +340,14 @@ func verifyExternalIdentityGapTerminalValue(ctx context.Context, target identity
 		return ErrConflict
 	}
 	id, err := positiveID(terminal.TargetID)
-	if err != nil {
-		return err
+	if err != nil || strconv.FormatInt(id, 10) != terminal.TargetID {
+		return ErrConflict
 	}
 	actual, err := target.ReadArchiveWeComIdentity(ctx, id)
 	if err != nil {
 		return err
 	}
-	if !externalIdentityGapFactMatches(actual, value.Fact, customerID, options.KeyVersion) {
+	if actual.ID != id || !externalIdentityGapFactMatches(actual, value.Fact, customerID, options.KeyVersion) {
 		return ErrConflict
 	}
 	digest, err := externalIdentityGapTargetDigest(options.TargetHMACKey, actual)
