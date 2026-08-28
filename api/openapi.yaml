@@ -6,6 +6,178 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/admin/automation-history/sops:
+    get:
+      tags: [p4-automation-history]
+      operationId: listAutomationHistorySOPs
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistorySOPPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/sops/{history_id}:
+    get:
+      tags: [p4-automation-history]
+      operationId: getAutomationHistorySOP
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistorySOPDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/configs:
+    get:
+      tags: [p4-automation-history]
+      operationId: listAutomationHistoryConfigs
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistoryConfigPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/configs/{history_id}:
+    get:
+      tags: [p4-automation-history]
+      operationId: getAutomationHistoryConfig
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistoryConfigDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/prompts:
+    get:
+      tags: [p4-automation-history]
+      operationId: listAutomationHistoryPrompts
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistoryPromptPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/prompts/{history_id}:
+    get:
+      tags: [p4-automation-history]
+      operationId: getAutomationHistoryPrompt
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistoryPromptDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/agents:
+    get:
+      tags: [p4-automation-history]
+      operationId: listAutomationHistoryAgents
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistoryAgentPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-history/agents/{history_id}:
+    get:
+      tags: [p4-automation-history]
+      operationId: getAutomationHistoryAgent
+      summary: Read immutable V1 automation configuration without execution or publication
+      x-p4-decision-evidence: P4-V1-AUTOMATION-HISTORY-2026-08-28
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: automation.read_only_v1_configuration_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable historical configuration, content: { application/json: { schema: { $ref: "#/components/schemas/AutomationHistoryAgentDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/campaign-history/segments:
     get:
       tags: [p4-campaign-history]
@@ -13859,6 +14031,175 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    AutomationHistoryDigest:
+      type: array
+      minItems: 32
+      maxItems: 32
+      items: { type: integer, minimum: 0, maximum: 255 }
+    AutomationHistorySOP:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, pool_key, day_index, content_masked, images_digest, original_enabled, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        pool_key: { type: string }
+        day_index: { type: integer, format: int32 }
+        content_masked: { type: string }
+        images_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        original_enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AutomationHistorySOPPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AutomationHistorySOP" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    AutomationHistorySOPDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/AutomationHistorySOP" }
+    AutomationHistoryConfig:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, agent_code, display_name, scenario_code, original_enabled, draft_version, published_version, published_at, last_modified_at, last_modified_source, submitted_for_publish, submitted_at, created_at, updated_at, actors_digest, config_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        agent_code: { type: string }
+        display_name: { type: string }
+        scenario_code: { type: string }
+        original_enabled: { type: boolean }
+        draft_version: { type: integer, format: int32 }
+        published_version: { type: integer, format: int32 }
+        published_at: { type: string }
+        last_modified_at: { type: string }
+        last_modified_source: { type: string }
+        submitted_for_publish: { type: boolean }
+        submitted_at: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        actors_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        config_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+    AutomationHistoryConfigPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AutomationHistoryConfig" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    AutomationHistoryConfigDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/AutomationHistoryConfig" }
+    AutomationHistoryPrompt:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, agent_code, display_name, original_enabled, version, created_at, updated_at, prompt_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        agent_code: { type: string }
+        display_name: { type: string }
+        original_enabled: { type: boolean }
+        version: { type: integer, format: int32 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        prompt_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+    AutomationHistoryPromptPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AutomationHistoryPrompt" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    AutomationHistoryPromptDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/AutomationHistoryPrompt" }
+    AutomationHistoryAgent:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, source_key_digest, source_payload_digest, program_source_id, workflow_source_id, node_source_id, task_source_id, agent_code, agent_name, original_type, original_status, sort_order, original_enabled, created_at, updated_at, archived_at, actors_digest, configuration_digest]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64, minimum: 1 }
+        source_key_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        source_payload_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        program_source_id: { type: integer, format: int64 }
+        workflow_source_id: { type: integer, format: int64 }
+        node_source_id: { type: integer, format: int64 }
+        task_source_id: { type: integer, format: int64 }
+        agent_code: { type: string }
+        agent_name: { type: string }
+        original_type: { type: string }
+        original_status: { type: string }
+        sort_order: { type: integer, format: int32 }
+        original_enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        archived_at: { type: string }
+        actors_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+        configuration_digest: { $ref: "#/components/schemas/AutomationHistoryDigest" }
+    AutomationHistoryAgentPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/AutomationHistoryAgent" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    AutomationHistoryAgentDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/AutomationHistoryAgent" }
     HistoricalCampaignSegment:
       type: object
       additionalProperties: false

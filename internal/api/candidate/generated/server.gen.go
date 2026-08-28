@@ -1150,6 +1150,366 @@ func (e AuthSessionResponseRole) Valid() bool {
 	}
 }
 
+// Defines values for AutomationHistoryAgentDetailReadOnly.
+const (
+	AutomationHistoryAgentDetailReadOnlyTrue AutomationHistoryAgentDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryAgentDetailReadOnly enum.
+func (e AutomationHistoryAgentDetailReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistoryAgentDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryAgentDetailRealExternalCallExecuted.
+const (
+	AutomationHistoryAgentDetailRealExternalCallExecutedFalse AutomationHistoryAgentDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryAgentDetailRealExternalCallExecuted enum.
+func (e AutomationHistoryAgentDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistoryAgentDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryAgentDetailSource.
+const (
+	AutomationHistoryAgentDetailSourceV1History AutomationHistoryAgentDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryAgentDetailSource enum.
+func (e AutomationHistoryAgentDetailSource) Valid() bool {
+	switch e {
+	case AutomationHistoryAgentDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryAgentPageReadOnly.
+const (
+	AutomationHistoryAgentPageReadOnlyTrue AutomationHistoryAgentPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryAgentPageReadOnly enum.
+func (e AutomationHistoryAgentPageReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistoryAgentPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryAgentPageRealExternalCallExecuted.
+const (
+	AutomationHistoryAgentPageRealExternalCallExecutedFalse AutomationHistoryAgentPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryAgentPageRealExternalCallExecuted enum.
+func (e AutomationHistoryAgentPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistoryAgentPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryAgentPageSource.
+const (
+	AutomationHistoryAgentPageSourceV1History AutomationHistoryAgentPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryAgentPageSource enum.
+func (e AutomationHistoryAgentPageSource) Valid() bool {
+	switch e {
+	case AutomationHistoryAgentPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryConfigDetailReadOnly.
+const (
+	AutomationHistoryConfigDetailReadOnlyTrue AutomationHistoryConfigDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryConfigDetailReadOnly enum.
+func (e AutomationHistoryConfigDetailReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistoryConfigDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryConfigDetailRealExternalCallExecuted.
+const (
+	AutomationHistoryConfigDetailRealExternalCallExecutedFalse AutomationHistoryConfigDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryConfigDetailRealExternalCallExecuted enum.
+func (e AutomationHistoryConfigDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistoryConfigDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryConfigDetailSource.
+const (
+	AutomationHistoryConfigDetailSourceV1History AutomationHistoryConfigDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryConfigDetailSource enum.
+func (e AutomationHistoryConfigDetailSource) Valid() bool {
+	switch e {
+	case AutomationHistoryConfigDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryConfigPageReadOnly.
+const (
+	AutomationHistoryConfigPageReadOnlyTrue AutomationHistoryConfigPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryConfigPageReadOnly enum.
+func (e AutomationHistoryConfigPageReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistoryConfigPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryConfigPageRealExternalCallExecuted.
+const (
+	AutomationHistoryConfigPageRealExternalCallExecutedFalse AutomationHistoryConfigPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryConfigPageRealExternalCallExecuted enum.
+func (e AutomationHistoryConfigPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistoryConfigPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryConfigPageSource.
+const (
+	AutomationHistoryConfigPageSourceV1History AutomationHistoryConfigPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryConfigPageSource enum.
+func (e AutomationHistoryConfigPageSource) Valid() bool {
+	switch e {
+	case AutomationHistoryConfigPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryPromptDetailReadOnly.
+const (
+	AutomationHistoryPromptDetailReadOnlyTrue AutomationHistoryPromptDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryPromptDetailReadOnly enum.
+func (e AutomationHistoryPromptDetailReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistoryPromptDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryPromptDetailRealExternalCallExecuted.
+const (
+	AutomationHistoryPromptDetailRealExternalCallExecutedFalse AutomationHistoryPromptDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryPromptDetailRealExternalCallExecuted enum.
+func (e AutomationHistoryPromptDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistoryPromptDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryPromptDetailSource.
+const (
+	AutomationHistoryPromptDetailSourceV1History AutomationHistoryPromptDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryPromptDetailSource enum.
+func (e AutomationHistoryPromptDetailSource) Valid() bool {
+	switch e {
+	case AutomationHistoryPromptDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryPromptPageReadOnly.
+const (
+	AutomationHistoryPromptPageReadOnlyTrue AutomationHistoryPromptPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryPromptPageReadOnly enum.
+func (e AutomationHistoryPromptPageReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistoryPromptPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryPromptPageRealExternalCallExecuted.
+const (
+	AutomationHistoryPromptPageRealExternalCallExecutedFalse AutomationHistoryPromptPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryPromptPageRealExternalCallExecuted enum.
+func (e AutomationHistoryPromptPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistoryPromptPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistoryPromptPageSource.
+const (
+	AutomationHistoryPromptPageSourceV1History AutomationHistoryPromptPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistoryPromptPageSource enum.
+func (e AutomationHistoryPromptPageSource) Valid() bool {
+	switch e {
+	case AutomationHistoryPromptPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistorySOPDetailReadOnly.
+const (
+	AutomationHistorySOPDetailReadOnlyTrue AutomationHistorySOPDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistorySOPDetailReadOnly enum.
+func (e AutomationHistorySOPDetailReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistorySOPDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistorySOPDetailRealExternalCallExecuted.
+const (
+	AutomationHistorySOPDetailRealExternalCallExecutedFalse AutomationHistorySOPDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistorySOPDetailRealExternalCallExecuted enum.
+func (e AutomationHistorySOPDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistorySOPDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistorySOPDetailSource.
+const (
+	AutomationHistorySOPDetailSourceV1History AutomationHistorySOPDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistorySOPDetailSource enum.
+func (e AutomationHistorySOPDetailSource) Valid() bool {
+	switch e {
+	case AutomationHistorySOPDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistorySOPPageReadOnly.
+const (
+	AutomationHistorySOPPageReadOnlyTrue AutomationHistorySOPPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistorySOPPageReadOnly enum.
+func (e AutomationHistorySOPPageReadOnly) Valid() bool {
+	switch e {
+	case AutomationHistorySOPPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistorySOPPageRealExternalCallExecuted.
+const (
+	AutomationHistorySOPPageRealExternalCallExecutedFalse AutomationHistorySOPPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistorySOPPageRealExternalCallExecuted enum.
+func (e AutomationHistorySOPPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AutomationHistorySOPPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationHistorySOPPageSource.
+const (
+	AutomationHistorySOPPageSourceV1History AutomationHistorySOPPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AutomationHistorySOPPageSource enum.
+func (e AutomationHistorySOPPageSource) Valid() bool {
+	switch e {
+	case AutomationHistorySOPPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationTriggerRunAgentCode.
 const (
 	TagTriggerV1 AutomationTriggerRunAgentCode = "tag-trigger-v1"
@@ -10940,6 +11300,233 @@ type AuthSessionResponse struct {
 // AuthSessionResponseRole defines model for AuthSessionResponse.Role.
 type AuthSessionResponseRole string
 
+// AutomationHistoryAgent defines model for AutomationHistoryAgent.
+type AutomationHistoryAgent struct {
+	ActorsDigest        AutomationHistoryDigest `json:"actors_digest"`
+	AgentCode           string                  `json:"agent_code"`
+	AgentName           string                  `json:"agent_name"`
+	ArchivedAt          string                  `json:"archived_at"`
+	ConfigurationDigest AutomationHistoryDigest `json:"configuration_digest"`
+	CreatedAt           time.Time               `json:"created_at"`
+	Id                  int64                   `json:"id"`
+	NodeSourceId        int64                   `json:"node_source_id"`
+	OriginalEnabled     bool                    `json:"original_enabled"`
+	OriginalStatus      string                  `json:"original_status"`
+	OriginalType        string                  `json:"original_type"`
+	ProgramSourceId     int64                   `json:"program_source_id"`
+	SortOrder           int32                   `json:"sort_order"`
+	SourceId            int64                   `json:"source_id"`
+	SourceKeyDigest     AutomationHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest AutomationHistoryDigest `json:"source_payload_digest"`
+	TaskSourceId        int64                   `json:"task_source_id"`
+	UpdatedAt           time.Time               `json:"updated_at"`
+	WorkflowSourceId    int64                   `json:"workflow_source_id"`
+}
+
+// AutomationHistoryAgentDetail defines model for AutomationHistoryAgentDetail.
+type AutomationHistoryAgentDetail struct {
+	Item                     AutomationHistoryAgent                               `json:"item"`
+	ReadOnly                 AutomationHistoryAgentDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistoryAgentDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistoryAgentDetailSource                   `json:"source"`
+}
+
+// AutomationHistoryAgentDetailReadOnly defines model for AutomationHistoryAgentDetail.ReadOnly.
+type AutomationHistoryAgentDetailReadOnly bool
+
+// AutomationHistoryAgentDetailRealExternalCallExecuted defines model for AutomationHistoryAgentDetail.RealExternalCallExecuted.
+type AutomationHistoryAgentDetailRealExternalCallExecuted bool
+
+// AutomationHistoryAgentDetailSource defines model for AutomationHistoryAgentDetail.Source.
+type AutomationHistoryAgentDetailSource string
+
+// AutomationHistoryAgentPage defines model for AutomationHistoryAgentPage.
+type AutomationHistoryAgentPage struct {
+	Items                    []AutomationHistoryAgent                           `json:"items"`
+	Limit                    int                                                `json:"limit"`
+	Offset                   int                                                `json:"offset"`
+	ReadOnly                 AutomationHistoryAgentPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistoryAgentPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistoryAgentPageSource                   `json:"source"`
+	Total                    int64                                              `json:"total"`
+}
+
+// AutomationHistoryAgentPageReadOnly defines model for AutomationHistoryAgentPage.ReadOnly.
+type AutomationHistoryAgentPageReadOnly bool
+
+// AutomationHistoryAgentPageRealExternalCallExecuted defines model for AutomationHistoryAgentPage.RealExternalCallExecuted.
+type AutomationHistoryAgentPageRealExternalCallExecuted bool
+
+// AutomationHistoryAgentPageSource defines model for AutomationHistoryAgentPage.Source.
+type AutomationHistoryAgentPageSource string
+
+// AutomationHistoryConfig defines model for AutomationHistoryConfig.
+type AutomationHistoryConfig struct {
+	ActorsDigest        AutomationHistoryDigest `json:"actors_digest"`
+	AgentCode           string                  `json:"agent_code"`
+	ConfigDigest        AutomationHistoryDigest `json:"config_digest"`
+	CreatedAt           time.Time               `json:"created_at"`
+	DisplayName         string                  `json:"display_name"`
+	DraftVersion        int32                   `json:"draft_version"`
+	Id                  int64                   `json:"id"`
+	LastModifiedAt      string                  `json:"last_modified_at"`
+	LastModifiedSource  string                  `json:"last_modified_source"`
+	OriginalEnabled     bool                    `json:"original_enabled"`
+	PublishedAt         string                  `json:"published_at"`
+	PublishedVersion    int32                   `json:"published_version"`
+	ScenarioCode        string                  `json:"scenario_code"`
+	SourceId            int64                   `json:"source_id"`
+	SourceKeyDigest     AutomationHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest AutomationHistoryDigest `json:"source_payload_digest"`
+	SubmittedAt         string                  `json:"submitted_at"`
+	SubmittedForPublish bool                    `json:"submitted_for_publish"`
+	UpdatedAt           time.Time               `json:"updated_at"`
+}
+
+// AutomationHistoryConfigDetail defines model for AutomationHistoryConfigDetail.
+type AutomationHistoryConfigDetail struct {
+	Item                     AutomationHistoryConfig                               `json:"item"`
+	ReadOnly                 AutomationHistoryConfigDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistoryConfigDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistoryConfigDetailSource                   `json:"source"`
+}
+
+// AutomationHistoryConfigDetailReadOnly defines model for AutomationHistoryConfigDetail.ReadOnly.
+type AutomationHistoryConfigDetailReadOnly bool
+
+// AutomationHistoryConfigDetailRealExternalCallExecuted defines model for AutomationHistoryConfigDetail.RealExternalCallExecuted.
+type AutomationHistoryConfigDetailRealExternalCallExecuted bool
+
+// AutomationHistoryConfigDetailSource defines model for AutomationHistoryConfigDetail.Source.
+type AutomationHistoryConfigDetailSource string
+
+// AutomationHistoryConfigPage defines model for AutomationHistoryConfigPage.
+type AutomationHistoryConfigPage struct {
+	Items                    []AutomationHistoryConfig                           `json:"items"`
+	Limit                    int                                                 `json:"limit"`
+	Offset                   int                                                 `json:"offset"`
+	ReadOnly                 AutomationHistoryConfigPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistoryConfigPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistoryConfigPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// AutomationHistoryConfigPageReadOnly defines model for AutomationHistoryConfigPage.ReadOnly.
+type AutomationHistoryConfigPageReadOnly bool
+
+// AutomationHistoryConfigPageRealExternalCallExecuted defines model for AutomationHistoryConfigPage.RealExternalCallExecuted.
+type AutomationHistoryConfigPageRealExternalCallExecuted bool
+
+// AutomationHistoryConfigPageSource defines model for AutomationHistoryConfigPage.Source.
+type AutomationHistoryConfigPageSource string
+
+// AutomationHistoryDigest defines model for AutomationHistoryDigest.
+type AutomationHistoryDigest = []int
+
+// AutomationHistoryPrompt defines model for AutomationHistoryPrompt.
+type AutomationHistoryPrompt struct {
+	AgentCode           string                  `json:"agent_code"`
+	CreatedAt           time.Time               `json:"created_at"`
+	DisplayName         string                  `json:"display_name"`
+	Id                  int64                   `json:"id"`
+	OriginalEnabled     bool                    `json:"original_enabled"`
+	PromptDigest        AutomationHistoryDigest `json:"prompt_digest"`
+	SourceId            int64                   `json:"source_id"`
+	SourceKeyDigest     AutomationHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest AutomationHistoryDigest `json:"source_payload_digest"`
+	UpdatedAt           time.Time               `json:"updated_at"`
+	Version             int32                   `json:"version"`
+}
+
+// AutomationHistoryPromptDetail defines model for AutomationHistoryPromptDetail.
+type AutomationHistoryPromptDetail struct {
+	Item                     AutomationHistoryPrompt                               `json:"item"`
+	ReadOnly                 AutomationHistoryPromptDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistoryPromptDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistoryPromptDetailSource                   `json:"source"`
+}
+
+// AutomationHistoryPromptDetailReadOnly defines model for AutomationHistoryPromptDetail.ReadOnly.
+type AutomationHistoryPromptDetailReadOnly bool
+
+// AutomationHistoryPromptDetailRealExternalCallExecuted defines model for AutomationHistoryPromptDetail.RealExternalCallExecuted.
+type AutomationHistoryPromptDetailRealExternalCallExecuted bool
+
+// AutomationHistoryPromptDetailSource defines model for AutomationHistoryPromptDetail.Source.
+type AutomationHistoryPromptDetailSource string
+
+// AutomationHistoryPromptPage defines model for AutomationHistoryPromptPage.
+type AutomationHistoryPromptPage struct {
+	Items                    []AutomationHistoryPrompt                           `json:"items"`
+	Limit                    int                                                 `json:"limit"`
+	Offset                   int                                                 `json:"offset"`
+	ReadOnly                 AutomationHistoryPromptPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistoryPromptPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistoryPromptPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// AutomationHistoryPromptPageReadOnly defines model for AutomationHistoryPromptPage.ReadOnly.
+type AutomationHistoryPromptPageReadOnly bool
+
+// AutomationHistoryPromptPageRealExternalCallExecuted defines model for AutomationHistoryPromptPage.RealExternalCallExecuted.
+type AutomationHistoryPromptPageRealExternalCallExecuted bool
+
+// AutomationHistoryPromptPageSource defines model for AutomationHistoryPromptPage.Source.
+type AutomationHistoryPromptPageSource string
+
+// AutomationHistorySOP defines model for AutomationHistorySOP.
+type AutomationHistorySOP struct {
+	ContentMasked       string                  `json:"content_masked"`
+	CreatedAt           time.Time               `json:"created_at"`
+	DayIndex            int32                   `json:"day_index"`
+	Id                  int64                   `json:"id"`
+	ImagesDigest        AutomationHistoryDigest `json:"images_digest"`
+	OriginalEnabled     bool                    `json:"original_enabled"`
+	PoolKey             string                  `json:"pool_key"`
+	SourceId            int64                   `json:"source_id"`
+	SourceKeyDigest     AutomationHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest AutomationHistoryDigest `json:"source_payload_digest"`
+	UpdatedAt           time.Time               `json:"updated_at"`
+}
+
+// AutomationHistorySOPDetail defines model for AutomationHistorySOPDetail.
+type AutomationHistorySOPDetail struct {
+	Item                     AutomationHistorySOP                               `json:"item"`
+	ReadOnly                 AutomationHistorySOPDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistorySOPDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistorySOPDetailSource                   `json:"source"`
+}
+
+// AutomationHistorySOPDetailReadOnly defines model for AutomationHistorySOPDetail.ReadOnly.
+type AutomationHistorySOPDetailReadOnly bool
+
+// AutomationHistorySOPDetailRealExternalCallExecuted defines model for AutomationHistorySOPDetail.RealExternalCallExecuted.
+type AutomationHistorySOPDetailRealExternalCallExecuted bool
+
+// AutomationHistorySOPDetailSource defines model for AutomationHistorySOPDetail.Source.
+type AutomationHistorySOPDetailSource string
+
+// AutomationHistorySOPPage defines model for AutomationHistorySOPPage.
+type AutomationHistorySOPPage struct {
+	Items                    []AutomationHistorySOP                           `json:"items"`
+	Limit                    int                                              `json:"limit"`
+	Offset                   int                                              `json:"offset"`
+	ReadOnly                 AutomationHistorySOPPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AutomationHistorySOPPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AutomationHistorySOPPageSource                   `json:"source"`
+	Total                    int64                                            `json:"total"`
+}
+
+// AutomationHistorySOPPageReadOnly defines model for AutomationHistorySOPPage.ReadOnly.
+type AutomationHistorySOPPageReadOnly bool
+
+// AutomationHistorySOPPageRealExternalCallExecuted defines model for AutomationHistorySOPPage.RealExternalCallExecuted.
+type AutomationHistorySOPPageRealExternalCallExecuted bool
+
+// AutomationHistorySOPPageSource defines model for AutomationHistorySOPPage.Source.
+type AutomationHistorySOPPageSource string
+
 // AutomationTriggerRun defines model for AutomationTriggerRun.
 type AutomationTriggerRun struct {
 	AgentCode        AutomationTriggerRunAgentCode     `json:"agent_code"`
@@ -16738,6 +17325,30 @@ type ListGroupOpsHistoryNodesParams struct {
 	Offset *int32         `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListAutomationHistoryAgentsParams defines parameters for ListAutomationHistoryAgents.
+type ListAutomationHistoryAgentsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAutomationHistoryConfigsParams defines parameters for ListAutomationHistoryConfigs.
+type ListAutomationHistoryConfigsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAutomationHistoryPromptsParams defines parameters for ListAutomationHistoryPrompts.
+type ListAutomationHistoryPromptsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAutomationHistorySOPsParams defines parameters for ListAutomationHistorySOPs.
+type ListAutomationHistorySOPsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // RunAdminOpsFeishuHourlyReportPlanParams defines parameters for RunAdminOpsFeishuHourlyReportPlan.
 type RunAdminOpsFeishuHourlyReportPlanParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -19831,6 +20442,30 @@ type ServerInterface interface {
 	// Read immutable V1 Group Ops history without runtime effects
 	// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes)
 	ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryNodesParams)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/agents)
+	ListAutomationHistoryAgents(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryAgentsParams)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/agents/{history_id})
+	GetAutomationHistoryAgent(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/configs)
+	ListAutomationHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryConfigsParams)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/configs/{history_id})
+	GetAutomationHistoryConfig(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/prompts)
+	ListAutomationHistoryPrompts(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryPromptsParams)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/prompts/{history_id})
+	GetAutomationHistoryPrompt(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/sops)
+	ListAutomationHistorySOPs(w http.ResponseWriter, r *http.Request, params ListAutomationHistorySOPsParams)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/sops/{history_id})
+	GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request)
@@ -20776,6 +21411,54 @@ func (_ Unimplemented) ListGroupOpsHistoryGroups(w http.ResponseWriter, r *http.
 // Read immutable V1 Group Ops history without runtime effects
 // (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes)
 func (_ Unimplemented) ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http.Request, planId GroupOpsPlanID, params ListGroupOpsHistoryNodesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/agents)
+func (_ Unimplemented) ListAutomationHistoryAgents(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryAgentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/agents/{history_id})
+func (_ Unimplemented) GetAutomationHistoryAgent(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/configs)
+func (_ Unimplemented) ListAutomationHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryConfigsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/configs/{history_id})
+func (_ Unimplemented) GetAutomationHistoryConfig(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/prompts)
+func (_ Unimplemented) ListAutomationHistoryPrompts(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryPromptsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/prompts/{history_id})
+func (_ Unimplemented) GetAutomationHistoryPrompt(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/sops)
+func (_ Unimplemented) ListAutomationHistorySOPs(w http.ResponseWriter, r *http.Request, params ListAutomationHistorySOPsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 automation configuration without execution or publication
+// (GET /api/admin/automation-history/sops/{history_id})
+func (_ Unimplemented) GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -23558,6 +24241,294 @@ func (siw *ServerInterfaceWrapper) ListGroupOpsHistoryNodes(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroupOpsHistoryNodes(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAutomationHistoryAgents operation middleware
+func (siw *ServerInterfaceWrapper) ListAutomationHistoryAgents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAutomationHistoryAgentsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAutomationHistoryAgents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAutomationHistoryAgent operation middleware
+func (siw *ServerInterfaceWrapper) GetAutomationHistoryAgent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAutomationHistoryAgent(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAutomationHistoryConfigs operation middleware
+func (siw *ServerInterfaceWrapper) ListAutomationHistoryConfigs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAutomationHistoryConfigsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAutomationHistoryConfigs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAutomationHistoryConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetAutomationHistoryConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAutomationHistoryConfig(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAutomationHistoryPrompts operation middleware
+func (siw *ServerInterfaceWrapper) ListAutomationHistoryPrompts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAutomationHistoryPromptsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAutomationHistoryPrompts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAutomationHistoryPrompt operation middleware
+func (siw *ServerInterfaceWrapper) GetAutomationHistoryPrompt(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAutomationHistoryPrompt(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAutomationHistorySOPs operation middleware
+func (siw *ServerInterfaceWrapper) ListAutomationHistorySOPs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAutomationHistorySOPsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAutomationHistorySOPs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAutomationHistorySOP operation middleware
+func (siw *ServerInterfaceWrapper) GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAutomationHistorySOP(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -39131,6 +40102,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes", wrapper.ListGroupOpsHistoryNodes)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/agents", wrapper.ListAutomationHistoryAgents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/agents/{history_id}", wrapper.GetAutomationHistoryAgent)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/configs", wrapper.ListAutomationHistoryConfigs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/configs/{history_id}", wrapper.GetAutomationHistoryConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/prompts", wrapper.ListAutomationHistoryPrompts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/prompts/{history_id}", wrapper.GetAutomationHistoryPrompt)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/sops", wrapper.ListAutomationHistorySOPs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/automation-history/sops/{history_id}", wrapper.GetAutomationHistorySOP)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/broadcast-jobs", wrapper.ListAdminOpsBroadcastJobs)
 	})
 	r.Group(func(r chi.Router) {
@@ -41399,6 +42394,430 @@ func (response ListGroupOpsHistoryNodes403JSONResponse) VisitListGroupOpsHistory
 type ListGroupOpsHistoryNodes503JSONResponse GroupOpsError
 
 func (response ListGroupOpsHistoryNodes503JSONResponse) VisitListGroupOpsHistoryNodesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryAgentsRequestObject struct {
+	Params ListAutomationHistoryAgentsParams
+}
+
+type ListAutomationHistoryAgentsResponseObject interface {
+	VisitListAutomationHistoryAgentsResponse(w http.ResponseWriter) error
+}
+
+type ListAutomationHistoryAgents200JSONResponse AutomationHistoryAgentPage
+
+func (response ListAutomationHistoryAgents200JSONResponse) VisitListAutomationHistoryAgentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryAgents400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAutomationHistoryAgents400JSONResponse) VisitListAutomationHistoryAgentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryAgents401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAutomationHistoryAgents401JSONResponse) VisitListAutomationHistoryAgentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryAgents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAutomationHistoryAgents403JSONResponse) VisitListAutomationHistoryAgentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryAgents503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAutomationHistoryAgents503JSONResponse) VisitListAutomationHistoryAgentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryAgentRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetAutomationHistoryAgentResponseObject interface {
+	VisitGetAutomationHistoryAgentResponse(w http.ResponseWriter) error
+}
+
+type GetAutomationHistoryAgent200JSONResponse AutomationHistoryAgentDetail
+
+func (response GetAutomationHistoryAgent200JSONResponse) VisitGetAutomationHistoryAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryAgent400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAutomationHistoryAgent400JSONResponse) VisitGetAutomationHistoryAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryAgent401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAutomationHistoryAgent401JSONResponse) VisitGetAutomationHistoryAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryAgent403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAutomationHistoryAgent403JSONResponse) VisitGetAutomationHistoryAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryAgent503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAutomationHistoryAgent503JSONResponse) VisitGetAutomationHistoryAgentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryConfigsRequestObject struct {
+	Params ListAutomationHistoryConfigsParams
+}
+
+type ListAutomationHistoryConfigsResponseObject interface {
+	VisitListAutomationHistoryConfigsResponse(w http.ResponseWriter) error
+}
+
+type ListAutomationHistoryConfigs200JSONResponse AutomationHistoryConfigPage
+
+func (response ListAutomationHistoryConfigs200JSONResponse) VisitListAutomationHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryConfigs400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAutomationHistoryConfigs400JSONResponse) VisitListAutomationHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryConfigs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAutomationHistoryConfigs401JSONResponse) VisitListAutomationHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryConfigs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAutomationHistoryConfigs403JSONResponse) VisitListAutomationHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryConfigs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAutomationHistoryConfigs503JSONResponse) VisitListAutomationHistoryConfigsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryConfigRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetAutomationHistoryConfigResponseObject interface {
+	VisitGetAutomationHistoryConfigResponse(w http.ResponseWriter) error
+}
+
+type GetAutomationHistoryConfig200JSONResponse AutomationHistoryConfigDetail
+
+func (response GetAutomationHistoryConfig200JSONResponse) VisitGetAutomationHistoryConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryConfig400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAutomationHistoryConfig400JSONResponse) VisitGetAutomationHistoryConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryConfig401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAutomationHistoryConfig401JSONResponse) VisitGetAutomationHistoryConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryConfig403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAutomationHistoryConfig403JSONResponse) VisitGetAutomationHistoryConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryConfig503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAutomationHistoryConfig503JSONResponse) VisitGetAutomationHistoryConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryPromptsRequestObject struct {
+	Params ListAutomationHistoryPromptsParams
+}
+
+type ListAutomationHistoryPromptsResponseObject interface {
+	VisitListAutomationHistoryPromptsResponse(w http.ResponseWriter) error
+}
+
+type ListAutomationHistoryPrompts200JSONResponse AutomationHistoryPromptPage
+
+func (response ListAutomationHistoryPrompts200JSONResponse) VisitListAutomationHistoryPromptsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryPrompts400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAutomationHistoryPrompts400JSONResponse) VisitListAutomationHistoryPromptsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryPrompts401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAutomationHistoryPrompts401JSONResponse) VisitListAutomationHistoryPromptsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryPrompts403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAutomationHistoryPrompts403JSONResponse) VisitListAutomationHistoryPromptsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistoryPrompts503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAutomationHistoryPrompts503JSONResponse) VisitListAutomationHistoryPromptsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryPromptRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetAutomationHistoryPromptResponseObject interface {
+	VisitGetAutomationHistoryPromptResponse(w http.ResponseWriter) error
+}
+
+type GetAutomationHistoryPrompt200JSONResponse AutomationHistoryPromptDetail
+
+func (response GetAutomationHistoryPrompt200JSONResponse) VisitGetAutomationHistoryPromptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryPrompt400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAutomationHistoryPrompt400JSONResponse) VisitGetAutomationHistoryPromptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryPrompt401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAutomationHistoryPrompt401JSONResponse) VisitGetAutomationHistoryPromptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryPrompt403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAutomationHistoryPrompt403JSONResponse) VisitGetAutomationHistoryPromptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistoryPrompt503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAutomationHistoryPrompt503JSONResponse) VisitGetAutomationHistoryPromptResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistorySOPsRequestObject struct {
+	Params ListAutomationHistorySOPsParams
+}
+
+type ListAutomationHistorySOPsResponseObject interface {
+	VisitListAutomationHistorySOPsResponse(w http.ResponseWriter) error
+}
+
+type ListAutomationHistorySOPs200JSONResponse AutomationHistorySOPPage
+
+func (response ListAutomationHistorySOPs200JSONResponse) VisitListAutomationHistorySOPsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistorySOPs400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAutomationHistorySOPs400JSONResponse) VisitListAutomationHistorySOPsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistorySOPs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAutomationHistorySOPs401JSONResponse) VisitListAutomationHistorySOPsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistorySOPs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAutomationHistorySOPs403JSONResponse) VisitListAutomationHistorySOPsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAutomationHistorySOPs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAutomationHistorySOPs503JSONResponse) VisitListAutomationHistorySOPsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistorySOPRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetAutomationHistorySOPResponseObject interface {
+	VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error
+}
+
+type GetAutomationHistorySOP200JSONResponse AutomationHistorySOPDetail
+
+func (response GetAutomationHistorySOP200JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistorySOP400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetAutomationHistorySOP400JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistorySOP401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAutomationHistorySOP401JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistorySOP403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAutomationHistorySOP403JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAutomationHistorySOP503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetAutomationHistorySOP503JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -57977,6 +59396,30 @@ type StrictServerInterface interface {
 	// Read immutable V1 Group Ops history without runtime effects
 	// (GET /api/admin/automation-conversion/group-ops/history/plans/{plan_id}/nodes)
 	ListGroupOpsHistoryNodes(ctx context.Context, request ListGroupOpsHistoryNodesRequestObject) (ListGroupOpsHistoryNodesResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/agents)
+	ListAutomationHistoryAgents(ctx context.Context, request ListAutomationHistoryAgentsRequestObject) (ListAutomationHistoryAgentsResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/agents/{history_id})
+	GetAutomationHistoryAgent(ctx context.Context, request GetAutomationHistoryAgentRequestObject) (GetAutomationHistoryAgentResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/configs)
+	ListAutomationHistoryConfigs(ctx context.Context, request ListAutomationHistoryConfigsRequestObject) (ListAutomationHistoryConfigsResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/configs/{history_id})
+	GetAutomationHistoryConfig(ctx context.Context, request GetAutomationHistoryConfigRequestObject) (GetAutomationHistoryConfigResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/prompts)
+	ListAutomationHistoryPrompts(ctx context.Context, request ListAutomationHistoryPromptsRequestObject) (ListAutomationHistoryPromptsResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/prompts/{history_id})
+	GetAutomationHistoryPrompt(ctx context.Context, request GetAutomationHistoryPromptRequestObject) (GetAutomationHistoryPromptResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/sops)
+	ListAutomationHistorySOPs(ctx context.Context, request ListAutomationHistorySOPsRequestObject) (ListAutomationHistorySOPsResponseObject, error)
+	// Read immutable V1 automation configuration without execution or publication
+	// (GET /api/admin/automation-history/sops/{history_id})
+	GetAutomationHistorySOP(ctx context.Context, request GetAutomationHistorySOPRequestObject) (GetAutomationHistorySOPResponseObject, error)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(ctx context.Context, request ListAdminOpsBroadcastJobsRequestObject) (ListAdminOpsBroadcastJobsResponseObject, error)
@@ -59481,6 +60924,214 @@ func (sh *strictHandler) ListGroupOpsHistoryNodes(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListGroupOpsHistoryNodesResponseObject); ok {
 		if err := validResponse.VisitListGroupOpsHistoryNodesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAutomationHistoryAgents operation middleware
+func (sh *strictHandler) ListAutomationHistoryAgents(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryAgentsParams) {
+	var request ListAutomationHistoryAgentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAutomationHistoryAgents(ctx, request.(ListAutomationHistoryAgentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAutomationHistoryAgents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAutomationHistoryAgentsResponseObject); ok {
+		if err := validResponse.VisitListAutomationHistoryAgentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAutomationHistoryAgent operation middleware
+func (sh *strictHandler) GetAutomationHistoryAgent(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetAutomationHistoryAgentRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAutomationHistoryAgent(ctx, request.(GetAutomationHistoryAgentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAutomationHistoryAgent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAutomationHistoryAgentResponseObject); ok {
+		if err := validResponse.VisitGetAutomationHistoryAgentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAutomationHistoryConfigs operation middleware
+func (sh *strictHandler) ListAutomationHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryConfigsParams) {
+	var request ListAutomationHistoryConfigsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAutomationHistoryConfigs(ctx, request.(ListAutomationHistoryConfigsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAutomationHistoryConfigs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAutomationHistoryConfigsResponseObject); ok {
+		if err := validResponse.VisitListAutomationHistoryConfigsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAutomationHistoryConfig operation middleware
+func (sh *strictHandler) GetAutomationHistoryConfig(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetAutomationHistoryConfigRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAutomationHistoryConfig(ctx, request.(GetAutomationHistoryConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAutomationHistoryConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAutomationHistoryConfigResponseObject); ok {
+		if err := validResponse.VisitGetAutomationHistoryConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAutomationHistoryPrompts operation middleware
+func (sh *strictHandler) ListAutomationHistoryPrompts(w http.ResponseWriter, r *http.Request, params ListAutomationHistoryPromptsParams) {
+	var request ListAutomationHistoryPromptsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAutomationHistoryPrompts(ctx, request.(ListAutomationHistoryPromptsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAutomationHistoryPrompts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAutomationHistoryPromptsResponseObject); ok {
+		if err := validResponse.VisitListAutomationHistoryPromptsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAutomationHistoryPrompt operation middleware
+func (sh *strictHandler) GetAutomationHistoryPrompt(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetAutomationHistoryPromptRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAutomationHistoryPrompt(ctx, request.(GetAutomationHistoryPromptRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAutomationHistoryPrompt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAutomationHistoryPromptResponseObject); ok {
+		if err := validResponse.VisitGetAutomationHistoryPromptResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAutomationHistorySOPs operation middleware
+func (sh *strictHandler) ListAutomationHistorySOPs(w http.ResponseWriter, r *http.Request, params ListAutomationHistorySOPsParams) {
+	var request ListAutomationHistorySOPsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAutomationHistorySOPs(ctx, request.(ListAutomationHistorySOPsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAutomationHistorySOPs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAutomationHistorySOPsResponseObject); ok {
+		if err := validResponse.VisitListAutomationHistorySOPsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAutomationHistorySOP operation middleware
+func (sh *strictHandler) GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetAutomationHistorySOPRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAutomationHistorySOP(ctx, request.(GetAutomationHistorySOPRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAutomationHistorySOP")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAutomationHistorySOPResponseObject); ok {
+		if err := validResponse.VisitGetAutomationHistorySOPResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

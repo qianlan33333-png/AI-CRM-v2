@@ -100,3 +100,75 @@ type AutomationTriggerReceipt struct {
 	TriggeredAt      pgtype.Timestamptz `json:"triggered_at"`
 	CompletedAt      pgtype.Timestamptz `json:"completed_at"`
 }
+
+type AutomationV1AgentConfigHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	AgentCode           string             `json:"agent_code"`
+	DisplayName         string             `json:"display_name"`
+	ScenarioCode        string             `json:"scenario_code"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	DraftVersion        int32              `json:"draft_version"`
+	PublishedVersion    int32              `json:"published_version"`
+	PublishedAt         string             `json:"published_at"`
+	LastModifiedAt      string             `json:"last_modified_at"`
+	LastModifiedSource  string             `json:"last_modified_source"`
+	SubmittedForPublish bool               `json:"submitted_for_publish"`
+	SubmittedAt         string             `json:"submitted_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	ActorsDigest        []byte             `json:"actors_digest"`
+	ConfigDigest        []byte             `json:"config_digest"`
+}
+
+type AutomationV1AgentHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	ProgramSourceID     int64              `json:"program_source_id"`
+	WorkflowSourceID    int64              `json:"workflow_source_id"`
+	NodeSourceID        int64              `json:"node_source_id"`
+	TaskSourceID        int64              `json:"task_source_id"`
+	AgentCode           string             `json:"agent_code"`
+	AgentName           string             `json:"agent_name"`
+	OriginalType        string             `json:"original_type"`
+	OriginalStatus      string             `json:"original_status"`
+	SortOrder           int32              `json:"sort_order"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt          string             `json:"archived_at"`
+	ActorsDigest        []byte             `json:"actors_digest"`
+	ConfigurationDigest []byte             `json:"configuration_digest"`
+}
+
+type AutomationV1PromptHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	AgentCode           string             `json:"agent_code"`
+	DisplayName         string             `json:"display_name"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	Version             int32              `json:"version"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	PromptDigest        []byte             `json:"prompt_digest"`
+}
+
+type AutomationV1SopHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	PoolKey             string             `json:"pool_key"`
+	DayIndex            int32              `json:"day_index"`
+	ContentMasked       string             `json:"content_masked"`
+	ImagesDigest        []byte             `json:"images_digest"`
+	OriginalEnabled     bool               `json:"original_enabled"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}

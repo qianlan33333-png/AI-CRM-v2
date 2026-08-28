@@ -126,7 +126,7 @@ owners:
 
   automation:
     package: internal/automation
-    tables: [automations, automation_rule_versions, automation_enrollments, automation_execution_actions, automation_operation_receipts, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts]
+    tables: [automations, automation_rule_versions, automation_enrollments, automation_execution_actions, automation_operation_receipts, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts, automation_v1_sop_history, automation_v1_agent_config_history, automation_v1_prompt_history, automation_v1_agent_history]
     constraints:
       automation_trigger_receipts: unique_tag_trigger_receipt_per_source_event
       automations: closed_tag_applied_rule_configuration_with_versioned_execution_snapshot

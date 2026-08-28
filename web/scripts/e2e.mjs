@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, campaignHistoryHttp, memberGridHistoryHttp
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (contactHistoryHttp) {
         window.Headers = Headers;
         const test = window.__contactHistoryHttpTest = { calls: [], fail: contactHistoryHttp.fail || false };
@@ -267,6 +267,29 @@ async function loadPage(rel, { id, q, campaignHistoryHttp, memberGridHistoryHttp
           const total = groupOpsHistoryHttp.empty ? 0 : 21;
           const items = Array.from({ length: Math.min(limit, Math.max(0, total - offset)) }, (_, index) => kind === 'directory' && (offset + index) % 2 ? { ...rows[kind], source_kind: 'wecom_group_chat_snapshots', source_id: null, member_count: null, internal_member_count: 0, external_member_count: 2 } : rows[kind]);
           return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items, total, limit, offset, ...(kind === 'groups' || kind === 'nodes' ? { plan_id: planID } : {}) });
+        };
+        return;
+      }
+      if (automationHistoryHttp) {
+        window.Headers = Headers;
+        const state = window.__automationHistoryHttpTest = { calls: [], fail: false };
+        const at = '2026-08-28T01:02:03.123456Z', digest = Array(32).fill(2);
+        const identity = { id: 7, source_id: 9, source_key_digest: digest, source_payload_digest: digest };
+        const rows = {
+          sops: { ...identity, pool_key: 'source', day_index: -1, content_masked: '<b>遮罩内容</b>', images_digest: digest, original_enabled: true, created_at: at, updated_at: at },
+          configs: { ...identity, agent_code: 'old', display_name: '旧配置', scenario_code: 'source', original_enabled: false, draft_version: -1, published_version: 0, published_at: '', last_modified_at: 'source civil time', last_modified_source: 'source', submitted_for_publish: true, submitted_at: '', created_at: at, updated_at: at, actors_digest: digest, config_digest: digest },
+          prompts: { ...identity, agent_code: 'old', display_name: '旧提示词', original_enabled: false, version: -2, created_at: at, updated_at: at, prompt_digest: digest },
+          agents: { ...identity, program_source_id: 0, workflow_source_id: -1, node_source_id: 0, task_source_id: 0, agent_code: 'old', agent_name: '旧执行器', original_type: 'source', original_status: 'source', sort_order: -4, original_enabled: false, created_at: at, updated_at: at, archived_at: '', actors_digest: digest, configuration_digest: digest },
+        };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          state.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body });
+          const match = /^\/api\/admin\/automation-history\/(sops|configs|prompts|agents)(?:\/(7))?$/.exec(url.pathname);
+          const json = (body, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(body) });
+          if (!match || state.fail) return json({ code: 'unavailable' }, 503);
+          const safety = { source: 'v1_history', read_only: true, real_external_call_executed: false };
+          if (match[2]) return json({ ...safety, item: rows[match[1]] });
+          return json({ ...safety, items: [rows[match[1]]], total: 1, limit: Number(url.searchParams.get('limit')), offset: Number(url.searchParams.get('offset')) });
         };
         return;
       }
@@ -2527,6 +2550,33 @@ console.log('member-grid-share/index.html（公开会员网格 token fragment）
   leaked.dom.window.close();
   invalid.dom.window.close();
 }
+
+// Real entry routing must bypass current configuration and never invoke Mock.
+{
+  for (const [kind, route] of [['sop', 'sops'], ['config', 'configs'], ['prompt', 'prompts'], ['agent', 'agents']]) {
+    for (const detail of [false, true]) {
+      const dom = await loadPage('admin/config.html', { q: 'automation_history=1&history_kind=' + kind + (detail ? '&history_id=7' : ''), automationHistoryHttp: true });
+      await sleep(20);
+      const state = dom.window.__automationHistoryHttpTest;
+      ok('自动化历史真实入口 ' + kind + (detail ? '详情' : '列表'),
+        !!dom.window.document.querySelector('[data-automation-history]') && !dom.window.document.querySelector('[role="alert"]') &&
+        state.calls.length === 1 && state.calls[0].path === '/api/admin/automation-history/' + route + (detail ? '/7' : '') &&
+        state.calls[0].method === 'GET' && state.calls[0].body === undefined && !dom.window.document.querySelector('#setup-wizard-card'));
+      dom.window.close();
+    }
+  }
+  const invalid = await loadPage('admin/config.html', { q: 'automation_history=1&history_kind=agent&history_id=01', automationHistoryHttp: true });
+  ok('自动化历史非法ID不读当前配置也不发请求', !!invalid.window.document.querySelector('[role="alert"]') && invalid.window.__automationHistoryHttpTest.calls.length === 0);
+  invalid.window.close();
+  const failed = await loadPage('admin/config.html', { q: 'automation_history=1', automationHistoryHttp: true });
+  failed.window.__automationHistoryHttpTest.fail = true;
+  failed.window.document.querySelector('[data-history-next]')?.removeAttribute('disabled');
+  failed.window.document.querySelector('[data-history-next]')?.click();
+  await sleep(20);
+  ok('自动化历史入口失败清屏且无Mock回退', !!failed.window.document.querySelector('[role="alert"]') && !failed.window.document.querySelector('tbody'));
+  failed.window.close();
+}
+await import('./automation-history-e2e.mjs');
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);

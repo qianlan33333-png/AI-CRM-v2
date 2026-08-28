@@ -100,6 +100,10 @@ var targetBySourceTable = map[string]struct {
 	"public/cloud_broadcast_plans":                     {"campaign", "campaign_v1_history_broadcast_plans"},
 	"public/cloud_broadcast_plan_recipients":           {"campaign", "campaign_v1_history_broadcast_recipients"},
 	"public/cloud_broadcast_plan_recipient_messages":   {"campaign", "campaign_v1_history_broadcast_messages"},
+	automationHistorySOPTable:                          {"automation", automationHistorySOPTarget},
+	automationHistoryConfigTable:                       {"automation", automationHistoryConfigTarget},
+	automationHistoryPromptTable:                       {"automation", automationHistoryPromptTarget},
+	automationHistoryAgentTable:                        {"automation", automationHistoryAgentTarget},
 }
 
 type ReconciliationResult struct {
@@ -240,7 +244,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -314,6 +318,9 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 		return "", fmt.Errorf("invalid imported target for %s", row.TableID)
 	}
 	var proof string
+	if isAutomationHistorySource(row.TableID) {
+		return verifyAutomationHistoryTarget(ctx, tx, row, importedTargets)
+	}
 	if isAudienceHistorySource(row.TableID) {
 		return verifyAudienceHistoryTarget(ctx, tx, row, importedTargets)
 	}
