@@ -2118,6 +2118,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
+	legacyHandler.legacyMarketingHistory = segmentstore.NewLegacyMarketingHistoryReader(pool)
+	legacyHandler.broadcastJobHistory = outboundstore.NewBroadcastJobHistoryReader(pool)
 	legacyHandler.profileCatalogHistory = segmentstore.NewProfileCatalogHistoryReader(pool)
 	legacyHandler.signupTagHistory = contactstore.NewSignupTagHistoryReader(pool)
 	legacyHandler.automationHistory = automationstore.NewAutomationHistoryReader(pool)
@@ -2180,6 +2182,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.externalEffects = externalEffectsHandler
 	legacyHandler.surveySubmissions = surveySubmissionService
+	legacyHandler.surveyUnresolvedHistory = surveystore.NewSurveyUnresolvedHistoryReader(pool)
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.surveyOperations = surveyOperationsHandler
 	legacyHandler.groupOps = groupOpsHandler
@@ -3062,6 +3065,19 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			router.Method(method, pattern, tail)
 			return nil
 		}
+		for _, route := range []struct {
+			path    string
+			handler http.HandlerFunc
+		}{
+			{"/api/admin/legacy-marketing-history/states", legacy.ListLegacyMarketingHistoryStates},
+			{"/api/admin/legacy-marketing-history/states/{history_id}", legacy.GetLegacyMarketingHistoryState},
+			{"/api/admin/legacy-marketing-history/values", legacy.ListLegacyMarketingHistoryValues},
+			{"/api/admin/legacy-marketing-history/values/{history_id}", legacy.GetLegacyMarketingHistoryValue},
+		} {
+			if err = registerLegacy(http.MethodGet, route.path, authport.CapabilityAdminRead, false, route.handler); err != nil {
+				return nil, err
+			}
+		}
 		if legacy.groupOpsHistory != nil {
 			for _, route := range []struct {
 				path    string
@@ -3646,6 +3662,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, surveyoperationshttp.OperationsPagePath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetSurveyOperationsPage)},
 			{http.MethodGet, surveyoperationshttp.QuestionnaireExternalPushLogsPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyQuestionnaireExternalPushLogs)},
 			{http.MethodGet, "/api/admin/questionnaires", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaires)},
+			{http.MethodGet, "/api/admin/survey-history/submissions", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyUnresolvedHistorySubmissions)},
+			{http.MethodGet, "/api/admin/survey-history/submissions/{history_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetSurveyUnresolvedHistorySubmission)},
+			{http.MethodGet, "/api/admin/survey-history/submissions/{history_id}/answers", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyUnresolvedHistoryAnswers)},
 			{http.MethodPost, "/api/admin/questionnaires", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.CreateQuestionnaire)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaire)},
 			{http.MethodPut, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.UpdateQuestionnaire)},
@@ -3692,6 +3711,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/hxc-history/refreshes", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryMeta)},
 			{http.MethodGet, "/api/admin/customer-state-history/snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCustomerStateHistorySnapshot)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingStateHistorySnapshot)},
+			{http.MethodGet, "/api/admin/broadcast-job-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListBroadcastJobHistory)},
+			{http.MethodGet, "/api/admin/broadcast-job-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetBroadcastJobHistory)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-snapshots/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingStateHistorySnapshot)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-changes", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingStateHistoryChange)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-changes/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMarketingStateHistoryChange)},

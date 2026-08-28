@@ -285,6 +285,337 @@ export interface WeComContactHistoryRelationDetail {
   item: WeComContactHistoryRelation;
 }
 
+export interface BroadcastJobHistory {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  original_source_type: string;
+  source_table: string;
+  scheduled_for: string;
+  priority: number;
+  original_status: string;
+  requires_approval: boolean;
+  /** @nullable */
+  approved_at: string | null;
+  /** @nullable */
+  cancelled_at: string | null;
+  target_count: number;
+  content_type: string;
+  attempt_count: number;
+  sent_count: number;
+  failed_count: number;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  claimed_at: string | null;
+  /** @nullable */
+  sent_at: string | null;
+  /** @nullable */
+  lease_expires_at: string | null;
+  /** @nullable */
+  business_domain: string | null;
+  /** @nullable */
+  channel: string | null;
+  /** @nullable */
+  target_kind: string | null;
+  /** @nullable */
+  failure_type: string | null;
+  max_attempts: number;
+  /** @nullable */
+  next_retry_at: string | null;
+  /** @nullable */
+  dispatch_started_at: string | null;
+  original_side_effect_executed: boolean;
+  original_provider_result_received: boolean;
+  original_reconciliation_required: boolean;
+  /** @nullable */
+  completed_at: string | null;
+  /** @nullable */
+  hold_at: string | null;
+}
+
+export type BroadcastJobHistoryPageSource =
+  (typeof BroadcastJobHistoryPageSource)[keyof typeof BroadcastJobHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BroadcastJobHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface BroadcastJobHistoryPage {
+  source: BroadcastJobHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: BroadcastJobHistory[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type BroadcastJobHistoryDetailSource =
+  (typeof BroadcastJobHistoryDetailSource)[keyof typeof BroadcastJobHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BroadcastJobHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface BroadcastJobHistoryDetail {
+  source: BroadcastJobHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: BroadcastJobHistory;
+}
+
+export interface SurveyUnresolvedHistorySubmission {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  questionnaire_source_id: number;
+  /** @nullable */
+  questionnaire_id: number | null;
+  /** @nullable */
+  customer_id: number | null;
+  matched_by: string;
+  source_channel: string;
+  total_score: number;
+  /** @nullable */
+  final_tags: unknown[] | null;
+  submitted_at: string;
+  created_at: string;
+}
+
+export type SurveyUnresolvedHistorySubmissionPageSource =
+  (typeof SurveyUnresolvedHistorySubmissionPageSource)[keyof typeof SurveyUnresolvedHistorySubmissionPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export type SurveyUnresolvedHistorySubmissionPageDefinitionMapping =
+  (typeof SurveyUnresolvedHistorySubmissionPageDefinitionMapping)[keyof typeof SurveyUnresolvedHistorySubmissionPageDefinitionMapping];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionPageDefinitionMapping = {
+  historical_source_only: "historical_source_only",
+} as const;
+
+export interface SurveyUnresolvedHistorySubmissionPage {
+  source: SurveyUnresolvedHistorySubmissionPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  definition_mapping: SurveyUnresolvedHistorySubmissionPageDefinitionMapping;
+  items: SurveyUnresolvedHistorySubmission[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type SurveyUnresolvedHistorySubmissionDetailSource =
+  (typeof SurveyUnresolvedHistorySubmissionDetailSource)[keyof typeof SurveyUnresolvedHistorySubmissionDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export type SurveyUnresolvedHistorySubmissionDetailDefinitionMapping =
+  (typeof SurveyUnresolvedHistorySubmissionDetailDefinitionMapping)[keyof typeof SurveyUnresolvedHistorySubmissionDetailDefinitionMapping];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistorySubmissionDetailDefinitionMapping = {
+  historical_source_only: "historical_source_only",
+} as const;
+
+export interface SurveyUnresolvedHistorySubmissionDetail {
+  source: SurveyUnresolvedHistorySubmissionDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  definition_mapping: SurveyUnresolvedHistorySubmissionDetailDefinitionMapping;
+  item: SurveyUnresolvedHistorySubmission;
+}
+
+export interface SurveyUnresolvedHistoryAnswer {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  submission_id: number;
+  submission_source_id: number;
+  question_source_id: number;
+  question_type: string;
+  question_title_snapshot: string;
+  /** @nullable */
+  selected_option_ids: unknown[] | null;
+  /** @nullable */
+  selected_option_texts: unknown[] | null;
+  /** @nullable */
+  selected_option_scores: unknown[] | null;
+  /** @nullable */
+  selected_option_tags: unknown[] | null;
+  text_value: string;
+  score_contribution: number;
+  created_at: string;
+}
+
+export type SurveyUnresolvedHistoryAnswerPageSource =
+  (typeof SurveyUnresolvedHistoryAnswerPageSource)[keyof typeof SurveyUnresolvedHistoryAnswerPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistoryAnswerPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export type SurveyUnresolvedHistoryAnswerPageDefinitionMapping =
+  (typeof SurveyUnresolvedHistoryAnswerPageDefinitionMapping)[keyof typeof SurveyUnresolvedHistoryAnswerPageDefinitionMapping];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyUnresolvedHistoryAnswerPageDefinitionMapping = {
+  historical_source_only: "historical_source_only",
+} as const;
+
+export interface SurveyUnresolvedHistoryAnswerPage {
+  source: SurveyUnresolvedHistoryAnswerPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  definition_mapping: SurveyUnresolvedHistoryAnswerPageDefinitionMapping;
+  items: SurveyUnresolvedHistoryAnswer[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface LegacyMarketingHistoryState {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  scenario_key: string;
+  marketing_phase: string;
+  phase_label: string;
+  phase_reason: string;
+  lifecycle_status: string;
+  last_batch_status: string;
+  last_batch_window_start: string;
+  last_batch_window_end: string;
+  last_trigger_message_at: string;
+  /** @nullable */
+  entered_at: string | null;
+  /** @nullable */
+  exited_at: string | null;
+  exit_reason: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyMarketingHistoryStatePageSource =
+  (typeof LegacyMarketingHistoryStatePageSource)[keyof typeof LegacyMarketingHistoryStatePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryStatePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryStatePage {
+  source: LegacyMarketingHistoryStatePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: LegacyMarketingHistoryState[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type LegacyMarketingHistoryStateDetailSource =
+  (typeof LegacyMarketingHistoryStateDetailSource)[keyof typeof LegacyMarketingHistoryStateDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryStateDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryStateDetail {
+  source: LegacyMarketingHistoryStateDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: LegacyMarketingHistoryState;
+}
+
+export interface LegacyMarketingHistoryValue {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  scenario_key: string;
+  value_segment: string;
+  segment_label: string;
+  score: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LegacyMarketingHistoryValuePageSource =
+  (typeof LegacyMarketingHistoryValuePageSource)[keyof typeof LegacyMarketingHistoryValuePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryValuePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryValuePage {
+  source: LegacyMarketingHistoryValuePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: LegacyMarketingHistoryValue[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type LegacyMarketingHistoryValueDetailSource =
+  (typeof LegacyMarketingHistoryValueDetailSource)[keyof typeof LegacyMarketingHistoryValueDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyMarketingHistoryValueDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface LegacyMarketingHistoryValueDetail {
+  source: LegacyMarketingHistoryValueDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: LegacyMarketingHistoryValue;
+}
+
 export type MarketingStateHistorySnapshotDetailSource =
   (typeof MarketingStateHistorySnapshotDetailSource)[keyof typeof MarketingStateHistorySnapshotDetailSource];
 
@@ -20637,6 +20968,70 @@ export type ListWeComContactHistoryRelationsParams = {
   offset?: number;
 };
 
+export type ListBroadcastJobHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListSurveyUnresolvedHistorySubmissionsParams = {
+  /**
+   * @minimum 1
+   */
+  questionnaire_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListSurveyUnresolvedHistoryAnswersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListLegacyMarketingHistoryStatesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListLegacyMarketingHistoryValuesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListMarketingStateHistorySnapshotParams = {
   /**
    * @minimum 1
@@ -24078,6 +24473,717 @@ export const getWeComContactHistoryRelation = async (
     status: res.status,
     headers: res.headers,
   } as getWeComContactHistoryRelationResponse;
+};
+
+/**
+ * @summary Read inert V1 job observations without rescheduling or Provider calls
+ */
+export type listBroadcastJobHistoryResponse200 = {
+  data: BroadcastJobHistoryPage;
+  status: 200;
+};
+
+export type listBroadcastJobHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listBroadcastJobHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listBroadcastJobHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listBroadcastJobHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listBroadcastJobHistoryResponseSuccess =
+  listBroadcastJobHistoryResponse200 & {
+    headers: Headers;
+  };
+export type listBroadcastJobHistoryResponseError = (
+  | listBroadcastJobHistoryResponse400
+  | listBroadcastJobHistoryResponse401
+  | listBroadcastJobHistoryResponse403
+  | listBroadcastJobHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type listBroadcastJobHistoryResponse =
+  listBroadcastJobHistoryResponseSuccess | listBroadcastJobHistoryResponseError;
+
+export const getListBroadcastJobHistoryUrl = (
+  params?: ListBroadcastJobHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/broadcast-job-history?${stringifiedParams}`
+    : `/api/admin/broadcast-job-history`;
+};
+
+export const listBroadcastJobHistory = async (
+  params?: ListBroadcastJobHistoryParams,
+  options?: RequestInit,
+): Promise<listBroadcastJobHistoryResponse> => {
+  const res = await fetch(getListBroadcastJobHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listBroadcastJobHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listBroadcastJobHistoryResponse;
+};
+
+/**
+ * @summary Read inert V1 job observations without rescheduling or Provider calls
+ */
+export type getBroadcastJobHistoryResponse200 = {
+  data: BroadcastJobHistoryDetail;
+  status: 200;
+};
+
+export type getBroadcastJobHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getBroadcastJobHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getBroadcastJobHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getBroadcastJobHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getBroadcastJobHistoryResponseSuccess =
+  getBroadcastJobHistoryResponse200 & {
+    headers: Headers;
+  };
+export type getBroadcastJobHistoryResponseError = (
+  | getBroadcastJobHistoryResponse400
+  | getBroadcastJobHistoryResponse401
+  | getBroadcastJobHistoryResponse403
+  | getBroadcastJobHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getBroadcastJobHistoryResponse =
+  getBroadcastJobHistoryResponseSuccess | getBroadcastJobHistoryResponseError;
+
+export const getGetBroadcastJobHistoryUrl = (historyId: number) => {
+  return `/api/admin/broadcast-job-history/${historyId}`;
+};
+
+export const getBroadcastJobHistory = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getBroadcastJobHistoryResponse> => {
+  const res = await fetch(getGetBroadcastJobHistoryUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getBroadcastJobHistoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getBroadcastJobHistoryResponse;
+};
+
+/**
+ * @summary Read historical source answer snapshots without resolving current definitions or executing effects
+ */
+export type listSurveyUnresolvedHistorySubmissionsResponse200 = {
+  data: SurveyUnresolvedHistorySubmissionPage;
+  status: 200;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponseSuccess =
+  listSurveyUnresolvedHistorySubmissionsResponse200 & {
+    headers: Headers;
+  };
+export type listSurveyUnresolvedHistorySubmissionsResponseError = (
+  | listSurveyUnresolvedHistorySubmissionsResponse400
+  | listSurveyUnresolvedHistorySubmissionsResponse401
+  | listSurveyUnresolvedHistorySubmissionsResponse403
+  | listSurveyUnresolvedHistorySubmissionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSurveyUnresolvedHistorySubmissionsResponse =
+  | listSurveyUnresolvedHistorySubmissionsResponseSuccess
+  | listSurveyUnresolvedHistorySubmissionsResponseError;
+
+export const getListSurveyUnresolvedHistorySubmissionsUrl = (
+  params?: ListSurveyUnresolvedHistorySubmissionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/survey-history/submissions?${stringifiedParams}`
+    : `/api/admin/survey-history/submissions`;
+};
+
+export const listSurveyUnresolvedHistorySubmissions = async (
+  params?: ListSurveyUnresolvedHistorySubmissionsParams,
+  options?: RequestInit,
+): Promise<listSurveyUnresolvedHistorySubmissionsResponse> => {
+  const res = await fetch(
+    getListSurveyUnresolvedHistorySubmissionsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSurveyUnresolvedHistorySubmissionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSurveyUnresolvedHistorySubmissionsResponse;
+};
+
+/**
+ * @summary Read historical source answer snapshots without resolving current definitions or executing effects
+ */
+export type getSurveyUnresolvedHistorySubmissionResponse200 = {
+  data: SurveyUnresolvedHistorySubmissionDetail;
+  status: 200;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponseSuccess =
+  getSurveyUnresolvedHistorySubmissionResponse200 & {
+    headers: Headers;
+  };
+export type getSurveyUnresolvedHistorySubmissionResponseError = (
+  | getSurveyUnresolvedHistorySubmissionResponse400
+  | getSurveyUnresolvedHistorySubmissionResponse401
+  | getSurveyUnresolvedHistorySubmissionResponse403
+  | getSurveyUnresolvedHistorySubmissionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSurveyUnresolvedHistorySubmissionResponse =
+  | getSurveyUnresolvedHistorySubmissionResponseSuccess
+  | getSurveyUnresolvedHistorySubmissionResponseError;
+
+export const getGetSurveyUnresolvedHistorySubmissionUrl = (
+  historyId: number,
+) => {
+  return `/api/admin/survey-history/submissions/${historyId}`;
+};
+
+export const getSurveyUnresolvedHistorySubmission = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getSurveyUnresolvedHistorySubmissionResponse> => {
+  const res = await fetch(
+    getGetSurveyUnresolvedHistorySubmissionUrl(historyId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSurveyUnresolvedHistorySubmissionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSurveyUnresolvedHistorySubmissionResponse;
+};
+
+/**
+ * @summary Read historical source answer snapshots without resolving current definitions or executing effects
+ */
+export type listSurveyUnresolvedHistoryAnswersResponse200 = {
+  data: SurveyUnresolvedHistoryAnswerPage;
+  status: 200;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponseSuccess =
+  listSurveyUnresolvedHistoryAnswersResponse200 & {
+    headers: Headers;
+  };
+export type listSurveyUnresolvedHistoryAnswersResponseError = (
+  | listSurveyUnresolvedHistoryAnswersResponse400
+  | listSurveyUnresolvedHistoryAnswersResponse401
+  | listSurveyUnresolvedHistoryAnswersResponse403
+  | listSurveyUnresolvedHistoryAnswersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSurveyUnresolvedHistoryAnswersResponse =
+  | listSurveyUnresolvedHistoryAnswersResponseSuccess
+  | listSurveyUnresolvedHistoryAnswersResponseError;
+
+export const getListSurveyUnresolvedHistoryAnswersUrl = (
+  historyId: number,
+  params?: ListSurveyUnresolvedHistoryAnswersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/survey-history/submissions/${historyId}/answers?${stringifiedParams}`
+    : `/api/admin/survey-history/submissions/${historyId}/answers`;
+};
+
+export const listSurveyUnresolvedHistoryAnswers = async (
+  historyId: number,
+  params?: ListSurveyUnresolvedHistoryAnswersParams,
+  options?: RequestInit,
+): Promise<listSurveyUnresolvedHistoryAnswersResponse> => {
+  const res = await fetch(
+    getListSurveyUnresolvedHistoryAnswersUrl(historyId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSurveyUnresolvedHistoryAnswersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSurveyUnresolvedHistoryAnswersResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type listLegacyMarketingHistoryStatesResponse200 = {
+  data: LegacyMarketingHistoryStatePage;
+  status: 200;
+};
+
+export type listLegacyMarketingHistoryStatesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyMarketingHistoryStatesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyMarketingHistoryStatesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyMarketingHistoryStatesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyMarketingHistoryStatesResponseSuccess =
+  listLegacyMarketingHistoryStatesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyMarketingHistoryStatesResponseError = (
+  | listLegacyMarketingHistoryStatesResponse400
+  | listLegacyMarketingHistoryStatesResponse401
+  | listLegacyMarketingHistoryStatesResponse403
+  | listLegacyMarketingHistoryStatesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyMarketingHistoryStatesResponse =
+  | listLegacyMarketingHistoryStatesResponseSuccess
+  | listLegacyMarketingHistoryStatesResponseError;
+
+export const getListLegacyMarketingHistoryStatesUrl = (
+  params?: ListLegacyMarketingHistoryStatesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/legacy-marketing-history/states?${stringifiedParams}`
+    : `/api/admin/legacy-marketing-history/states`;
+};
+
+export const listLegacyMarketingHistoryStates = async (
+  params?: ListLegacyMarketingHistoryStatesParams,
+  options?: RequestInit,
+): Promise<listLegacyMarketingHistoryStatesResponse> => {
+  const res = await fetch(getListLegacyMarketingHistoryStatesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyMarketingHistoryStatesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyMarketingHistoryStatesResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type getLegacyMarketingHistoryStateResponse200 = {
+  data: LegacyMarketingHistoryStateDetail;
+  status: 200;
+};
+
+export type getLegacyMarketingHistoryStateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyMarketingHistoryStateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyMarketingHistoryStateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyMarketingHistoryStateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyMarketingHistoryStateResponseSuccess =
+  getLegacyMarketingHistoryStateResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyMarketingHistoryStateResponseError = (
+  | getLegacyMarketingHistoryStateResponse400
+  | getLegacyMarketingHistoryStateResponse401
+  | getLegacyMarketingHistoryStateResponse403
+  | getLegacyMarketingHistoryStateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyMarketingHistoryStateResponse =
+  | getLegacyMarketingHistoryStateResponseSuccess
+  | getLegacyMarketingHistoryStateResponseError;
+
+export const getGetLegacyMarketingHistoryStateUrl = (historyId: number) => {
+  return `/api/admin/legacy-marketing-history/states/${historyId}`;
+};
+
+export const getLegacyMarketingHistoryState = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getLegacyMarketingHistoryStateResponse> => {
+  const res = await fetch(getGetLegacyMarketingHistoryStateUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyMarketingHistoryStateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyMarketingHistoryStateResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type listLegacyMarketingHistoryValuesResponse200 = {
+  data: LegacyMarketingHistoryValuePage;
+  status: 200;
+};
+
+export type listLegacyMarketingHistoryValuesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyMarketingHistoryValuesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyMarketingHistoryValuesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyMarketingHistoryValuesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyMarketingHistoryValuesResponseSuccess =
+  listLegacyMarketingHistoryValuesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyMarketingHistoryValuesResponseError = (
+  | listLegacyMarketingHistoryValuesResponse400
+  | listLegacyMarketingHistoryValuesResponse401
+  | listLegacyMarketingHistoryValuesResponse403
+  | listLegacyMarketingHistoryValuesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyMarketingHistoryValuesResponse =
+  | listLegacyMarketingHistoryValuesResponseSuccess
+  | listLegacyMarketingHistoryValuesResponseError;
+
+export const getListLegacyMarketingHistoryValuesUrl = (
+  params?: ListLegacyMarketingHistoryValuesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/legacy-marketing-history/values?${stringifiedParams}`
+    : `/api/admin/legacy-marketing-history/values`;
+};
+
+export const listLegacyMarketingHistoryValues = async (
+  params?: ListLegacyMarketingHistoryValuesParams,
+  options?: RequestInit,
+): Promise<listLegacyMarketingHistoryValuesResponse> => {
+  const res = await fetch(getListLegacyMarketingHistoryValuesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyMarketingHistoryValuesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyMarketingHistoryValuesResponse;
+};
+
+/**
+ * @summary Read immutable V1 legacy marketing snapshot without current-state changes
+ */
+export type getLegacyMarketingHistoryValueResponse200 = {
+  data: LegacyMarketingHistoryValueDetail;
+  status: 200;
+};
+
+export type getLegacyMarketingHistoryValueResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyMarketingHistoryValueResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyMarketingHistoryValueResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyMarketingHistoryValueResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyMarketingHistoryValueResponseSuccess =
+  getLegacyMarketingHistoryValueResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyMarketingHistoryValueResponseError = (
+  | getLegacyMarketingHistoryValueResponse400
+  | getLegacyMarketingHistoryValueResponse401
+  | getLegacyMarketingHistoryValueResponse403
+  | getLegacyMarketingHistoryValueResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyMarketingHistoryValueResponse =
+  | getLegacyMarketingHistoryValueResponseSuccess
+  | getLegacyMarketingHistoryValueResponseError;
+
+export const getGetLegacyMarketingHistoryValueUrl = (historyId: number) => {
+  return `/api/admin/legacy-marketing-history/values/${historyId}`;
+};
+
+export const getLegacyMarketingHistoryValue = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getLegacyMarketingHistoryValueResponse> => {
+  const res = await fetch(getGetLegacyMarketingHistoryValueUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyMarketingHistoryValueResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyMarketingHistoryValueResponse;
 };
 
 /**

@@ -257,6 +257,34 @@ AND receipt.metadata->>'target_product_code'=$3 LIMIT 2`, archiveRun, v1archive.
 	return
 }
 
+// VerifySurveyUnresolvedSource preserves the old quarantine, and requires the
+// exact archived payload before a separate source-history fact may be written.
+func VerifySurveyUnresolvedSource(ctx context.Context, run string, row v1archive.ArchivedRow) error {
+	if surveyUnresolvedTargets[row.TableID] == "" {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	var matches bool
+	err = tx.QueryRow(ctx, `SELECT EXISTS(
+SELECT 1 FROM public.v1_domain_import_receipts old
+JOIN public.v1_archive_records archive ON archive.run_id=old.archive_run_id AND archive.adapter_id=old.adapter_id
+AND archive.table_id=old.table_id AND archive.source_key_digest=old.source_key_digest AND archive.payload_digest=old.payload_digest
+WHERE old.import_version='v1-domain-a1' AND old.archive_run_id=$1 AND old.adapter_id=$2 AND old.table_id=$3
+AND old.source_key_digest=$4 AND old.payload_digest=$5 AND archive.field_digest=$6
+AND old.verified AND old.disposition='quarantine' AND old.reason='survey_definition_history_unresolved')`,
+		run, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyHMAC[:], row.PayloadHMAC[:], row.FieldHMAC[:]).Scan(&matches)
+	if err != nil {
+		return err
+	}
+	if !matches {
+		return ErrConflict
+	}
+	return nil
+}
+
 func NewJournal(scope Scope) (*Journal, error) {
 	if !scope.valid() {
 		return nil, ErrInvalidScope

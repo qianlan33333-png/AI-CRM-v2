@@ -1065,6 +1065,23 @@ func (q *Queries) ReadHistoricalImportRun(ctx context.Context, runID int64) (Rea
 	return i, err
 }
 
+const readHistoricalImportRunSnapshot = `-- name: ReadHistoricalImportRunSnapshot :one
+SELECT mode, state FROM legacy_contact_identity_import_runs
+WHERE id = $1::bigint
+`
+
+type ReadHistoricalImportRunSnapshotRow struct {
+	Mode  string `json:"mode"`
+	State string `json:"state"`
+}
+
+func (q *Queries) ReadHistoricalImportRunSnapshot(ctx context.Context, runID int64) (ReadHistoricalImportRunSnapshotRow, error) {
+	row := q.db.QueryRow(ctx, readHistoricalImportRunSnapshot, runID)
+	var i ReadHistoricalImportRunSnapshotRow
+	err := row.Scan(&i.Mode, &i.State)
+	return i, err
+}
+
 const renewHistoricalImportLease = `-- name: RenewHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
 SET lease_expires_at = $1::timestamptz
@@ -1335,4 +1352,33 @@ func (q *Queries) UpdateHistoricalImportStaffCAS(ctx context.Context, arg Update
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const verifyDM01CustomerIdentitySnapshot = `-- name: VerifyDM01CustomerIdentitySnapshot :one
+SELECT EXISTS (
+  SELECT 1 FROM legacy_contact_identity_source_mappings m
+  JOIN legacy_contact_identity_import_row_receipts r
+    ON r.run_id = m.last_run_id AND r.source_table = m.source_table
+   AND r.source_key_hmac = m.source_key_hmac AND r.payload_hmac = m.payload_hmac
+  JOIN legacy_contact_identity_import_runs run ON run.id = r.run_id
+  JOIN customers c ON c.id = m.customer_id AND NOT c.is_deleted
+  WHERE m.source_table = 'crm_user_identity'
+    AND m.source_key_hmac = $1::bytea
+    AND m.last_run_id = $2::bigint
+    AND m.customer_id > 0 AND r.disposition = 'imported'
+    AND octet_length(r.field_digest) = 32
+    AND run.mode IN ('full', 'incremental') AND run.state = 'imported'
+) AS verified
+`
+
+type VerifyDM01CustomerIdentitySnapshotParams struct {
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	RunID         int64  `json:"run_id"`
+}
+
+func (q *Queries) VerifyDM01CustomerIdentitySnapshot(ctx context.Context, arg VerifyDM01CustomerIdentitySnapshotParams) (bool, error) {
+	row := q.db.QueryRow(ctx, verifyDM01CustomerIdentitySnapshot, arg.SourceKeyHmac, arg.RunID)
+	var verified bool
+	err := row.Scan(&verified)
+	return verified, err
 }

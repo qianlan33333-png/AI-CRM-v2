@@ -147,6 +147,48 @@ type SegmentV1Definition struct {
 	DefinitionDigest []byte             `json:"definition_digest"`
 }
 
+type SegmentV1LegacyMarketingState struct {
+	ID                   int64              `json:"id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	SourceFieldDigest    []byte             `json:"source_field_digest"`
+	SourceID             int64              `json:"source_id"`
+	ExternalUseridDigest []byte             `json:"external_userid_digest"`
+	ScenarioKey          string             `json:"scenario_key"`
+	MarketingPhase       string             `json:"marketing_phase"`
+	PhaseLabel           string             `json:"phase_label"`
+	PhaseReason          string             `json:"phase_reason"`
+	LifecycleStatus      string             `json:"lifecycle_status"`
+	LastBatchSourceID    pgtype.Int8        `json:"last_batch_source_id"`
+	LastBatchStatus      string             `json:"last_batch_status"`
+	LastBatchWindowStart string             `json:"last_batch_window_start"`
+	LastBatchWindowEnd   string             `json:"last_batch_window_end"`
+	LastTriggerMessageAt string             `json:"last_trigger_message_at"`
+	EnteredAt            pgtype.Timestamptz `json:"entered_at"`
+	ExitedAt             pgtype.Timestamptz `json:"exited_at"`
+	ExitReason           string             `json:"exit_reason"`
+	StatePayloadDigest   []byte             `json:"state_payload_digest"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SegmentV1LegacyMarketingValue struct {
+	ID                   int64              `json:"id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	SourceFieldDigest    []byte             `json:"source_field_digest"`
+	SourceID             int64              `json:"source_id"`
+	ExternalUseridDigest []byte             `json:"external_userid_digest"`
+	ScenarioKey          string             `json:"scenario_key"`
+	ValueSegment         string             `json:"value_segment"`
+	SegmentLabel         string             `json:"segment_label"`
+	Score                int64              `json:"score"`
+	ScoreBreakdownDigest []byte             `json:"score_breakdown_digest"`
+	StatePayloadDigest   []byte             `json:"state_payload_digest"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
 type SegmentV1MarketingStateChange struct {
 	ID                     int64              `json:"id"`
 	SourceKeyDigest        []byte             `json:"source_key_digest"`

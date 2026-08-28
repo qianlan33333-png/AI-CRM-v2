@@ -1660,6 +1660,96 @@ func (e BindIdentityRejectedStatus) Valid() bool {
 	}
 }
 
+// Defines values for BroadcastJobHistoryDetailReadOnly.
+const (
+	BroadcastJobHistoryDetailReadOnlyTrue BroadcastJobHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryDetailReadOnly enum.
+func (e BroadcastJobHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryDetailRealExternalCallExecuted.
+const (
+	BroadcastJobHistoryDetailRealExternalCallExecutedFalse BroadcastJobHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryDetailRealExternalCallExecuted enum.
+func (e BroadcastJobHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryDetailSource.
+const (
+	BroadcastJobHistoryDetailSourceV1History BroadcastJobHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryDetailSource enum.
+func (e BroadcastJobHistoryDetailSource) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryPageReadOnly.
+const (
+	BroadcastJobHistoryPageReadOnlyTrue BroadcastJobHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryPageReadOnly enum.
+func (e BroadcastJobHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryPageRealExternalCallExecuted.
+const (
+	BroadcastJobHistoryPageRealExternalCallExecutedFalse BroadcastJobHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryPageRealExternalCallExecuted enum.
+func (e BroadcastJobHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BroadcastJobHistoryPageSource.
+const (
+	BroadcastJobHistoryPageSourceV1History BroadcastJobHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the BroadcastJobHistoryPageSource enum.
+func (e BroadcastJobHistoryPageSource) Valid() bool {
+	switch e {
+	case BroadcastJobHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChannelHistoryResponseOk.
 const (
 	ChannelHistoryResponseOkTrue ChannelHistoryResponseOk = true
@@ -6049,6 +6139,186 @@ const (
 func (e LegacyHealthMethodNotAllowedDetail) Valid() bool {
 	switch e {
 	case LegacyHealthMethodNotAllowedDetailMethodNotAllowed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStateDetailReadOnly.
+const (
+	LegacyMarketingHistoryStateDetailReadOnlyTrue LegacyMarketingHistoryStateDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStateDetailReadOnly enum.
+func (e LegacyMarketingHistoryStateDetailReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStateDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStateDetailRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryStateDetailRealExternalCallExecutedFalse LegacyMarketingHistoryStateDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStateDetailRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryStateDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStateDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStateDetailSource.
+const (
+	LegacyMarketingHistoryStateDetailSourceV1History LegacyMarketingHistoryStateDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStateDetailSource enum.
+func (e LegacyMarketingHistoryStateDetailSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStateDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStatePageReadOnly.
+const (
+	LegacyMarketingHistoryStatePageReadOnlyTrue LegacyMarketingHistoryStatePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStatePageReadOnly enum.
+func (e LegacyMarketingHistoryStatePageReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStatePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStatePageRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryStatePageRealExternalCallExecutedFalse LegacyMarketingHistoryStatePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStatePageRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryStatePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStatePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryStatePageSource.
+const (
+	LegacyMarketingHistoryStatePageSourceV1History LegacyMarketingHistoryStatePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryStatePageSource enum.
+func (e LegacyMarketingHistoryStatePageSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryStatePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValueDetailReadOnly.
+const (
+	LegacyMarketingHistoryValueDetailReadOnlyTrue LegacyMarketingHistoryValueDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValueDetailReadOnly enum.
+func (e LegacyMarketingHistoryValueDetailReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValueDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValueDetailRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryValueDetailRealExternalCallExecutedFalse LegacyMarketingHistoryValueDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValueDetailRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryValueDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValueDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValueDetailSource.
+const (
+	LegacyMarketingHistoryValueDetailSourceV1History LegacyMarketingHistoryValueDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValueDetailSource enum.
+func (e LegacyMarketingHistoryValueDetailSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValueDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValuePageReadOnly.
+const (
+	LegacyMarketingHistoryValuePageReadOnlyTrue LegacyMarketingHistoryValuePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValuePageReadOnly enum.
+func (e LegacyMarketingHistoryValuePageReadOnly) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValuePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValuePageRealExternalCallExecuted.
+const (
+	LegacyMarketingHistoryValuePageRealExternalCallExecutedFalse LegacyMarketingHistoryValuePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValuePageRealExternalCallExecuted enum.
+func (e LegacyMarketingHistoryValuePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValuePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyMarketingHistoryValuePageSource.
+const (
+	LegacyMarketingHistoryValuePageSourceV1History LegacyMarketingHistoryValuePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the LegacyMarketingHistoryValuePageSource enum.
+func (e LegacyMarketingHistoryValuePageSource) Valid() bool {
+	switch e {
+	case LegacyMarketingHistoryValuePageSourceV1History:
 		return true
 	default:
 		return false
@@ -12307,6 +12577,186 @@ func (e StaticHistoryProductPageSlicePageSource) Valid() bool {
 	}
 }
 
+// Defines values for SurveyUnresolvedHistoryAnswerPageDefinitionMapping.
+const (
+	SurveyUnresolvedHistoryAnswerPageDefinitionMappingHistoricalSourceOnly SurveyUnresolvedHistoryAnswerPageDefinitionMapping = "historical_source_only"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageDefinitionMapping enum.
+func (e SurveyUnresolvedHistoryAnswerPageDefinitionMapping) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageDefinitionMappingHistoricalSourceOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistoryAnswerPageReadOnly.
+const (
+	SurveyUnresolvedHistoryAnswerPageReadOnlyTrue SurveyUnresolvedHistoryAnswerPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageReadOnly enum.
+func (e SurveyUnresolvedHistoryAnswerPageReadOnly) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted.
+const (
+	SurveyUnresolvedHistoryAnswerPageRealExternalCallExecutedFalse SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted enum.
+func (e SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistoryAnswerPageSource.
+const (
+	SurveyUnresolvedHistoryAnswerPageSourceV1History SurveyUnresolvedHistoryAnswerPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistoryAnswerPageSource enum.
+func (e SurveyUnresolvedHistoryAnswerPageSource) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistoryAnswerPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailDefinitionMapping.
+const (
+	SurveyUnresolvedHistorySubmissionDetailDefinitionMappingHistoricalSourceOnly SurveyUnresolvedHistorySubmissionDetailDefinitionMapping = "historical_source_only"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailDefinitionMapping enum.
+func (e SurveyUnresolvedHistorySubmissionDetailDefinitionMapping) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailDefinitionMappingHistoricalSourceOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailReadOnly.
+const (
+	SurveyUnresolvedHistorySubmissionDetailReadOnlyTrue SurveyUnresolvedHistorySubmissionDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailReadOnly enum.
+func (e SurveyUnresolvedHistorySubmissionDetailReadOnly) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted.
+const (
+	SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecutedFalse SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted enum.
+func (e SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionDetailSource.
+const (
+	SurveyUnresolvedHistorySubmissionDetailSourceV1History SurveyUnresolvedHistorySubmissionDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionDetailSource enum.
+func (e SurveyUnresolvedHistorySubmissionDetailSource) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageDefinitionMapping.
+const (
+	HistoricalSourceOnly SurveyUnresolvedHistorySubmissionPageDefinitionMapping = "historical_source_only"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageDefinitionMapping enum.
+func (e SurveyUnresolvedHistorySubmissionPageDefinitionMapping) Valid() bool {
+	switch e {
+	case HistoricalSourceOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageReadOnly.
+const (
+	SurveyUnresolvedHistorySubmissionPageReadOnlyTrue SurveyUnresolvedHistorySubmissionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageReadOnly enum.
+func (e SurveyUnresolvedHistorySubmissionPageReadOnly) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted.
+const (
+	SurveyUnresolvedHistorySubmissionPageRealExternalCallExecutedFalse SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted enum.
+func (e SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SurveyUnresolvedHistorySubmissionPageSource.
+const (
+	SurveyUnresolvedHistorySubmissionPageSourceV1History SurveyUnresolvedHistorySubmissionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the SurveyUnresolvedHistorySubmissionPageSource enum.
+func (e SurveyUnresolvedHistorySubmissionPageSource) Valid() bool {
+	switch e {
+	case SurveyUnresolvedHistorySubmissionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateSegmentRequestRefreshMode.
 const (
 	Manual    UpdateSegmentRequestRefreshMode = "manual"
@@ -12462,13 +12912,13 @@ func (e WeComContactHistoryRelationDetailSource) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageReadOnly.
 const (
-	WeComContactHistoryRelationPageReadOnlyTrue WeComContactHistoryRelationPageReadOnly = true
+	True WeComContactHistoryRelationPageReadOnly = true
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageReadOnly enum.
 func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
 	switch e {
-	case WeComContactHistoryRelationPageReadOnlyTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -12477,13 +12927,13 @@ func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageRealExternalCallExecuted.
 const (
-	WeComContactHistoryRelationPageRealExternalCallExecutedFalse WeComContactHistoryRelationPageRealExternalCallExecuted = false
+	False WeComContactHistoryRelationPageRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageRealExternalCallExecuted enum.
 func (e WeComContactHistoryRelationPageRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case WeComContactHistoryRelationPageRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -12492,13 +12942,13 @@ func (e WeComContactHistoryRelationPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageSource.
 const (
-	WeComContactHistoryRelationPageSourceV1History WeComContactHistoryRelationPageSource = "v1_history"
+	V1History WeComContactHistoryRelationPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageSource enum.
 func (e WeComContactHistoryRelationPageSource) Valid() bool {
 	switch e {
-	case WeComContactHistoryRelationPageSourceV1History:
+	case V1History:
 		return true
 	default:
 		return false
@@ -14073,6 +14523,79 @@ type BindIdentityRequest struct {
 type BindIdentityResponse struct {
 	union json.RawMessage
 }
+
+// BroadcastJobHistory defines model for BroadcastJobHistory.
+type BroadcastJobHistory struct {
+	ApprovedAt                     *time.Time `json:"approved_at"`
+	AttemptCount                   int32      `json:"attempt_count"`
+	BusinessDomain                 *string    `json:"business_domain"`
+	CancelledAt                    *time.Time `json:"cancelled_at"`
+	Channel                        *string    `json:"channel"`
+	ClaimedAt                      *time.Time `json:"claimed_at"`
+	CompletedAt                    *time.Time `json:"completed_at"`
+	ContentType                    string     `json:"content_type"`
+	CreatedAt                      time.Time  `json:"created_at"`
+	DispatchStartedAt              *time.Time `json:"dispatch_started_at"`
+	FailedCount                    int32      `json:"failed_count"`
+	FailureType                    *string    `json:"failure_type"`
+	HoldAt                         *time.Time `json:"hold_at"`
+	Id                             int64      `json:"id"`
+	LeaseExpiresAt                 *time.Time `json:"lease_expires_at"`
+	MaxAttempts                    int32      `json:"max_attempts"`
+	NextRetryAt                    *time.Time `json:"next_retry_at"`
+	OriginalProviderResultReceived bool       `json:"original_provider_result_received"`
+	OriginalReconciliationRequired bool       `json:"original_reconciliation_required"`
+	OriginalSideEffectExecuted     bool       `json:"original_side_effect_executed"`
+	OriginalSourceType             string     `json:"original_source_type"`
+	OriginalStatus                 string     `json:"original_status"`
+	Priority                       int32      `json:"priority"`
+	RequiresApproval               bool       `json:"requires_approval"`
+	ScheduledFor                   time.Time  `json:"scheduled_for"`
+	SentAt                         *time.Time `json:"sent_at"`
+	SentCount                      int32      `json:"sent_count"`
+	SourceId                       int64      `json:"source_id"`
+	SourceTable                    string     `json:"source_table"`
+	TargetCount                    int32      `json:"target_count"`
+	TargetKind                     *string    `json:"target_kind"`
+	UpdatedAt                      time.Time  `json:"updated_at"`
+}
+
+// BroadcastJobHistoryDetail defines model for BroadcastJobHistoryDetail.
+type BroadcastJobHistoryDetail struct {
+	Item                     BroadcastJobHistory                               `json:"item"`
+	ReadOnly                 BroadcastJobHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted BroadcastJobHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   BroadcastJobHistoryDetailSource                   `json:"source"`
+}
+
+// BroadcastJobHistoryDetailReadOnly defines model for BroadcastJobHistoryDetail.ReadOnly.
+type BroadcastJobHistoryDetailReadOnly bool
+
+// BroadcastJobHistoryDetailRealExternalCallExecuted defines model for BroadcastJobHistoryDetail.RealExternalCallExecuted.
+type BroadcastJobHistoryDetailRealExternalCallExecuted bool
+
+// BroadcastJobHistoryDetailSource defines model for BroadcastJobHistoryDetail.Source.
+type BroadcastJobHistoryDetailSource string
+
+// BroadcastJobHistoryPage defines model for BroadcastJobHistoryPage.
+type BroadcastJobHistoryPage struct {
+	Items                    []BroadcastJobHistory                           `json:"items"`
+	Limit                    int32                                           `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 BroadcastJobHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted BroadcastJobHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   BroadcastJobHistoryPageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// BroadcastJobHistoryPageReadOnly defines model for BroadcastJobHistoryPage.ReadOnly.
+type BroadcastJobHistoryPageReadOnly bool
+
+// BroadcastJobHistoryPageRealExternalCallExecuted defines model for BroadcastJobHistoryPage.RealExternalCallExecuted.
+type BroadcastJobHistoryPageRealExternalCallExecuted bool
+
+// BroadcastJobHistoryPageSource defines model for BroadcastJobHistoryPage.Source.
+type BroadcastJobHistoryPageSource string
 
 // ChannelHistoryAssignee defines model for ChannelHistoryAssignee.
 type ChannelHistoryAssignee struct {
@@ -16734,6 +17257,112 @@ type LegacyHealthMethodNotAllowed struct {
 
 // LegacyHealthMethodNotAllowedDetail defines model for LegacyHealthMethodNotAllowed.Detail.
 type LegacyHealthMethodNotAllowedDetail string
+
+// LegacyMarketingHistoryState defines model for LegacyMarketingHistoryState.
+type LegacyMarketingHistoryState struct {
+	CreatedAt            time.Time  `json:"created_at"`
+	EnteredAt            *time.Time `json:"entered_at"`
+	ExitReason           string     `json:"exit_reason"`
+	ExitedAt             *time.Time `json:"exited_at"`
+	Id                   int64      `json:"id"`
+	LastBatchStatus      string     `json:"last_batch_status"`
+	LastBatchWindowEnd   string     `json:"last_batch_window_end"`
+	LastBatchWindowStart string     `json:"last_batch_window_start"`
+	LastTriggerMessageAt string     `json:"last_trigger_message_at"`
+	LifecycleStatus      string     `json:"lifecycle_status"`
+	MarketingPhase       string     `json:"marketing_phase"`
+	PhaseLabel           string     `json:"phase_label"`
+	PhaseReason          string     `json:"phase_reason"`
+	ScenarioKey          string     `json:"scenario_key"`
+	SourceId             int64      `json:"source_id"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+}
+
+// LegacyMarketingHistoryStateDetail defines model for LegacyMarketingHistoryStateDetail.
+type LegacyMarketingHistoryStateDetail struct {
+	Item                     LegacyMarketingHistoryState                               `json:"item"`
+	ReadOnly                 LegacyMarketingHistoryStateDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryStateDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryStateDetailSource                   `json:"source"`
+}
+
+// LegacyMarketingHistoryStateDetailReadOnly defines model for LegacyMarketingHistoryStateDetail.ReadOnly.
+type LegacyMarketingHistoryStateDetailReadOnly bool
+
+// LegacyMarketingHistoryStateDetailRealExternalCallExecuted defines model for LegacyMarketingHistoryStateDetail.RealExternalCallExecuted.
+type LegacyMarketingHistoryStateDetailRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryStateDetailSource defines model for LegacyMarketingHistoryStateDetail.Source.
+type LegacyMarketingHistoryStateDetailSource string
+
+// LegacyMarketingHistoryStatePage defines model for LegacyMarketingHistoryStatePage.
+type LegacyMarketingHistoryStatePage struct {
+	Items                    []LegacyMarketingHistoryState                           `json:"items"`
+	Limit                    int                                                     `json:"limit"`
+	Offset                   int                                                     `json:"offset"`
+	ReadOnly                 LegacyMarketingHistoryStatePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryStatePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryStatePageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// LegacyMarketingHistoryStatePageReadOnly defines model for LegacyMarketingHistoryStatePage.ReadOnly.
+type LegacyMarketingHistoryStatePageReadOnly bool
+
+// LegacyMarketingHistoryStatePageRealExternalCallExecuted defines model for LegacyMarketingHistoryStatePage.RealExternalCallExecuted.
+type LegacyMarketingHistoryStatePageRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryStatePageSource defines model for LegacyMarketingHistoryStatePage.Source.
+type LegacyMarketingHistoryStatePageSource string
+
+// LegacyMarketingHistoryValue defines model for LegacyMarketingHistoryValue.
+type LegacyMarketingHistoryValue struct {
+	CreatedAt    time.Time `json:"created_at"`
+	Id           int64     `json:"id"`
+	ScenarioKey  string    `json:"scenario_key"`
+	Score        int64     `json:"score"`
+	SegmentLabel string    `json:"segment_label"`
+	SourceId     int64     `json:"source_id"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	ValueSegment string    `json:"value_segment"`
+}
+
+// LegacyMarketingHistoryValueDetail defines model for LegacyMarketingHistoryValueDetail.
+type LegacyMarketingHistoryValueDetail struct {
+	Item                     LegacyMarketingHistoryValue                               `json:"item"`
+	ReadOnly                 LegacyMarketingHistoryValueDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryValueDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryValueDetailSource                   `json:"source"`
+}
+
+// LegacyMarketingHistoryValueDetailReadOnly defines model for LegacyMarketingHistoryValueDetail.ReadOnly.
+type LegacyMarketingHistoryValueDetailReadOnly bool
+
+// LegacyMarketingHistoryValueDetailRealExternalCallExecuted defines model for LegacyMarketingHistoryValueDetail.RealExternalCallExecuted.
+type LegacyMarketingHistoryValueDetailRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryValueDetailSource defines model for LegacyMarketingHistoryValueDetail.Source.
+type LegacyMarketingHistoryValueDetailSource string
+
+// LegacyMarketingHistoryValuePage defines model for LegacyMarketingHistoryValuePage.
+type LegacyMarketingHistoryValuePage struct {
+	Items                    []LegacyMarketingHistoryValue                           `json:"items"`
+	Limit                    int                                                     `json:"limit"`
+	Offset                   int                                                     `json:"offset"`
+	ReadOnly                 LegacyMarketingHistoryValuePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted LegacyMarketingHistoryValuePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   LegacyMarketingHistoryValuePageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// LegacyMarketingHistoryValuePageReadOnly defines model for LegacyMarketingHistoryValuePage.ReadOnly.
+type LegacyMarketingHistoryValuePageReadOnly bool
+
+// LegacyMarketingHistoryValuePageRealExternalCallExecuted defines model for LegacyMarketingHistoryValuePage.RealExternalCallExecuted.
+type LegacyMarketingHistoryValuePageRealExternalCallExecuted bool
+
+// LegacyMarketingHistoryValuePageSource defines model for LegacyMarketingHistoryValuePage.Source.
+type LegacyMarketingHistoryValuePageSource string
 
 // LegacyOutboundAttempt defines model for LegacyOutboundAttempt.
 type LegacyOutboundAttempt struct {
@@ -20583,6 +21212,108 @@ type SurveyExternalPushReconcileRequest struct {
 	ProviderAccepted bool      `json:"provider_accepted"`
 }
 
+// SurveyUnresolvedHistoryAnswer defines model for SurveyUnresolvedHistoryAnswer.
+type SurveyUnresolvedHistoryAnswer struct {
+	CreatedAt             time.Time      `json:"created_at"`
+	Id                    int64          `json:"id"`
+	QuestionSourceId      int64          `json:"question_source_id"`
+	QuestionTitleSnapshot string         `json:"question_title_snapshot"`
+	QuestionType          string         `json:"question_type"`
+	ScoreContribution     float64        `json:"score_contribution"`
+	SelectedOptionIds     *[]interface{} `json:"selected_option_ids"`
+	SelectedOptionScores  *[]interface{} `json:"selected_option_scores"`
+	SelectedOptionTags    *[]interface{} `json:"selected_option_tags"`
+	SelectedOptionTexts   *[]interface{} `json:"selected_option_texts"`
+	SourceId              int64          `json:"source_id"`
+	SubmissionId          int64          `json:"submission_id"`
+	SubmissionSourceId    int64          `json:"submission_source_id"`
+	TextValue             string         `json:"text_value"`
+}
+
+// SurveyUnresolvedHistoryAnswerPage defines model for SurveyUnresolvedHistoryAnswerPage.
+type SurveyUnresolvedHistoryAnswerPage struct {
+	DefinitionMapping        SurveyUnresolvedHistoryAnswerPageDefinitionMapping        `json:"definition_mapping"`
+	Items                    []SurveyUnresolvedHistoryAnswer                           `json:"items"`
+	Limit                    int                                                       `json:"limit"`
+	Offset                   int                                                       `json:"offset"`
+	ReadOnly                 SurveyUnresolvedHistoryAnswerPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SurveyUnresolvedHistoryAnswerPageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// SurveyUnresolvedHistoryAnswerPageDefinitionMapping defines model for SurveyUnresolvedHistoryAnswerPage.DefinitionMapping.
+type SurveyUnresolvedHistoryAnswerPageDefinitionMapping string
+
+// SurveyUnresolvedHistoryAnswerPageReadOnly defines model for SurveyUnresolvedHistoryAnswerPage.ReadOnly.
+type SurveyUnresolvedHistoryAnswerPageReadOnly bool
+
+// SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted defines model for SurveyUnresolvedHistoryAnswerPage.RealExternalCallExecuted.
+type SurveyUnresolvedHistoryAnswerPageRealExternalCallExecuted bool
+
+// SurveyUnresolvedHistoryAnswerPageSource defines model for SurveyUnresolvedHistoryAnswerPage.Source.
+type SurveyUnresolvedHistoryAnswerPageSource string
+
+// SurveyUnresolvedHistorySubmission defines model for SurveyUnresolvedHistorySubmission.
+type SurveyUnresolvedHistorySubmission struct {
+	CreatedAt             time.Time      `json:"created_at"`
+	CustomerId            *int64         `json:"customer_id"`
+	FinalTags             *[]interface{} `json:"final_tags"`
+	Id                    int64          `json:"id"`
+	MatchedBy             string         `json:"matched_by"`
+	QuestionnaireId       *int64         `json:"questionnaire_id"`
+	QuestionnaireSourceId int64          `json:"questionnaire_source_id"`
+	SourceChannel         string         `json:"source_channel"`
+	SourceId              int64          `json:"source_id"`
+	SubmittedAt           time.Time      `json:"submitted_at"`
+	TotalScore            float64        `json:"total_score"`
+}
+
+// SurveyUnresolvedHistorySubmissionDetail defines model for SurveyUnresolvedHistorySubmissionDetail.
+type SurveyUnresolvedHistorySubmissionDetail struct {
+	DefinitionMapping        SurveyUnresolvedHistorySubmissionDetailDefinitionMapping        `json:"definition_mapping"`
+	Item                     SurveyUnresolvedHistorySubmission                               `json:"item"`
+	ReadOnly                 SurveyUnresolvedHistorySubmissionDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SurveyUnresolvedHistorySubmissionDetailSource                   `json:"source"`
+}
+
+// SurveyUnresolvedHistorySubmissionDetailDefinitionMapping defines model for SurveyUnresolvedHistorySubmissionDetail.DefinitionMapping.
+type SurveyUnresolvedHistorySubmissionDetailDefinitionMapping string
+
+// SurveyUnresolvedHistorySubmissionDetailReadOnly defines model for SurveyUnresolvedHistorySubmissionDetail.ReadOnly.
+type SurveyUnresolvedHistorySubmissionDetailReadOnly bool
+
+// SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted defines model for SurveyUnresolvedHistorySubmissionDetail.RealExternalCallExecuted.
+type SurveyUnresolvedHistorySubmissionDetailRealExternalCallExecuted bool
+
+// SurveyUnresolvedHistorySubmissionDetailSource defines model for SurveyUnresolvedHistorySubmissionDetail.Source.
+type SurveyUnresolvedHistorySubmissionDetailSource string
+
+// SurveyUnresolvedHistorySubmissionPage defines model for SurveyUnresolvedHistorySubmissionPage.
+type SurveyUnresolvedHistorySubmissionPage struct {
+	DefinitionMapping        SurveyUnresolvedHistorySubmissionPageDefinitionMapping        `json:"definition_mapping"`
+	Items                    []SurveyUnresolvedHistorySubmission                           `json:"items"`
+	Limit                    int                                                           `json:"limit"`
+	Offset                   int                                                           `json:"offset"`
+	ReadOnly                 SurveyUnresolvedHistorySubmissionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   SurveyUnresolvedHistorySubmissionPageSource                   `json:"source"`
+	Total                    int64                                                         `json:"total"`
+}
+
+// SurveyUnresolvedHistorySubmissionPageDefinitionMapping defines model for SurveyUnresolvedHistorySubmissionPage.DefinitionMapping.
+type SurveyUnresolvedHistorySubmissionPageDefinitionMapping string
+
+// SurveyUnresolvedHistorySubmissionPageReadOnly defines model for SurveyUnresolvedHistorySubmissionPage.ReadOnly.
+type SurveyUnresolvedHistorySubmissionPageReadOnly bool
+
+// SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted defines model for SurveyUnresolvedHistorySubmissionPage.RealExternalCallExecuted.
+type SurveyUnresolvedHistorySubmissionPageRealExternalCallExecuted bool
+
+// SurveyUnresolvedHistorySubmissionPageSource defines model for SurveyUnresolvedHistorySubmissionPage.Source.
+type SurveyUnresolvedHistorySubmissionPageSource string
+
 // Tag defines model for Tag.
 type Tag struct {
 	GroupId   *int64  `json:"group_id,omitempty"`
@@ -21288,6 +22019,12 @@ type ListAutomationHistorySOPsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListBroadcastJobHistoryParams defines parameters for ListBroadcastJobHistory.
+type ListBroadcastJobHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // RunAdminOpsFeishuHourlyReportPlanParams defines parameters for RunAdminOpsFeishuHourlyReportPlan.
 type RunAdminOpsFeishuHourlyReportPlanParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -21728,6 +22465,18 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ListLegacyMarketingHistoryStatesParams defines parameters for ListLegacyMarketingHistoryStates.
+type ListLegacyMarketingHistoryStatesParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListLegacyMarketingHistoryValuesParams defines parameters for ListLegacyMarketingHistoryValues.
+type ListLegacyMarketingHistoryValuesParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListMarketingConfigHistoryConfigsParams defines parameters for ListMarketingConfigHistoryConfigs.
@@ -22213,6 +22962,19 @@ type ListStaticHistoryGroupInviteParams struct {
 
 // ListStaticHistoryProductPageSliceParams defines parameters for ListStaticHistoryProductPageSlice.
 type ListStaticHistoryProductPageSliceParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListSurveyUnresolvedHistorySubmissionsParams defines parameters for ListSurveyUnresolvedHistorySubmissions.
+type ListSurveyUnresolvedHistorySubmissionsParams struct {
+	QuestionnaireId *int64 `form:"questionnaire_id,omitempty" json:"questionnaire_id,omitempty"`
+	Limit           *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset          *int   `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListSurveyUnresolvedHistoryAnswersParams defines parameters for ListSurveyUnresolvedHistoryAnswers.
+type ListSurveyUnresolvedHistoryAnswersParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
@@ -24581,6 +25343,12 @@ type ServerInterface interface {
 	// Read immutable V1 automation configuration without execution or publication
 	// (GET /api/admin/automation-history/sops/{history_id})
 	GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history)
+	ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request, params ListBroadcastJobHistoryParams)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history/{history_id})
+	GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request, historyId int64)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(w http.ResponseWriter, r *http.Request)
@@ -24875,6 +25643,18 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states)
+	ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryStatesParams)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states/{history_id})
+	GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values)
+	ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryValuesParams)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values/{history_id})
+	GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable source history without current-state effects
 	// (GET /api/admin/marketing-config-history/configs)
 	ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryConfigsParams)
@@ -25151,6 +25931,15 @@ type ServerInterface interface {
 	// Read immutable V1 static metadata without executing source configuration
 	// (GET /api/admin/static-history/page-slices/{history_id})
 	GetStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions)
+	ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request, params ListSurveyUnresolvedHistorySubmissionsParams)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id})
+	GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id}/answers)
+	ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request, historyId int64, params ListSurveyUnresolvedHistoryAnswersParams)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
@@ -25730,6 +26519,18 @@ func (_ Unimplemented) ListAutomationHistorySOPs(w http.ResponseWriter, r *http.
 // Read immutable V1 automation configuration without execution or publication
 // (GET /api/admin/automation-history/sops/{history_id})
 func (_ Unimplemented) GetAutomationHistorySOP(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 job observations without rescheduling or Provider calls
+// (GET /api/admin/broadcast-job-history)
+func (_ Unimplemented) ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request, params ListBroadcastJobHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read inert V1 job observations without rescheduling or Provider calls
+// (GET /api/admin/broadcast-job-history/{history_id})
+func (_ Unimplemented) GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -26321,6 +27122,30 @@ func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/states)
+func (_ Unimplemented) ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryStatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/states/{history_id})
+func (_ Unimplemented) GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/values)
+func (_ Unimplemented) ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryValuesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 legacy marketing snapshot without current-state changes
+// (GET /api/admin/legacy-marketing-history/values/{history_id})
+func (_ Unimplemented) GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read immutable source history without current-state effects
 // (GET /api/admin/marketing-config-history/configs)
 func (_ Unimplemented) ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryConfigsParams) {
@@ -26870,6 +27695,24 @@ func (_ Unimplemented) ListStaticHistoryProductPageSlice(w http.ResponseWriter, 
 // Read immutable V1 static metadata without executing source configuration
 // (GET /api/admin/static-history/page-slices/{history_id})
 func (_ Unimplemented) GetStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical source answer snapshots without resolving current definitions or executing effects
+// (GET /api/admin/survey-history/submissions)
+func (_ Unimplemented) ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request, params ListSurveyUnresolvedHistorySubmissionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical source answer snapshots without resolving current definitions or executing effects
+// (GET /api/admin/survey-history/submissions/{history_id})
+func (_ Unimplemented) GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical source answer snapshots without resolving current definitions or executing effects
+// (GET /api/admin/survey-history/submissions/{history_id}/answers)
+func (_ Unimplemented) ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request, historyId int64, params ListSurveyUnresolvedHistoryAnswersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -29112,6 +29955,78 @@ func (siw *ServerInterfaceWrapper) GetAutomationHistorySOP(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAutomationHistorySOP(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBroadcastJobHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBroadcastJobHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBroadcastJobHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBroadcastJobHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBroadcastJobHistory(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33901,6 +34816,150 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyMarketingHistoryStates operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyMarketingHistoryStatesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyMarketingHistoryStates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyMarketingHistoryState operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyMarketingHistoryState(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyMarketingHistoryValues operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyMarketingHistoryValuesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyMarketingHistoryValues(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyMarketingHistoryValue operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyMarketingHistoryValue(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -39075,6 +40134,136 @@ func (siw *ServerInterfaceWrapper) GetStaticHistoryProductPageSlice(w http.Respo
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetStaticHistoryProductPageSlice(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSurveyUnresolvedHistorySubmissions operation middleware
+func (siw *ServerInterfaceWrapper) ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSurveyUnresolvedHistorySubmissionsParams
+
+	// ------------- Optional query parameter "questionnaire_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "questionnaire_id", r.URL.Query(), &params.QuestionnaireId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSurveyUnresolvedHistorySubmissions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSurveyUnresolvedHistorySubmission operation middleware
+func (siw *ServerInterfaceWrapper) GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSurveyUnresolvedHistorySubmission(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSurveyUnresolvedHistoryAnswers operation middleware
+func (siw *ServerInterfaceWrapper) ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSurveyUnresolvedHistoryAnswersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSurveyUnresolvedHistoryAnswers(w, r, historyId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -46668,6 +47857,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/automation-history/sops/{history_id}", wrapper.GetAutomationHistorySOP)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-job-history", wrapper.ListBroadcastJobHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/broadcast-job-history/{history_id}", wrapper.GetBroadcastJobHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/broadcast-jobs", wrapper.ListAdminOpsBroadcastJobs)
 	})
 	r.Group(func(r chi.Router) {
@@ -46962,6 +48157,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/states", wrapper.ListLegacyMarketingHistoryStates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/states/{history_id}", wrapper.GetLegacyMarketingHistoryState)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/values", wrapper.ListLegacyMarketingHistoryValues)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/legacy-marketing-history/values/{history_id}", wrapper.GetLegacyMarketingHistoryValue)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/marketing-config-history/configs", wrapper.ListMarketingConfigHistoryConfigs)
 	})
 	r.Group(func(r chi.Router) {
@@ -47236,6 +48443,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/static-history/page-slices/{history_id}", wrapper.GetStaticHistoryProductPageSlice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/survey-history/submissions", wrapper.ListSurveyUnresolvedHistorySubmissions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/survey-history/submissions/{history_id}", wrapper.GetSurveyUnresolvedHistorySubmission)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/survey-history/submissions/{history_id}/answers", wrapper.ListSurveyUnresolvedHistoryAnswers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
@@ -49516,6 +50732,112 @@ func (response GetAutomationHistorySOP403JSONResponse) VisitGetAutomationHistory
 type GetAutomationHistorySOP503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetAutomationHistorySOP503JSONResponse) VisitGetAutomationHistorySOPResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistoryRequestObject struct {
+	Params ListBroadcastJobHistoryParams
+}
+
+type ListBroadcastJobHistoryResponseObject interface {
+	VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListBroadcastJobHistory200JSONResponse BroadcastJobHistoryPage
+
+func (response ListBroadcastJobHistory200JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListBroadcastJobHistory400JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListBroadcastJobHistory401JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListBroadcastJobHistory403JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListBroadcastJobHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListBroadcastJobHistory503JSONResponse) VisitListBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistoryRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetBroadcastJobHistoryResponseObject interface {
+	VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetBroadcastJobHistory200JSONResponse BroadcastJobHistoryDetail
+
+func (response GetBroadcastJobHistory200JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetBroadcastJobHistory400JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetBroadcastJobHistory401JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetBroadcastJobHistory403JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetBroadcastJobHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetBroadcastJobHistory503JSONResponse) VisitGetBroadcastJobHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -55139,6 +56461,218 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStatesRequestObject struct {
+	Params ListLegacyMarketingHistoryStatesParams
+}
+
+type ListLegacyMarketingHistoryStatesResponseObject interface {
+	VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyMarketingHistoryStates200JSONResponse LegacyMarketingHistoryStatePage
+
+func (response ListLegacyMarketingHistoryStates200JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates400JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates401JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates403JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryStates503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyMarketingHistoryStates503JSONResponse) VisitListLegacyMarketingHistoryStatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryStateRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetLegacyMarketingHistoryStateResponseObject interface {
+	VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyMarketingHistoryState200JSONResponse LegacyMarketingHistoryStateDetail
+
+func (response GetLegacyMarketingHistoryState200JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyMarketingHistoryState400JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyMarketingHistoryState401JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyMarketingHistoryState403JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryState503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyMarketingHistoryState503JSONResponse) VisitGetLegacyMarketingHistoryStateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValuesRequestObject struct {
+	Params ListLegacyMarketingHistoryValuesParams
+}
+
+type ListLegacyMarketingHistoryValuesResponseObject interface {
+	VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyMarketingHistoryValues200JSONResponse LegacyMarketingHistoryValuePage
+
+func (response ListLegacyMarketingHistoryValues200JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues400JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues401JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues403JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyMarketingHistoryValues503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyMarketingHistoryValues503JSONResponse) VisitListLegacyMarketingHistoryValuesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValueRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetLegacyMarketingHistoryValueResponseObject interface {
+	VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyMarketingHistoryValue200JSONResponse LegacyMarketingHistoryValueDetail
+
+func (response GetLegacyMarketingHistoryValue200JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue400JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue401JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue403JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyMarketingHistoryValue503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyMarketingHistoryValue503JSONResponse) VisitGetLegacyMarketingHistoryValueResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -60831,6 +62365,166 @@ func (response GetStaticHistoryProductPageSlice403JSONResponse) VisitGetStaticHi
 type GetStaticHistoryProductPageSlice503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetStaticHistoryProductPageSlice503JSONResponse) VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissionsRequestObject struct {
+	Params ListSurveyUnresolvedHistorySubmissionsParams
+}
+
+type ListSurveyUnresolvedHistorySubmissionsResponseObject interface {
+	VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error
+}
+
+type ListSurveyUnresolvedHistorySubmissions200JSONResponse SurveyUnresolvedHistorySubmissionPage
+
+func (response ListSurveyUnresolvedHistorySubmissions200JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions400JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions401JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions403JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistorySubmissions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSurveyUnresolvedHistorySubmissions503JSONResponse) VisitListSurveyUnresolvedHistorySubmissionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmissionRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetSurveyUnresolvedHistorySubmissionResponseObject interface {
+	VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error
+}
+
+type GetSurveyUnresolvedHistorySubmission200JSONResponse SurveyUnresolvedHistorySubmissionDetail
+
+func (response GetSurveyUnresolvedHistorySubmission200JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission400JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission401JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission403JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyUnresolvedHistorySubmission503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSurveyUnresolvedHistorySubmission503JSONResponse) VisitGetSurveyUnresolvedHistorySubmissionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswersRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+	Params    ListSurveyUnresolvedHistoryAnswersParams
+}
+
+type ListSurveyUnresolvedHistoryAnswersResponseObject interface {
+	VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error
+}
+
+type ListSurveyUnresolvedHistoryAnswers200JSONResponse SurveyUnresolvedHistoryAnswerPage
+
+func (response ListSurveyUnresolvedHistoryAnswers200JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers400JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers401JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers403JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSurveyUnresolvedHistoryAnswers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSurveyUnresolvedHistoryAnswers503JSONResponse) VisitListSurveyUnresolvedHistoryAnswersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -68853,6 +70547,12 @@ type StrictServerInterface interface {
 	// Read immutable V1 automation configuration without execution or publication
 	// (GET /api/admin/automation-history/sops/{history_id})
 	GetAutomationHistorySOP(ctx context.Context, request GetAutomationHistorySOPRequestObject) (GetAutomationHistorySOPResponseObject, error)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history)
+	ListBroadcastJobHistory(ctx context.Context, request ListBroadcastJobHistoryRequestObject) (ListBroadcastJobHistoryResponseObject, error)
+	// Read inert V1 job observations without rescheduling or Provider calls
+	// (GET /api/admin/broadcast-job-history/{history_id})
+	GetBroadcastJobHistory(ctx context.Context, request GetBroadcastJobHistoryRequestObject) (GetBroadcastJobHistoryResponseObject, error)
 	// List CRM-local broadcast plans through the closed job DTO
 	// (GET /api/admin/broadcast-jobs)
 	ListAdminOpsBroadcastJobs(ctx context.Context, request ListAdminOpsBroadcastJobsRequestObject) (ListAdminOpsBroadcastJobsResponseObject, error)
@@ -69147,6 +70847,18 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states)
+	ListLegacyMarketingHistoryStates(ctx context.Context, request ListLegacyMarketingHistoryStatesRequestObject) (ListLegacyMarketingHistoryStatesResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/states/{history_id})
+	GetLegacyMarketingHistoryState(ctx context.Context, request GetLegacyMarketingHistoryStateRequestObject) (GetLegacyMarketingHistoryStateResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values)
+	ListLegacyMarketingHistoryValues(ctx context.Context, request ListLegacyMarketingHistoryValuesRequestObject) (ListLegacyMarketingHistoryValuesResponseObject, error)
+	// Read immutable V1 legacy marketing snapshot without current-state changes
+	// (GET /api/admin/legacy-marketing-history/values/{history_id})
+	GetLegacyMarketingHistoryValue(ctx context.Context, request GetLegacyMarketingHistoryValueRequestObject) (GetLegacyMarketingHistoryValueResponseObject, error)
 	// Read immutable source history without current-state effects
 	// (GET /api/admin/marketing-config-history/configs)
 	ListMarketingConfigHistoryConfigs(ctx context.Context, request ListMarketingConfigHistoryConfigsRequestObject) (ListMarketingConfigHistoryConfigsResponseObject, error)
@@ -69423,6 +71135,15 @@ type StrictServerInterface interface {
 	// Read immutable V1 static metadata without executing source configuration
 	// (GET /api/admin/static-history/page-slices/{history_id})
 	GetStaticHistoryProductPageSlice(ctx context.Context, request GetStaticHistoryProductPageSliceRequestObject) (GetStaticHistoryProductPageSliceResponseObject, error)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions)
+	ListSurveyUnresolvedHistorySubmissions(ctx context.Context, request ListSurveyUnresolvedHistorySubmissionsRequestObject) (ListSurveyUnresolvedHistorySubmissionsResponseObject, error)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id})
+	GetSurveyUnresolvedHistorySubmission(ctx context.Context, request GetSurveyUnresolvedHistorySubmissionRequestObject) (GetSurveyUnresolvedHistorySubmissionResponseObject, error)
+	// Read historical source answer snapshots without resolving current definitions or executing effects
+	// (GET /api/admin/survey-history/submissions/{history_id}/answers)
+	ListSurveyUnresolvedHistoryAnswers(ctx context.Context, request ListSurveyUnresolvedHistoryAnswersRequestObject) (ListSurveyUnresolvedHistoryAnswersResponseObject, error)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
@@ -70721,6 +72442,58 @@ func (sh *strictHandler) GetAutomationHistorySOP(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAutomationHistorySOPResponseObject); ok {
 		if err := validResponse.VisitGetAutomationHistorySOPResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListBroadcastJobHistory operation middleware
+func (sh *strictHandler) ListBroadcastJobHistory(w http.ResponseWriter, r *http.Request, params ListBroadcastJobHistoryParams) {
+	var request ListBroadcastJobHistoryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListBroadcastJobHistory(ctx, request.(ListBroadcastJobHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListBroadcastJobHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListBroadcastJobHistoryResponseObject); ok {
+		if err := validResponse.VisitListBroadcastJobHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBroadcastJobHistory operation middleware
+func (sh *strictHandler) GetBroadcastJobHistory(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetBroadcastJobHistoryRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBroadcastJobHistory(ctx, request.(GetBroadcastJobHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBroadcastJobHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBroadcastJobHistoryResponseObject); ok {
+		if err := validResponse.VisitGetBroadcastJobHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -73496,6 +75269,110 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 	}
 }
 
+// ListLegacyMarketingHistoryStates operation middleware
+func (sh *strictHandler) ListLegacyMarketingHistoryStates(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryStatesParams) {
+	var request ListLegacyMarketingHistoryStatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyMarketingHistoryStates(ctx, request.(ListLegacyMarketingHistoryStatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyMarketingHistoryStates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyMarketingHistoryStatesResponseObject); ok {
+		if err := validResponse.VisitListLegacyMarketingHistoryStatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyMarketingHistoryState operation middleware
+func (sh *strictHandler) GetLegacyMarketingHistoryState(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetLegacyMarketingHistoryStateRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyMarketingHistoryState(ctx, request.(GetLegacyMarketingHistoryStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyMarketingHistoryState")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyMarketingHistoryStateResponseObject); ok {
+		if err := validResponse.VisitGetLegacyMarketingHistoryStateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegacyMarketingHistoryValues operation middleware
+func (sh *strictHandler) ListLegacyMarketingHistoryValues(w http.ResponseWriter, r *http.Request, params ListLegacyMarketingHistoryValuesParams) {
+	var request ListLegacyMarketingHistoryValuesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyMarketingHistoryValues(ctx, request.(ListLegacyMarketingHistoryValuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyMarketingHistoryValues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyMarketingHistoryValuesResponseObject); ok {
+		if err := validResponse.VisitListLegacyMarketingHistoryValuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyMarketingHistoryValue operation middleware
+func (sh *strictHandler) GetLegacyMarketingHistoryValue(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetLegacyMarketingHistoryValueRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyMarketingHistoryValue(ctx, request.(GetLegacyMarketingHistoryValueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyMarketingHistoryValue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyMarketingHistoryValueResponseObject); ok {
+		if err := validResponse.VisitGetLegacyMarketingHistoryValueResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMarketingConfigHistoryConfigs operation middleware
 func (sh *strictHandler) ListMarketingConfigHistoryConfigs(w http.ResponseWriter, r *http.Request, params ListMarketingConfigHistoryConfigsParams) {
 	var request ListMarketingConfigHistoryConfigsRequestObject
@@ -76136,6 +78013,85 @@ func (sh *strictHandler) GetStaticHistoryProductPageSlice(w http.ResponseWriter,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetStaticHistoryProductPageSliceResponseObject); ok {
 		if err := validResponse.VisitGetStaticHistoryProductPageSliceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSurveyUnresolvedHistorySubmissions operation middleware
+func (sh *strictHandler) ListSurveyUnresolvedHistorySubmissions(w http.ResponseWriter, r *http.Request, params ListSurveyUnresolvedHistorySubmissionsParams) {
+	var request ListSurveyUnresolvedHistorySubmissionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSurveyUnresolvedHistorySubmissions(ctx, request.(ListSurveyUnresolvedHistorySubmissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSurveyUnresolvedHistorySubmissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSurveyUnresolvedHistorySubmissionsResponseObject); ok {
+		if err := validResponse.VisitListSurveyUnresolvedHistorySubmissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSurveyUnresolvedHistorySubmission operation middleware
+func (sh *strictHandler) GetSurveyUnresolvedHistorySubmission(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetSurveyUnresolvedHistorySubmissionRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSurveyUnresolvedHistorySubmission(ctx, request.(GetSurveyUnresolvedHistorySubmissionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSurveyUnresolvedHistorySubmission")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSurveyUnresolvedHistorySubmissionResponseObject); ok {
+		if err := validResponse.VisitGetSurveyUnresolvedHistorySubmissionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSurveyUnresolvedHistoryAnswers operation middleware
+func (sh *strictHandler) ListSurveyUnresolvedHistoryAnswers(w http.ResponseWriter, r *http.Request, historyId int64, params ListSurveyUnresolvedHistoryAnswersParams) {
+	var request ListSurveyUnresolvedHistoryAnswersRequestObject
+
+	request.HistoryId = historyId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSurveyUnresolvedHistoryAnswers(ctx, request.(ListSurveyUnresolvedHistoryAnswersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSurveyUnresolvedHistoryAnswers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSurveyUnresolvedHistoryAnswersResponseObject); ok {
+		if err := validResponse.VisitListSurveyUnresolvedHistoryAnswersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

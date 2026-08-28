@@ -19,7 +19,113 @@ import (
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+// ReconcileExternalIdentityGap seals authenticated archive rows
+// absent from the completed DM01 receipt collection. It never writes the
+// pre-existing DM01 receipt ledger.
+func ReconcileExternalIdentityGap(ctx context.Context, pool *pgxpool.Pool, importer *ExternalIdentityGapImporter, options ExternalIdentityGapImportOptions) (ReconciliationResult, error) {
+	if ctx == nil || pool == nil || importer == nil || !validExternalIdentityGapOptions(options) ||
+		nilExternalIdentityGap(importer.archive) || nilExternalIdentityGap(importer.uow) || nilExternalIdentityGap(importer.target) ||
+		nilExternalIdentityGap(importer.roots) || nilExternalIdentityGap(importer.receipts) || nilExternalIdentityGap(importer.journal) ||
+		importer.journal.ValidateExternalIdentityGapScope(options) != nil {
+		return ReconciliationResult{}, ErrInvalidScope
+	}
+
+	var result ReconciliationResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(txCtx context.Context) error {
+		bound, txErr := platformstore.TxFromContext(txCtx)
+		if txErr != nil || bound == nil {
+			return ErrConflict
+		}
+		if _, lockErr := bound.Exec(txCtx, `LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE`); lockErr != nil {
+			return lockErr
+		}
+		selection, selectErr := SelectExternalIdentityGap(txCtx, importer.archive, importer.receipts, options)
+		if selectErr != nil {
+			return selectErr
+		}
+		if verifyErr := importer.Verify(txCtx, options); verifyErr != nil {
+			return verifyErr
+		}
+		receipts, receiptErr := loadExternalIdentityGapReconciliationReceipts(txCtx, bound, importer.journal, selection, options)
+		if receiptErr != nil {
+			return receiptErr
+		}
+		digest, digestErr := validateExternalIdentityGapReconciliation(selection, receipts)
+		if digestErr != nil {
+			return digestErr
+		}
+		result = ReconciliationResult{
+			SelectedSourceCount: int64(len(selection.OnlyArchive)), ReceiptCount: int64(len(receipts)),
+			ImportedCount: int64(len(receipts)), VerifiedCount: int64(len(receipts)),
+			ComparisonDigest: hex.EncodeToString(digest[:]),
+		}
+		command, insertErr := bound.Exec(txCtx, `INSERT INTO public.v1_domain_import_reconciliation_receipts
+(import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest)
+VALUES ($1,$2,$3,$4,$5,0,0,$6,$7)
+ON CONFLICT (import_version,archive_run_id) DO NOTHING`, externalIdentityGapImportVersion, options.ArchiveRunID,
+			result.SelectedSourceCount, result.ReceiptCount, result.ImportedCount, result.VerifiedCount, digest[:])
+		if insertErr != nil {
+			return insertErr
+		}
+		result.Replayed = command.RowsAffected() == 0
+		if !result.Replayed {
+			return nil
+		}
+		var selected, receiptCount, imported, archived, quarantined, verified int64
+		var existing []byte
+		if replayErr := bound.QueryRow(txCtx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
+FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, externalIdentityGapImportVersion, options.ArchiveRunID).
+			Scan(&selected, &receiptCount, &imported, &archived, &quarantined, &verified, &existing); replayErr != nil ||
+			selected != result.SelectedSourceCount || receiptCount != result.ReceiptCount || imported != result.ImportedCount ||
+			archived != 0 || quarantined != 0 || verified != result.VerifiedCount || !equalBytes(existing, digest[:]) {
+			return ErrConflict
+		}
+		return nil
+	})
+	if err != nil {
+		return ReconciliationResult{}, err
+	}
+	return result, nil
+}
+
+type externalIdentityGapSerializableBeginner struct{ pool *pgxpool.Pool }
+
+func (beginner externalIdentityGapSerializableBeginner) BeginTx(ctx context.Context, _ pgx.TxOptions) (pgx.Tx, error) {
+	if beginner.pool == nil {
+		return nil, ErrInvalidScope
+	}
+	return beginner.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+}
+
+func loadExternalIdentityGapReconciliationReceipts(ctx context.Context, tx pgx.Tx, journal ExternalIdentityGapImportJournal, selection ExternalIdentityGapSelection, options ExternalIdentityGapImportOptions) ([]externalIdentityGapReconciliationReceipt, error) {
+	if ctx == nil || tx == nil || journal == nil || !validExternalIdentityGapOptions(options) {
+		return nil, ErrInvalidScope
+	}
+	var count int64
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts
+WHERE import_version=$1 AND archive_run_id=$2`, externalIdentityGapImportVersion, options.ArchiveRunID).Scan(&count); err != nil {
+		return nil, err
+	}
+	if count != int64(len(selection.OnlyArchive)) {
+		return nil, ErrConflict
+	}
+	receipts := make([]externalIdentityGapReconciliationReceipt, 0, len(selection.OnlyArchive))
+	for _, value := range selection.OnlyArchive {
+		terminal, found, err := journal.LoadTerminal(ctx, SourceIdentifier(value.ArchivedRow.SourceKeyHMAC))
+		if err != nil || !found {
+			return nil, ErrConflict
+		}
+		receipts = append(receipts, externalIdentityGapReconciliationReceipt{
+			SourceKeyDigest: value.ArchivedRow.SourceKeyHMAC, PayloadDigest: value.ArchivedRow.PayloadHMAC,
+			FieldDigest: value.ArchivedRow.FieldHMAC, Terminal: terminal,
+		})
+	}
+	return receipts, nil
+}
 
 const archiveFieldDigestSQL = `SELECT field_digest FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5`
@@ -53,6 +159,9 @@ var targetBySourceTable = map[string]struct {
 	domain string
 	table  string
 }{
+	legacyMarketingStateTable:                          {"segment", legacyMarketingStateTarget},
+	legacyMarketingValueTable:                          {"segment", legacyMarketingValueTarget},
+	broadcastJobHistoryTableID:                         {"outbound", broadcastJobHistoryTargetTable},
 	marketingStateSnapshotTable:                        {"segment", marketingStateSnapshotTarget},
 	marketingStateChangeTable:                          {"segment", marketingStateChangeTarget},
 	valueSegmentSnapshotTable:                          {"segment", valueSegmentSnapshotTarget},
@@ -242,6 +351,18 @@ WHERE migration.run_id=$1`, archiveRunID).Scan(&phase, &adapterID); err != nil |
 			}
 			sourceCount = selectedCount
 		}
+		if importVersion == SurveyUnresolvedHistoryImportVersion {
+			if selectedCount != sourceCount || surveyUnresolvedTargets[tableID] == "" {
+				return ReconciliationResult{}, ErrConflict
+			}
+			if err = tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts
+WHERE import_version='v1-domain-a1' AND archive_run_id=$1 AND adapter_id=$2 AND table_id=$3
+AND verified AND disposition='quarantine' AND reason='survey_definition_history_unresolved'`,
+				archiveRunID, v1archive.DefaultAdapterID, tableID).Scan(&sourceCount); err != nil {
+				return ReconciliationResult{}, err
+			}
+			selectedCount = sourceCount
+		}
 		if selectedCount != sourceCount || sourceCount != receiptCount {
 			return ReconciliationResult{}, fmt.Errorf("receipt count mismatch for %s: selected=%d source=%d receipt=%d", tableID, selectedCount, sourceCount, receiptCount)
 		}
@@ -309,7 +430,7 @@ AND p.target_domain IS NULL AND p.target_table IS NULL AND p.target_id IS NULL A
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) || isProfileCatalogHistorySource(row.TableID) || isHXCHistorySource(row.TableID) || isStaticTailHistorySource(row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isAudienceHistorySource(row.TableID) || row.TableID == messageHistoryTableID || isContactHistorySource(row.TableID) || isMemberGridHistorySource(row.TableID) || isCampaignHistorySource(row.TableID) || isAutomationHistorySource(row.TableID) || isProfileCatalogHistorySource(row.TableID) || isHXCHistorySource(row.TableID) || isStaticTailHistorySource(row.TableID) || isLegacyMarketingHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -321,7 +442,7 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			}
 		}
 		proof := "terminal:" + row.Disposition
-		if isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isWeComContactHistorySource(row.TableID) || isRadarClickHistorySource(row.TableID) || isMarketingConfigHistorySource(row.TableID) {
+		if isLegacyMarketingHistorySource(row.TableID) || row.TableID == broadcastJobHistoryTableID || isCustomerStateHistorySource(row.TableID) || isMarketingStateHistorySource(row.TableID) || isWeComContactHistorySource(row.TableID) || isRadarClickHistorySource(row.TableID) || isMarketingConfigHistorySource(row.TableID) {
 			if err = tx.QueryRow(ctx, archiveFieldDigestSQL,
 				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&row.FieldDigest); err != nil || len(row.FieldDigest) != sha256.Size {
 				return ReconciliationResult{}, ErrConflict
@@ -332,6 +453,17 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 			result.ImportedCount++
 			if importVersion == "v1-campaign-definition-history-a1" {
 				proof, err = verifyCampaignDefinitionHistoryTarget(ctx, tx, row, archiveRunID, campaignDefinitionKey)
+			} else if importVersion == SurveyUnresolvedHistoryImportVersion {
+				var fieldDigest []byte
+				err = tx.QueryRow(ctx, `SELECT archive.field_digest FROM public.v1_archive_records archive
+JOIN public.v1_domain_import_receipts old ON old.archive_run_id=archive.run_id AND old.adapter_id=archive.adapter_id
+AND old.table_id=archive.table_id AND old.source_key_digest=archive.source_key_digest AND old.payload_digest=archive.payload_digest
+WHERE archive.run_id=$1 AND archive.adapter_id=$2 AND archive.table_id=$3 AND archive.source_key_digest=$4 AND archive.payload_digest=$5
+AND old.import_version='v1-domain-a1' AND old.verified AND old.disposition='quarantine' AND old.reason='survey_definition_history_unresolved'`,
+					archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&fieldDigest)
+				if err == nil {
+					proof, err = verifySurveyUnresolvedHistoryTarget(ctx, tx, row, fieldDigest, importedTargets)
+				}
 			} else {
 				proof, err = verifyImportedTarget(ctx, tx, row, importedTargets)
 			}
@@ -339,8 +471,14 @@ WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND p
 				return ReconciliationResult{}, err
 			}
 		case "archive":
+			if importVersion == SurveyUnresolvedHistoryImportVersion {
+				return ReconciliationResult{}, ErrConflict
+			}
 			result.ArchivedCount++
 		case "quarantine":
+			if importVersion == SurveyUnresolvedHistoryImportVersion {
+				return ReconciliationResult{}, ErrConflict
+			}
 			result.QuarantinedCount++
 		default:
 			return ReconciliationResult{}, fmt.Errorf("unknown disposition for %s", row.TableID)
@@ -412,6 +550,9 @@ WHERE p.import_version='v1-domain-a1' AND p.archive_run_id=$1 AND p.adapter_id=$
 }
 
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
+	if row.TableID == broadcastJobHistoryTableID {
+		return verifyBroadcastJobHistoryTarget(ctx, tx, row)
+	}
 	if isWeComContactHistorySource(row.TableID) {
 		return verifyWeComContactHistoryTarget(ctx, tx, row)
 	}
@@ -447,6 +588,9 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	}
 	if isAutomationHistorySource(row.TableID) {
 		return verifyAutomationHistoryTarget(ctx, tx, row, importedTargets)
+	}
+	if isLegacyMarketingHistorySource(row.TableID) {
+		return verifyLegacyMarketingHistoryTarget(ctx, tx, row, importedTargets)
 	}
 	if isAudienceHistorySource(row.TableID) {
 		return verifyAudienceHistoryTarget(ctx, tx, row, importedTargets)

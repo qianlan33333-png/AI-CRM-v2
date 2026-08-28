@@ -37,6 +37,7 @@ type Querier interface {
 	CompleteHistoricalReconcileRun(ctx context.Context, arg CompleteHistoricalReconcileRunParams) (int64, error)
 	CompleteSidebarCustomerProfileReceipt(ctx context.Context, arg CompleteSidebarCustomerProfileReceiptParams) (CompleteSidebarCustomerProfileReceiptRow, error)
 	CopyCustomerTagsForMerge(ctx context.Context, arg CopyCustomerTagsForMergeParams) (int64, error)
+	CountArchiveIdentityRootFixtureRows(ctx context.Context) (CountArchiveIdentityRootFixtureRowsRow, error)
 	CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error)
 	CountHistoricalChannelContacts(ctx context.Context, channelID int64) (int64, error)
 	CountHistoricalClassTermTagMapping(ctx context.Context) (int64, error)
@@ -48,6 +49,7 @@ type Querier interface {
 	CountHistoricalSignupTagRules(ctx context.Context) (int64, error)
 	CountHistoricalWeComExternalContactEventLog(ctx context.Context) (int64, error)
 	CountHistoricalWeComExternalContactFollowUser(ctx context.Context) (int64, error)
+	CreateArchiveIdentityRootFixture(ctx context.Context, arg CreateArchiveIdentityRootFixtureParams) (CreateArchiveIdentityRootFixtureRow, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
 	CreateDM01AcceptanceExpiredImportingRun(ctx context.Context, arg CreateDM01AcceptanceExpiredImportingRunParams) (int64, error)
@@ -201,6 +203,7 @@ type Querier interface {
 	LockHistoricalTagImportByProviderID(ctx context.Context, providerTagID string) (LockHistoricalTagImportByProviderIDRow, error)
 	LockHistoricalTagImportGroup(ctx context.Context, groupID int64) (TagGroup, error)
 	LockUniqueActiveStaffForHistoricalImport(ctx context.Context, wecomUserid string) (int64, error)
+	LockVerifiedDM01CustomerRoot(ctx context.Context, arg LockVerifiedDM01CustomerRootParams) (int64, error)
 	MarkChannelAcquisitionAssetAttempted(ctx context.Context, arg MarkChannelAcquisitionAssetAttemptedParams) (ChannelAcquisitionAssetBinding, error)
 	MarkChannelAcquisitionAssetQueued(ctx context.Context, arg MarkChannelAcquisitionAssetQueuedParams) (ChannelAcquisitionAssetBinding, error)
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
@@ -208,6 +211,7 @@ type Querier interface {
 	ReadChannelAcquisitionAssetChannel(ctx context.Context, channelID int64) (bool, error)
 	ReadCustomerProjection(ctx context.Context, customerID int64) (ReadCustomerProjectionRow, error)
 	ReadHistoricalImportRun(ctx context.Context, runID int64) (ReadHistoricalImportRunRow, error)
+	ReadHistoricalImportRunSnapshot(ctx context.Context, runID int64) (ReadHistoricalImportRunSnapshotRow, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (RenameStageRow, error)
 	RenewHistoricalImportLease(ctx context.Context, arg RenewHistoricalImportLeaseParams) (int64, error)
@@ -237,6 +241,7 @@ type Querier interface {
 	UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error)
 	UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSidebarCustomerProfileParams) (UpdateSidebarCustomerProfileRow, error)
 	UpsertCurrentChannelAcquisitionAsset(ctx context.Context, arg UpsertCurrentChannelAcquisitionAssetParams) error
+	VerifyDM01CustomerIdentitySnapshot(ctx context.Context, arg VerifyDM01CustomerIdentitySnapshotParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

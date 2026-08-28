@@ -23,14 +23,18 @@ import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
 import { mountCouponHistory } from './sections/couponHistory';
 import { mountMessageHistory } from './sections/messageHistory';
 import { mountAudienceHistory } from './sections/audienceHistory';
+import { renderLegacyMarketingHistory } from './sections/legacyMarketingHistory';
 import { mountProfileCatalogHistory } from './sections/profileCatalogHistory';
 import { mountAutomationHistory } from './sections/automationHistory';
 import { mountRadarMarketingHistory } from './sections/radarMarketingHistory';
 import { mountMemberGridHistory } from './sections/memberGridHistory';
 import { mountContactHistory } from './sections/contactHistory';
+import { mountSurveyUnresolvedHistory } from './sections/surveyUnresolvedHistory';
+import { surveyUnresolvedHistoryHttp } from '../api/surveyUnresolvedHistoryHttp';
 import { mountStaticHistory } from './sections/staticHistory';
 import { mountCustomerStateHistory } from './sections/customerStateHistory';
 import { mountMarketingStateHistory } from './sections/marketingStateHistory';
+import { mountBroadcastJobHistory } from './sections/broadcastJobHistory';
 import { mountWeComContactHistory } from './sections/wecomContactHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
@@ -43,6 +47,20 @@ function boot(): void {
   if (!stage) return;
 
   const historyQuery = new URLSearchParams(location.search);
+  if (page === 'questionnaires' && historyQuery.get('unresolved_history') === '1') {
+    void mountSurveyUnresolvedHistory(stage, surveyUnresolvedHistoryHttp, {
+      historyID: historyQuery.get('history_id') ?? undefined,
+    }).catch((error) => showLoadError(stage, error));
+    return;
+  }
+  if (page === 'automation' && historyQuery.get('legacy_marketing_history') === '1') {
+    void renderLegacyMarketingHistory(stage).catch(() => { stage.innerHTML = '<section data-legacy-marketing-history><h1>V1 旧版营销历史（只读）</h1><p role="alert">历史数据读取失败；未更改当前分层。</p></section>'; });
+    return;
+  }
+  if (page === 'automation' && historyQuery.get('broadcast_job_history') === '1') {
+    void mountBroadcastJobHistory(stage, { historyID: historyQuery.get('history_id') ?? undefined }).catch(() => { stage.innerHTML = '<p role="alert">群发任务历史读取失败；未创建或发送任务。</p>'; });
+    return;
+  }
   if (page === 'config' && historyQuery.get('marketing_state_history') === '1') {
     void mountMarketingStateHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">营销状态历史读取失败；未进入当前配置。</p>'; });
     return;
@@ -226,6 +244,10 @@ function boot(): void {
   void controller.init()
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
+      if (page === 'automation') {
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?legacy_marketing_history=1">V1 旧版营销快照（只读）</a></p>');
+        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?broadcast_job_history=1">V1 群发任务历史（只读）</a></p>');
+      }
       if (page === 'groupops') {
         stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
       }
