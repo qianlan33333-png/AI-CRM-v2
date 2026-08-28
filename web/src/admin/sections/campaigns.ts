@@ -42,6 +42,7 @@ import {
 } from '../../api/external_effects';
 import { confirmBox, toast } from '../../shared/ui/feedback';
 import { mountPushObservability } from './observability';
+import { mountCampaignDefinitionHistory } from './campaignDefinitionHistory';
 import { esc } from './util';
 
 type CampaignPage = {
@@ -79,7 +80,7 @@ const status = (value: string): string => `<span style="display:inline-flex;padd
 const safety = '<p style="margin:0;color:#8F5A16;font-size:12px">只读快照/本地审核不证明 Provider 调用、外部发送或送达。</p>';
 
 function shell(title: string, body: string): string {
-  return `<div style="padding:20px;display:grid;gap:16px;align-content:start"><div><div style="font-size:12px;color:#8F959E">运营 / Cloud Campaign</div><h1 style="margin:4px 0 0;font-size:20px">${title}</h1><a href="campaigns.html?history=1">V1 Campaign 历史（只读）</a></div>${body}</div>`;
+  return `<div style="padding:20px;display:grid;gap:16px;align-content:start"><div><div style="font-size:12px;color:#8F959E">运营 / Cloud Campaign</div><h1 style="margin:4px 0 0;font-size:20px">${title}</h1><a href="campaigns.html?history=1">V1 Campaign 业务历史（只读）</a> · <a href="campaigns.html?definition_history=1">V1 Campaign 定义历史（只读）</a></div>${body}</div>`;
 }
 
 function listHtml(rows: CampaignDetail[], filter: CampaignFilter): string {
@@ -266,6 +267,7 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
 
 export async function mountCampaignWorkspace(stage: HTMLElement): Promise<void> {
   const params = query();
+  if (params.get('definition_history') === '1') return mountCampaignDefinitionHistory(stage);
   if (params.get('legacy_admin_path') === '/admin/cloud-orchestrator/plans') return loadPlanIndex(stage);
   if (params.get('view') === 'observability') return mountPushObservability(stage);
   if (params.get('view') === 'external-effects') {
