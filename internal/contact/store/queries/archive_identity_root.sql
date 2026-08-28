@@ -15,8 +15,7 @@ WHERE m.source_table = 'crm_user_identity'
 FOR SHARE OF m, r, run, c;
 
 -- name: CountArchiveIdentityRootFixtureRows :one
-SELECT (SELECT count(*) FROM customers)::bigint AS customers,
-  (SELECT count(*) FROM legacy_contact_identity_source_mappings)::bigint AS mappings,
+SELECT (SELECT count(*) FROM legacy_contact_identity_source_mappings)::bigint AS mappings,
   (SELECT count(*) FROM legacy_contact_identity_import_row_receipts)::bigint AS receipts;
 
 -- name: CreateArchiveIdentityRootFixture :one

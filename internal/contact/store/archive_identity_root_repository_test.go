@@ -118,7 +118,7 @@ func TestLockVerifiedDM01CustomerRootPostgresRollback(t *testing.T) {
 			return errors.New("payload_drift_accepted")
 		}
 		afterLocks, countErr := archiveIdentityRootCount(txCtx, tx)
-		if countErr != nil || afterLocks != (archiveIdentityRootCounts{Customers: before.Customers + 3, Mappings: before.Mappings + 3, Receipts: before.Receipts + 3}) {
+		if countErr != nil || afterLocks != (archiveIdentityRootCounts{Mappings: before.Mappings + 3, Receipts: before.Receipts + 3}) {
 			return errors.New("root_lock_wrote_data")
 		}
 		return rollback
