@@ -858,7 +858,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		humanOAuth, err = wecomclient.NewHumanOAuthClient(wecomclient.HumanOAuthConfig{
 			BaseURL: wecomclient.ProductionBaseURL, AuthorizeURL: wecomclient.ProductionAuthorizeURL,
 			CallbackURL: config.WeCom.OAuth.CallbackURL, CorpID: wecomclient.CorpID(config.WeCom.OAuth.CorpID),
-			HTTPClient: providerHTTP, TokenProvider: tokenProvider,
+			DesktopAgentID: config.WeCom.OAuth.AgentID,
+			HTTPClient:     providerHTTP, TokenProvider: tokenProvider,
 		})
 		if err != nil {
 			pool.Close()

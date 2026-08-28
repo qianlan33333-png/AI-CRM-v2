@@ -33,6 +33,7 @@ const (
 	weComOAuthCorpIDEnv               = "AICRM_WECOM_OAUTH_CORP_ID"
 	weComOAuthSecretEnv               = "AICRM_WECOM_OAUTH_SECRET"
 	weComOAuthCallbackEnv             = "AICRM_WECOM_OAUTH_CALLBACK_URL"
+	weComOAuthAgentIDEnv              = "AICRM_WECOM_OAUTH_AGENT_ID"
 	weComDirectorySyncEnabledEnv      = "AICRM_WECOM_DIRECTORY_SYNC_ENABLED"
 	weComDirectorySyncStaffUserIDsEnv = "AICRM_WECOM_DIRECTORY_SYNC_STAFF_USER_IDS"
 	weComSidebarCorpIDEnv             = "AICRM_WECOM_SIDEBAR_CORP_ID"
@@ -172,6 +173,7 @@ type WeComOAuth struct {
 	CorpID      string
 	Secret      OAuthSecret
 	CallbackURL string
+	AgentID     int64
 }
 
 // WeComDirectorySync is explicitly opt-in. The staff list is the complete
@@ -679,7 +681,8 @@ func parseWeComOAuth(lookup environmentLookup, problems *[]string) WeComOAuth {
 	corpID, corpIDPresent := lookup(weComOAuthCorpIDEnv)
 	secret, secretPresent := lookup(weComOAuthSecretEnv)
 	callbackURL, callbackPresent := lookup(weComOAuthCallbackEnv)
-	if !corpIDPresent && !secretPresent && !callbackPresent {
+	agentValue, agentPresent := lookup(weComOAuthAgentIDEnv)
+	if !corpIDPresent && !secretPresent && !callbackPresent && !agentPresent {
 		return WeComOAuth{}
 	}
 	if !corpIDPresent || !secretPresent || !callbackPresent || corpID == "" || secret == "" || callbackURL == "" {
@@ -695,7 +698,15 @@ func parseWeComOAuth(lookup environmentLookup, problems *[]string) WeComOAuth {
 	if !validOAuthCallbackURL(callbackURL) {
 		*problems = append(*problems, "wecom.oauth.callback_url is invalid")
 	}
-	return WeComOAuth{Enabled: true, CorpID: corpID, Secret: OAuthSecret{value: secret}, CallbackURL: callbackURL}
+	var agentID int64
+	if agentPresent {
+		var err error
+		agentID, err = strconv.ParseInt(agentValue, 10, 64)
+		if err != nil || agentID < 1 || strconv.FormatInt(agentID, 10) != agentValue {
+			*problems = append(*problems, "wecom.oauth.agent_id must be a positive integer")
+		}
+	}
+	return WeComOAuth{Enabled: true, CorpID: corpID, Secret: OAuthSecret{value: secret}, CallbackURL: callbackURL, AgentID: agentID}
 }
 
 func parseWeComDirectorySync(lookup environmentLookup, problems *[]string) WeComDirectorySync {

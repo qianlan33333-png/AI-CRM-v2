@@ -23,6 +23,9 @@ type HumanOAuthConfig struct {
 	CorpID        CorpID
 	HTTPClient    *http.Client
 	TokenProvider TokenProvider
+	// DesktopAgentID selects the administrator Web login flow; zero preserves
+	// the existing in-client OAuth flow used by Sidebar.
+	DesktopAgentID int64
 }
 
 // HumanOAuthClient is the narrow provider adapter used by the admin browser
