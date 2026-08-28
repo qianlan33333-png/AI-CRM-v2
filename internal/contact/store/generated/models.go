@@ -88,6 +88,64 @@ type ChannelHistoricalContact struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ContactV1ClassTermTagHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	SourceID            int64              `json:"source_id"`
+	TagGroupName        string             `json:"tag_group_name"`
+	TagName             string             `json:"tag_name"`
+	ClassTermNo         int32              `json:"class_term_no"`
+	ClassTermLabel      string             `json:"class_term_label"`
+	OriginalActive      bool               `json:"original_active"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	StrategySourceID    string             `json:"strategy_source_id"`
+	GroupSourceID       string             `json:"group_source_id"`
+	TagSourceID         string             `json:"tag_source_id"`
+}
+
+type ContactV1CustomerStatusChange struct {
+	ID                    int64              `json:"id"`
+	SourceKeyDigest       []byte             `json:"source_key_digest"`
+	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
+	SourceFieldDigest     []byte             `json:"source_field_digest"`
+	SourceID              int64              `json:"source_id"`
+	OldSignupStatus       string             `json:"old_signup_status"`
+	NewSignupStatus       string             `json:"new_signup_status"`
+	OldLabelName          string             `json:"old_label_name"`
+	NewLabelName          string             `json:"new_label_name"`
+	CustomerNameSnapshot  string             `json:"customer_name_snapshot"`
+	OwnerUseridSnapshot   string             `json:"owner_userid_snapshot"`
+	SetByUseridDigest     []byte             `json:"set_by_userid_digest"`
+	SetAt                 pgtype.Timestamptz `json:"set_at"`
+	WecomTagSyncStatus    string             `json:"wecom_tag_sync_status"`
+	WecomTagSyncErrorHash []byte             `json:"wecom_tag_sync_error_hash"`
+	StatusFlagsDigest     []byte             `json:"status_flags_digest"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	Unionid               string             `json:"unionid"`
+}
+
+type ContactV1CustomerStatusSnapshot struct {
+	ID                    int64              `json:"id"`
+	SourceKeyDigest       []byte             `json:"source_key_digest"`
+	SourcePayloadDigest   []byte             `json:"source_payload_digest"`
+	SourceFieldDigest     []byte             `json:"source_field_digest"`
+	SignupStatus          string             `json:"signup_status"`
+	SignupLabelName       string             `json:"signup_label_name"`
+	CustomerNameSnapshot  string             `json:"customer_name_snapshot"`
+	OwnerUseridSnapshot   string             `json:"owner_userid_snapshot"`
+	SetByUseridDigest     []byte             `json:"set_by_userid_digest"`
+	SetAt                 pgtype.Timestamptz `json:"set_at"`
+	WecomTagSyncStatus    string             `json:"wecom_tag_sync_status"`
+	WecomTagSyncErrorHash []byte             `json:"wecom_tag_sync_error_hash"`
+	StatusFlagsDigest     []byte             `json:"status_flags_digest"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Unionid               string             `json:"unionid"`
+}
+
 type ContactV1OwnerMigrationResultHistory struct {
 	ID                     int64              `json:"id"`
 	SourceKeyDigest        []byte             `json:"source_key_digest"`

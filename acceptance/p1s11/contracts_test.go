@@ -215,6 +215,7 @@ func TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet(t *testing.T) 
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
+		"ListMarketingStateHistorySnapshot", "GetMarketingStateHistorySnapshot", "ListMarketingStateHistoryChange", "GetMarketingStateHistoryChange", "ListMarketingStateHistoryValueSnapshot", "GetMarketingStateHistoryValueSnapshot", "ListMarketingStateHistoryValueChange", "GetMarketingStateHistoryValueChange",
 		"ListAudienceHistoryGroups", "ListAudienceHistoryPackages", "ListAudienceHistoryVersions", "ListAudienceHistorySenders", "ListAudienceHistoryRules", "ListAudienceHistoryRuleVersions", "ListAudienceHistoryDefinitions", "ListAudienceHistoryMembers", "GetAudienceHistoryPackage", "GetAudienceHistoryDefinition",
 		"ListProfileHistoryTemplates", "GetProfileHistoryTemplate", "ListProfileHistoryCategories", "ListProfileHistoryOptionMappings", "ListSignupTagHistoryRules",
 		"GetChannelHistory",
@@ -229,6 +230,8 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListCouponHistoryDefinitions", "ListCouponHistoryClaims", "ListCouponHistoryRedemptions",
 		"ListAutomationHistorySOPs", "GetAutomationHistorySOP", "ListAutomationHistoryConfigs", "GetAutomationHistoryConfig", "ListAutomationHistoryPrompts", "GetAutomationHistoryPrompt", "ListAutomationHistoryAgents", "GetAutomationHistoryAgent",
 		"ListHXCHistoryMeta", "GetHXCHistoryMeta", "ListHXCHistorySnapshot", "GetHXCHistorySnapshot", "ListHXCHistoryActivation", "GetHXCHistoryActivation", "ListHXCHistoryLead", "GetHXCHistoryLead", "ListHXCHistoryBatch", "GetHXCHistoryBatch",
+		"ListCustomerStateHistorySnapshot", "GetCustomerStateHistorySnapshot", "ListCustomerStateHistoryChange", "GetCustomerStateHistoryChange", "ListCustomerStateHistoryClassTermTagMapping", "GetCustomerStateHistoryClassTermTagMapping",
+		"ListStaticHistoryGroupInvite", "GetStaticHistoryGroupInvite", "ListStaticHistoryProductPageSlice", "GetStaticHistoryProductPageSlice", "ListStaticHistoryCycleStrategy", "GetStaticHistoryCycleStrategy", "ListStaticHistoryCycleVersion", "GetStaticHistoryCycleVersion", "ListStaticHistoryCycleDocument", "GetStaticHistoryCycleDocument",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",
 		"ListMemberViewHistory", "GetMemberViewHistory", "ListMemberUsageHistory", "GetMemberUsageHistory",
 		"ListSidebarProfileHistory", "GetSidebarProfileHistory", "ListOwnerMigrationResultHistory", "GetOwnerMigrationResultHistory",

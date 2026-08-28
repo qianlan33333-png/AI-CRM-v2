@@ -93,6 +93,7 @@ sql:
       - internal/contact/store/queries/historical_channel_relations.sql
       - internal/contact/store/queries/signup_tag_history.sql
       - internal/contact/store/queries/contact_history.sql
+      - internal/contact/store/queries/customer_state_history.sql
       - internal/contact/store/queries/dm01_acceptance.sql
       - internal/contact/store/queries/order_read_port.sql
       - internal/contact/store/queries/outbound_targets.sql

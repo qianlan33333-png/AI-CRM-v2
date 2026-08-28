@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(memberGridHistoryReconciledTables) != 5 || len(campaignHistoryReconciledTables) != 5 || len(automationHistoryReconciledTables) != 4 || len(hxcHistoryReconciledTables) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+5+len(campaignHistoryReconciledTables)+4+len(profileCatalogHistoryScopes)+6 {
+	if len(marketingStateHistoryReconciledTables) != 4 || len(customerStateHistoryReconciledTables) != 3 || len(staticTailHistoryReconciledTables) != 5 || len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(couponReconciledTables) != 4 || len(groupOpsReconciledTables) != 11 || len(audienceHistoryScopes) != 8 || len(contactHistoryReconciledTables) != 4 || len(memberGridHistoryReconciledTables) != 5 || len(campaignHistoryReconciledTables) != 5 || len(automationHistoryReconciledTables) != 4 || len(hxcHistoryReconciledTables) != 8 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables)+len(couponReconciledTables)+5+len(audienceHistoryScopes)+5+len(campaignHistoryReconciledTables)+4+len(profileCatalogHistoryScopes)+6+5+3+4 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -55,6 +55,27 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 	}
 	all = append(all, "public/sidebar_customer_profile_fields", "public/owner_migration_results")
 	all = append(all, campaignHistoryReconciledTables...)
+	for _, scope := range marketingStateHistoryScopes {
+		all = append(all, scope.table)
+		mapping := targetBySourceTable[scope.table]
+		if mapping.domain != "segment" || mapping.table != scope.target || !isMarketingStateHistorySource(scope.table) {
+			t.Fatalf("marketing state mapping mismatch: %s", scope.table)
+		}
+	}
+	for _, scope := range customerStateHistoryScopes {
+		all = append(all, scope.table)
+		mapping := targetBySourceTable[scope.table]
+		if mapping.domain != "contact" || mapping.table != scope.target || !isCustomerStateHistorySource(scope.table) {
+			t.Fatalf("customer state mapping mismatch: %s", scope.table)
+		}
+	}
+	for _, scope := range staticTailHistoryScopes {
+		all = append(all, scope.table)
+		mapping := targetBySourceTable[scope.table]
+		if mapping.domain != scope.domain || mapping.table != scope.target || !isStaticTailHistorySource(scope.table) {
+			t.Fatalf("static tail mapping mismatch: %s", scope.table)
+		}
+	}
 	for _, table := range all {
 		if seen[table] {
 			t.Fatalf("duplicate source table %s", table)

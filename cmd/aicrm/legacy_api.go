@@ -34,6 +34,7 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	operationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/app"
+	cycleport "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/port"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
@@ -200,6 +201,11 @@ type Handler struct {
 	signupTagHistory        contactport.SignupTagHistoryReader
 	automationHistory       automationport.AutomationHistoryReader
 	hxcHistory              hxcport.HXCHistoryReader
+	staticMediaHistory      mediaport.StaticMediaHistoryReader
+	customerStateHistory    contactport.CustomerStateHistoryReader
+	marketingStateHistory   segmentport.MarketingStateHistoryReader
+	staticProductHistory    productport.StaticProductHistoryReader
+	staticCycleHistory      cycleport.StaticCycleHistoryReader
 	aiAudienceInbound       *aiAudienceInboundRoutes
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler

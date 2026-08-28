@@ -3298,6 +3298,276 @@ func (e CustomerSafeExportResponseRealExternalCallExecuted) Valid() bool {
 	}
 }
 
+// Defines values for CustomerStateHistoryChangeDetailReadOnly.
+const (
+	CustomerStateHistoryChangeDetailReadOnlyTrue CustomerStateHistoryChangeDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryChangeDetailReadOnly enum.
+func (e CustomerStateHistoryChangeDetailReadOnly) Valid() bool {
+	switch e {
+	case CustomerStateHistoryChangeDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryChangeDetailRealExternalCallExecuted.
+const (
+	CustomerStateHistoryChangeDetailRealExternalCallExecutedFalse CustomerStateHistoryChangeDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryChangeDetailRealExternalCallExecuted enum.
+func (e CustomerStateHistoryChangeDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerStateHistoryChangeDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryChangeDetailSource.
+const (
+	CustomerStateHistoryChangeDetailSourceV1History CustomerStateHistoryChangeDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryChangeDetailSource enum.
+func (e CustomerStateHistoryChangeDetailSource) Valid() bool {
+	switch e {
+	case CustomerStateHistoryChangeDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryChangePageReadOnly.
+const (
+	CustomerStateHistoryChangePageReadOnlyTrue CustomerStateHistoryChangePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryChangePageReadOnly enum.
+func (e CustomerStateHistoryChangePageReadOnly) Valid() bool {
+	switch e {
+	case CustomerStateHistoryChangePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryChangePageRealExternalCallExecuted.
+const (
+	CustomerStateHistoryChangePageRealExternalCallExecutedFalse CustomerStateHistoryChangePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryChangePageRealExternalCallExecuted enum.
+func (e CustomerStateHistoryChangePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerStateHistoryChangePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryChangePageSource.
+const (
+	CustomerStateHistoryChangePageSourceV1History CustomerStateHistoryChangePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryChangePageSource enum.
+func (e CustomerStateHistoryChangePageSource) Valid() bool {
+	switch e {
+	case CustomerStateHistoryChangePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryClassTermTagMappingDetailReadOnly.
+const (
+	CustomerStateHistoryClassTermTagMappingDetailReadOnlyTrue CustomerStateHistoryClassTermTagMappingDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryClassTermTagMappingDetailReadOnly enum.
+func (e CustomerStateHistoryClassTermTagMappingDetailReadOnly) Valid() bool {
+	switch e {
+	case CustomerStateHistoryClassTermTagMappingDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted.
+const (
+	CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecutedFalse CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted enum.
+func (e CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryClassTermTagMappingDetailSource.
+const (
+	CustomerStateHistoryClassTermTagMappingDetailSourceV1History CustomerStateHistoryClassTermTagMappingDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryClassTermTagMappingDetailSource enum.
+func (e CustomerStateHistoryClassTermTagMappingDetailSource) Valid() bool {
+	switch e {
+	case CustomerStateHistoryClassTermTagMappingDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryClassTermTagMappingPageReadOnly.
+const (
+	CustomerStateHistoryClassTermTagMappingPageReadOnlyTrue CustomerStateHistoryClassTermTagMappingPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryClassTermTagMappingPageReadOnly enum.
+func (e CustomerStateHistoryClassTermTagMappingPageReadOnly) Valid() bool {
+	switch e {
+	case CustomerStateHistoryClassTermTagMappingPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted.
+const (
+	CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecutedFalse CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted enum.
+func (e CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistoryClassTermTagMappingPageSource.
+const (
+	CustomerStateHistoryClassTermTagMappingPageSourceV1History CustomerStateHistoryClassTermTagMappingPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistoryClassTermTagMappingPageSource enum.
+func (e CustomerStateHistoryClassTermTagMappingPageSource) Valid() bool {
+	switch e {
+	case CustomerStateHistoryClassTermTagMappingPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistorySnapshotDetailReadOnly.
+const (
+	CustomerStateHistorySnapshotDetailReadOnlyTrue CustomerStateHistorySnapshotDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistorySnapshotDetailReadOnly enum.
+func (e CustomerStateHistorySnapshotDetailReadOnly) Valid() bool {
+	switch e {
+	case CustomerStateHistorySnapshotDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistorySnapshotDetailRealExternalCallExecuted.
+const (
+	CustomerStateHistorySnapshotDetailRealExternalCallExecutedFalse CustomerStateHistorySnapshotDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistorySnapshotDetailRealExternalCallExecuted enum.
+func (e CustomerStateHistorySnapshotDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerStateHistorySnapshotDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistorySnapshotDetailSource.
+const (
+	CustomerStateHistorySnapshotDetailSourceV1History CustomerStateHistorySnapshotDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistorySnapshotDetailSource enum.
+func (e CustomerStateHistorySnapshotDetailSource) Valid() bool {
+	switch e {
+	case CustomerStateHistorySnapshotDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistorySnapshotPageReadOnly.
+const (
+	CustomerStateHistorySnapshotPageReadOnlyTrue CustomerStateHistorySnapshotPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistorySnapshotPageReadOnly enum.
+func (e CustomerStateHistorySnapshotPageReadOnly) Valid() bool {
+	switch e {
+	case CustomerStateHistorySnapshotPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistorySnapshotPageRealExternalCallExecuted.
+const (
+	CustomerStateHistorySnapshotPageRealExternalCallExecutedFalse CustomerStateHistorySnapshotPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistorySnapshotPageRealExternalCallExecuted enum.
+func (e CustomerStateHistorySnapshotPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerStateHistorySnapshotPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerStateHistorySnapshotPageSource.
+const (
+	CustomerStateHistorySnapshotPageSourceV1History CustomerStateHistorySnapshotPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerStateHistorySnapshotPageSource enum.
+func (e CustomerStateHistorySnapshotPageSource) Valid() bool {
+	switch e {
+	case CustomerStateHistorySnapshotPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CustomerSurveyAnswerResponseFreeTextIncluded.
 const (
 	CustomerSurveyAnswerResponseFreeTextIncludedFalse CustomerSurveyAnswerResponseFreeTextIncluded = false
@@ -7774,6 +8044,366 @@ func (e LocalProductLifecycleShareReason) Valid() bool {
 	}
 }
 
+// Defines values for MarketingStateHistoryChangeDetailReadOnly.
+const (
+	MarketingStateHistoryChangeDetailReadOnlyTrue MarketingStateHistoryChangeDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryChangeDetailReadOnly enum.
+func (e MarketingStateHistoryChangeDetailReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistoryChangeDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryChangeDetailRealExternalCallExecuted.
+const (
+	MarketingStateHistoryChangeDetailRealExternalCallExecutedFalse MarketingStateHistoryChangeDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryChangeDetailRealExternalCallExecuted enum.
+func (e MarketingStateHistoryChangeDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistoryChangeDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryChangeDetailSource.
+const (
+	MarketingStateHistoryChangeDetailSourceV1History MarketingStateHistoryChangeDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryChangeDetailSource enum.
+func (e MarketingStateHistoryChangeDetailSource) Valid() bool {
+	switch e {
+	case MarketingStateHistoryChangeDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryChangePageReadOnly.
+const (
+	MarketingStateHistoryChangePageReadOnlyTrue MarketingStateHistoryChangePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryChangePageReadOnly enum.
+func (e MarketingStateHistoryChangePageReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistoryChangePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryChangePageRealExternalCallExecuted.
+const (
+	MarketingStateHistoryChangePageRealExternalCallExecutedFalse MarketingStateHistoryChangePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryChangePageRealExternalCallExecuted enum.
+func (e MarketingStateHistoryChangePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistoryChangePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryChangePageSource.
+const (
+	MarketingStateHistoryChangePageSourceV1History MarketingStateHistoryChangePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryChangePageSource enum.
+func (e MarketingStateHistoryChangePageSource) Valid() bool {
+	switch e {
+	case MarketingStateHistoryChangePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistorySnapshotDetailReadOnly.
+const (
+	MarketingStateHistorySnapshotDetailReadOnlyTrue MarketingStateHistorySnapshotDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistorySnapshotDetailReadOnly enum.
+func (e MarketingStateHistorySnapshotDetailReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistorySnapshotDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistorySnapshotDetailRealExternalCallExecuted.
+const (
+	MarketingStateHistorySnapshotDetailRealExternalCallExecutedFalse MarketingStateHistorySnapshotDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistorySnapshotDetailRealExternalCallExecuted enum.
+func (e MarketingStateHistorySnapshotDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistorySnapshotDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistorySnapshotDetailSource.
+const (
+	MarketingStateHistorySnapshotDetailSourceV1History MarketingStateHistorySnapshotDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistorySnapshotDetailSource enum.
+func (e MarketingStateHistorySnapshotDetailSource) Valid() bool {
+	switch e {
+	case MarketingStateHistorySnapshotDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistorySnapshotPageReadOnly.
+const (
+	MarketingStateHistorySnapshotPageReadOnlyTrue MarketingStateHistorySnapshotPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistorySnapshotPageReadOnly enum.
+func (e MarketingStateHistorySnapshotPageReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistorySnapshotPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistorySnapshotPageRealExternalCallExecuted.
+const (
+	MarketingStateHistorySnapshotPageRealExternalCallExecutedFalse MarketingStateHistorySnapshotPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistorySnapshotPageRealExternalCallExecuted enum.
+func (e MarketingStateHistorySnapshotPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistorySnapshotPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistorySnapshotPageSource.
+const (
+	MarketingStateHistorySnapshotPageSourceV1History MarketingStateHistorySnapshotPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistorySnapshotPageSource enum.
+func (e MarketingStateHistorySnapshotPageSource) Valid() bool {
+	switch e {
+	case MarketingStateHistorySnapshotPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueChangeDetailReadOnly.
+const (
+	MarketingStateHistoryValueChangeDetailReadOnlyTrue MarketingStateHistoryValueChangeDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueChangeDetailReadOnly enum.
+func (e MarketingStateHistoryValueChangeDetailReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueChangeDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueChangeDetailRealExternalCallExecuted.
+const (
+	MarketingStateHistoryValueChangeDetailRealExternalCallExecutedFalse MarketingStateHistoryValueChangeDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueChangeDetailRealExternalCallExecuted enum.
+func (e MarketingStateHistoryValueChangeDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueChangeDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueChangeDetailSource.
+const (
+	MarketingStateHistoryValueChangeDetailSourceV1History MarketingStateHistoryValueChangeDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueChangeDetailSource enum.
+func (e MarketingStateHistoryValueChangeDetailSource) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueChangeDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueChangePageReadOnly.
+const (
+	MarketingStateHistoryValueChangePageReadOnlyTrue MarketingStateHistoryValueChangePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueChangePageReadOnly enum.
+func (e MarketingStateHistoryValueChangePageReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueChangePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueChangePageRealExternalCallExecuted.
+const (
+	MarketingStateHistoryValueChangePageRealExternalCallExecutedFalse MarketingStateHistoryValueChangePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueChangePageRealExternalCallExecuted enum.
+func (e MarketingStateHistoryValueChangePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueChangePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueChangePageSource.
+const (
+	MarketingStateHistoryValueChangePageSourceV1History MarketingStateHistoryValueChangePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueChangePageSource enum.
+func (e MarketingStateHistoryValueChangePageSource) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueChangePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueSnapshotDetailReadOnly.
+const (
+	MarketingStateHistoryValueSnapshotDetailReadOnlyTrue MarketingStateHistoryValueSnapshotDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueSnapshotDetailReadOnly enum.
+func (e MarketingStateHistoryValueSnapshotDetailReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueSnapshotDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted.
+const (
+	MarketingStateHistoryValueSnapshotDetailRealExternalCallExecutedFalse MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted enum.
+func (e MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueSnapshotDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueSnapshotDetailSource.
+const (
+	MarketingStateHistoryValueSnapshotDetailSourceV1History MarketingStateHistoryValueSnapshotDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueSnapshotDetailSource enum.
+func (e MarketingStateHistoryValueSnapshotDetailSource) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueSnapshotDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueSnapshotPageReadOnly.
+const (
+	MarketingStateHistoryValueSnapshotPageReadOnlyTrue MarketingStateHistoryValueSnapshotPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueSnapshotPageReadOnly enum.
+func (e MarketingStateHistoryValueSnapshotPageReadOnly) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueSnapshotPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted.
+const (
+	MarketingStateHistoryValueSnapshotPageRealExternalCallExecutedFalse MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted enum.
+func (e MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueSnapshotPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MarketingStateHistoryValueSnapshotPageSource.
+const (
+	MarketingStateHistoryValueSnapshotPageSourceV1History MarketingStateHistoryValueSnapshotPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the MarketingStateHistoryValueSnapshotPageSource enum.
+func (e MarketingStateHistoryValueSnapshotPageSource) Valid() bool {
+	switch e {
+	case MarketingStateHistoryValueSnapshotPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MediaContentRefKind.
 const (
 	MediaContentRefKindAttachment  MediaContentRefKind = "attachment"
@@ -10551,13 +11181,13 @@ func (e SidebarProfileHistoryPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for SidebarProfileHistoryPageSource.
 const (
-	V1History SidebarProfileHistoryPageSource = "v1_history"
+	SidebarProfileHistoryPageSourceV1History SidebarProfileHistoryPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the SidebarProfileHistoryPageSource enum.
 func (e SidebarProfileHistoryPageSource) Valid() bool {
 	switch e {
-	case V1History:
+	case SidebarProfileHistoryPageSourceV1History:
 		return true
 	default:
 		return false
@@ -10599,13 +11229,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	True SidebarSafetyLocalOnly = true
+	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case True:
+	case SidebarSafetyLocalOnlyTrue:
 		return true
 	default:
 		return false
@@ -10629,13 +11259,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -10759,6 +11389,456 @@ const (
 func (e SidebarThumbnailPendingResponseStatus) Valid() bool {
 	switch e {
 	case SidebarThumbnailPendingResponseStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleDocumentDetailReadOnly.
+const (
+	StaticHistoryCycleDocumentDetailReadOnlyTrue StaticHistoryCycleDocumentDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleDocumentDetailReadOnly enum.
+func (e StaticHistoryCycleDocumentDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleDocumentDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleDocumentDetailRealExternalCallExecuted.
+const (
+	StaticHistoryCycleDocumentDetailRealExternalCallExecutedFalse StaticHistoryCycleDocumentDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleDocumentDetailRealExternalCallExecuted enum.
+func (e StaticHistoryCycleDocumentDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleDocumentDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleDocumentDetailSource.
+const (
+	StaticHistoryCycleDocumentDetailSourceV1History StaticHistoryCycleDocumentDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleDocumentDetailSource enum.
+func (e StaticHistoryCycleDocumentDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleDocumentDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleDocumentPageReadOnly.
+const (
+	StaticHistoryCycleDocumentPageReadOnlyTrue StaticHistoryCycleDocumentPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleDocumentPageReadOnly enum.
+func (e StaticHistoryCycleDocumentPageReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleDocumentPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleDocumentPageRealExternalCallExecuted.
+const (
+	StaticHistoryCycleDocumentPageRealExternalCallExecutedFalse StaticHistoryCycleDocumentPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleDocumentPageRealExternalCallExecuted enum.
+func (e StaticHistoryCycleDocumentPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleDocumentPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleDocumentPageSource.
+const (
+	StaticHistoryCycleDocumentPageSourceV1History StaticHistoryCycleDocumentPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleDocumentPageSource enum.
+func (e StaticHistoryCycleDocumentPageSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleDocumentPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleStrategyDetailReadOnly.
+const (
+	StaticHistoryCycleStrategyDetailReadOnlyTrue StaticHistoryCycleStrategyDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleStrategyDetailReadOnly enum.
+func (e StaticHistoryCycleStrategyDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleStrategyDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleStrategyDetailRealExternalCallExecuted.
+const (
+	StaticHistoryCycleStrategyDetailRealExternalCallExecutedFalse StaticHistoryCycleStrategyDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleStrategyDetailRealExternalCallExecuted enum.
+func (e StaticHistoryCycleStrategyDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleStrategyDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleStrategyDetailSource.
+const (
+	StaticHistoryCycleStrategyDetailSourceV1History StaticHistoryCycleStrategyDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleStrategyDetailSource enum.
+func (e StaticHistoryCycleStrategyDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleStrategyDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleStrategyPageReadOnly.
+const (
+	StaticHistoryCycleStrategyPageReadOnlyTrue StaticHistoryCycleStrategyPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleStrategyPageReadOnly enum.
+func (e StaticHistoryCycleStrategyPageReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleStrategyPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleStrategyPageRealExternalCallExecuted.
+const (
+	StaticHistoryCycleStrategyPageRealExternalCallExecutedFalse StaticHistoryCycleStrategyPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleStrategyPageRealExternalCallExecuted enum.
+func (e StaticHistoryCycleStrategyPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleStrategyPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleStrategyPageSource.
+const (
+	StaticHistoryCycleStrategyPageSourceV1History StaticHistoryCycleStrategyPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleStrategyPageSource enum.
+func (e StaticHistoryCycleStrategyPageSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleStrategyPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleVersionDetailReadOnly.
+const (
+	StaticHistoryCycleVersionDetailReadOnlyTrue StaticHistoryCycleVersionDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleVersionDetailReadOnly enum.
+func (e StaticHistoryCycleVersionDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleVersionDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleVersionDetailRealExternalCallExecuted.
+const (
+	StaticHistoryCycleVersionDetailRealExternalCallExecutedFalse StaticHistoryCycleVersionDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleVersionDetailRealExternalCallExecuted enum.
+func (e StaticHistoryCycleVersionDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleVersionDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleVersionDetailSource.
+const (
+	StaticHistoryCycleVersionDetailSourceV1History StaticHistoryCycleVersionDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleVersionDetailSource enum.
+func (e StaticHistoryCycleVersionDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleVersionDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleVersionPageReadOnly.
+const (
+	StaticHistoryCycleVersionPageReadOnlyTrue StaticHistoryCycleVersionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleVersionPageReadOnly enum.
+func (e StaticHistoryCycleVersionPageReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryCycleVersionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleVersionPageRealExternalCallExecuted.
+const (
+	StaticHistoryCycleVersionPageRealExternalCallExecutedFalse StaticHistoryCycleVersionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleVersionPageRealExternalCallExecuted enum.
+func (e StaticHistoryCycleVersionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryCycleVersionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryCycleVersionPageSource.
+const (
+	StaticHistoryCycleVersionPageSourceV1History StaticHistoryCycleVersionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryCycleVersionPageSource enum.
+func (e StaticHistoryCycleVersionPageSource) Valid() bool {
+	switch e {
+	case StaticHistoryCycleVersionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryGroupInviteDetailReadOnly.
+const (
+	StaticHistoryGroupInviteDetailReadOnlyTrue StaticHistoryGroupInviteDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryGroupInviteDetailReadOnly enum.
+func (e StaticHistoryGroupInviteDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryGroupInviteDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryGroupInviteDetailRealExternalCallExecuted.
+const (
+	StaticHistoryGroupInviteDetailRealExternalCallExecutedFalse StaticHistoryGroupInviteDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryGroupInviteDetailRealExternalCallExecuted enum.
+func (e StaticHistoryGroupInviteDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryGroupInviteDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryGroupInviteDetailSource.
+const (
+	StaticHistoryGroupInviteDetailSourceV1History StaticHistoryGroupInviteDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryGroupInviteDetailSource enum.
+func (e StaticHistoryGroupInviteDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryGroupInviteDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryGroupInvitePageReadOnly.
+const (
+	StaticHistoryGroupInvitePageReadOnlyTrue StaticHistoryGroupInvitePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryGroupInvitePageReadOnly enum.
+func (e StaticHistoryGroupInvitePageReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryGroupInvitePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryGroupInvitePageRealExternalCallExecuted.
+const (
+	StaticHistoryGroupInvitePageRealExternalCallExecutedFalse StaticHistoryGroupInvitePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryGroupInvitePageRealExternalCallExecuted enum.
+func (e StaticHistoryGroupInvitePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryGroupInvitePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryGroupInvitePageSource.
+const (
+	StaticHistoryGroupInvitePageSourceV1History StaticHistoryGroupInvitePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryGroupInvitePageSource enum.
+func (e StaticHistoryGroupInvitePageSource) Valid() bool {
+	switch e {
+	case StaticHistoryGroupInvitePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryProductPageSliceDetailReadOnly.
+const (
+	StaticHistoryProductPageSliceDetailReadOnlyTrue StaticHistoryProductPageSliceDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryProductPageSliceDetailReadOnly enum.
+func (e StaticHistoryProductPageSliceDetailReadOnly) Valid() bool {
+	switch e {
+	case StaticHistoryProductPageSliceDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryProductPageSliceDetailRealExternalCallExecuted.
+const (
+	StaticHistoryProductPageSliceDetailRealExternalCallExecutedFalse StaticHistoryProductPageSliceDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryProductPageSliceDetailRealExternalCallExecuted enum.
+func (e StaticHistoryProductPageSliceDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case StaticHistoryProductPageSliceDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryProductPageSliceDetailSource.
+const (
+	StaticHistoryProductPageSliceDetailSourceV1History StaticHistoryProductPageSliceDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryProductPageSliceDetailSource enum.
+func (e StaticHistoryProductPageSliceDetailSource) Valid() bool {
+	switch e {
+	case StaticHistoryProductPageSliceDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryProductPageSlicePageReadOnly.
+const (
+	True StaticHistoryProductPageSlicePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryProductPageSlicePageReadOnly enum.
+func (e StaticHistoryProductPageSlicePageReadOnly) Valid() bool {
+	switch e {
+	case True:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryProductPageSlicePageRealExternalCallExecuted.
+const (
+	False StaticHistoryProductPageSlicePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryProductPageSlicePageRealExternalCallExecuted enum.
+func (e StaticHistoryProductPageSlicePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case False:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaticHistoryProductPageSlicePageSource.
+const (
+	V1History StaticHistoryProductPageSlicePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the StaticHistoryProductPageSlicePageSource enum.
+func (e StaticHistoryProductPageSlicePageSource) Valid() bool {
+	switch e {
+	case V1History:
 		return true
 	default:
 		return false
@@ -13409,6 +14489,172 @@ type CustomerSafeExportResponseLocalOnly bool
 // CustomerSafeExportResponseRealExternalCallExecuted defines model for CustomerSafeExportResponse.RealExternalCallExecuted.
 type CustomerSafeExportResponseRealExternalCallExecuted bool
 
+// CustomerStateHistoryChange defines model for CustomerStateHistoryChange.
+type CustomerStateHistoryChange struct {
+	CreatedAt             time.Time                  `json:"created_at"`
+	Id                    int64                      `json:"id"`
+	NewLabelName          string                     `json:"new_label_name"`
+	NewSignupStatus       string                     `json:"new_signup_status"`
+	OldLabelName          string                     `json:"old_label_name"`
+	OldSignupStatus       string                     `json:"old_signup_status"`
+	SetAt                 time.Time                  `json:"set_at"`
+	SetByUseridDigest     CustomerStateHistoryDigest `json:"set_by_userid_digest"`
+	SourceFieldDigest     CustomerStateHistoryDigest `json:"source_field_digest"`
+	SourceId              int64                      `json:"source_id"`
+	SourceKeyDigest       CustomerStateHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest   CustomerStateHistoryDigest `json:"source_payload_digest"`
+	StatusFlagsDigest     CustomerStateHistoryDigest `json:"status_flags_digest"`
+	WecomTagSyncErrorHash CustomerStateHistoryDigest `json:"wecom_tag_sync_error_hash"`
+	WecomTagSyncStatus    string                     `json:"wecom_tag_sync_status"`
+}
+
+// CustomerStateHistoryChangeDetail defines model for CustomerStateHistoryChangeDetail.
+type CustomerStateHistoryChangeDetail struct {
+	Item                     CustomerStateHistoryChange                               `json:"item"`
+	ReadOnly                 CustomerStateHistoryChangeDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerStateHistoryChangeDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerStateHistoryChangeDetailSource                   `json:"source"`
+}
+
+// CustomerStateHistoryChangeDetailReadOnly defines model for CustomerStateHistoryChangeDetail.ReadOnly.
+type CustomerStateHistoryChangeDetailReadOnly bool
+
+// CustomerStateHistoryChangeDetailRealExternalCallExecuted defines model for CustomerStateHistoryChangeDetail.RealExternalCallExecuted.
+type CustomerStateHistoryChangeDetailRealExternalCallExecuted bool
+
+// CustomerStateHistoryChangeDetailSource defines model for CustomerStateHistoryChangeDetail.Source.
+type CustomerStateHistoryChangeDetailSource string
+
+// CustomerStateHistoryChangePage defines model for CustomerStateHistoryChangePage.
+type CustomerStateHistoryChangePage struct {
+	Items                    []CustomerStateHistoryChange                           `json:"items"`
+	Limit                    int                                                    `json:"limit"`
+	Offset                   int                                                    `json:"offset"`
+	ReadOnly                 CustomerStateHistoryChangePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerStateHistoryChangePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerStateHistoryChangePageSource                   `json:"source"`
+	Total                    int64                                                  `json:"total"`
+}
+
+// CustomerStateHistoryChangePageReadOnly defines model for CustomerStateHistoryChangePage.ReadOnly.
+type CustomerStateHistoryChangePageReadOnly bool
+
+// CustomerStateHistoryChangePageRealExternalCallExecuted defines model for CustomerStateHistoryChangePage.RealExternalCallExecuted.
+type CustomerStateHistoryChangePageRealExternalCallExecuted bool
+
+// CustomerStateHistoryChangePageSource defines model for CustomerStateHistoryChangePage.Source.
+type CustomerStateHistoryChangePageSource string
+
+// CustomerStateHistoryClassTermTagMapping defines model for CustomerStateHistoryClassTermTagMapping.
+type CustomerStateHistoryClassTermTagMapping struct {
+	ClassTermLabel      string                     `json:"class_term_label"`
+	ClassTermNo         int32                      `json:"class_term_no"`
+	CreatedAt           time.Time                  `json:"created_at"`
+	Id                  int64                      `json:"id"`
+	OriginalActive      bool                       `json:"original_active"`
+	SourceFieldDigest   CustomerStateHistoryDigest `json:"source_field_digest"`
+	SourceId            int64                      `json:"source_id"`
+	SourceKeyDigest     CustomerStateHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest CustomerStateHistoryDigest `json:"source_payload_digest"`
+	TagGroupName        string                     `json:"tag_group_name"`
+	TagName             string                     `json:"tag_name"`
+	UpdatedAt           time.Time                  `json:"updated_at"`
+}
+
+// CustomerStateHistoryClassTermTagMappingDetail defines model for CustomerStateHistoryClassTermTagMappingDetail.
+type CustomerStateHistoryClassTermTagMappingDetail struct {
+	Item                     CustomerStateHistoryClassTermTagMapping                               `json:"item"`
+	ReadOnly                 CustomerStateHistoryClassTermTagMappingDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerStateHistoryClassTermTagMappingDetailSource                   `json:"source"`
+}
+
+// CustomerStateHistoryClassTermTagMappingDetailReadOnly defines model for CustomerStateHistoryClassTermTagMappingDetail.ReadOnly.
+type CustomerStateHistoryClassTermTagMappingDetailReadOnly bool
+
+// CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted defines model for CustomerStateHistoryClassTermTagMappingDetail.RealExternalCallExecuted.
+type CustomerStateHistoryClassTermTagMappingDetailRealExternalCallExecuted bool
+
+// CustomerStateHistoryClassTermTagMappingDetailSource defines model for CustomerStateHistoryClassTermTagMappingDetail.Source.
+type CustomerStateHistoryClassTermTagMappingDetailSource string
+
+// CustomerStateHistoryClassTermTagMappingPage defines model for CustomerStateHistoryClassTermTagMappingPage.
+type CustomerStateHistoryClassTermTagMappingPage struct {
+	Items                    []CustomerStateHistoryClassTermTagMapping                           `json:"items"`
+	Limit                    int                                                                 `json:"limit"`
+	Offset                   int                                                                 `json:"offset"`
+	ReadOnly                 CustomerStateHistoryClassTermTagMappingPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerStateHistoryClassTermTagMappingPageSource                   `json:"source"`
+	Total                    int64                                                               `json:"total"`
+}
+
+// CustomerStateHistoryClassTermTagMappingPageReadOnly defines model for CustomerStateHistoryClassTermTagMappingPage.ReadOnly.
+type CustomerStateHistoryClassTermTagMappingPageReadOnly bool
+
+// CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted defines model for CustomerStateHistoryClassTermTagMappingPage.RealExternalCallExecuted.
+type CustomerStateHistoryClassTermTagMappingPageRealExternalCallExecuted bool
+
+// CustomerStateHistoryClassTermTagMappingPageSource defines model for CustomerStateHistoryClassTermTagMappingPage.Source.
+type CustomerStateHistoryClassTermTagMappingPageSource string
+
+// CustomerStateHistoryDigest defines model for CustomerStateHistoryDigest.
+type CustomerStateHistoryDigest = []int
+
+// CustomerStateHistorySnapshot defines model for CustomerStateHistorySnapshot.
+type CustomerStateHistorySnapshot struct {
+	CreatedAt             time.Time                  `json:"created_at"`
+	Id                    int64                      `json:"id"`
+	SetAt                 time.Time                  `json:"set_at"`
+	SetByUseridDigest     CustomerStateHistoryDigest `json:"set_by_userid_digest"`
+	SignupLabelName       string                     `json:"signup_label_name"`
+	SignupStatus          string                     `json:"signup_status"`
+	SourceFieldDigest     CustomerStateHistoryDigest `json:"source_field_digest"`
+	SourceKeyDigest       CustomerStateHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest   CustomerStateHistoryDigest `json:"source_payload_digest"`
+	StatusFlagsDigest     CustomerStateHistoryDigest `json:"status_flags_digest"`
+	UpdatedAt             time.Time                  `json:"updated_at"`
+	WecomTagSyncErrorHash CustomerStateHistoryDigest `json:"wecom_tag_sync_error_hash"`
+	WecomTagSyncStatus    string                     `json:"wecom_tag_sync_status"`
+}
+
+// CustomerStateHistorySnapshotDetail defines model for CustomerStateHistorySnapshotDetail.
+type CustomerStateHistorySnapshotDetail struct {
+	Item                     CustomerStateHistorySnapshot                               `json:"item"`
+	ReadOnly                 CustomerStateHistorySnapshotDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerStateHistorySnapshotDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerStateHistorySnapshotDetailSource                   `json:"source"`
+}
+
+// CustomerStateHistorySnapshotDetailReadOnly defines model for CustomerStateHistorySnapshotDetail.ReadOnly.
+type CustomerStateHistorySnapshotDetailReadOnly bool
+
+// CustomerStateHistorySnapshotDetailRealExternalCallExecuted defines model for CustomerStateHistorySnapshotDetail.RealExternalCallExecuted.
+type CustomerStateHistorySnapshotDetailRealExternalCallExecuted bool
+
+// CustomerStateHistorySnapshotDetailSource defines model for CustomerStateHistorySnapshotDetail.Source.
+type CustomerStateHistorySnapshotDetailSource string
+
+// CustomerStateHistorySnapshotPage defines model for CustomerStateHistorySnapshotPage.
+type CustomerStateHistorySnapshotPage struct {
+	Items                    []CustomerStateHistorySnapshot                           `json:"items"`
+	Limit                    int                                                      `json:"limit"`
+	Offset                   int                                                      `json:"offset"`
+	ReadOnly                 CustomerStateHistorySnapshotPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerStateHistorySnapshotPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerStateHistorySnapshotPageSource                   `json:"source"`
+	Total                    int64                                                    `json:"total"`
+}
+
+// CustomerStateHistorySnapshotPageReadOnly defines model for CustomerStateHistorySnapshotPage.ReadOnly.
+type CustomerStateHistorySnapshotPageReadOnly bool
+
+// CustomerStateHistorySnapshotPageRealExternalCallExecuted defines model for CustomerStateHistorySnapshotPage.RealExternalCallExecuted.
+type CustomerStateHistorySnapshotPageRealExternalCallExecuted bool
+
+// CustomerStateHistorySnapshotPageSource defines model for CustomerStateHistorySnapshotPage.Source.
+type CustomerStateHistorySnapshotPageSource string
+
 // CustomerSurveyAnswerItem defines model for CustomerSurveyAnswerItem.
 type CustomerSurveyAnswerItem struct {
 	ChoiceAnswers   []CustomerSurveyChoiceAnswer `json:"choice_answers"`
@@ -15650,6 +16896,228 @@ type LocalTagGroupListResponse struct {
 type LocalTagListResponse struct {
 	Items []LocalTag `json:"items"`
 }
+
+// MarketingStateHistoryChange defines model for MarketingStateHistoryChange.
+type MarketingStateHistoryChange struct {
+	Activated              bool      `json:"activated"`
+	AutomationKey          string    `json:"automation_key"`
+	ChangeReason           string    `json:"change_reason"`
+	Converted              bool      `json:"converted"`
+	CreatedAt              time.Time `json:"created_at"`
+	EligibleForConversion  bool      `json:"eligible_for_conversion"`
+	ExitReason             string    `json:"exit_reason"`
+	Id                     int64     `json:"id"`
+	LastActivationAt       string    `json:"last_activation_at"`
+	LastConversionMarkedAt string    `json:"last_conversion_marked_at"`
+	LastMessageAt          string    `json:"last_message_at"`
+	LifecycleStatus        string    `json:"lifecycle_status"`
+	MainStage              string    `json:"main_stage"`
+	RecordedAt             time.Time `json:"recorded_at"`
+	SourceId               int64     `json:"source_id"`
+	SubStage               string    `json:"sub_stage"`
+}
+
+// MarketingStateHistoryChangeDetail defines model for MarketingStateHistoryChangeDetail.
+type MarketingStateHistoryChangeDetail struct {
+	Item                     MarketingStateHistoryChange                               `json:"item"`
+	ReadOnly                 MarketingStateHistoryChangeDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistoryChangeDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistoryChangeDetailSource                   `json:"source"`
+}
+
+// MarketingStateHistoryChangeDetailReadOnly defines model for MarketingStateHistoryChangeDetail.ReadOnly.
+type MarketingStateHistoryChangeDetailReadOnly bool
+
+// MarketingStateHistoryChangeDetailRealExternalCallExecuted defines model for MarketingStateHistoryChangeDetail.RealExternalCallExecuted.
+type MarketingStateHistoryChangeDetailRealExternalCallExecuted bool
+
+// MarketingStateHistoryChangeDetailSource defines model for MarketingStateHistoryChangeDetail.Source.
+type MarketingStateHistoryChangeDetailSource string
+
+// MarketingStateHistoryChangePage defines model for MarketingStateHistoryChangePage.
+type MarketingStateHistoryChangePage struct {
+	Items                    []MarketingStateHistoryChange                           `json:"items"`
+	Limit                    int32                                                   `json:"limit"`
+	Offset                   int32                                                   `json:"offset"`
+	ReadOnly                 MarketingStateHistoryChangePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistoryChangePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistoryChangePageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// MarketingStateHistoryChangePageReadOnly defines model for MarketingStateHistoryChangePage.ReadOnly.
+type MarketingStateHistoryChangePageReadOnly bool
+
+// MarketingStateHistoryChangePageRealExternalCallExecuted defines model for MarketingStateHistoryChangePage.RealExternalCallExecuted.
+type MarketingStateHistoryChangePageRealExternalCallExecuted bool
+
+// MarketingStateHistoryChangePageSource defines model for MarketingStateHistoryChangePage.Source.
+type MarketingStateHistoryChangePageSource string
+
+// MarketingStateHistorySnapshot defines model for MarketingStateHistorySnapshot.
+type MarketingStateHistorySnapshot struct {
+	Activated              bool       `json:"activated"`
+	AutomationKey          string     `json:"automation_key"`
+	Converted              bool       `json:"converted"`
+	CreatedAt              time.Time  `json:"created_at"`
+	EligibleForConversion  bool       `json:"eligible_for_conversion"`
+	EnteredAt              *time.Time `json:"entered_at"`
+	ExitReason             string     `json:"exit_reason"`
+	ExitedAt               *time.Time `json:"exited_at"`
+	Id                     int64      `json:"id"`
+	LastActivationAt       string     `json:"last_activation_at"`
+	LastBatchStatus        string     `json:"last_batch_status"`
+	LastBatchWindowEnd     string     `json:"last_batch_window_end"`
+	LastBatchWindowStart   string     `json:"last_batch_window_start"`
+	LastConversionMarkedAt string     `json:"last_conversion_marked_at"`
+	LastMessageAt          string     `json:"last_message_at"`
+	LastTriggerMessageAt   string     `json:"last_trigger_message_at"`
+	LifecycleStatus        string     `json:"lifecycle_status"`
+	MainStage              string     `json:"main_stage"`
+	SourceId               int64      `json:"source_id"`
+	SubStage               string     `json:"sub_stage"`
+	UpdatedAt              time.Time  `json:"updated_at"`
+}
+
+// MarketingStateHistorySnapshotDetail defines model for MarketingStateHistorySnapshotDetail.
+type MarketingStateHistorySnapshotDetail struct {
+	Item                     MarketingStateHistorySnapshot                               `json:"item"`
+	ReadOnly                 MarketingStateHistorySnapshotDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistorySnapshotDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistorySnapshotDetailSource                   `json:"source"`
+}
+
+// MarketingStateHistorySnapshotDetailReadOnly defines model for MarketingStateHistorySnapshotDetail.ReadOnly.
+type MarketingStateHistorySnapshotDetailReadOnly bool
+
+// MarketingStateHistorySnapshotDetailRealExternalCallExecuted defines model for MarketingStateHistorySnapshotDetail.RealExternalCallExecuted.
+type MarketingStateHistorySnapshotDetailRealExternalCallExecuted bool
+
+// MarketingStateHistorySnapshotDetailSource defines model for MarketingStateHistorySnapshotDetail.Source.
+type MarketingStateHistorySnapshotDetailSource string
+
+// MarketingStateHistorySnapshotPage defines model for MarketingStateHistorySnapshotPage.
+type MarketingStateHistorySnapshotPage struct {
+	Items                    []MarketingStateHistorySnapshot                           `json:"items"`
+	Limit                    int32                                                     `json:"limit"`
+	Offset                   int32                                                     `json:"offset"`
+	ReadOnly                 MarketingStateHistorySnapshotPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistorySnapshotPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistorySnapshotPageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// MarketingStateHistorySnapshotPageReadOnly defines model for MarketingStateHistorySnapshotPage.ReadOnly.
+type MarketingStateHistorySnapshotPageReadOnly bool
+
+// MarketingStateHistorySnapshotPageRealExternalCallExecuted defines model for MarketingStateHistorySnapshotPage.RealExternalCallExecuted.
+type MarketingStateHistorySnapshotPageRealExternalCallExecuted bool
+
+// MarketingStateHistorySnapshotPageSource defines model for MarketingStateHistorySnapshotPage.Source.
+type MarketingStateHistorySnapshotPageSource string
+
+// MarketingStateHistoryValueChange defines model for MarketingStateHistoryValueChange.
+type MarketingStateHistoryValueChange struct {
+	ChangeReason   string    `json:"change_reason"`
+	CreatedAt      time.Time `json:"created_at"`
+	EvaluatedAt    time.Time `json:"evaluated_at"`
+	Id             int64     `json:"id"`
+	RecordedAt     time.Time `json:"recorded_at"`
+	Score          int32     `json:"score"`
+	ScoringVersion string    `json:"scoring_version"`
+	Segment        string    `json:"segment"`
+	SegmentRank    int32     `json:"segment_rank"`
+	SourceId       int64     `json:"source_id"`
+}
+
+// MarketingStateHistoryValueChangeDetail defines model for MarketingStateHistoryValueChangeDetail.
+type MarketingStateHistoryValueChangeDetail struct {
+	Item                     MarketingStateHistoryValueChange                               `json:"item"`
+	ReadOnly                 MarketingStateHistoryValueChangeDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistoryValueChangeDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistoryValueChangeDetailSource                   `json:"source"`
+}
+
+// MarketingStateHistoryValueChangeDetailReadOnly defines model for MarketingStateHistoryValueChangeDetail.ReadOnly.
+type MarketingStateHistoryValueChangeDetailReadOnly bool
+
+// MarketingStateHistoryValueChangeDetailRealExternalCallExecuted defines model for MarketingStateHistoryValueChangeDetail.RealExternalCallExecuted.
+type MarketingStateHistoryValueChangeDetailRealExternalCallExecuted bool
+
+// MarketingStateHistoryValueChangeDetailSource defines model for MarketingStateHistoryValueChangeDetail.Source.
+type MarketingStateHistoryValueChangeDetailSource string
+
+// MarketingStateHistoryValueChangePage defines model for MarketingStateHistoryValueChangePage.
+type MarketingStateHistoryValueChangePage struct {
+	Items                    []MarketingStateHistoryValueChange                           `json:"items"`
+	Limit                    int32                                                        `json:"limit"`
+	Offset                   int32                                                        `json:"offset"`
+	ReadOnly                 MarketingStateHistoryValueChangePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistoryValueChangePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistoryValueChangePageSource                   `json:"source"`
+	Total                    int64                                                        `json:"total"`
+}
+
+// MarketingStateHistoryValueChangePageReadOnly defines model for MarketingStateHistoryValueChangePage.ReadOnly.
+type MarketingStateHistoryValueChangePageReadOnly bool
+
+// MarketingStateHistoryValueChangePageRealExternalCallExecuted defines model for MarketingStateHistoryValueChangePage.RealExternalCallExecuted.
+type MarketingStateHistoryValueChangePageRealExternalCallExecuted bool
+
+// MarketingStateHistoryValueChangePageSource defines model for MarketingStateHistoryValueChangePage.Source.
+type MarketingStateHistoryValueChangePageSource string
+
+// MarketingStateHistoryValueSnapshot defines model for MarketingStateHistoryValueSnapshot.
+type MarketingStateHistoryValueSnapshot struct {
+	ComputedAt     time.Time `json:"computed_at"`
+	ComputedReason string    `json:"computed_reason"`
+	CreatedAt      time.Time `json:"created_at"`
+	EvaluatedAt    time.Time `json:"evaluated_at"`
+	Id             int64     `json:"id"`
+	Score          int32     `json:"score"`
+	ScoringVersion string    `json:"scoring_version"`
+	Segment        string    `json:"segment"`
+	SegmentRank    int32     `json:"segment_rank"`
+	SourceId       int64     `json:"source_id"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// MarketingStateHistoryValueSnapshotDetail defines model for MarketingStateHistoryValueSnapshotDetail.
+type MarketingStateHistoryValueSnapshotDetail struct {
+	Item                     MarketingStateHistoryValueSnapshot                               `json:"item"`
+	ReadOnly                 MarketingStateHistoryValueSnapshotDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistoryValueSnapshotDetailSource                   `json:"source"`
+}
+
+// MarketingStateHistoryValueSnapshotDetailReadOnly defines model for MarketingStateHistoryValueSnapshotDetail.ReadOnly.
+type MarketingStateHistoryValueSnapshotDetailReadOnly bool
+
+// MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted defines model for MarketingStateHistoryValueSnapshotDetail.RealExternalCallExecuted.
+type MarketingStateHistoryValueSnapshotDetailRealExternalCallExecuted bool
+
+// MarketingStateHistoryValueSnapshotDetailSource defines model for MarketingStateHistoryValueSnapshotDetail.Source.
+type MarketingStateHistoryValueSnapshotDetailSource string
+
+// MarketingStateHistoryValueSnapshotPage defines model for MarketingStateHistoryValueSnapshotPage.
+type MarketingStateHistoryValueSnapshotPage struct {
+	Items                    []MarketingStateHistoryValueSnapshot                           `json:"items"`
+	Limit                    int32                                                          `json:"limit"`
+	Offset                   int32                                                          `json:"offset"`
+	ReadOnly                 MarketingStateHistoryValueSnapshotPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   MarketingStateHistoryValueSnapshotPageSource                   `json:"source"`
+	Total                    int64                                                          `json:"total"`
+}
+
+// MarketingStateHistoryValueSnapshotPageReadOnly defines model for MarketingStateHistoryValueSnapshotPage.ReadOnly.
+type MarketingStateHistoryValueSnapshotPageReadOnly bool
+
+// MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted defines model for MarketingStateHistoryValueSnapshotPage.RealExternalCallExecuted.
+type MarketingStateHistoryValueSnapshotPageRealExternalCallExecuted bool
+
+// MarketingStateHistoryValueSnapshotPageSource defines model for MarketingStateHistoryValueSnapshotPage.Source.
+type MarketingStateHistoryValueSnapshotPageSource string
 
 // MediaAttachmentUploadInitiateRequest defines model for MediaAttachmentUploadInitiateRequest.
 type MediaAttachmentUploadInitiateRequest struct {
@@ -17906,6 +19374,282 @@ type StageListResponse struct {
 	Items []Stage `json:"items"`
 }
 
+// StaticHistoryCycleDocument defines model for StaticHistoryCycleDocument.
+type StaticHistoryCycleDocument struct {
+	CopyGuideGeneratedAt        *time.Time          `json:"copy_guide_generated_at"`
+	CopyGuideSha256             string              `json:"copy_guide_sha256"`
+	CreatedAt                   time.Time           `json:"created_at"`
+	DocumentPackHash            string              `json:"document_pack_hash"`
+	ExecutionGuideGeneratedAt   *time.Time          `json:"execution_guide_generated_at"`
+	ExecutionGuideSha256        string              `json:"execution_guide_sha256"`
+	Id                          int64               `json:"id"`
+	MeasurementGuideGeneratedAt *time.Time          `json:"measurement_guide_generated_at"`
+	MeasurementGuideSha256      string              `json:"measurement_guide_sha256"`
+	SchemaVersion               string              `json:"schema_version"`
+	SourceId                    int64               `json:"source_id"`
+	SourceKeyDigest             StaticHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest         StaticHistoryDigest `json:"source_payload_digest"`
+	StrategyVersionSourceId     int64               `json:"strategy_version_source_id"`
+	VersionHistoryId            int64               `json:"version_history_id"`
+}
+
+// StaticHistoryCycleDocumentDetail defines model for StaticHistoryCycleDocumentDetail.
+type StaticHistoryCycleDocumentDetail struct {
+	Item                     StaticHistoryCycleDocument                               `json:"item"`
+	ReadOnly                 StaticHistoryCycleDocumentDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleDocumentDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleDocumentDetailSource                   `json:"source"`
+}
+
+// StaticHistoryCycleDocumentDetailReadOnly defines model for StaticHistoryCycleDocumentDetail.ReadOnly.
+type StaticHistoryCycleDocumentDetailReadOnly bool
+
+// StaticHistoryCycleDocumentDetailRealExternalCallExecuted defines model for StaticHistoryCycleDocumentDetail.RealExternalCallExecuted.
+type StaticHistoryCycleDocumentDetailRealExternalCallExecuted bool
+
+// StaticHistoryCycleDocumentDetailSource defines model for StaticHistoryCycleDocumentDetail.Source.
+type StaticHistoryCycleDocumentDetailSource string
+
+// StaticHistoryCycleDocumentPage defines model for StaticHistoryCycleDocumentPage.
+type StaticHistoryCycleDocumentPage struct {
+	Items                    []StaticHistoryCycleDocument                           `json:"items"`
+	Limit                    int                                                    `json:"limit"`
+	Offset                   int                                                    `json:"offset"`
+	ReadOnly                 StaticHistoryCycleDocumentPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleDocumentPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleDocumentPageSource                   `json:"source"`
+	Total                    int64                                                  `json:"total"`
+}
+
+// StaticHistoryCycleDocumentPageReadOnly defines model for StaticHistoryCycleDocumentPage.ReadOnly.
+type StaticHistoryCycleDocumentPageReadOnly bool
+
+// StaticHistoryCycleDocumentPageRealExternalCallExecuted defines model for StaticHistoryCycleDocumentPage.RealExternalCallExecuted.
+type StaticHistoryCycleDocumentPageRealExternalCallExecuted bool
+
+// StaticHistoryCycleDocumentPageSource defines model for StaticHistoryCycleDocumentPage.Source.
+type StaticHistoryCycleDocumentPageSource string
+
+// StaticHistoryCycleStrategy defines model for StaticHistoryCycleStrategy.
+type StaticHistoryCycleStrategy struct {
+	Cadence             string              `json:"cadence"`
+	CreatedAt           time.Time           `json:"created_at"`
+	CurrentVersion      int64               `json:"current_version"`
+	Description         string              `json:"description"`
+	Id                  int64               `json:"id"`
+	OriginalStatus      string              `json:"original_status"`
+	SourceId            int64               `json:"source_id"`
+	SourceKeyDigest     StaticHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest StaticHistoryDigest `json:"source_payload_digest"`
+	StrategyKey         string              `json:"strategy_key"`
+	Timezone            string              `json:"timezone"`
+	Title               string              `json:"title"`
+	UpdatedAt           time.Time           `json:"updated_at"`
+}
+
+// StaticHistoryCycleStrategyDetail defines model for StaticHistoryCycleStrategyDetail.
+type StaticHistoryCycleStrategyDetail struct {
+	Item                     StaticHistoryCycleStrategy                               `json:"item"`
+	ReadOnly                 StaticHistoryCycleStrategyDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleStrategyDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleStrategyDetailSource                   `json:"source"`
+}
+
+// StaticHistoryCycleStrategyDetailReadOnly defines model for StaticHistoryCycleStrategyDetail.ReadOnly.
+type StaticHistoryCycleStrategyDetailReadOnly bool
+
+// StaticHistoryCycleStrategyDetailRealExternalCallExecuted defines model for StaticHistoryCycleStrategyDetail.RealExternalCallExecuted.
+type StaticHistoryCycleStrategyDetailRealExternalCallExecuted bool
+
+// StaticHistoryCycleStrategyDetailSource defines model for StaticHistoryCycleStrategyDetail.Source.
+type StaticHistoryCycleStrategyDetailSource string
+
+// StaticHistoryCycleStrategyPage defines model for StaticHistoryCycleStrategyPage.
+type StaticHistoryCycleStrategyPage struct {
+	Items                    []StaticHistoryCycleStrategy                           `json:"items"`
+	Limit                    int                                                    `json:"limit"`
+	Offset                   int                                                    `json:"offset"`
+	ReadOnly                 StaticHistoryCycleStrategyPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleStrategyPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleStrategyPageSource                   `json:"source"`
+	Total                    int64                                                  `json:"total"`
+}
+
+// StaticHistoryCycleStrategyPageReadOnly defines model for StaticHistoryCycleStrategyPage.ReadOnly.
+type StaticHistoryCycleStrategyPageReadOnly bool
+
+// StaticHistoryCycleStrategyPageRealExternalCallExecuted defines model for StaticHistoryCycleStrategyPage.RealExternalCallExecuted.
+type StaticHistoryCycleStrategyPageRealExternalCallExecuted bool
+
+// StaticHistoryCycleStrategyPageSource defines model for StaticHistoryCycleStrategyPage.Source.
+type StaticHistoryCycleStrategyPageSource string
+
+// StaticHistoryCycleVersion defines model for StaticHistoryCycleVersion.
+type StaticHistoryCycleVersion struct {
+	ConfirmedAt         *time.Time          `json:"confirmed_at"`
+	CreatedAt           time.Time           `json:"created_at"`
+	EffectiveFrom       *time.Time          `json:"effective_from"`
+	Id                  int64               `json:"id"`
+	Label               string              `json:"label"`
+	Objective           string              `json:"objective"`
+	OperationSkillHash  string              `json:"operation_skill_hash"`
+	OriginalGovernance  string              `json:"original_governance"`
+	SourceId            int64               `json:"source_id"`
+	SourceKeyDigest     StaticHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest StaticHistoryDigest `json:"source_payload_digest"`
+	StrategyHistoryId   int64               `json:"strategy_history_id"`
+	StrategySourceId    int64               `json:"strategy_source_id"`
+	Version             int64               `json:"version"`
+	VersionHash         string              `json:"version_hash"`
+}
+
+// StaticHistoryCycleVersionDetail defines model for StaticHistoryCycleVersionDetail.
+type StaticHistoryCycleVersionDetail struct {
+	Item                     StaticHistoryCycleVersion                               `json:"item"`
+	ReadOnly                 StaticHistoryCycleVersionDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleVersionDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleVersionDetailSource                   `json:"source"`
+}
+
+// StaticHistoryCycleVersionDetailReadOnly defines model for StaticHistoryCycleVersionDetail.ReadOnly.
+type StaticHistoryCycleVersionDetailReadOnly bool
+
+// StaticHistoryCycleVersionDetailRealExternalCallExecuted defines model for StaticHistoryCycleVersionDetail.RealExternalCallExecuted.
+type StaticHistoryCycleVersionDetailRealExternalCallExecuted bool
+
+// StaticHistoryCycleVersionDetailSource defines model for StaticHistoryCycleVersionDetail.Source.
+type StaticHistoryCycleVersionDetailSource string
+
+// StaticHistoryCycleVersionPage defines model for StaticHistoryCycleVersionPage.
+type StaticHistoryCycleVersionPage struct {
+	Items                    []StaticHistoryCycleVersion                           `json:"items"`
+	Limit                    int                                                   `json:"limit"`
+	Offset                   int                                                   `json:"offset"`
+	ReadOnly                 StaticHistoryCycleVersionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryCycleVersionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryCycleVersionPageSource                   `json:"source"`
+	Total                    int64                                                 `json:"total"`
+}
+
+// StaticHistoryCycleVersionPageReadOnly defines model for StaticHistoryCycleVersionPage.ReadOnly.
+type StaticHistoryCycleVersionPageReadOnly bool
+
+// StaticHistoryCycleVersionPageRealExternalCallExecuted defines model for StaticHistoryCycleVersionPage.RealExternalCallExecuted.
+type StaticHistoryCycleVersionPageRealExternalCallExecuted bool
+
+// StaticHistoryCycleVersionPageSource defines model for StaticHistoryCycleVersionPage.Source.
+type StaticHistoryCycleVersionPageSource string
+
+// StaticHistoryDigest defines model for StaticHistoryDigest.
+type StaticHistoryDigest = []int
+
+// StaticHistoryGroupInvite defines model for StaticHistoryGroupInvite.
+type StaticHistoryGroupInvite struct {
+	CreatedAt            time.Time           `json:"created_at"`
+	Description          string              `json:"description"`
+	Id                   int64               `json:"id"`
+	Name                 string              `json:"name"`
+	OriginalAutoCreate   bool                `json:"original_auto_create"`
+	OriginalBindingState string              `json:"original_binding_state"`
+	OriginalEnabled      bool                `json:"original_enabled"`
+	OriginalState        string              `json:"original_state"`
+	RoomBaseName         string              `json:"room_base_name"`
+	RoomBaseSourceId     *int64              `json:"room_base_source_id"`
+	SourceId             int64               `json:"source_id"`
+	SourceKeyDigest      StaticHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest  StaticHistoryDigest `json:"source_payload_digest"`
+	Title                string              `json:"title"`
+	UpdatedAt            time.Time           `json:"updated_at"`
+}
+
+// StaticHistoryGroupInviteDetail defines model for StaticHistoryGroupInviteDetail.
+type StaticHistoryGroupInviteDetail struct {
+	Item                     StaticHistoryGroupInvite                               `json:"item"`
+	ReadOnly                 StaticHistoryGroupInviteDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryGroupInviteDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryGroupInviteDetailSource                   `json:"source"`
+}
+
+// StaticHistoryGroupInviteDetailReadOnly defines model for StaticHistoryGroupInviteDetail.ReadOnly.
+type StaticHistoryGroupInviteDetailReadOnly bool
+
+// StaticHistoryGroupInviteDetailRealExternalCallExecuted defines model for StaticHistoryGroupInviteDetail.RealExternalCallExecuted.
+type StaticHistoryGroupInviteDetailRealExternalCallExecuted bool
+
+// StaticHistoryGroupInviteDetailSource defines model for StaticHistoryGroupInviteDetail.Source.
+type StaticHistoryGroupInviteDetailSource string
+
+// StaticHistoryGroupInvitePage defines model for StaticHistoryGroupInvitePage.
+type StaticHistoryGroupInvitePage struct {
+	Items                    []StaticHistoryGroupInvite                           `json:"items"`
+	Limit                    int                                                  `json:"limit"`
+	Offset                   int                                                  `json:"offset"`
+	ReadOnly                 StaticHistoryGroupInvitePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryGroupInvitePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryGroupInvitePageSource                   `json:"source"`
+	Total                    int64                                                `json:"total"`
+}
+
+// StaticHistoryGroupInvitePageReadOnly defines model for StaticHistoryGroupInvitePage.ReadOnly.
+type StaticHistoryGroupInvitePageReadOnly bool
+
+// StaticHistoryGroupInvitePageRealExternalCallExecuted defines model for StaticHistoryGroupInvitePage.RealExternalCallExecuted.
+type StaticHistoryGroupInvitePageRealExternalCallExecuted bool
+
+// StaticHistoryGroupInvitePageSource defines model for StaticHistoryGroupInvitePage.Source.
+type StaticHistoryGroupInvitePageSource string
+
+// StaticHistoryProductPageSlice defines model for StaticHistoryProductPageSlice.
+type StaticHistoryProductPageSlice struct {
+	CreatedAt           time.Time           `json:"created_at"`
+	Id                  int64               `json:"id"`
+	ImageSourceId       int64               `json:"image_source_id"`
+	OriginalEnabled     bool                `json:"original_enabled"`
+	ProductSourceId     int64               `json:"product_source_id"`
+	SortOrder           int64               `json:"sort_order"`
+	SourceId            int64               `json:"source_id"`
+	SourceKeyDigest     StaticHistoryDigest `json:"source_key_digest"`
+	SourcePayloadDigest StaticHistoryDigest `json:"source_payload_digest"`
+	UpdatedAt           time.Time           `json:"updated_at"`
+}
+
+// StaticHistoryProductPageSliceDetail defines model for StaticHistoryProductPageSliceDetail.
+type StaticHistoryProductPageSliceDetail struct {
+	Item                     StaticHistoryProductPageSlice                               `json:"item"`
+	ReadOnly                 StaticHistoryProductPageSliceDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryProductPageSliceDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryProductPageSliceDetailSource                   `json:"source"`
+}
+
+// StaticHistoryProductPageSliceDetailReadOnly defines model for StaticHistoryProductPageSliceDetail.ReadOnly.
+type StaticHistoryProductPageSliceDetailReadOnly bool
+
+// StaticHistoryProductPageSliceDetailRealExternalCallExecuted defines model for StaticHistoryProductPageSliceDetail.RealExternalCallExecuted.
+type StaticHistoryProductPageSliceDetailRealExternalCallExecuted bool
+
+// StaticHistoryProductPageSliceDetailSource defines model for StaticHistoryProductPageSliceDetail.Source.
+type StaticHistoryProductPageSliceDetailSource string
+
+// StaticHistoryProductPageSlicePage defines model for StaticHistoryProductPageSlicePage.
+type StaticHistoryProductPageSlicePage struct {
+	Items                    []StaticHistoryProductPageSlice                           `json:"items"`
+	Limit                    int                                                       `json:"limit"`
+	Offset                   int                                                       `json:"offset"`
+	ReadOnly                 StaticHistoryProductPageSlicePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted StaticHistoryProductPageSlicePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   StaticHistoryProductPageSlicePageSource                   `json:"source"`
+	Total                    int64                                                     `json:"total"`
+}
+
+// StaticHistoryProductPageSlicePageReadOnly defines model for StaticHistoryProductPageSlicePage.ReadOnly.
+type StaticHistoryProductPageSlicePageReadOnly bool
+
+// StaticHistoryProductPageSlicePageRealExternalCallExecuted defines model for StaticHistoryProductPageSlicePage.RealExternalCallExecuted.
+type StaticHistoryProductPageSlicePageRealExternalCallExecuted bool
+
+// StaticHistoryProductPageSlicePageSource defines model for StaticHistoryProductPageSlicePage.Source.
+type StaticHistoryProductPageSlicePageSource string
+
 // SurveyExternalPushBindingDetail PII-free local binding projection. Provider acceptance and delivery proof are independent facts.
 type SurveyExternalPushBindingDetail struct {
 	DeliveryProven   bool                       `json:"delivery_proven"`
@@ -18846,6 +20590,24 @@ type ListCouponHistoryRedemptionsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListCustomerStateHistoryChangeParams defines parameters for ListCustomerStateHistoryChange.
+type ListCustomerStateHistoryChangeParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCustomerStateHistorySnapshotParams defines parameters for ListCustomerStateHistorySnapshot.
+type ListCustomerStateHistorySnapshotParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCustomerStateHistoryClassTermTagMappingParams defines parameters for ListCustomerStateHistoryClassTermTagMapping.
+type ListCustomerStateHistoryClassTermTagMappingParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListExternalEffectsRuntimeParams defines parameters for ListExternalEffectsRuntime.
 type ListExternalEffectsRuntimeParams struct {
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
@@ -18938,6 +20700,30 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ListMarketingStateHistoryChangeParams defines parameters for ListMarketingStateHistoryChange.
+type ListMarketingStateHistoryChangeParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMarketingStateHistorySnapshotParams defines parameters for ListMarketingStateHistorySnapshot.
+type ListMarketingStateHistorySnapshotParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMarketingStateHistoryValueChangeParams defines parameters for ListMarketingStateHistoryValueChange.
+type ListMarketingStateHistoryValueChangeParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListMarketingStateHistoryValueSnapshotParams defines parameters for ListMarketingStateHistoryValueSnapshot.
+type ListMarketingStateHistoryValueSnapshotParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListMemberUsageHistoryParams defines parameters for ListMemberUsageHistory.
@@ -19351,6 +21137,38 @@ type SaveSetupWizardParams struct {
 
 	// IdempotencyKey Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
 	IdempotencyKey SetupWizardIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListStaticHistoryCycleDocumentParams defines parameters for ListStaticHistoryCycleDocument.
+type ListStaticHistoryCycleDocumentParams struct {
+	Limit            *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset           *int   `form:"offset,omitempty" json:"offset,omitempty"`
+	VersionHistoryId *int64 `form:"version_history_id,omitempty" json:"version_history_id,omitempty"`
+}
+
+// ListStaticHistoryCycleStrategyParams defines parameters for ListStaticHistoryCycleStrategy.
+type ListStaticHistoryCycleStrategyParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListStaticHistoryCycleVersionParams defines parameters for ListStaticHistoryCycleVersion.
+type ListStaticHistoryCycleVersionParams struct {
+	Limit             *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset            *int   `form:"offset,omitempty" json:"offset,omitempty"`
+	StrategyHistoryId *int64 `form:"strategy_history_id,omitempty" json:"strategy_history_id,omitempty"`
+}
+
+// ListStaticHistoryGroupInviteParams defines parameters for ListStaticHistoryGroupInvite.
+type ListStaticHistoryGroupInviteParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListStaticHistoryProductPageSliceParams defines parameters for ListStaticHistoryProductPageSlice.
+type ListStaticHistoryProductPageSliceParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // DeleteLegacyWechatPayProductParams defines parameters for DeleteLegacyWechatPayProduct.
@@ -21882,6 +23700,24 @@ type ServerInterface interface {
 	// Read frozen V1 coupon redemptions without current claim or payment authority
 	// (GET /api/admin/coupon-history/{coupon_id}/redemptions)
 	ListCouponHistoryRedemptions(w http.ResponseWriter, r *http.Request, couponId int64, params ListCouponHistoryRedemptionsParams)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/changes)
+	ListCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistoryChangeParams)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/changes/{history_id})
+	GetCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/snapshots)
+	ListCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistorySnapshotParams)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/snapshots/{history_id})
+	GetCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/term-tag-mappings)
+	ListCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistoryClassTermTagMappingParams)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
+	GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request)
@@ -21972,6 +23808,30 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-changes)
+	ListMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryChangeParams)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-changes/{history_id})
+	GetMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-snapshots)
+	ListMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistorySnapshotParams)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-snapshots/{history_id})
+	GetMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-changes)
+	ListMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryValueChangeParams)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-changes/{history_id})
+	GetMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-snapshots)
+	ListMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryValueSnapshotParams)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-snapshots/{history_id})
+	GetMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable V1 Member Grid history without current access or usage changes
 	// (GET /api/admin/member-grid-history/usage)
 	ListMemberUsageHistory(w http.ResponseWriter, r *http.Request, params ListMemberUsageHistoryParams)
@@ -22176,6 +24036,36 @@ type ServerInterface interface {
 	// Atomically save two local setup-wizard settings
 	// (POST /api/admin/setup-wizard)
 	SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-documents)
+	ListStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleDocumentParams)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-documents/{history_id})
+	GetStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-strategies)
+	ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleStrategyParams)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-strategies/{history_id})
+	GetStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-versions)
+	ListStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleVersionParams)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-versions/{history_id})
+	GetStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/group-invites)
+	ListStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request, params ListStaticHistoryGroupInviteParams)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/group-invites/{history_id})
+	GetStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/page-slices)
+	ListStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, params ListStaticHistoryProductPageSliceParams)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/page-slices/{history_id})
+	GetStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
@@ -23100,6 +24990,42 @@ func (_ Unimplemented) ListCouponHistoryRedemptions(w http.ResponseWriter, r *ht
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read immutable customer-state observations without changing current status or tags
+// (GET /api/admin/customer-state-history/changes)
+func (_ Unimplemented) ListCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistoryChangeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable customer-state observations without changing current status or tags
+// (GET /api/admin/customer-state-history/changes/{history_id})
+func (_ Unimplemented) GetCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable customer-state observations without changing current status or tags
+// (GET /api/admin/customer-state-history/snapshots)
+func (_ Unimplemented) ListCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistorySnapshotParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable customer-state observations without changing current status or tags
+// (GET /api/admin/customer-state-history/snapshots/{history_id})
+func (_ Unimplemented) GetCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable customer-state observations without changing current status or tags
+// (GET /api/admin/customer-state-history/term-tag-mappings)
+func (_ Unimplemented) ListCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistoryClassTermTagMappingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable customer-state observations without changing current status or tags
+// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
+func (_ Unimplemented) GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read the frozen observed execution runtime without invoking a worker or provider
 // (GET /api/admin/execution-runtime)
 func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
@@ -23277,6 +25203,54 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/state-changes)
+func (_ Unimplemented) ListMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryChangeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/state-changes/{history_id})
+func (_ Unimplemented) GetMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/state-snapshots)
+func (_ Unimplemented) ListMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistorySnapshotParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/state-snapshots/{history_id})
+func (_ Unimplemented) GetMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/value-changes)
+func (_ Unimplemented) ListMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryValueChangeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/value-changes/{history_id})
+func (_ Unimplemented) GetMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/value-snapshots)
+func (_ Unimplemented) ListMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryValueSnapshotParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 marketing observations without changing scores or membership
+// (GET /api/admin/marketing-state-history/value-snapshots/{history_id})
+func (_ Unimplemented) GetMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -23685,6 +25659,66 @@ func (_ Unimplemented) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
 // Atomically save two local setup-wizard settings
 // (POST /api/admin/setup-wizard)
 func (_ Unimplemented) SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/cycle-documents)
+func (_ Unimplemented) ListStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/cycle-documents/{history_id})
+func (_ Unimplemented) GetStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/cycle-strategies)
+func (_ Unimplemented) ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleStrategyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/cycle-strategies/{history_id})
+func (_ Unimplemented) GetStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/cycle-versions)
+func (_ Unimplemented) ListStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/cycle-versions/{history_id})
+func (_ Unimplemented) GetStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/group-invites)
+func (_ Unimplemented) ListStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request, params ListStaticHistoryGroupInviteParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/group-invites/{history_id})
+func (_ Unimplemented) GetStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/page-slices)
+func (_ Unimplemented) ListStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, params ListStaticHistoryProductPageSliceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 static metadata without executing source configuration
+// (GET /api/admin/static-history/page-slices/{history_id})
+func (_ Unimplemented) GetStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -29174,6 +31208,222 @@ func (siw *ServerInterfaceWrapper) ListCouponHistoryRedemptions(w http.ResponseW
 	handler.ServeHTTP(w, r)
 }
 
+// ListCustomerStateHistoryChange operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerStateHistoryChangeParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerStateHistoryChange(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerStateHistoryChange operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerStateHistoryChange(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomerStateHistorySnapshot operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerStateHistorySnapshotParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerStateHistorySnapshot(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerStateHistorySnapshot operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerStateHistorySnapshot(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomerStateHistoryClassTermTagMapping operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerStateHistoryClassTermTagMappingParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerStateHistoryClassTermTagMapping(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerStateHistoryClassTermTagMapping operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerStateHistoryClassTermTagMapping(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLegacyExecutionRuntime operation middleware
 func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
 
@@ -30355,6 +32605,294 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMarketingStateHistoryChange operation middleware
+func (siw *ServerInterfaceWrapper) ListMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMarketingStateHistoryChangeParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMarketingStateHistoryChange(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMarketingStateHistoryChange operation middleware
+func (siw *ServerInterfaceWrapper) GetMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMarketingStateHistoryChange(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMarketingStateHistorySnapshot operation middleware
+func (siw *ServerInterfaceWrapper) ListMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMarketingStateHistorySnapshotParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMarketingStateHistorySnapshot(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMarketingStateHistorySnapshot operation middleware
+func (siw *ServerInterfaceWrapper) GetMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMarketingStateHistorySnapshot(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMarketingStateHistoryValueChange operation middleware
+func (siw *ServerInterfaceWrapper) ListMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMarketingStateHistoryValueChangeParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMarketingStateHistoryValueChange(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMarketingStateHistoryValueChange operation middleware
+func (siw *ServerInterfaceWrapper) GetMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMarketingStateHistoryValueChange(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMarketingStateHistoryValueSnapshot operation middleware
+func (siw *ServerInterfaceWrapper) ListMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMarketingStateHistoryValueSnapshotParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMarketingStateHistoryValueSnapshot(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMarketingStateHistoryValueSnapshot operation middleware
+func (siw *ServerInterfaceWrapper) GetMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMarketingStateHistoryValueSnapshot(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -34649,6 +37187,382 @@ func (siw *ServerInterfaceWrapper) SaveSetupWizard(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SaveSetupWizard(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStaticHistoryCycleDocument operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryCycleDocumentParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "version_history_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "version_history_id", r.URL.Query(), &params.VersionHistoryId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_history_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryCycleDocument(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryCycleDocument operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryCycleDocument(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStaticHistoryCycleStrategy operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryCycleStrategyParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryCycleStrategy(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryCycleStrategy operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryCycleStrategy(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStaticHistoryCycleVersion operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryCycleVersionParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "strategy_history_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "strategy_history_id", r.URL.Query(), &params.StrategyHistoryId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "strategy_history_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryCycleVersion(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryCycleVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryCycleVersion(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStaticHistoryGroupInvite operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryGroupInviteParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryGroupInvite(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryGroupInvite operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryGroupInvite(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStaticHistoryProductPageSlice operation middleware
+func (siw *ServerInterfaceWrapper) ListStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStaticHistoryProductPageSliceParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStaticHistoryProductPageSlice(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStaticHistoryProductPageSlice operation middleware
+func (siw *ServerInterfaceWrapper) GetStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStaticHistoryProductPageSlice(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -42275,6 +45189,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/coupon-history/{coupon_id}/redemptions", wrapper.ListCouponHistoryRedemptions)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-state-history/changes", wrapper.ListCustomerStateHistoryChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-state-history/changes/{history_id}", wrapper.GetCustomerStateHistoryChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-state-history/snapshots", wrapper.ListCustomerStateHistorySnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-state-history/snapshots/{history_id}", wrapper.GetCustomerStateHistorySnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-state-history/term-tag-mappings", wrapper.ListCustomerStateHistoryClassTermTagMapping)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-state-history/term-tag-mappings/{history_id}", wrapper.GetCustomerStateHistoryClassTermTagMapping)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/execution-runtime", wrapper.GetLegacyExecutionRuntime)
 	})
 	r.Group(func(r chi.Router) {
@@ -42363,6 +45295,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/state-changes", wrapper.ListMarketingStateHistoryChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/state-changes/{history_id}", wrapper.GetMarketingStateHistoryChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/state-snapshots", wrapper.ListMarketingStateHistorySnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/state-snapshots/{history_id}", wrapper.GetMarketingStateHistorySnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/value-changes", wrapper.ListMarketingStateHistoryValueChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/value-changes/{history_id}", wrapper.GetMarketingStateHistoryValueChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/value-snapshots", wrapper.ListMarketingStateHistoryValueSnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/marketing-state-history/value-snapshots/{history_id}", wrapper.GetMarketingStateHistoryValueSnapshot)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/member-grid-history/usage", wrapper.ListMemberUsageHistory)
@@ -42567,6 +45523,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/setup-wizard", wrapper.SaveSetupWizard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-documents", wrapper.ListStaticHistoryCycleDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-documents/{history_id}", wrapper.GetStaticHistoryCycleDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-strategies", wrapper.ListStaticHistoryCycleStrategy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-strategies/{history_id}", wrapper.GetStaticHistoryCycleStrategy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-versions", wrapper.ListStaticHistoryCycleVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/cycle-versions/{history_id}", wrapper.GetStaticHistoryCycleVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/group-invites", wrapper.ListStaticHistoryGroupInvite)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/group-invites/{history_id}", wrapper.GetStaticHistoryGroupInvite)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/page-slices", wrapper.ListStaticHistoryProductPageSlice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/static-history/page-slices/{history_id}", wrapper.GetStaticHistoryProductPageSlice)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
@@ -48328,6 +51314,324 @@ func (response ListCouponHistoryRedemptions503JSONResponse) VisitListCouponHisto
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListCustomerStateHistoryChangeRequestObject struct {
+	Params ListCustomerStateHistoryChangeParams
+}
+
+type ListCustomerStateHistoryChangeResponseObject interface {
+	VisitListCustomerStateHistoryChangeResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerStateHistoryChange200JSONResponse CustomerStateHistoryChangePage
+
+func (response ListCustomerStateHistoryChange200JSONResponse) VisitListCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryChange400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerStateHistoryChange400JSONResponse) VisitListCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryChange401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerStateHistoryChange401JSONResponse) VisitListCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryChange403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerStateHistoryChange403JSONResponse) VisitListCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryChange503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerStateHistoryChange503JSONResponse) VisitListCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryChangeRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetCustomerStateHistoryChangeResponseObject interface {
+	VisitGetCustomerStateHistoryChangeResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerStateHistoryChange200JSONResponse CustomerStateHistoryChangeDetail
+
+func (response GetCustomerStateHistoryChange200JSONResponse) VisitGetCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryChange400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerStateHistoryChange400JSONResponse) VisitGetCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryChange401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerStateHistoryChange401JSONResponse) VisitGetCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryChange403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerStateHistoryChange403JSONResponse) VisitGetCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryChange503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerStateHistoryChange503JSONResponse) VisitGetCustomerStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistorySnapshotRequestObject struct {
+	Params ListCustomerStateHistorySnapshotParams
+}
+
+type ListCustomerStateHistorySnapshotResponseObject interface {
+	VisitListCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerStateHistorySnapshot200JSONResponse CustomerStateHistorySnapshotPage
+
+func (response ListCustomerStateHistorySnapshot200JSONResponse) VisitListCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistorySnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerStateHistorySnapshot400JSONResponse) VisitListCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistorySnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerStateHistorySnapshot401JSONResponse) VisitListCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistorySnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerStateHistorySnapshot403JSONResponse) VisitListCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistorySnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerStateHistorySnapshot503JSONResponse) VisitListCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistorySnapshotRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetCustomerStateHistorySnapshotResponseObject interface {
+	VisitGetCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerStateHistorySnapshot200JSONResponse CustomerStateHistorySnapshotDetail
+
+func (response GetCustomerStateHistorySnapshot200JSONResponse) VisitGetCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistorySnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerStateHistorySnapshot400JSONResponse) VisitGetCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistorySnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerStateHistorySnapshot401JSONResponse) VisitGetCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistorySnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerStateHistorySnapshot403JSONResponse) VisitGetCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistorySnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerStateHistorySnapshot503JSONResponse) VisitGetCustomerStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryClassTermTagMappingRequestObject struct {
+	Params ListCustomerStateHistoryClassTermTagMappingParams
+}
+
+type ListCustomerStateHistoryClassTermTagMappingResponseObject interface {
+	VisitListCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerStateHistoryClassTermTagMapping200JSONResponse CustomerStateHistoryClassTermTagMappingPage
+
+func (response ListCustomerStateHistoryClassTermTagMapping200JSONResponse) VisitListCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryClassTermTagMapping400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerStateHistoryClassTermTagMapping400JSONResponse) VisitListCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryClassTermTagMapping401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerStateHistoryClassTermTagMapping401JSONResponse) VisitListCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryClassTermTagMapping403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerStateHistoryClassTermTagMapping403JSONResponse) VisitListCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerStateHistoryClassTermTagMapping503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerStateHistoryClassTermTagMapping503JSONResponse) VisitListCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryClassTermTagMappingRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetCustomerStateHistoryClassTermTagMappingResponseObject interface {
+	VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerStateHistoryClassTermTagMapping200JSONResponse CustomerStateHistoryClassTermTagMappingDetail
+
+func (response GetCustomerStateHistoryClassTermTagMapping200JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryClassTermTagMapping400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerStateHistoryClassTermTagMapping400JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryClassTermTagMapping401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerStateHistoryClassTermTagMapping401JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryClassTermTagMapping403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerStateHistoryClassTermTagMapping403JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerStateHistoryClassTermTagMapping503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerStateHistoryClassTermTagMapping503JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetLegacyExecutionRuntimeRequestObject struct {
 }
 
@@ -49981,6 +53285,430 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryChangeRequestObject struct {
+	Params ListMarketingStateHistoryChangeParams
+}
+
+type ListMarketingStateHistoryChangeResponseObject interface {
+	VisitListMarketingStateHistoryChangeResponse(w http.ResponseWriter) error
+}
+
+type ListMarketingStateHistoryChange200JSONResponse MarketingStateHistoryChangePage
+
+func (response ListMarketingStateHistoryChange200JSONResponse) VisitListMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryChange400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMarketingStateHistoryChange400JSONResponse) VisitListMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryChange401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMarketingStateHistoryChange401JSONResponse) VisitListMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryChange403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMarketingStateHistoryChange403JSONResponse) VisitListMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryChange503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMarketingStateHistoryChange503JSONResponse) VisitListMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryChangeRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMarketingStateHistoryChangeResponseObject interface {
+	VisitGetMarketingStateHistoryChangeResponse(w http.ResponseWriter) error
+}
+
+type GetMarketingStateHistoryChange200JSONResponse MarketingStateHistoryChangeDetail
+
+func (response GetMarketingStateHistoryChange200JSONResponse) VisitGetMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryChange400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMarketingStateHistoryChange400JSONResponse) VisitGetMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryChange401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMarketingStateHistoryChange401JSONResponse) VisitGetMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryChange403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMarketingStateHistoryChange403JSONResponse) VisitGetMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryChange503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMarketingStateHistoryChange503JSONResponse) VisitGetMarketingStateHistoryChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistorySnapshotRequestObject struct {
+	Params ListMarketingStateHistorySnapshotParams
+}
+
+type ListMarketingStateHistorySnapshotResponseObject interface {
+	VisitListMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error
+}
+
+type ListMarketingStateHistorySnapshot200JSONResponse MarketingStateHistorySnapshotPage
+
+func (response ListMarketingStateHistorySnapshot200JSONResponse) VisitListMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistorySnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMarketingStateHistorySnapshot400JSONResponse) VisitListMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistorySnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMarketingStateHistorySnapshot401JSONResponse) VisitListMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistorySnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMarketingStateHistorySnapshot403JSONResponse) VisitListMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistorySnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMarketingStateHistorySnapshot503JSONResponse) VisitListMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistorySnapshotRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMarketingStateHistorySnapshotResponseObject interface {
+	VisitGetMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error
+}
+
+type GetMarketingStateHistorySnapshot200JSONResponse MarketingStateHistorySnapshotDetail
+
+func (response GetMarketingStateHistorySnapshot200JSONResponse) VisitGetMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistorySnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMarketingStateHistorySnapshot400JSONResponse) VisitGetMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistorySnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMarketingStateHistorySnapshot401JSONResponse) VisitGetMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistorySnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMarketingStateHistorySnapshot403JSONResponse) VisitGetMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistorySnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMarketingStateHistorySnapshot503JSONResponse) VisitGetMarketingStateHistorySnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueChangeRequestObject struct {
+	Params ListMarketingStateHistoryValueChangeParams
+}
+
+type ListMarketingStateHistoryValueChangeResponseObject interface {
+	VisitListMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error
+}
+
+type ListMarketingStateHistoryValueChange200JSONResponse MarketingStateHistoryValueChangePage
+
+func (response ListMarketingStateHistoryValueChange200JSONResponse) VisitListMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueChange400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMarketingStateHistoryValueChange400JSONResponse) VisitListMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueChange401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMarketingStateHistoryValueChange401JSONResponse) VisitListMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueChange403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMarketingStateHistoryValueChange403JSONResponse) VisitListMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueChange503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMarketingStateHistoryValueChange503JSONResponse) VisitListMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueChangeRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMarketingStateHistoryValueChangeResponseObject interface {
+	VisitGetMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error
+}
+
+type GetMarketingStateHistoryValueChange200JSONResponse MarketingStateHistoryValueChangeDetail
+
+func (response GetMarketingStateHistoryValueChange200JSONResponse) VisitGetMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueChange400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMarketingStateHistoryValueChange400JSONResponse) VisitGetMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueChange401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMarketingStateHistoryValueChange401JSONResponse) VisitGetMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueChange403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMarketingStateHistoryValueChange403JSONResponse) VisitGetMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueChange503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMarketingStateHistoryValueChange503JSONResponse) VisitGetMarketingStateHistoryValueChangeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueSnapshotRequestObject struct {
+	Params ListMarketingStateHistoryValueSnapshotParams
+}
+
+type ListMarketingStateHistoryValueSnapshotResponseObject interface {
+	VisitListMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error
+}
+
+type ListMarketingStateHistoryValueSnapshot200JSONResponse MarketingStateHistoryValueSnapshotPage
+
+func (response ListMarketingStateHistoryValueSnapshot200JSONResponse) VisitListMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueSnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMarketingStateHistoryValueSnapshot400JSONResponse) VisitListMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueSnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMarketingStateHistoryValueSnapshot401JSONResponse) VisitListMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueSnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMarketingStateHistoryValueSnapshot403JSONResponse) VisitListMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMarketingStateHistoryValueSnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListMarketingStateHistoryValueSnapshot503JSONResponse) VisitListMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueSnapshotRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetMarketingStateHistoryValueSnapshotResponseObject interface {
+	VisitGetMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error
+}
+
+type GetMarketingStateHistoryValueSnapshot200JSONResponse MarketingStateHistoryValueSnapshotDetail
+
+func (response GetMarketingStateHistoryValueSnapshot200JSONResponse) VisitGetMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueSnapshot400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMarketingStateHistoryValueSnapshot400JSONResponse) VisitGetMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueSnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMarketingStateHistoryValueSnapshot401JSONResponse) VisitGetMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueSnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMarketingStateHistoryValueSnapshot403JSONResponse) VisitGetMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMarketingStateHistoryValueSnapshot503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMarketingStateHistoryValueSnapshot503JSONResponse) VisitGetMarketingStateHistoryValueSnapshotResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -54425,6 +58153,536 @@ func (response SaveSetupWizard409JSONResponse) VisitSaveSetupWizardResponse(w ht
 type SaveSetupWizard503JSONResponse SetupWizardError
 
 func (response SaveSetupWizard503JSONResponse) VisitSaveSetupWizardResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleDocumentRequestObject struct {
+	Params ListStaticHistoryCycleDocumentParams
+}
+
+type ListStaticHistoryCycleDocumentResponseObject interface {
+	VisitListStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryCycleDocument200JSONResponse StaticHistoryCycleDocumentPage
+
+func (response ListStaticHistoryCycleDocument200JSONResponse) VisitListStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleDocument400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryCycleDocument400JSONResponse) VisitListStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleDocument401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryCycleDocument401JSONResponse) VisitListStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleDocument403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryCycleDocument403JSONResponse) VisitListStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleDocument503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryCycleDocument503JSONResponse) VisitListStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleDocumentRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryCycleDocumentResponseObject interface {
+	VisitGetStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryCycleDocument200JSONResponse StaticHistoryCycleDocumentDetail
+
+func (response GetStaticHistoryCycleDocument200JSONResponse) VisitGetStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleDocument400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryCycleDocument400JSONResponse) VisitGetStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleDocument401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryCycleDocument401JSONResponse) VisitGetStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleDocument403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryCycleDocument403JSONResponse) VisitGetStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleDocument503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryCycleDocument503JSONResponse) VisitGetStaticHistoryCycleDocumentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleStrategyRequestObject struct {
+	Params ListStaticHistoryCycleStrategyParams
+}
+
+type ListStaticHistoryCycleStrategyResponseObject interface {
+	VisitListStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryCycleStrategy200JSONResponse StaticHistoryCycleStrategyPage
+
+func (response ListStaticHistoryCycleStrategy200JSONResponse) VisitListStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleStrategy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryCycleStrategy400JSONResponse) VisitListStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleStrategy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryCycleStrategy401JSONResponse) VisitListStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleStrategy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryCycleStrategy403JSONResponse) VisitListStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleStrategy503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryCycleStrategy503JSONResponse) VisitListStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleStrategyRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryCycleStrategyResponseObject interface {
+	VisitGetStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryCycleStrategy200JSONResponse StaticHistoryCycleStrategyDetail
+
+func (response GetStaticHistoryCycleStrategy200JSONResponse) VisitGetStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleStrategy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryCycleStrategy400JSONResponse) VisitGetStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleStrategy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryCycleStrategy401JSONResponse) VisitGetStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleStrategy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryCycleStrategy403JSONResponse) VisitGetStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleStrategy503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryCycleStrategy503JSONResponse) VisitGetStaticHistoryCycleStrategyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleVersionRequestObject struct {
+	Params ListStaticHistoryCycleVersionParams
+}
+
+type ListStaticHistoryCycleVersionResponseObject interface {
+	VisitListStaticHistoryCycleVersionResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryCycleVersion200JSONResponse StaticHistoryCycleVersionPage
+
+func (response ListStaticHistoryCycleVersion200JSONResponse) VisitListStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleVersion400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryCycleVersion400JSONResponse) VisitListStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryCycleVersion401JSONResponse) VisitListStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryCycleVersion403JSONResponse) VisitListStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryCycleVersion503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryCycleVersion503JSONResponse) VisitListStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleVersionRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryCycleVersionResponseObject interface {
+	VisitGetStaticHistoryCycleVersionResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryCycleVersion200JSONResponse StaticHistoryCycleVersionDetail
+
+func (response GetStaticHistoryCycleVersion200JSONResponse) VisitGetStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleVersion400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryCycleVersion400JSONResponse) VisitGetStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryCycleVersion401JSONResponse) VisitGetStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryCycleVersion403JSONResponse) VisitGetStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryCycleVersion503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryCycleVersion503JSONResponse) VisitGetStaticHistoryCycleVersionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryGroupInviteRequestObject struct {
+	Params ListStaticHistoryGroupInviteParams
+}
+
+type ListStaticHistoryGroupInviteResponseObject interface {
+	VisitListStaticHistoryGroupInviteResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryGroupInvite200JSONResponse StaticHistoryGroupInvitePage
+
+func (response ListStaticHistoryGroupInvite200JSONResponse) VisitListStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryGroupInvite400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryGroupInvite400JSONResponse) VisitListStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryGroupInvite401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryGroupInvite401JSONResponse) VisitListStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryGroupInvite403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryGroupInvite403JSONResponse) VisitListStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryGroupInvite503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryGroupInvite503JSONResponse) VisitListStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryGroupInviteRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryGroupInviteResponseObject interface {
+	VisitGetStaticHistoryGroupInviteResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryGroupInvite200JSONResponse StaticHistoryGroupInviteDetail
+
+func (response GetStaticHistoryGroupInvite200JSONResponse) VisitGetStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryGroupInvite400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryGroupInvite400JSONResponse) VisitGetStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryGroupInvite401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryGroupInvite401JSONResponse) VisitGetStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryGroupInvite403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryGroupInvite403JSONResponse) VisitGetStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryGroupInvite503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryGroupInvite503JSONResponse) VisitGetStaticHistoryGroupInviteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryProductPageSliceRequestObject struct {
+	Params ListStaticHistoryProductPageSliceParams
+}
+
+type ListStaticHistoryProductPageSliceResponseObject interface {
+	VisitListStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error
+}
+
+type ListStaticHistoryProductPageSlice200JSONResponse StaticHistoryProductPageSlicePage
+
+func (response ListStaticHistoryProductPageSlice200JSONResponse) VisitListStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryProductPageSlice400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListStaticHistoryProductPageSlice400JSONResponse) VisitListStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryProductPageSlice401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListStaticHistoryProductPageSlice401JSONResponse) VisitListStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryProductPageSlice403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListStaticHistoryProductPageSlice403JSONResponse) VisitListStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListStaticHistoryProductPageSlice503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListStaticHistoryProductPageSlice503JSONResponse) VisitListStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryProductPageSliceRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetStaticHistoryProductPageSliceResponseObject interface {
+	VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error
+}
+
+type GetStaticHistoryProductPageSlice200JSONResponse StaticHistoryProductPageSliceDetail
+
+func (response GetStaticHistoryProductPageSlice200JSONResponse) VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryProductPageSlice400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetStaticHistoryProductPageSlice400JSONResponse) VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryProductPageSlice401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetStaticHistoryProductPageSlice401JSONResponse) VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryProductPageSlice403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetStaticHistoryProductPageSlice403JSONResponse) VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetStaticHistoryProductPageSlice503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetStaticHistoryProductPageSlice503JSONResponse) VisitGetStaticHistoryProductPageSliceResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -62412,6 +66670,24 @@ type StrictServerInterface interface {
 	// Read frozen V1 coupon redemptions without current claim or payment authority
 	// (GET /api/admin/coupon-history/{coupon_id}/redemptions)
 	ListCouponHistoryRedemptions(ctx context.Context, request ListCouponHistoryRedemptionsRequestObject) (ListCouponHistoryRedemptionsResponseObject, error)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/changes)
+	ListCustomerStateHistoryChange(ctx context.Context, request ListCustomerStateHistoryChangeRequestObject) (ListCustomerStateHistoryChangeResponseObject, error)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/changes/{history_id})
+	GetCustomerStateHistoryChange(ctx context.Context, request GetCustomerStateHistoryChangeRequestObject) (GetCustomerStateHistoryChangeResponseObject, error)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/snapshots)
+	ListCustomerStateHistorySnapshot(ctx context.Context, request ListCustomerStateHistorySnapshotRequestObject) (ListCustomerStateHistorySnapshotResponseObject, error)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/snapshots/{history_id})
+	GetCustomerStateHistorySnapshot(ctx context.Context, request GetCustomerStateHistorySnapshotRequestObject) (GetCustomerStateHistorySnapshotResponseObject, error)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/term-tag-mappings)
+	ListCustomerStateHistoryClassTermTagMapping(ctx context.Context, request ListCustomerStateHistoryClassTermTagMappingRequestObject) (ListCustomerStateHistoryClassTermTagMappingResponseObject, error)
+	// Read immutable customer-state observations without changing current status or tags
+	// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
+	GetCustomerStateHistoryClassTermTagMapping(ctx context.Context, request GetCustomerStateHistoryClassTermTagMappingRequestObject) (GetCustomerStateHistoryClassTermTagMappingResponseObject, error)
 	// Read the frozen observed execution runtime without invoking a worker or provider
 	// (GET /api/admin/execution-runtime)
 	GetLegacyExecutionRuntime(ctx context.Context, request GetLegacyExecutionRuntimeRequestObject) (GetLegacyExecutionRuntimeResponseObject, error)
@@ -62502,6 +66778,30 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-changes)
+	ListMarketingStateHistoryChange(ctx context.Context, request ListMarketingStateHistoryChangeRequestObject) (ListMarketingStateHistoryChangeResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-changes/{history_id})
+	GetMarketingStateHistoryChange(ctx context.Context, request GetMarketingStateHistoryChangeRequestObject) (GetMarketingStateHistoryChangeResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-snapshots)
+	ListMarketingStateHistorySnapshot(ctx context.Context, request ListMarketingStateHistorySnapshotRequestObject) (ListMarketingStateHistorySnapshotResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/state-snapshots/{history_id})
+	GetMarketingStateHistorySnapshot(ctx context.Context, request GetMarketingStateHistorySnapshotRequestObject) (GetMarketingStateHistorySnapshotResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-changes)
+	ListMarketingStateHistoryValueChange(ctx context.Context, request ListMarketingStateHistoryValueChangeRequestObject) (ListMarketingStateHistoryValueChangeResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-changes/{history_id})
+	GetMarketingStateHistoryValueChange(ctx context.Context, request GetMarketingStateHistoryValueChangeRequestObject) (GetMarketingStateHistoryValueChangeResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-snapshots)
+	ListMarketingStateHistoryValueSnapshot(ctx context.Context, request ListMarketingStateHistoryValueSnapshotRequestObject) (ListMarketingStateHistoryValueSnapshotResponseObject, error)
+	// Read immutable V1 marketing observations without changing scores or membership
+	// (GET /api/admin/marketing-state-history/value-snapshots/{history_id})
+	GetMarketingStateHistoryValueSnapshot(ctx context.Context, request GetMarketingStateHistoryValueSnapshotRequestObject) (GetMarketingStateHistoryValueSnapshotResponseObject, error)
 	// Read immutable V1 Member Grid history without current access or usage changes
 	// (GET /api/admin/member-grid-history/usage)
 	ListMemberUsageHistory(ctx context.Context, request ListMemberUsageHistoryRequestObject) (ListMemberUsageHistoryResponseObject, error)
@@ -62706,6 +67006,36 @@ type StrictServerInterface interface {
 	// Atomically save two local setup-wizard settings
 	// (POST /api/admin/setup-wizard)
 	SaveSetupWizard(ctx context.Context, request SaveSetupWizardRequestObject) (SaveSetupWizardResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-documents)
+	ListStaticHistoryCycleDocument(ctx context.Context, request ListStaticHistoryCycleDocumentRequestObject) (ListStaticHistoryCycleDocumentResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-documents/{history_id})
+	GetStaticHistoryCycleDocument(ctx context.Context, request GetStaticHistoryCycleDocumentRequestObject) (GetStaticHistoryCycleDocumentResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-strategies)
+	ListStaticHistoryCycleStrategy(ctx context.Context, request ListStaticHistoryCycleStrategyRequestObject) (ListStaticHistoryCycleStrategyResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-strategies/{history_id})
+	GetStaticHistoryCycleStrategy(ctx context.Context, request GetStaticHistoryCycleStrategyRequestObject) (GetStaticHistoryCycleStrategyResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-versions)
+	ListStaticHistoryCycleVersion(ctx context.Context, request ListStaticHistoryCycleVersionRequestObject) (ListStaticHistoryCycleVersionResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/cycle-versions/{history_id})
+	GetStaticHistoryCycleVersion(ctx context.Context, request GetStaticHistoryCycleVersionRequestObject) (GetStaticHistoryCycleVersionResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/group-invites)
+	ListStaticHistoryGroupInvite(ctx context.Context, request ListStaticHistoryGroupInviteRequestObject) (ListStaticHistoryGroupInviteResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/group-invites/{history_id})
+	GetStaticHistoryGroupInvite(ctx context.Context, request GetStaticHistoryGroupInviteRequestObject) (GetStaticHistoryGroupInviteResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/page-slices)
+	ListStaticHistoryProductPageSlice(ctx context.Context, request ListStaticHistoryProductPageSliceRequestObject) (ListStaticHistoryProductPageSliceResponseObject, error)
+	// Read immutable V1 static metadata without executing source configuration
+	// (GET /api/admin/static-history/page-slices/{history_id})
+	GetStaticHistoryProductPageSlice(ctx context.Context, request GetStaticHistoryProductPageSliceRequestObject) (GetStaticHistoryProductPageSliceResponseObject, error)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
@@ -65730,6 +70060,162 @@ func (sh *strictHandler) ListCouponHistoryRedemptions(w http.ResponseWriter, r *
 	}
 }
 
+// ListCustomerStateHistoryChange operation middleware
+func (sh *strictHandler) ListCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistoryChangeParams) {
+	var request ListCustomerStateHistoryChangeRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerStateHistoryChange(ctx, request.(ListCustomerStateHistoryChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerStateHistoryChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerStateHistoryChangeResponseObject); ok {
+		if err := validResponse.VisitListCustomerStateHistoryChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerStateHistoryChange operation middleware
+func (sh *strictHandler) GetCustomerStateHistoryChange(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetCustomerStateHistoryChangeRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerStateHistoryChange(ctx, request.(GetCustomerStateHistoryChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerStateHistoryChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerStateHistoryChangeResponseObject); ok {
+		if err := validResponse.VisitGetCustomerStateHistoryChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomerStateHistorySnapshot operation middleware
+func (sh *strictHandler) ListCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistorySnapshotParams) {
+	var request ListCustomerStateHistorySnapshotRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerStateHistorySnapshot(ctx, request.(ListCustomerStateHistorySnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerStateHistorySnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerStateHistorySnapshotResponseObject); ok {
+		if err := validResponse.VisitListCustomerStateHistorySnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerStateHistorySnapshot operation middleware
+func (sh *strictHandler) GetCustomerStateHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetCustomerStateHistorySnapshotRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerStateHistorySnapshot(ctx, request.(GetCustomerStateHistorySnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerStateHistorySnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerStateHistorySnapshotResponseObject); ok {
+		if err := validResponse.VisitGetCustomerStateHistorySnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomerStateHistoryClassTermTagMapping operation middleware
+func (sh *strictHandler) ListCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, params ListCustomerStateHistoryClassTermTagMappingParams) {
+	var request ListCustomerStateHistoryClassTermTagMappingRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerStateHistoryClassTermTagMapping(ctx, request.(ListCustomerStateHistoryClassTermTagMappingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerStateHistoryClassTermTagMapping")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerStateHistoryClassTermTagMappingResponseObject); ok {
+		if err := validResponse.VisitListCustomerStateHistoryClassTermTagMappingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerStateHistoryClassTermTagMapping operation middleware
+func (sh *strictHandler) GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetCustomerStateHistoryClassTermTagMappingRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerStateHistoryClassTermTagMapping(ctx, request.(GetCustomerStateHistoryClassTermTagMappingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerStateHistoryClassTermTagMapping")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerStateHistoryClassTermTagMappingResponseObject); ok {
+		if err := validResponse.VisitGetCustomerStateHistoryClassTermTagMappingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLegacyExecutionRuntime operation middleware
 func (sh *strictHandler) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.Request) {
 	var request GetLegacyExecutionRuntimeRequestObject
@@ -66526,6 +71012,214 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMarketingStateHistoryChange operation middleware
+func (sh *strictHandler) ListMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryChangeParams) {
+	var request ListMarketingStateHistoryChangeRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMarketingStateHistoryChange(ctx, request.(ListMarketingStateHistoryChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMarketingStateHistoryChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMarketingStateHistoryChangeResponseObject); ok {
+		if err := validResponse.VisitListMarketingStateHistoryChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMarketingStateHistoryChange operation middleware
+func (sh *strictHandler) GetMarketingStateHistoryChange(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMarketingStateHistoryChangeRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMarketingStateHistoryChange(ctx, request.(GetMarketingStateHistoryChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMarketingStateHistoryChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMarketingStateHistoryChangeResponseObject); ok {
+		if err := validResponse.VisitGetMarketingStateHistoryChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMarketingStateHistorySnapshot operation middleware
+func (sh *strictHandler) ListMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistorySnapshotParams) {
+	var request ListMarketingStateHistorySnapshotRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMarketingStateHistorySnapshot(ctx, request.(ListMarketingStateHistorySnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMarketingStateHistorySnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMarketingStateHistorySnapshotResponseObject); ok {
+		if err := validResponse.VisitListMarketingStateHistorySnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMarketingStateHistorySnapshot operation middleware
+func (sh *strictHandler) GetMarketingStateHistorySnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMarketingStateHistorySnapshotRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMarketingStateHistorySnapshot(ctx, request.(GetMarketingStateHistorySnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMarketingStateHistorySnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMarketingStateHistorySnapshotResponseObject); ok {
+		if err := validResponse.VisitGetMarketingStateHistorySnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMarketingStateHistoryValueChange operation middleware
+func (sh *strictHandler) ListMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryValueChangeParams) {
+	var request ListMarketingStateHistoryValueChangeRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMarketingStateHistoryValueChange(ctx, request.(ListMarketingStateHistoryValueChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMarketingStateHistoryValueChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMarketingStateHistoryValueChangeResponseObject); ok {
+		if err := validResponse.VisitListMarketingStateHistoryValueChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMarketingStateHistoryValueChange operation middleware
+func (sh *strictHandler) GetMarketingStateHistoryValueChange(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMarketingStateHistoryValueChangeRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMarketingStateHistoryValueChange(ctx, request.(GetMarketingStateHistoryValueChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMarketingStateHistoryValueChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMarketingStateHistoryValueChangeResponseObject); ok {
+		if err := validResponse.VisitGetMarketingStateHistoryValueChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMarketingStateHistoryValueSnapshot operation middleware
+func (sh *strictHandler) ListMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, params ListMarketingStateHistoryValueSnapshotParams) {
+	var request ListMarketingStateHistoryValueSnapshotRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMarketingStateHistoryValueSnapshot(ctx, request.(ListMarketingStateHistoryValueSnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMarketingStateHistoryValueSnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMarketingStateHistoryValueSnapshotResponseObject); ok {
+		if err := validResponse.VisitListMarketingStateHistoryValueSnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMarketingStateHistoryValueSnapshot operation middleware
+func (sh *strictHandler) GetMarketingStateHistoryValueSnapshot(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetMarketingStateHistoryValueSnapshotRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMarketingStateHistoryValueSnapshot(ctx, request.(GetMarketingStateHistoryValueSnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMarketingStateHistoryValueSnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMarketingStateHistoryValueSnapshotResponseObject); ok {
+		if err := validResponse.VisitGetMarketingStateHistoryValueSnapshotResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -68549,6 +73243,266 @@ func (sh *strictHandler) SaveSetupWizard(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SaveSetupWizardResponseObject); ok {
 		if err := validResponse.VisitSaveSetupWizardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStaticHistoryCycleDocument operation middleware
+func (sh *strictHandler) ListStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleDocumentParams) {
+	var request ListStaticHistoryCycleDocumentRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryCycleDocument(ctx, request.(ListStaticHistoryCycleDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryCycleDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryCycleDocumentResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryCycleDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryCycleDocument operation middleware
+func (sh *strictHandler) GetStaticHistoryCycleDocument(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryCycleDocumentRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryCycleDocument(ctx, request.(GetStaticHistoryCycleDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryCycleDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryCycleDocumentResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryCycleDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStaticHistoryCycleStrategy operation middleware
+func (sh *strictHandler) ListStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleStrategyParams) {
+	var request ListStaticHistoryCycleStrategyRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryCycleStrategy(ctx, request.(ListStaticHistoryCycleStrategyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryCycleStrategy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryCycleStrategyResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryCycleStrategyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryCycleStrategy operation middleware
+func (sh *strictHandler) GetStaticHistoryCycleStrategy(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryCycleStrategyRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryCycleStrategy(ctx, request.(GetStaticHistoryCycleStrategyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryCycleStrategy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryCycleStrategyResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryCycleStrategyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStaticHistoryCycleVersion operation middleware
+func (sh *strictHandler) ListStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request, params ListStaticHistoryCycleVersionParams) {
+	var request ListStaticHistoryCycleVersionRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryCycleVersion(ctx, request.(ListStaticHistoryCycleVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryCycleVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryCycleVersionResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryCycleVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryCycleVersion operation middleware
+func (sh *strictHandler) GetStaticHistoryCycleVersion(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryCycleVersionRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryCycleVersion(ctx, request.(GetStaticHistoryCycleVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryCycleVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryCycleVersionResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryCycleVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStaticHistoryGroupInvite operation middleware
+func (sh *strictHandler) ListStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request, params ListStaticHistoryGroupInviteParams) {
+	var request ListStaticHistoryGroupInviteRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryGroupInvite(ctx, request.(ListStaticHistoryGroupInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryGroupInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryGroupInviteResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryGroupInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryGroupInvite operation middleware
+func (sh *strictHandler) GetStaticHistoryGroupInvite(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryGroupInviteRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryGroupInvite(ctx, request.(GetStaticHistoryGroupInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryGroupInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryGroupInviteResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryGroupInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStaticHistoryProductPageSlice operation middleware
+func (sh *strictHandler) ListStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, params ListStaticHistoryProductPageSliceParams) {
+	var request ListStaticHistoryProductPageSliceRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStaticHistoryProductPageSlice(ctx, request.(ListStaticHistoryProductPageSliceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStaticHistoryProductPageSlice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStaticHistoryProductPageSliceResponseObject); ok {
+		if err := validResponse.VisitListStaticHistoryProductPageSliceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetStaticHistoryProductPageSlice operation middleware
+func (sh *strictHandler) GetStaticHistoryProductPageSlice(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetStaticHistoryProductPageSliceRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetStaticHistoryProductPageSlice(ctx, request.(GetStaticHistoryProductPageSliceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetStaticHistoryProductPageSlice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetStaticHistoryProductPageSliceResponseObject); ok {
+		if err := validResponse.VisitGetStaticHistoryProductPageSliceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
