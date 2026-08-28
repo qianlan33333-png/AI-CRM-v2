@@ -13,7 +13,7 @@ const invalid = (): never => { throw new Error('V1 自动化历史响应无效�
 const object = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : invalid();
 const integer = (value: unknown, minimum?: number): value is number => typeof value === 'number' && Number.isSafeInteger(value) && (minimum === undefined || value >= minimum);
 const date = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
-const digest = (value: unknown): value is number[] => Array.isArray(value) && value.length === 32 && value.every((part) => integer(part, 0) && part <= 255);
+const digest = (value: unknown): value is number[] => Array.isArray(value) && value.length === 32 && value.every((part) => integer(part, 0) && part <= 255) && value.some((part) => part !== 0);
 const only = (row: Row, fields: string[]): boolean => Object.keys(row).length === fields.length && Object.keys(row).every((field) => fields.includes(field));
 
 export function requireAutomationHistoryID(value: string | number): number {
@@ -44,7 +44,7 @@ function sop(value: unknown): AutomationHistorySOP {
 function config(value: unknown): AutomationHistoryConfig {
   const row = object(value);
   common(row, ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'agent_code', 'display_name', 'scenario_code', 'original_enabled', 'draft_version', 'published_version', 'published_at', 'last_modified_at', 'last_modified_source', 'submitted_for_publish', 'submitted_at', 'created_at', 'updated_at', 'actors_digest', 'config_digest']);
-  if (!['agent_code', 'display_name', 'scenario_code', 'last_modified_source'].every((field) => typeof row[field] === 'string') || !['draft_version', 'published_version'].every((field) => integer(row[field])) || typeof row.original_enabled !== 'boolean' || typeof row.submitted_for_publish !== 'boolean' || !['published_at', 'last_modified_at', 'submitted_at', 'created_at', 'updated_at'].every((field) => date(row[field])) || !digest(row.actors_digest) || !digest(row.config_digest)) invalid();
+  if (!['agent_code', 'display_name', 'scenario_code', 'published_at', 'last_modified_at', 'last_modified_source', 'submitted_at'].every((field) => typeof row[field] === 'string') || !['draft_version', 'published_version'].every((field) => integer(row[field])) || typeof row.original_enabled !== 'boolean' || typeof row.submitted_for_publish !== 'boolean' || !['created_at', 'updated_at'].every((field) => date(row[field])) || !digest(row.actors_digest) || !digest(row.config_digest)) invalid();
   return row as unknown as AutomationHistoryConfig;
 }
 
@@ -58,7 +58,7 @@ function prompt(value: unknown): AutomationHistoryPrompt {
 function agent(value: unknown): AutomationHistoryAgent {
   const row = object(value);
   common(row, ['id', 'source_id', 'source_key_digest', 'source_payload_digest', 'program_source_id', 'workflow_source_id', 'node_source_id', 'task_source_id', 'agent_code', 'agent_name', 'original_type', 'original_status', 'sort_order', 'original_enabled', 'created_at', 'updated_at', 'archived_at', 'actors_digest', 'configuration_digest']);
-  if (!['program_source_id', 'workflow_source_id', 'node_source_id', 'task_source_id', 'sort_order'].every((field) => integer(row[field])) || !['agent_code', 'agent_name', 'original_type', 'original_status'].every((field) => typeof row[field] === 'string') || typeof row.original_enabled !== 'boolean' || !['created_at', 'updated_at', 'archived_at'].every((field) => date(row[field])) || !digest(row.actors_digest) || !digest(row.configuration_digest)) invalid();
+  if (!['program_source_id', 'workflow_source_id', 'node_source_id', 'task_source_id', 'sort_order'].every((field) => integer(row[field])) || !['agent_code', 'agent_name', 'original_type', 'original_status', 'archived_at'].every((field) => typeof row[field] === 'string') || typeof row.original_enabled !== 'boolean' || !['created_at', 'updated_at'].every((field) => date(row[field])) || !digest(row.actors_digest) || !digest(row.configuration_digest)) invalid();
   return row as unknown as AutomationHistoryAgent;
 }
 
