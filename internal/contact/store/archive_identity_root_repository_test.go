@@ -63,7 +63,7 @@ func archiveIdentityRootFixture(ctx context.Context, tx pgx.Tx, seed byte, delet
 	err := tx.QueryRow(ctx, `INSERT INTO legacy_contact_identity_import_runs (
   source_manifest_sha256, source_repository_sha, snapshot_id, mode, upper_watermark, hmac_key_version, state
 ) VALUES ($1, $2, $3, 'full', $4, 1, 'imported') RETURNING id`,
-		bytes.Repeat([]byte{seed + 3}, 32), strings.Repeat(fmt.Sprintf("%x", seed), 20), "root-lock-test", time.Date(2026, 8, 28, 0, 0, int(seed), 0, time.UTC)).Scan(&runID)
+		bytes.Repeat([]byte{seed + 3}, 32), strings.Repeat(fmt.Sprintf("%02x", seed), 20), "root-lock-test", time.Date(2026, 8, 28, 0, 0, int(seed), 0, time.UTC)).Scan(&runID)
 	if err != nil {
 		return 0, [32]byte{}, 0, err
 	}
