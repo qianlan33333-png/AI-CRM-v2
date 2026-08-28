@@ -12,6 +12,7 @@ import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
 import { mountCampaignWorkspace } from './sections/campaigns';
+import { mountCampaignHistory } from './sections/campaignHistory';
 import { mountAdminAccess } from './sections/adminAccess';
 import { mountSetupWizard } from './sections/setupWizard';
 import { mountGroupOpsHistory } from './sections/groupOpsHistory';
@@ -31,6 +32,11 @@ function boot(): void {
 
   const rawId = Number(new URLSearchParams(location.search).get('id') || '');
   const id = rawId || undefined;
+
+  if (page === 'campaigns' && new URLSearchParams(location.search).get('history') === '1') {
+    void mountCampaignHistory(stage).catch((error) => showLoadError(stage, error));
+    return;
+  }
 
   if (['coupons', 'couponData'].includes(page) && new URLSearchParams(location.search).get('history') === '1') {
     const historyID = page === 'couponData' ? new URLSearchParams(location.search).get('id') || '' : undefined;

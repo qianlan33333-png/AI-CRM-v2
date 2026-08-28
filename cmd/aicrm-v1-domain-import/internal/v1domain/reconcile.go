@@ -49,39 +49,44 @@ var targetBySourceTable = map[string]struct {
 	domain string
 	table  string
 }{
-	"public/campaigns":                        {"campaign", "cloud_campaigns"},
-	"public/campaign_steps":                   {"campaign", "cloud_campaign_steps"},
-	"public/questionnaires":                   {"survey", "questionnaires"},
-	"public/questionnaire_questions":          {"survey", "questionnaire_questions"},
-	"public/questionnaire_options":            {"survey", "questionnaire_options"},
-	"public/questionnaire_submissions":        {"survey", "questionnaire_submissions"},
-	"public/questionnaire_submission_answers": {"survey", "questionnaire_submission_answers"},
-	"public/miniprogram_library":              {"media", "media_miniprograms"},
-	"public/radar_links":                      {"radar", "radar_links"},
-	"public/wechat_shop_orders":               {"order", "order_wechat_shop_materials"},
-	"public/wecom_corp_tag_groups":            {"contact", "tag_groups"},
-	"public/wecom_corp_tags":                  {"contact", "tags"},
-	"public/contact_tags":                     {"contact", "customer_tags"},
-	"public/image_library":                    {"media", "media_images"},
-	"public/attachment_library":               {"media", "media_attachments"},
-	"public/wechat_pay_products":              {"product", "products"},
-	"public/wechat_pay_orders":                {"order", "order_list_projections"},
-	"public/wechat_pay_refunds":               {"order", "order_historical_refunds"},
-	"public/automation_channel":               {"contact", "channels"},
-	"public/automation_channel_contact":       {"contact", "channel_historical_contacts"},
-	"public/automation_channel_assignee":      {"contact", "channel_historical_assignees"},
-	"public/service_period_products":          {"product", "product_service_period_history"},
-	"public/service_period_entitlements":      {"product", "product_service_period_entitlement_history"},
-	"public/service_period_events":            {"product", "product_service_period_event_history"},
-	"public/commerce_coupons":                 {"coupon", "coupons"},
-	"public/commerce_coupon_product_bindings": {"coupon", "coupon_targets"},
-	"public/commerce_coupon_claims":           {"coupon", "coupon_v1_history_claims"},
-	"public/commerce_coupon_redemptions":      {"coupon", "coupon_v1_history_redemptions"},
-	"public/automation_group_ops_plans":       {"groupops", "group_ops_plans"},
-	"public/group_chats":                      {"groupops", "group_ops_v1_history_directory"},
-	"public/wecom_group_chat_snapshots":       {"groupops", "group_ops_v1_history_directory"},
-	"public/automation_group_ops_plan_groups": {"groupops", "group_ops_v1_history_groups"},
-	"public/automation_group_ops_plan_nodes":  {"groupops", "group_ops_v1_history_nodes"},
+	"public/campaign_segments":                       {"campaign", "campaign_v1_history_segments"},
+	"public/campaign_members":                        {"campaign", "campaign_v1_history_members"},
+	"public/cloud_broadcast_plans":                   {"campaign", "campaign_v1_history_broadcast_plans"},
+	"public/cloud_broadcast_plan_recipients":         {"campaign", "campaign_v1_history_broadcast_recipients"},
+	"public/cloud_broadcast_plan_recipient_messages": {"campaign", "campaign_v1_history_broadcast_messages"},
+	"public/campaigns":                               {"campaign", "cloud_campaigns"},
+	"public/campaign_steps":                          {"campaign", "cloud_campaign_steps"},
+	"public/questionnaires":                          {"survey", "questionnaires"},
+	"public/questionnaire_questions":                 {"survey", "questionnaire_questions"},
+	"public/questionnaire_options":                   {"survey", "questionnaire_options"},
+	"public/questionnaire_submissions":               {"survey", "questionnaire_submissions"},
+	"public/questionnaire_submission_answers":        {"survey", "questionnaire_submission_answers"},
+	"public/miniprogram_library":                     {"media", "media_miniprograms"},
+	"public/radar_links":                             {"radar", "radar_links"},
+	"public/wechat_shop_orders":                      {"order", "order_wechat_shop_materials"},
+	"public/wecom_corp_tag_groups":                   {"contact", "tag_groups"},
+	"public/wecom_corp_tags":                         {"contact", "tags"},
+	"public/contact_tags":                            {"contact", "customer_tags"},
+	"public/image_library":                           {"media", "media_images"},
+	"public/attachment_library":                      {"media", "media_attachments"},
+	"public/wechat_pay_products":                     {"product", "products"},
+	"public/wechat_pay_orders":                       {"order", "order_list_projections"},
+	"public/wechat_pay_refunds":                      {"order", "order_historical_refunds"},
+	"public/automation_channel":                      {"contact", "channels"},
+	"public/automation_channel_contact":              {"contact", "channel_historical_contacts"},
+	"public/automation_channel_assignee":             {"contact", "channel_historical_assignees"},
+	"public/service_period_products":                 {"product", "product_service_period_history"},
+	"public/service_period_entitlements":             {"product", "product_service_period_entitlement_history"},
+	"public/service_period_events":                   {"product", "product_service_period_event_history"},
+	"public/commerce_coupons":                        {"coupon", "coupons"},
+	"public/commerce_coupon_product_bindings":        {"coupon", "coupon_targets"},
+	"public/commerce_coupon_claims":                  {"coupon", "coupon_v1_history_claims"},
+	"public/commerce_coupon_redemptions":             {"coupon", "coupon_v1_history_redemptions"},
+	"public/automation_group_ops_plans":              {"groupops", "group_ops_plans"},
+	"public/group_chats":                             {"groupops", "group_ops_v1_history_directory"},
+	"public/wecom_group_chat_snapshots":              {"groupops", "group_ops_v1_history_directory"},
+	"public/automation_group_ops_plan_groups":        {"groupops", "group_ops_v1_history_groups"},
+	"public/automation_group_ops_plan_nodes":         {"groupops", "group_ops_v1_history_nodes"},
 }
 
 type ReconciliationResult struct {
@@ -222,7 +227,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || isCampaignHistorySource(row.TableID) {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -287,6 +292,9 @@ FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND
 }
 
 func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, importedTargets map[string]map[string]struct{}) (string, error) {
+	if isCampaignHistorySource(row.TableID) {
+		return verifyCampaignHistoryTarget(ctx, tx, row)
+	}
 	expected, ok := targetBySourceTable[row.TableID]
 	if !ok || row.TargetDomain == nil || row.TargetTable == nil || row.TargetID == nil ||
 		*row.TargetDomain != expected.domain || *row.TargetTable != expected.table || len(row.TargetDigest) != sha256.Size {
