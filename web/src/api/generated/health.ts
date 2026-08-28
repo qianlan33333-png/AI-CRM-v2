@@ -5,6 +5,331 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type HistoricalCampaignSegmentSourceParentState =
+  (typeof HistoricalCampaignSegmentSourceParentState)[keyof typeof HistoricalCampaignSegmentSourceParentState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignSegmentSourceParentState = {
+  observed: "observed",
+  missing_campaign: "missing_campaign",
+} as const;
+
+export interface HistoricalCampaignSegment {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  campaign_source_id: number;
+  segment_source_id: number;
+  source_parent_state: HistoricalCampaignSegmentSourceParentState;
+  code: string;
+  priority: number;
+  label: string;
+  created_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type HistoricalCampaignSegmentPageSource =
+  (typeof HistoricalCampaignSegmentPageSource)[keyof typeof HistoricalCampaignSegmentPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignSegmentPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalCampaignSegmentPage {
+  source: HistoricalCampaignSegmentPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalCampaignSegment[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HistoricalCampaignSegmentDetailSource =
+  (typeof HistoricalCampaignSegmentDetailSource)[keyof typeof HistoricalCampaignSegmentDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignSegmentDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalCampaignSegmentDetail {
+  source: HistoricalCampaignSegmentDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HistoricalCampaignSegment;
+}
+
+export interface HistoricalCampaignMember {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  campaign_source_id: number;
+  campaign_segment_source_id: number;
+  segment_source_id: number;
+  member_source_id: number;
+  /** @minimum 1 */
+  segment_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  joined_at: string;
+  anchor_date: string;
+  current_step_index: number;
+  /** @nullable */
+  next_due_at: string | null;
+  original_status: string;
+  stop_reason: string;
+  /** @nullable */
+  last_step_sent_at: string | null;
+  retry_count: number;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type HistoricalCampaignMemberPageSource =
+  (typeof HistoricalCampaignMemberPageSource)[keyof typeof HistoricalCampaignMemberPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalCampaignMemberPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalCampaignMemberPage {
+  source: HistoricalCampaignMemberPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalCampaignMember[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface HistoricalBroadcastPlan {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  source_plan_id: string;
+  /** @nullable */
+  campaign_source_id: number | null;
+  /** @nullable */
+  segment_source_id: number | null;
+  display_name: string;
+  intent: string;
+  content_strategy: string;
+  content_template_masked: string;
+  max_recipients: number;
+  candidate_count: number;
+  skipped_count: number;
+  requires_manual_copy: boolean;
+  original_status: string;
+  original_review_status: string;
+  original_run_status: string;
+  /** @nullable */
+  committed_at: string | null;
+  /** @nullable */
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  runtime_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type HistoricalBroadcastPlanPageSource =
+  (typeof HistoricalBroadcastPlanPageSource)[keyof typeof HistoricalBroadcastPlanPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalBroadcastPlanPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalBroadcastPlanPage {
+  source: HistoricalBroadcastPlanPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalBroadcastPlan[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HistoricalBroadcastPlanDetailSource =
+  (typeof HistoricalBroadcastPlanDetailSource)[keyof typeof HistoricalBroadcastPlanDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalBroadcastPlanDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalBroadcastPlanDetail {
+  source: HistoricalBroadcastPlanDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HistoricalBroadcastPlan;
+}
+
+export interface HistoricalBroadcastRecipient {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @minimum 1 */
+  plan_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  display_name: string;
+  planned_message_count: number;
+  original_approval_status: string;
+  original_send_status: string;
+  /** @nullable */
+  approved_at: string | null;
+  /** @nullable */
+  rejected_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type HistoricalBroadcastRecipientPageSource =
+  (typeof HistoricalBroadcastRecipientPageSource)[keyof typeof HistoricalBroadcastRecipientPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalBroadcastRecipientPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalBroadcastRecipientPage {
+  source: HistoricalBroadcastRecipientPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalBroadcastRecipient[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /** @minimum 1 */
+  plan_history_id: number;
+}
+
+export interface HistoricalBroadcastMessage {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  /** @minimum 1 */
+  plan_history_id: number;
+  /** @minimum 1 */
+  recipient_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  sequence_index: number;
+  day_offset: number;
+  original_send_time: string;
+  content_masked: string;
+  original_status: string;
+  /** @nullable */
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  content_payload_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  attachments_digest: number[];
+  /**
+   * @minItems 32
+   * @maxItems 32
+   */
+  source_payload_digest: number[];
+}
+
+export type HistoricalBroadcastMessagePageSource =
+  (typeof HistoricalBroadcastMessagePageSource)[keyof typeof HistoricalBroadcastMessagePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HistoricalBroadcastMessagePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HistoricalBroadcastMessagePage {
+  source: HistoricalBroadcastMessagePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HistoricalBroadcastMessage[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /** @minimum 1 */
+  recipient_history_id: number;
+}
+
 export interface CI01Customer {
   /** @minimum 1 */
   customer_id: number;
@@ -19574,6 +19899,78 @@ export type InitiateMediaAttachmentMultipartUpload201 = {
 
 export type CompleteMediaAttachmentMultipartUpload200 = {
   attachment_id: number;
+};
+
+export type ListCampaignHistorySegmentsParams = {
+  /**
+   * @minimum 1
+   */
+  campaign_source_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCampaignHistoryMembersParams = {
+  /**
+   * @minimum 1
+   */
+  segment_history_id?: number;
+  /**
+   * @minimum 1
+   */
+  customer_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCampaignHistoryBroadcastPlansParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCampaignHistoryBroadcastRecipientsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCampaignHistoryBroadcastMessagesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
 };
 
 /**
@@ -63200,4 +63597,579 @@ export const updateMediaContentDeliveryBinding = async (
     status: res.status,
     headers: res.headers,
   } as updateMediaContentDeliveryBindingResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type listCampaignHistorySegmentsResponse200 = {
+  data: HistoricalCampaignSegmentPage;
+  status: 200;
+};
+
+export type listCampaignHistorySegmentsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistorySegmentsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistorySegmentsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistorySegmentsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistorySegmentsResponseSuccess =
+  listCampaignHistorySegmentsResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistorySegmentsResponseError = (
+  | listCampaignHistorySegmentsResponse400
+  | listCampaignHistorySegmentsResponse401
+  | listCampaignHistorySegmentsResponse403
+  | listCampaignHistorySegmentsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistorySegmentsResponse =
+  | listCampaignHistorySegmentsResponseSuccess
+  | listCampaignHistorySegmentsResponseError;
+
+export const getListCampaignHistorySegmentsUrl = (
+  params?: ListCampaignHistorySegmentsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/segments?${stringifiedParams}`
+    : `/api/admin/campaign-history/segments`;
+};
+
+export const listCampaignHistorySegments = async (
+  params?: ListCampaignHistorySegmentsParams,
+  options?: RequestInit,
+): Promise<listCampaignHistorySegmentsResponse> => {
+  const res = await fetch(getListCampaignHistorySegmentsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistorySegmentsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistorySegmentsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type getCampaignHistorySegmentResponse200 = {
+  data: HistoricalCampaignSegmentDetail;
+  status: 200;
+};
+
+export type getCampaignHistorySegmentResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCampaignHistorySegmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCampaignHistorySegmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCampaignHistorySegmentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCampaignHistorySegmentResponseSuccess =
+  getCampaignHistorySegmentResponse200 & {
+    headers: Headers;
+  };
+export type getCampaignHistorySegmentResponseError = (
+  | getCampaignHistorySegmentResponse400
+  | getCampaignHistorySegmentResponse401
+  | getCampaignHistorySegmentResponse403
+  | getCampaignHistorySegmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCampaignHistorySegmentResponse =
+  | getCampaignHistorySegmentResponseSuccess
+  | getCampaignHistorySegmentResponseError;
+
+export const getGetCampaignHistorySegmentUrl = (segmentHistoryId: number) => {
+  return `/api/admin/campaign-history/segments/${segmentHistoryId}`;
+};
+
+export const getCampaignHistorySegment = async (
+  segmentHistoryId: number,
+  options?: RequestInit,
+): Promise<getCampaignHistorySegmentResponse> => {
+  const res = await fetch(getGetCampaignHistorySegmentUrl(segmentHistoryId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCampaignHistorySegmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCampaignHistorySegmentResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type listCampaignHistoryMembersResponse200 = {
+  data: HistoricalCampaignMemberPage;
+  status: 200;
+};
+
+export type listCampaignHistoryMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistoryMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistoryMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistoryMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistoryMembersResponseSuccess =
+  listCampaignHistoryMembersResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistoryMembersResponseError = (
+  | listCampaignHistoryMembersResponse400
+  | listCampaignHistoryMembersResponse401
+  | listCampaignHistoryMembersResponse403
+  | listCampaignHistoryMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistoryMembersResponse =
+  | listCampaignHistoryMembersResponseSuccess
+  | listCampaignHistoryMembersResponseError;
+
+export const getListCampaignHistoryMembersUrl = (
+  params?: ListCampaignHistoryMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/members?${stringifiedParams}`
+    : `/api/admin/campaign-history/members`;
+};
+
+export const listCampaignHistoryMembers = async (
+  params?: ListCampaignHistoryMembersParams,
+  options?: RequestInit,
+): Promise<listCampaignHistoryMembersResponse> => {
+  const res = await fetch(getListCampaignHistoryMembersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistoryMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistoryMembersResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type listCampaignHistoryBroadcastPlansResponse200 = {
+  data: HistoricalBroadcastPlanPage;
+  status: 200;
+};
+
+export type listCampaignHistoryBroadcastPlansResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistoryBroadcastPlansResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistoryBroadcastPlansResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistoryBroadcastPlansResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistoryBroadcastPlansResponseSuccess =
+  listCampaignHistoryBroadcastPlansResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistoryBroadcastPlansResponseError = (
+  | listCampaignHistoryBroadcastPlansResponse400
+  | listCampaignHistoryBroadcastPlansResponse401
+  | listCampaignHistoryBroadcastPlansResponse403
+  | listCampaignHistoryBroadcastPlansResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistoryBroadcastPlansResponse =
+  | listCampaignHistoryBroadcastPlansResponseSuccess
+  | listCampaignHistoryBroadcastPlansResponseError;
+
+export const getListCampaignHistoryBroadcastPlansUrl = (
+  params?: ListCampaignHistoryBroadcastPlansParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/broadcast-plans?${stringifiedParams}`
+    : `/api/admin/campaign-history/broadcast-plans`;
+};
+
+export const listCampaignHistoryBroadcastPlans = async (
+  params?: ListCampaignHistoryBroadcastPlansParams,
+  options?: RequestInit,
+): Promise<listCampaignHistoryBroadcastPlansResponse> => {
+  const res = await fetch(getListCampaignHistoryBroadcastPlansUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistoryBroadcastPlansResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistoryBroadcastPlansResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type getCampaignHistoryBroadcastPlanResponse200 = {
+  data: HistoricalBroadcastPlanDetail;
+  status: 200;
+};
+
+export type getCampaignHistoryBroadcastPlanResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCampaignHistoryBroadcastPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCampaignHistoryBroadcastPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCampaignHistoryBroadcastPlanResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCampaignHistoryBroadcastPlanResponseSuccess =
+  getCampaignHistoryBroadcastPlanResponse200 & {
+    headers: Headers;
+  };
+export type getCampaignHistoryBroadcastPlanResponseError = (
+  | getCampaignHistoryBroadcastPlanResponse400
+  | getCampaignHistoryBroadcastPlanResponse401
+  | getCampaignHistoryBroadcastPlanResponse403
+  | getCampaignHistoryBroadcastPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCampaignHistoryBroadcastPlanResponse =
+  | getCampaignHistoryBroadcastPlanResponseSuccess
+  | getCampaignHistoryBroadcastPlanResponseError;
+
+export const getGetCampaignHistoryBroadcastPlanUrl = (
+  planHistoryId: number,
+) => {
+  return `/api/admin/campaign-history/broadcast-plans/${planHistoryId}`;
+};
+
+export const getCampaignHistoryBroadcastPlan = async (
+  planHistoryId: number,
+  options?: RequestInit,
+): Promise<getCampaignHistoryBroadcastPlanResponse> => {
+  const res = await fetch(
+    getGetCampaignHistoryBroadcastPlanUrl(planHistoryId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCampaignHistoryBroadcastPlanResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCampaignHistoryBroadcastPlanResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type listCampaignHistoryBroadcastRecipientsResponse200 = {
+  data: HistoricalBroadcastRecipientPage;
+  status: 200;
+};
+
+export type listCampaignHistoryBroadcastRecipientsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistoryBroadcastRecipientsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistoryBroadcastRecipientsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistoryBroadcastRecipientsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistoryBroadcastRecipientsResponseSuccess =
+  listCampaignHistoryBroadcastRecipientsResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistoryBroadcastRecipientsResponseError = (
+  | listCampaignHistoryBroadcastRecipientsResponse400
+  | listCampaignHistoryBroadcastRecipientsResponse401
+  | listCampaignHistoryBroadcastRecipientsResponse403
+  | listCampaignHistoryBroadcastRecipientsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistoryBroadcastRecipientsResponse =
+  | listCampaignHistoryBroadcastRecipientsResponseSuccess
+  | listCampaignHistoryBroadcastRecipientsResponseError;
+
+export const getListCampaignHistoryBroadcastRecipientsUrl = (
+  planHistoryId: number,
+  params?: ListCampaignHistoryBroadcastRecipientsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/broadcast-plans/${planHistoryId}/recipients?${stringifiedParams}`
+    : `/api/admin/campaign-history/broadcast-plans/${planHistoryId}/recipients`;
+};
+
+export const listCampaignHistoryBroadcastRecipients = async (
+  planHistoryId: number,
+  params?: ListCampaignHistoryBroadcastRecipientsParams,
+  options?: RequestInit,
+): Promise<listCampaignHistoryBroadcastRecipientsResponse> => {
+  const res = await fetch(
+    getListCampaignHistoryBroadcastRecipientsUrl(planHistoryId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistoryBroadcastRecipientsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistoryBroadcastRecipientsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Campaign history without dispatch or Provider effects
+ */
+export type listCampaignHistoryBroadcastMessagesResponse200 = {
+  data: HistoricalBroadcastMessagePage;
+  status: 200;
+};
+
+export type listCampaignHistoryBroadcastMessagesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCampaignHistoryBroadcastMessagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCampaignHistoryBroadcastMessagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCampaignHistoryBroadcastMessagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCampaignHistoryBroadcastMessagesResponseSuccess =
+  listCampaignHistoryBroadcastMessagesResponse200 & {
+    headers: Headers;
+  };
+export type listCampaignHistoryBroadcastMessagesResponseError = (
+  | listCampaignHistoryBroadcastMessagesResponse400
+  | listCampaignHistoryBroadcastMessagesResponse401
+  | listCampaignHistoryBroadcastMessagesResponse403
+  | listCampaignHistoryBroadcastMessagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCampaignHistoryBroadcastMessagesResponse =
+  | listCampaignHistoryBroadcastMessagesResponseSuccess
+  | listCampaignHistoryBroadcastMessagesResponseError;
+
+export const getListCampaignHistoryBroadcastMessagesUrl = (
+  recipientHistoryId: number,
+  params?: ListCampaignHistoryBroadcastMessagesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/campaign-history/broadcast-recipients/${recipientHistoryId}/messages?${stringifiedParams}`
+    : `/api/admin/campaign-history/broadcast-recipients/${recipientHistoryId}/messages`;
+};
+
+export const listCampaignHistoryBroadcastMessages = async (
+  recipientHistoryId: number,
+  params?: ListCampaignHistoryBroadcastMessagesParams,
+  options?: RequestInit,
+): Promise<listCampaignHistoryBroadcastMessagesResponse> => {
+  const res = await fetch(
+    getListCampaignHistoryBroadcastMessagesUrl(recipientHistoryId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCampaignHistoryBroadcastMessagesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCampaignHistoryBroadcastMessagesResponse;
 };

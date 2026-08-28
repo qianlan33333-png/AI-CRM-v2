@@ -3040,6 +3040,339 @@ func (e GroupOpsHistoryPlanPageSource) Valid() bool {
 	}
 }
 
+// Defines values for HistoricalBroadcastMessagePageReadOnly.
+const (
+	HistoricalBroadcastMessagePageReadOnlyTrue HistoricalBroadcastMessagePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastMessagePageReadOnly enum.
+func (e HistoricalBroadcastMessagePageReadOnly) Valid() bool {
+	switch e {
+	case HistoricalBroadcastMessagePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastMessagePageRealExternalCallExecuted.
+const (
+	HistoricalBroadcastMessagePageRealExternalCallExecutedFalse HistoricalBroadcastMessagePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastMessagePageRealExternalCallExecuted enum.
+func (e HistoricalBroadcastMessagePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalBroadcastMessagePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastMessagePageSource.
+const (
+	HistoricalBroadcastMessagePageSourceV1History HistoricalBroadcastMessagePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastMessagePageSource enum.
+func (e HistoricalBroadcastMessagePageSource) Valid() bool {
+	switch e {
+	case HistoricalBroadcastMessagePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastPlanDetailReadOnly.
+const (
+	HistoricalBroadcastPlanDetailReadOnlyTrue HistoricalBroadcastPlanDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastPlanDetailReadOnly enum.
+func (e HistoricalBroadcastPlanDetailReadOnly) Valid() bool {
+	switch e {
+	case HistoricalBroadcastPlanDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastPlanDetailRealExternalCallExecuted.
+const (
+	HistoricalBroadcastPlanDetailRealExternalCallExecutedFalse HistoricalBroadcastPlanDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastPlanDetailRealExternalCallExecuted enum.
+func (e HistoricalBroadcastPlanDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalBroadcastPlanDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastPlanDetailSource.
+const (
+	HistoricalBroadcastPlanDetailSourceV1History HistoricalBroadcastPlanDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastPlanDetailSource enum.
+func (e HistoricalBroadcastPlanDetailSource) Valid() bool {
+	switch e {
+	case HistoricalBroadcastPlanDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastPlanPageReadOnly.
+const (
+	HistoricalBroadcastPlanPageReadOnlyTrue HistoricalBroadcastPlanPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastPlanPageReadOnly enum.
+func (e HistoricalBroadcastPlanPageReadOnly) Valid() bool {
+	switch e {
+	case HistoricalBroadcastPlanPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastPlanPageRealExternalCallExecuted.
+const (
+	HistoricalBroadcastPlanPageRealExternalCallExecutedFalse HistoricalBroadcastPlanPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastPlanPageRealExternalCallExecuted enum.
+func (e HistoricalBroadcastPlanPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalBroadcastPlanPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastPlanPageSource.
+const (
+	HistoricalBroadcastPlanPageSourceV1History HistoricalBroadcastPlanPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastPlanPageSource enum.
+func (e HistoricalBroadcastPlanPageSource) Valid() bool {
+	switch e {
+	case HistoricalBroadcastPlanPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastRecipientPageReadOnly.
+const (
+	HistoricalBroadcastRecipientPageReadOnlyTrue HistoricalBroadcastRecipientPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastRecipientPageReadOnly enum.
+func (e HistoricalBroadcastRecipientPageReadOnly) Valid() bool {
+	switch e {
+	case HistoricalBroadcastRecipientPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastRecipientPageRealExternalCallExecuted.
+const (
+	HistoricalBroadcastRecipientPageRealExternalCallExecutedFalse HistoricalBroadcastRecipientPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastRecipientPageRealExternalCallExecuted enum.
+func (e HistoricalBroadcastRecipientPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalBroadcastRecipientPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalBroadcastRecipientPageSource.
+const (
+	HistoricalBroadcastRecipientPageSourceV1History HistoricalBroadcastRecipientPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalBroadcastRecipientPageSource enum.
+func (e HistoricalBroadcastRecipientPageSource) Valid() bool {
+	switch e {
+	case HistoricalBroadcastRecipientPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignMemberPageReadOnly.
+const (
+	HistoricalCampaignMemberPageReadOnlyTrue HistoricalCampaignMemberPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignMemberPageReadOnly enum.
+func (e HistoricalCampaignMemberPageReadOnly) Valid() bool {
+	switch e {
+	case HistoricalCampaignMemberPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignMemberPageRealExternalCallExecuted.
+const (
+	HistoricalCampaignMemberPageRealExternalCallExecutedFalse HistoricalCampaignMemberPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignMemberPageRealExternalCallExecuted enum.
+func (e HistoricalCampaignMemberPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalCampaignMemberPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignMemberPageSource.
+const (
+	HistoricalCampaignMemberPageSourceV1History HistoricalCampaignMemberPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignMemberPageSource enum.
+func (e HistoricalCampaignMemberPageSource) Valid() bool {
+	switch e {
+	case HistoricalCampaignMemberPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentSourceParentState.
+const (
+	MissingCampaign HistoricalCampaignSegmentSourceParentState = "missing_campaign"
+	Observed        HistoricalCampaignSegmentSourceParentState = "observed"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentSourceParentState enum.
+func (e HistoricalCampaignSegmentSourceParentState) Valid() bool {
+	switch e {
+	case MissingCampaign:
+		return true
+	case Observed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentDetailReadOnly.
+const (
+	HistoricalCampaignSegmentDetailReadOnlyTrue HistoricalCampaignSegmentDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentDetailReadOnly enum.
+func (e HistoricalCampaignSegmentDetailReadOnly) Valid() bool {
+	switch e {
+	case HistoricalCampaignSegmentDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentDetailRealExternalCallExecuted.
+const (
+	HistoricalCampaignSegmentDetailRealExternalCallExecutedFalse HistoricalCampaignSegmentDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentDetailRealExternalCallExecuted enum.
+func (e HistoricalCampaignSegmentDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalCampaignSegmentDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentDetailSource.
+const (
+	HistoricalCampaignSegmentDetailSourceV1History HistoricalCampaignSegmentDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentDetailSource enum.
+func (e HistoricalCampaignSegmentDetailSource) Valid() bool {
+	switch e {
+	case HistoricalCampaignSegmentDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentPageReadOnly.
+const (
+	HistoricalCampaignSegmentPageReadOnlyTrue HistoricalCampaignSegmentPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentPageReadOnly enum.
+func (e HistoricalCampaignSegmentPageReadOnly) Valid() bool {
+	switch e {
+	case HistoricalCampaignSegmentPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentPageRealExternalCallExecuted.
+const (
+	HistoricalCampaignSegmentPageRealExternalCallExecutedFalse HistoricalCampaignSegmentPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentPageRealExternalCallExecuted enum.
+func (e HistoricalCampaignSegmentPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HistoricalCampaignSegmentPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HistoricalCampaignSegmentPageSource.
+const (
+	HistoricalCampaignSegmentPageSourceV1History HistoricalCampaignSegmentPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HistoricalCampaignSegmentPageSource enum.
+func (e HistoricalCampaignSegmentPageSource) Valid() bool {
+	switch e {
+	case HistoricalCampaignSegmentPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityMergeReviewStatus.
 const (
 	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
@@ -6891,13 +7224,13 @@ func (e ServicePeriodHistoryEventPageRealExternalCallExecuted) Valid() bool {
 
 // Defines values for ServicePeriodHistoryEventPageSource.
 const (
-	V1History ServicePeriodHistoryEventPageSource = "v1_history"
+	ServicePeriodHistoryEventPageSourceV1History ServicePeriodHistoryEventPageSource = "v1_history"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageSource enum.
 func (e ServicePeriodHistoryEventPageSource) Valid() bool {
 	switch e {
-	case V1History:
+	case ServicePeriodHistoryEventPageSourceV1History:
 		return true
 	default:
 		return false
@@ -8244,13 +8577,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	True SidebarSafetyLocalOnly = true
+	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case True:
+	case SidebarSafetyLocalOnlyTrue:
 		return true
 	default:
 		return false
@@ -8274,13 +8607,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -10770,6 +11103,245 @@ type GroupOpsHistoryPlanPageRealExternalCallExecuted bool
 
 // GroupOpsHistoryPlanPageSource defines model for GroupOpsHistoryPlanPage.Source.
 type GroupOpsHistoryPlanPageSource string
+
+// HistoricalBroadcastMessage defines model for HistoricalBroadcastMessage.
+type HistoricalBroadcastMessage struct {
+	AttachmentsDigest    []int      `json:"attachments_digest"`
+	ContentMasked        string     `json:"content_masked"`
+	ContentPayloadDigest []int      `json:"content_payload_digest"`
+	CreatedAt            time.Time  `json:"created_at"`
+	CustomerId           *int64     `json:"customer_id"`
+	DayOffset            int64      `json:"day_offset"`
+	Id                   int64      `json:"id"`
+	OriginalSendTime     string     `json:"original_send_time"`
+	OriginalStatus       string     `json:"original_status"`
+	PlanHistoryId        int64      `json:"plan_history_id"`
+	RecipientHistoryId   int64      `json:"recipient_history_id"`
+	SentAt               *time.Time `json:"sent_at"`
+	SequenceIndex        int64      `json:"sequence_index"`
+	SourceId             int64      `json:"source_id"`
+	SourcePayloadDigest  []int      `json:"source_payload_digest"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+}
+
+// HistoricalBroadcastMessagePage defines model for HistoricalBroadcastMessagePage.
+type HistoricalBroadcastMessagePage struct {
+	Items                    []HistoricalBroadcastMessage                           `json:"items"`
+	Limit                    int32                                                  `json:"limit"`
+	Offset                   int32                                                  `json:"offset"`
+	ReadOnly                 HistoricalBroadcastMessagePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalBroadcastMessagePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	RecipientHistoryId       int64                                                  `json:"recipient_history_id"`
+	Source                   HistoricalBroadcastMessagePageSource                   `json:"source"`
+	Total                    int64                                                  `json:"total"`
+}
+
+// HistoricalBroadcastMessagePageReadOnly defines model for HistoricalBroadcastMessagePage.ReadOnly.
+type HistoricalBroadcastMessagePageReadOnly bool
+
+// HistoricalBroadcastMessagePageRealExternalCallExecuted defines model for HistoricalBroadcastMessagePage.RealExternalCallExecuted.
+type HistoricalBroadcastMessagePageRealExternalCallExecuted bool
+
+// HistoricalBroadcastMessagePageSource defines model for HistoricalBroadcastMessagePage.Source.
+type HistoricalBroadcastMessagePageSource string
+
+// HistoricalBroadcastPlan defines model for HistoricalBroadcastPlan.
+type HistoricalBroadcastPlan struct {
+	CampaignSourceId      *int64     `json:"campaign_source_id"`
+	CandidateCount        int64      `json:"candidate_count"`
+	CommittedAt           *time.Time `json:"committed_at"`
+	ContentStrategy       string     `json:"content_strategy"`
+	ContentTemplateMasked string     `json:"content_template_masked"`
+	CreatedAt             time.Time  `json:"created_at"`
+	DisplayName           string     `json:"display_name"`
+	ExpiresAt             *time.Time `json:"expires_at"`
+	Id                    int64      `json:"id"`
+	Intent                string     `json:"intent"`
+	MaxRecipients         int64      `json:"max_recipients"`
+	OriginalReviewStatus  string     `json:"original_review_status"`
+	OriginalRunStatus     string     `json:"original_run_status"`
+	OriginalStatus        string     `json:"original_status"`
+	RequiresManualCopy    bool       `json:"requires_manual_copy"`
+	RuntimeDigest         []int      `json:"runtime_digest"`
+	SegmentSourceId       *int64     `json:"segment_source_id"`
+	SkippedCount          int64      `json:"skipped_count"`
+	SourceId              int64      `json:"source_id"`
+	SourcePayloadDigest   []int      `json:"source_payload_digest"`
+	SourcePlanId          string     `json:"source_plan_id"`
+	UpdatedAt             time.Time  `json:"updated_at"`
+}
+
+// HistoricalBroadcastPlanDetail defines model for HistoricalBroadcastPlanDetail.
+type HistoricalBroadcastPlanDetail struct {
+	Item                     HistoricalBroadcastPlan                               `json:"item"`
+	ReadOnly                 HistoricalBroadcastPlanDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalBroadcastPlanDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HistoricalBroadcastPlanDetailSource                   `json:"source"`
+}
+
+// HistoricalBroadcastPlanDetailReadOnly defines model for HistoricalBroadcastPlanDetail.ReadOnly.
+type HistoricalBroadcastPlanDetailReadOnly bool
+
+// HistoricalBroadcastPlanDetailRealExternalCallExecuted defines model for HistoricalBroadcastPlanDetail.RealExternalCallExecuted.
+type HistoricalBroadcastPlanDetailRealExternalCallExecuted bool
+
+// HistoricalBroadcastPlanDetailSource defines model for HistoricalBroadcastPlanDetail.Source.
+type HistoricalBroadcastPlanDetailSource string
+
+// HistoricalBroadcastPlanPage defines model for HistoricalBroadcastPlanPage.
+type HistoricalBroadcastPlanPage struct {
+	Items                    []HistoricalBroadcastPlan                           `json:"items"`
+	Limit                    int32                                               `json:"limit"`
+	Offset                   int32                                               `json:"offset"`
+	ReadOnly                 HistoricalBroadcastPlanPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalBroadcastPlanPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HistoricalBroadcastPlanPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// HistoricalBroadcastPlanPageReadOnly defines model for HistoricalBroadcastPlanPage.ReadOnly.
+type HistoricalBroadcastPlanPageReadOnly bool
+
+// HistoricalBroadcastPlanPageRealExternalCallExecuted defines model for HistoricalBroadcastPlanPage.RealExternalCallExecuted.
+type HistoricalBroadcastPlanPageRealExternalCallExecuted bool
+
+// HistoricalBroadcastPlanPageSource defines model for HistoricalBroadcastPlanPage.Source.
+type HistoricalBroadcastPlanPageSource string
+
+// HistoricalBroadcastRecipient defines model for HistoricalBroadcastRecipient.
+type HistoricalBroadcastRecipient struct {
+	ApprovedAt             *time.Time `json:"approved_at"`
+	CreatedAt              time.Time  `json:"created_at"`
+	CustomerId             *int64     `json:"customer_id"`
+	DisplayName            string     `json:"display_name"`
+	Id                     int64      `json:"id"`
+	OriginalApprovalStatus string     `json:"original_approval_status"`
+	OriginalSendStatus     string     `json:"original_send_status"`
+	PlanHistoryId          int64      `json:"plan_history_id"`
+	PlannedMessageCount    int64      `json:"planned_message_count"`
+	RejectedAt             *time.Time `json:"rejected_at"`
+	SourceId               int64      `json:"source_id"`
+	SourcePayloadDigest    []int      `json:"source_payload_digest"`
+	UpdatedAt              time.Time  `json:"updated_at"`
+}
+
+// HistoricalBroadcastRecipientPage defines model for HistoricalBroadcastRecipientPage.
+type HistoricalBroadcastRecipientPage struct {
+	Items                    []HistoricalBroadcastRecipient                           `json:"items"`
+	Limit                    int32                                                    `json:"limit"`
+	Offset                   int32                                                    `json:"offset"`
+	PlanHistoryId            int64                                                    `json:"plan_history_id"`
+	ReadOnly                 HistoricalBroadcastRecipientPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalBroadcastRecipientPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HistoricalBroadcastRecipientPageSource                   `json:"source"`
+	Total                    int64                                                    `json:"total"`
+}
+
+// HistoricalBroadcastRecipientPageReadOnly defines model for HistoricalBroadcastRecipientPage.ReadOnly.
+type HistoricalBroadcastRecipientPageReadOnly bool
+
+// HistoricalBroadcastRecipientPageRealExternalCallExecuted defines model for HistoricalBroadcastRecipientPage.RealExternalCallExecuted.
+type HistoricalBroadcastRecipientPageRealExternalCallExecuted bool
+
+// HistoricalBroadcastRecipientPageSource defines model for HistoricalBroadcastRecipientPage.Source.
+type HistoricalBroadcastRecipientPageSource string
+
+// HistoricalCampaignMember defines model for HistoricalCampaignMember.
+type HistoricalCampaignMember struct {
+	AnchorDate              string     `json:"anchor_date"`
+	CampaignSegmentSourceId int64      `json:"campaign_segment_source_id"`
+	CampaignSourceId        int64      `json:"campaign_source_id"`
+	CreatedAt               time.Time  `json:"created_at"`
+	CurrentStepIndex        int32      `json:"current_step_index"`
+	CustomerId              *int64     `json:"customer_id"`
+	Id                      int64      `json:"id"`
+	JoinedAt                time.Time  `json:"joined_at"`
+	LastStepSentAt          *time.Time `json:"last_step_sent_at"`
+	MemberSourceId          int64      `json:"member_source_id"`
+	NextDueAt               *time.Time `json:"next_due_at"`
+	OriginalStatus          string     `json:"original_status"`
+	RetryCount              int32      `json:"retry_count"`
+	SegmentHistoryId        int64      `json:"segment_history_id"`
+	SegmentSourceId         int64      `json:"segment_source_id"`
+	SourceId                int64      `json:"source_id"`
+	SourcePayloadDigest     []int      `json:"source_payload_digest"`
+	StopReason              string     `json:"stop_reason"`
+	UpdatedAt               time.Time  `json:"updated_at"`
+}
+
+// HistoricalCampaignMemberPage defines model for HistoricalCampaignMemberPage.
+type HistoricalCampaignMemberPage struct {
+	Items                    []HistoricalCampaignMember                           `json:"items"`
+	Limit                    int32                                                `json:"limit"`
+	Offset                   int32                                                `json:"offset"`
+	ReadOnly                 HistoricalCampaignMemberPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalCampaignMemberPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HistoricalCampaignMemberPageSource                   `json:"source"`
+	Total                    int64                                                `json:"total"`
+}
+
+// HistoricalCampaignMemberPageReadOnly defines model for HistoricalCampaignMemberPage.ReadOnly.
+type HistoricalCampaignMemberPageReadOnly bool
+
+// HistoricalCampaignMemberPageRealExternalCallExecuted defines model for HistoricalCampaignMemberPage.RealExternalCallExecuted.
+type HistoricalCampaignMemberPageRealExternalCallExecuted bool
+
+// HistoricalCampaignMemberPageSource defines model for HistoricalCampaignMemberPage.Source.
+type HistoricalCampaignMemberPageSource string
+
+// HistoricalCampaignSegment defines model for HistoricalCampaignSegment.
+type HistoricalCampaignSegment struct {
+	CampaignSourceId    int64                                      `json:"campaign_source_id"`
+	Code                string                                     `json:"code"`
+	CreatedAt           time.Time                                  `json:"created_at"`
+	Id                  int64                                      `json:"id"`
+	Label               string                                     `json:"label"`
+	Priority            int32                                      `json:"priority"`
+	SegmentSourceId     int64                                      `json:"segment_source_id"`
+	SourceId            int64                                      `json:"source_id"`
+	SourceParentState   HistoricalCampaignSegmentSourceParentState `json:"source_parent_state"`
+	SourcePayloadDigest []int                                      `json:"source_payload_digest"`
+}
+
+// HistoricalCampaignSegmentSourceParentState defines model for HistoricalCampaignSegment.SourceParentState.
+type HistoricalCampaignSegmentSourceParentState string
+
+// HistoricalCampaignSegmentDetail defines model for HistoricalCampaignSegmentDetail.
+type HistoricalCampaignSegmentDetail struct {
+	Item                     HistoricalCampaignSegment                               `json:"item"`
+	ReadOnly                 HistoricalCampaignSegmentDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalCampaignSegmentDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HistoricalCampaignSegmentDetailSource                   `json:"source"`
+}
+
+// HistoricalCampaignSegmentDetailReadOnly defines model for HistoricalCampaignSegmentDetail.ReadOnly.
+type HistoricalCampaignSegmentDetailReadOnly bool
+
+// HistoricalCampaignSegmentDetailRealExternalCallExecuted defines model for HistoricalCampaignSegmentDetail.RealExternalCallExecuted.
+type HistoricalCampaignSegmentDetailRealExternalCallExecuted bool
+
+// HistoricalCampaignSegmentDetailSource defines model for HistoricalCampaignSegmentDetail.Source.
+type HistoricalCampaignSegmentDetailSource string
+
+// HistoricalCampaignSegmentPage defines model for HistoricalCampaignSegmentPage.
+type HistoricalCampaignSegmentPage struct {
+	Items                    []HistoricalCampaignSegment                           `json:"items"`
+	Limit                    int32                                                 `json:"limit"`
+	Offset                   int32                                                 `json:"offset"`
+	ReadOnly                 HistoricalCampaignSegmentPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HistoricalCampaignSegmentPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HistoricalCampaignSegmentPageSource                   `json:"source"`
+	Total                    int64                                                 `json:"total"`
+}
+
+// HistoricalCampaignSegmentPageReadOnly defines model for HistoricalCampaignSegmentPage.ReadOnly.
+type HistoricalCampaignSegmentPageReadOnly bool
+
+// HistoricalCampaignSegmentPageRealExternalCallExecuted defines model for HistoricalCampaignSegmentPage.RealExternalCallExecuted.
+type HistoricalCampaignSegmentPageRealExternalCallExecuted bool
+
+// HistoricalCampaignSegmentPageSource defines model for HistoricalCampaignSegmentPage.Source.
+type HistoricalCampaignSegmentPageSource string
 
 // IdentityMergeReview Closed administrator fact. It never contains normalized identities, provider identifiers, or raw payloads; identity_fingerprint is a versioned secret-backed HMAC only.
 type IdentityMergeReview struct {
@@ -14583,6 +15155,39 @@ type CancelAdminOpsBroadcastJobParams struct {
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
+// ListCampaignHistoryBroadcastPlansParams defines parameters for ListCampaignHistoryBroadcastPlans.
+type ListCampaignHistoryBroadcastPlansParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCampaignHistoryBroadcastRecipientsParams defines parameters for ListCampaignHistoryBroadcastRecipients.
+type ListCampaignHistoryBroadcastRecipientsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCampaignHistoryBroadcastMessagesParams defines parameters for ListCampaignHistoryBroadcastMessages.
+type ListCampaignHistoryBroadcastMessagesParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCampaignHistoryMembersParams defines parameters for ListCampaignHistoryMembers.
+type ListCampaignHistoryMembersParams struct {
+	SegmentHistoryId *int64 `form:"segment_history_id,omitempty" json:"segment_history_id,omitempty"`
+	CustomerId       *int64 `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	Limit            *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset           *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCampaignHistorySegmentsParams defines parameters for ListCampaignHistorySegments.
+type ListCampaignHistorySegmentsParams struct {
+	CampaignSourceId *int64 `form:"campaign_source_id,omitempty" json:"campaign_source_id,omitempty"`
+	Limit            *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset           *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // CreateMediaContentDeliveryBindingParams defines parameters for CreateMediaContentDeliveryBinding.
 type CreateMediaContentDeliveryBindingParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -17554,6 +18159,27 @@ type ServerInterface interface {
 	// Fail closed because no authoritative local broadcast fact exists
 	// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
 	CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params CancelAdminOpsBroadcastJobParams)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-plans)
+	ListCampaignHistoryBroadcastPlans(w http.ResponseWriter, r *http.Request, params ListCampaignHistoryBroadcastPlansParams)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-plans/{plan_history_id})
+	GetCampaignHistoryBroadcastPlan(w http.ResponseWriter, r *http.Request, planHistoryId int64)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients)
+	ListCampaignHistoryBroadcastRecipients(w http.ResponseWriter, r *http.Request, planHistoryId int64, params ListCampaignHistoryBroadcastRecipientsParams)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages)
+	ListCampaignHistoryBroadcastMessages(w http.ResponseWriter, r *http.Request, recipientHistoryId int64, params ListCampaignHistoryBroadcastMessagesParams)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/members)
+	ListCampaignHistoryMembers(w http.ResponseWriter, r *http.Request, params ListCampaignHistoryMembersParams)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/segments)
+	ListCampaignHistorySegments(w http.ResponseWriter, r *http.Request, params ListCampaignHistorySegmentsParams)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/segments/{segment_history_id})
+	GetCampaignHistorySegment(w http.ResponseWriter, r *http.Request, segmentHistoryId int64)
 	// Read one local group-invite binding
 	// (GET /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	GetMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
@@ -18412,6 +19038,48 @@ func (_ Unimplemented) ApproveAdminOpsBroadcastJob(w http.ResponseWriter, r *htt
 // Fail closed because no authoritative local broadcast fact exists
 // (POST /api/admin/broadcast-jobs/{job_id}/cancel)
 func (_ Unimplemented) CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params CancelAdminOpsBroadcastJobParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/broadcast-plans)
+func (_ Unimplemented) ListCampaignHistoryBroadcastPlans(w http.ResponseWriter, r *http.Request, params ListCampaignHistoryBroadcastPlansParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/broadcast-plans/{plan_history_id})
+func (_ Unimplemented) GetCampaignHistoryBroadcastPlan(w http.ResponseWriter, r *http.Request, planHistoryId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients)
+func (_ Unimplemented) ListCampaignHistoryBroadcastRecipients(w http.ResponseWriter, r *http.Request, planHistoryId int64, params ListCampaignHistoryBroadcastRecipientsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages)
+func (_ Unimplemented) ListCampaignHistoryBroadcastMessages(w http.ResponseWriter, r *http.Request, recipientHistoryId int64, params ListCampaignHistoryBroadcastMessagesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/members)
+func (_ Unimplemented) ListCampaignHistoryMembers(w http.ResponseWriter, r *http.Request, params ListCampaignHistoryMembersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/segments)
+func (_ Unimplemented) ListCampaignHistorySegments(w http.ResponseWriter, r *http.Request, params ListCampaignHistorySegmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Campaign history without dispatch or Provider effects
+// (GET /api/admin/campaign-history/segments/{segment_history_id})
+func (_ Unimplemented) GetCampaignHistorySegment(w http.ResponseWriter, r *http.Request, segmentHistoryId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -21052,6 +21720,315 @@ func (siw *ServerInterfaceWrapper) CancelAdminOpsBroadcastJob(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CancelAdminOpsBroadcastJob(w, r, jobId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCampaignHistoryBroadcastPlans operation middleware
+func (siw *ServerInterfaceWrapper) ListCampaignHistoryBroadcastPlans(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCampaignHistoryBroadcastPlansParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCampaignHistoryBroadcastPlans(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCampaignHistoryBroadcastPlan operation middleware
+func (siw *ServerInterfaceWrapper) GetCampaignHistoryBroadcastPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "plan_history_id" -------------
+	var planHistoryId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_history_id", chi.URLParam(r, "plan_history_id"), &planHistoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCampaignHistoryBroadcastPlan(w, r, planHistoryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCampaignHistoryBroadcastRecipients operation middleware
+func (siw *ServerInterfaceWrapper) ListCampaignHistoryBroadcastRecipients(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "plan_history_id" -------------
+	var planHistoryId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_history_id", chi.URLParam(r, "plan_history_id"), &planHistoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCampaignHistoryBroadcastRecipientsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCampaignHistoryBroadcastRecipients(w, r, planHistoryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCampaignHistoryBroadcastMessages operation middleware
+func (siw *ServerInterfaceWrapper) ListCampaignHistoryBroadcastMessages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "recipient_history_id" -------------
+	var recipientHistoryId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recipient_history_id", chi.URLParam(r, "recipient_history_id"), &recipientHistoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "recipient_history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCampaignHistoryBroadcastMessagesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCampaignHistoryBroadcastMessages(w, r, recipientHistoryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCampaignHistoryMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListCampaignHistoryMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCampaignHistoryMembersParams
+
+	// ------------- Optional query parameter "segment_history_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "segment_history_id", r.URL.Query(), &params.SegmentHistoryId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_history_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCampaignHistoryMembers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCampaignHistorySegments operation middleware
+func (siw *ServerInterfaceWrapper) ListCampaignHistorySegments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCampaignHistorySegmentsParams
+
+	// ------------- Optional query parameter "campaign_source_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "campaign_source_id", r.URL.Query(), &params.CampaignSourceId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_source_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCampaignHistorySegments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCampaignHistorySegment operation middleware
+func (siw *ServerInterfaceWrapper) GetCampaignHistorySegment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "segment_history_id" -------------
+	var segmentHistoryId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "segment_history_id", chi.URLParam(r, "segment_history_id"), &segmentHistoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "segment_history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCampaignHistorySegment(w, r, segmentHistoryId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -35476,6 +36453,27 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/broadcast-jobs/{job_id}/cancel", wrapper.CancelAdminOpsBroadcastJob)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/broadcast-plans", wrapper.ListCampaignHistoryBroadcastPlans)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/broadcast-plans/{plan_history_id}", wrapper.GetCampaignHistoryBroadcastPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients", wrapper.ListCampaignHistoryBroadcastRecipients)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages", wrapper.ListCampaignHistoryBroadcastMessages)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/members", wrapper.ListCampaignHistoryMembers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/segments", wrapper.ListCampaignHistorySegments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/campaign-history/segments/{segment_history_id}", wrapper.GetCampaignHistorySegment)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", wrapper.GetMediaContentDeliveryBinding)
 	})
 	r.Group(func(r chi.Router) {
@@ -37594,6 +38592,379 @@ func (response CancelAdminOpsBroadcastJob409JSONResponse) VisitCancelAdminOpsBro
 type CancelAdminOpsBroadcastJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response CancelAdminOpsBroadcastJob503JSONResponse) VisitCancelAdminOpsBroadcastJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastPlansRequestObject struct {
+	Params ListCampaignHistoryBroadcastPlansParams
+}
+
+type ListCampaignHistoryBroadcastPlansResponseObject interface {
+	VisitListCampaignHistoryBroadcastPlansResponse(w http.ResponseWriter) error
+}
+
+type ListCampaignHistoryBroadcastPlans200JSONResponse HistoricalBroadcastPlanPage
+
+func (response ListCampaignHistoryBroadcastPlans200JSONResponse) VisitListCampaignHistoryBroadcastPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastPlans400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCampaignHistoryBroadcastPlans400JSONResponse) VisitListCampaignHistoryBroadcastPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastPlans401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCampaignHistoryBroadcastPlans401JSONResponse) VisitListCampaignHistoryBroadcastPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastPlans403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCampaignHistoryBroadcastPlans403JSONResponse) VisitListCampaignHistoryBroadcastPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastPlans503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCampaignHistoryBroadcastPlans503JSONResponse) VisitListCampaignHistoryBroadcastPlansResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistoryBroadcastPlanRequestObject struct {
+	PlanHistoryId int64 `json:"plan_history_id"`
+}
+
+type GetCampaignHistoryBroadcastPlanResponseObject interface {
+	VisitGetCampaignHistoryBroadcastPlanResponse(w http.ResponseWriter) error
+}
+
+type GetCampaignHistoryBroadcastPlan200JSONResponse HistoricalBroadcastPlanDetail
+
+func (response GetCampaignHistoryBroadcastPlan200JSONResponse) VisitGetCampaignHistoryBroadcastPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistoryBroadcastPlan400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCampaignHistoryBroadcastPlan400JSONResponse) VisitGetCampaignHistoryBroadcastPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistoryBroadcastPlan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCampaignHistoryBroadcastPlan401JSONResponse) VisitGetCampaignHistoryBroadcastPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistoryBroadcastPlan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCampaignHistoryBroadcastPlan403JSONResponse) VisitGetCampaignHistoryBroadcastPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistoryBroadcastPlan503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCampaignHistoryBroadcastPlan503JSONResponse) VisitGetCampaignHistoryBroadcastPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastRecipientsRequestObject struct {
+	PlanHistoryId int64 `json:"plan_history_id"`
+	Params        ListCampaignHistoryBroadcastRecipientsParams
+}
+
+type ListCampaignHistoryBroadcastRecipientsResponseObject interface {
+	VisitListCampaignHistoryBroadcastRecipientsResponse(w http.ResponseWriter) error
+}
+
+type ListCampaignHistoryBroadcastRecipients200JSONResponse HistoricalBroadcastRecipientPage
+
+func (response ListCampaignHistoryBroadcastRecipients200JSONResponse) VisitListCampaignHistoryBroadcastRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastRecipients400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCampaignHistoryBroadcastRecipients400JSONResponse) VisitListCampaignHistoryBroadcastRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastRecipients401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCampaignHistoryBroadcastRecipients401JSONResponse) VisitListCampaignHistoryBroadcastRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastRecipients403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCampaignHistoryBroadcastRecipients403JSONResponse) VisitListCampaignHistoryBroadcastRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastRecipients503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCampaignHistoryBroadcastRecipients503JSONResponse) VisitListCampaignHistoryBroadcastRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastMessagesRequestObject struct {
+	RecipientHistoryId int64 `json:"recipient_history_id"`
+	Params             ListCampaignHistoryBroadcastMessagesParams
+}
+
+type ListCampaignHistoryBroadcastMessagesResponseObject interface {
+	VisitListCampaignHistoryBroadcastMessagesResponse(w http.ResponseWriter) error
+}
+
+type ListCampaignHistoryBroadcastMessages200JSONResponse HistoricalBroadcastMessagePage
+
+func (response ListCampaignHistoryBroadcastMessages200JSONResponse) VisitListCampaignHistoryBroadcastMessagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastMessages400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCampaignHistoryBroadcastMessages400JSONResponse) VisitListCampaignHistoryBroadcastMessagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastMessages401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCampaignHistoryBroadcastMessages401JSONResponse) VisitListCampaignHistoryBroadcastMessagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastMessages403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCampaignHistoryBroadcastMessages403JSONResponse) VisitListCampaignHistoryBroadcastMessagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryBroadcastMessages503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCampaignHistoryBroadcastMessages503JSONResponse) VisitListCampaignHistoryBroadcastMessagesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryMembersRequestObject struct {
+	Params ListCampaignHistoryMembersParams
+}
+
+type ListCampaignHistoryMembersResponseObject interface {
+	VisitListCampaignHistoryMembersResponse(w http.ResponseWriter) error
+}
+
+type ListCampaignHistoryMembers200JSONResponse HistoricalCampaignMemberPage
+
+func (response ListCampaignHistoryMembers200JSONResponse) VisitListCampaignHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryMembers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCampaignHistoryMembers400JSONResponse) VisitListCampaignHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryMembers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCampaignHistoryMembers401JSONResponse) VisitListCampaignHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryMembers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCampaignHistoryMembers403JSONResponse) VisitListCampaignHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistoryMembers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCampaignHistoryMembers503JSONResponse) VisitListCampaignHistoryMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistorySegmentsRequestObject struct {
+	Params ListCampaignHistorySegmentsParams
+}
+
+type ListCampaignHistorySegmentsResponseObject interface {
+	VisitListCampaignHistorySegmentsResponse(w http.ResponseWriter) error
+}
+
+type ListCampaignHistorySegments200JSONResponse HistoricalCampaignSegmentPage
+
+func (response ListCampaignHistorySegments200JSONResponse) VisitListCampaignHistorySegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistorySegments400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCampaignHistorySegments400JSONResponse) VisitListCampaignHistorySegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistorySegments401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCampaignHistorySegments401JSONResponse) VisitListCampaignHistorySegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistorySegments403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCampaignHistorySegments403JSONResponse) VisitListCampaignHistorySegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCampaignHistorySegments503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCampaignHistorySegments503JSONResponse) VisitListCampaignHistorySegmentsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistorySegmentRequestObject struct {
+	SegmentHistoryId int64 `json:"segment_history_id"`
+}
+
+type GetCampaignHistorySegmentResponseObject interface {
+	VisitGetCampaignHistorySegmentResponse(w http.ResponseWriter) error
+}
+
+type GetCampaignHistorySegment200JSONResponse HistoricalCampaignSegmentDetail
+
+func (response GetCampaignHistorySegment200JSONResponse) VisitGetCampaignHistorySegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistorySegment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCampaignHistorySegment400JSONResponse) VisitGetCampaignHistorySegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistorySegment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCampaignHistorySegment401JSONResponse) VisitGetCampaignHistorySegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistorySegment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCampaignHistorySegment403JSONResponse) VisitGetCampaignHistorySegmentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCampaignHistorySegment503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCampaignHistorySegment503JSONResponse) VisitGetCampaignHistorySegmentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -52804,6 +54175,27 @@ type StrictServerInterface interface {
 	// Fail closed because no authoritative local broadcast fact exists
 	// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
 	CancelAdminOpsBroadcastJob(ctx context.Context, request CancelAdminOpsBroadcastJobRequestObject) (CancelAdminOpsBroadcastJobResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-plans)
+	ListCampaignHistoryBroadcastPlans(ctx context.Context, request ListCampaignHistoryBroadcastPlansRequestObject) (ListCampaignHistoryBroadcastPlansResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-plans/{plan_history_id})
+	GetCampaignHistoryBroadcastPlan(ctx context.Context, request GetCampaignHistoryBroadcastPlanRequestObject) (GetCampaignHistoryBroadcastPlanResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-plans/{plan_history_id}/recipients)
+	ListCampaignHistoryBroadcastRecipients(ctx context.Context, request ListCampaignHistoryBroadcastRecipientsRequestObject) (ListCampaignHistoryBroadcastRecipientsResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/broadcast-recipients/{recipient_history_id}/messages)
+	ListCampaignHistoryBroadcastMessages(ctx context.Context, request ListCampaignHistoryBroadcastMessagesRequestObject) (ListCampaignHistoryBroadcastMessagesResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/members)
+	ListCampaignHistoryMembers(ctx context.Context, request ListCampaignHistoryMembersRequestObject) (ListCampaignHistoryMembersResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/segments)
+	ListCampaignHistorySegments(ctx context.Context, request ListCampaignHistorySegmentsRequestObject) (ListCampaignHistorySegmentsResponseObject, error)
+	// Read immutable V1 Campaign history without dispatch or Provider effects
+	// (GET /api/admin/campaign-history/segments/{segment_history_id})
+	GetCampaignHistorySegment(ctx context.Context, request GetCampaignHistorySegmentRequestObject) (GetCampaignHistorySegmentResponseObject, error)
 	// Read one local group-invite binding
 	// (GET /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	GetMediaContentDeliveryBinding(ctx context.Context, request GetMediaContentDeliveryBindingRequestObject) (GetMediaContentDeliveryBindingResponseObject, error)
@@ -54210,6 +55602,190 @@ func (sh *strictHandler) CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CancelAdminOpsBroadcastJobResponseObject); ok {
 		if err := validResponse.VisitCancelAdminOpsBroadcastJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCampaignHistoryBroadcastPlans operation middleware
+func (sh *strictHandler) ListCampaignHistoryBroadcastPlans(w http.ResponseWriter, r *http.Request, params ListCampaignHistoryBroadcastPlansParams) {
+	var request ListCampaignHistoryBroadcastPlansRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCampaignHistoryBroadcastPlans(ctx, request.(ListCampaignHistoryBroadcastPlansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCampaignHistoryBroadcastPlans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCampaignHistoryBroadcastPlansResponseObject); ok {
+		if err := validResponse.VisitListCampaignHistoryBroadcastPlansResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCampaignHistoryBroadcastPlan operation middleware
+func (sh *strictHandler) GetCampaignHistoryBroadcastPlan(w http.ResponseWriter, r *http.Request, planHistoryId int64) {
+	var request GetCampaignHistoryBroadcastPlanRequestObject
+
+	request.PlanHistoryId = planHistoryId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCampaignHistoryBroadcastPlan(ctx, request.(GetCampaignHistoryBroadcastPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCampaignHistoryBroadcastPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCampaignHistoryBroadcastPlanResponseObject); ok {
+		if err := validResponse.VisitGetCampaignHistoryBroadcastPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCampaignHistoryBroadcastRecipients operation middleware
+func (sh *strictHandler) ListCampaignHistoryBroadcastRecipients(w http.ResponseWriter, r *http.Request, planHistoryId int64, params ListCampaignHistoryBroadcastRecipientsParams) {
+	var request ListCampaignHistoryBroadcastRecipientsRequestObject
+
+	request.PlanHistoryId = planHistoryId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCampaignHistoryBroadcastRecipients(ctx, request.(ListCampaignHistoryBroadcastRecipientsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCampaignHistoryBroadcastRecipients")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCampaignHistoryBroadcastRecipientsResponseObject); ok {
+		if err := validResponse.VisitListCampaignHistoryBroadcastRecipientsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCampaignHistoryBroadcastMessages operation middleware
+func (sh *strictHandler) ListCampaignHistoryBroadcastMessages(w http.ResponseWriter, r *http.Request, recipientHistoryId int64, params ListCampaignHistoryBroadcastMessagesParams) {
+	var request ListCampaignHistoryBroadcastMessagesRequestObject
+
+	request.RecipientHistoryId = recipientHistoryId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCampaignHistoryBroadcastMessages(ctx, request.(ListCampaignHistoryBroadcastMessagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCampaignHistoryBroadcastMessages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCampaignHistoryBroadcastMessagesResponseObject); ok {
+		if err := validResponse.VisitListCampaignHistoryBroadcastMessagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCampaignHistoryMembers operation middleware
+func (sh *strictHandler) ListCampaignHistoryMembers(w http.ResponseWriter, r *http.Request, params ListCampaignHistoryMembersParams) {
+	var request ListCampaignHistoryMembersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCampaignHistoryMembers(ctx, request.(ListCampaignHistoryMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCampaignHistoryMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCampaignHistoryMembersResponseObject); ok {
+		if err := validResponse.VisitListCampaignHistoryMembersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCampaignHistorySegments operation middleware
+func (sh *strictHandler) ListCampaignHistorySegments(w http.ResponseWriter, r *http.Request, params ListCampaignHistorySegmentsParams) {
+	var request ListCampaignHistorySegmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCampaignHistorySegments(ctx, request.(ListCampaignHistorySegmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCampaignHistorySegments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCampaignHistorySegmentsResponseObject); ok {
+		if err := validResponse.VisitListCampaignHistorySegmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCampaignHistorySegment operation middleware
+func (sh *strictHandler) GetCampaignHistorySegment(w http.ResponseWriter, r *http.Request, segmentHistoryId int64) {
+	var request GetCampaignHistorySegmentRequestObject
+
+	request.SegmentHistoryId = segmentHistoryId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCampaignHistorySegment(ctx, request.(GetCampaignHistorySegmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCampaignHistorySegment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCampaignHistorySegmentResponseObject); ok {
+		if err := validResponse.VisitGetCampaignHistorySegmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -81,6 +81,9 @@ func TestReconciledCampaignHistoryArchiveShape(t *testing.T) {
 	}
 	for _, row := range h.Segments {
 		count(1, row.Disposition, row.Reason, row.Fact != nil)
+		if row.Fact == nil {
+			continue
+		}
 		switch row.Fact.SourceParentState {
 		case SourceParentObserved:
 		case SourceParentMissingCampaign:

@@ -216,6 +216,13 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
 		"GetChannelHistory",
+		"ListCampaignHistorySegments",
+		"GetCampaignHistorySegment",
+		"ListCampaignHistoryMembers",
+		"ListCampaignHistoryBroadcastPlans",
+		"GetCampaignHistoryBroadcastPlan",
+		"ListCampaignHistoryBroadcastRecipients",
+		"ListCampaignHistoryBroadcastMessages",
 		"ListServicePeriodHistoryDefinitions", "ListServicePeriodHistoryEntitlements", "ListServicePeriodHistoryEvents",
 		"ListCouponHistoryDefinitions", "ListCouponHistoryClaims", "ListCouponHistoryRedemptions",
 		"ListGroupOpsHistoryPlans", "ListGroupOpsHistoryDirectory", "ListGroupOpsHistoryGroups", "ListGroupOpsHistoryNodes",
