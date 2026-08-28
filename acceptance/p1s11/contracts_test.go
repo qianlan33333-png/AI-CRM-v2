@@ -215,6 +215,8 @@ func TestGeneratedLegacyHealthSnapshotKeepsTheExactLegacyFieldSet(t *testing.T) 
 func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 	assertMethodNames(t, "runtime server", reflect.TypeOf((*runtimegenerated.StrictServerInterface)(nil)).Elem(), []string{"GetHealthz"})
 	assertMethodNames(t, "candidate server", reflect.TypeOf((*generated.StrictServerInterface)(nil)).Elem(), []string{
+		"ListUnboundTagHistory", "GetUnboundTagHistory", "ListInvalidChannelHistory", "GetInvalidChannelHistory",
+		"ListInvalidAssetHistory", "GetInvalidAssetHistory", "ListInvalidRadarLinkHistory", "GetInvalidRadarLinkHistory",
 		"ListCampaignHistoryDefinitions", "GetCampaignHistoryDefinition", "ListCampaignHistoryDefinitionSteps",
 		"ListMarketingStateHistorySnapshot", "GetMarketingStateHistorySnapshot", "ListMarketingStateHistoryChange", "GetMarketingStateHistoryChange", "ListMarketingStateHistoryValueSnapshot", "GetMarketingStateHistoryValueSnapshot", "ListMarketingStateHistoryValueChange", "GetMarketingStateHistoryValueChange",
 		"ListBroadcastJobHistory", "GetBroadcastJobHistory",

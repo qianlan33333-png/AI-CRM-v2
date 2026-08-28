@@ -16,12 +16,89 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	invalidhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1invalidsourcehistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+// This tail package is exactly the 16 sealed invalid definitions. It cannot
+// create a current object, fix a source, or update any earlier import receipt.
+func RunInvalidSourceHistory(ctx context.Context, pool *pgxpool.Pool, archive invalidhistory.ArchiveSource, run string, key []byte, reconcile bool) (InvalidSourceHistoryResult, error) {
+	if ctx == nil || pool == nil || archive == nil || run == "" || len(key) < sha256.Size {
+		return InvalidSourceHistoryResult{}, ErrInvalidScope
+	}
+	var result InvalidSourceHistoryResult
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	err := uow.Within(ctx, func(bound context.Context) error {
+		result = InvalidSourceHistoryResult{}
+		tx, err := platformstore.TxFromContext(bound)
+		if err != nil {
+			return err
+		}
+		if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+			return err
+		}
+		for _, version := range []string{"v1-static-a1", "v1-channel-a1", "v1-domain-a1"} {
+			var ready bool
+			err = tx.QueryRow(bound, `SELECT EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts
+WHERE import_version=$1 AND archive_run_id=$2 AND selected_source_count=receipt_count AND verified_count=receipt_count
+AND imported_count+archived_count+quarantined_count=receipt_count)`, version, run).Scan(&ready)
+			if err != nil {
+				return err
+			}
+			if !ready {
+				return ErrConflict
+			}
+		}
+		selected, err := invalidhistory.Select(bound, archive, invalidSourceTerminalLoader{run: run}, invalidhistory.Options{ArchiveRunID: run, SourceHMACKey: key})
+		if err != nil {
+			return err
+		}
+		entries, err := invalidSourceEntries(selected, run, tx)
+		if err != nil {
+			return err
+		}
+		result.Selected = len(entries)
+		if reconcile {
+			proof, err := reconcileInvalidSourceEntries(bound, tx, entries, run)
+			if err != nil {
+				return err
+			}
+			result.Reconciliation = &proof
+			return nil
+		}
+		for _, entry := range entries {
+			receipt, err := entry.write(bound)
+			if err != nil {
+				return fmt.Errorf("invalid source history %s: %w", entry.scope.TableID, err)
+			}
+			if receipt.Kind != entry.kind || receipt.SourceIdentifier != entry.source || receipt.PayloadDigest != entry.payload || receipt.TargetID < 1 {
+				return ErrConflict
+			}
+			terminal, found, err := entry.journal.LoadTerminal(bound, entry.source)
+			if err != nil || !found {
+				return ErrConflict
+			}
+			digest, err := entry.verify(bound, receipt.TargetID)
+			if err != nil || digest != receipt.TargetDigest || terminal.TargetDigest != digest || terminal.PayloadDigest != entry.payload || terminal.SourceKeyDigest != entry.key || terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetID != strconv.FormatInt(receipt.TargetID, 10) || len(terminal.Metadata) != 0 {
+				return ErrConflict
+			}
+			if receipt.Replayed {
+				result.Replayed++
+			} else {
+				result.Imported++
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return InvalidSourceHistoryResult{}, err
+	}
+	return result, nil
+}
 
 var (
 	ErrInvalidScope = errors.New("invalid V1 domain import scope")

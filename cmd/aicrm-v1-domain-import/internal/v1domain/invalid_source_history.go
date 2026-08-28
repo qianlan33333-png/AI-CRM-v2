@@ -3,14 +3,10 @@ package v1domain
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
 	"sort"
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	invalidhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1invalidsourcehistory"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -19,7 +15,6 @@ import (
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
-	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
@@ -30,82 +25,6 @@ const InvalidSourceHistoryVersion = "v1-invalid-source-history-a1"
 type InvalidSourceHistoryResult struct {
 	Selected, Imported, Replayed int
 	Reconciliation               *ReconciliationResult `json:",omitempty"`
-}
-
-// This tail package is exactly the 16 sealed invalid definitions. It cannot
-// create a current object, fix a source, or update any earlier import receipt.
-func RunInvalidSourceHistory(ctx context.Context, pool *pgxpool.Pool, archive invalidhistory.ArchiveSource, run string, key []byte, reconcile bool) (InvalidSourceHistoryResult, error) {
-	if ctx == nil || pool == nil || archive == nil || run == "" || len(key) < sha256.Size {
-		return InvalidSourceHistoryResult{}, ErrInvalidScope
-	}
-	var result InvalidSourceHistoryResult
-	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
-	err := uow.Within(ctx, func(bound context.Context) error {
-		result = InvalidSourceHistoryResult{}
-		tx, err := platformstore.TxFromContext(bound)
-		if err != nil {
-			return err
-		}
-		if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
-			return err
-		}
-		for _, version := range []string{"v1-static-a1", "v1-channel-a1", "v1-domain-a1"} {
-			var ready bool
-			err = tx.QueryRow(bound, `SELECT EXISTS(SELECT 1 FROM public.v1_domain_import_reconciliation_receipts
-WHERE import_version=$1 AND archive_run_id=$2 AND selected_source_count=receipt_count AND verified_count=receipt_count
-AND imported_count+archived_count+quarantined_count=receipt_count)`, version, run).Scan(&ready)
-			if err != nil {
-				return err
-			}
-			if !ready {
-				return ErrConflict
-			}
-		}
-		selected, err := invalidhistory.Select(bound, archive, invalidSourceTerminalLoader{run: run}, invalidhistory.Options{ArchiveRunID: run, SourceHMACKey: key})
-		if err != nil {
-			return err
-		}
-		entries, err := invalidSourceEntries(selected, run, tx)
-		if err != nil {
-			return err
-		}
-		result.Selected = len(entries)
-		if reconcile {
-			proof, err := reconcileInvalidSourceEntries(bound, tx, entries, run)
-			if err != nil {
-				return err
-			}
-			result.Reconciliation = &proof
-			return nil
-		}
-		for _, entry := range entries {
-			receipt, err := entry.write(bound)
-			if err != nil {
-				return fmt.Errorf("invalid source history %s: %w", entry.scope.TableID, err)
-			}
-			if receipt.Kind != entry.kind || receipt.SourceIdentifier != entry.source || receipt.PayloadDigest != entry.payload || receipt.TargetID < 1 {
-				return ErrConflict
-			}
-			terminal, found, err := entry.journal.LoadTerminal(bound, entry.source)
-			if err != nil || !found {
-				return ErrConflict
-			}
-			digest, err := entry.verify(bound, receipt.TargetID)
-			if err != nil || digest != receipt.TargetDigest || terminal.TargetDigest != digest || terminal.PayloadDigest != entry.payload || terminal.SourceKeyDigest != entry.key || terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetID != strconv.FormatInt(receipt.TargetID, 10) || len(terminal.Metadata) != 0 {
-				return ErrConflict
-			}
-			if receipt.Replayed {
-				result.Replayed++
-			} else {
-				result.Imported++
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return InvalidSourceHistoryResult{}, err
-	}
-	return result, nil
 }
 
 type invalidSourceTerminalLoader struct{ run string }
@@ -361,55 +280,4 @@ func (bridge radarInvalidSourceJournal) LoadInvalidSourceHistory(ctx context.Con
 }
 func (bridge radarInvalidSourceJournal) RecordInvalidSourceHistory(ctx context.Context, value radarport.InvalidSourceHistoryReceipt) error {
 	return bridge.invalidSourceJournal.RecordInvalidSourceHistory(ctx, contactport.InvalidSourceHistoryReceipt(value))
-}
-
-func reconcileInvalidSourceEntries(ctx context.Context, tx pgx.Tx, entries []invalidSourceEntry, run string) (ReconciliationResult, error) {
-	if ctx == nil || tx == nil || len(entries) != 16 || run == "" {
-		return ReconciliationResult{}, ErrInvalidScope
-	}
-	var count int64
-	if err := tx.QueryRow(ctx, "SELECT count(*) FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2", InvalidSourceHistoryVersion, run).Scan(&count); err != nil {
-		return ReconciliationResult{}, err
-	}
-	if count != 16 {
-		return ReconciliationResult{}, ErrConflict
-	}
-	hash := sha256.New()
-	encoder := json.NewEncoder(hash)
-	for _, entry := range entries {
-		value, found, err := entry.journal.LoadTerminal(ctx, entry.source)
-		if err != nil || !found || value.SourceKeyDigest != entry.key || value.PayloadDigest != entry.payload || value.Disposition != "import" || value.Reason != "" || len(value.Metadata) != 0 {
-			return ReconciliationResult{}, ErrConflict
-		}
-		id, err := positiveID(value.TargetID)
-		if err != nil || value.TargetID != strconv.FormatInt(id, 10) {
-			return ReconciliationResult{}, ErrConflict
-		}
-		digest, err := entry.verify(ctx, id)
-		if err != nil || value.TargetDigest != digest {
-			return ReconciliationResult{}, ErrConflict
-		}
-		if err = encoder.Encode([]any{entry.scope.TableID, entry.source, hex.EncodeToString(entry.payload[:]), hex.EncodeToString(entry.field[:]), entry.scope.TargetDomain, entry.scope.TargetTable, value.TargetID, hex.EncodeToString(digest[:])}); err != nil {
-			return ReconciliationResult{}, err
-		}
-	}
-	digest := hash.Sum(nil)
-	result := ReconciliationResult{SelectedSourceCount: count, ReceiptCount: count, ImportedCount: count, VerifiedCount: count, ComparisonDigest: hex.EncodeToString(digest)}
-	command, err := tx.Exec(ctx, `INSERT INTO public.v1_domain_import_reconciliation_receipts
-(import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest)
-VALUES($1,$2,$3,$3,$3,0,0,$3,$4) ON CONFLICT(import_version,archive_run_id) DO NOTHING`, InvalidSourceHistoryVersion, run, count, digest)
-	if err != nil {
-		return ReconciliationResult{}, err
-	}
-	result.Replayed = command.RowsAffected() == 0
-	if result.Replayed {
-		var selected, receipts, imported, archived, quarantined, verified int64
-		var old []byte
-		err = tx.QueryRow(ctx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
-FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, InvalidSourceHistoryVersion, run).Scan(&selected, &receipts, &imported, &archived, &quarantined, &verified, &old)
-		if err != nil || selected != count || receipts != count || imported != count || verified != count || archived != 0 || quarantined != 0 || !equalBytes(old, digest) {
-			return ReconciliationResult{}, ErrConflict
-		}
-	}
-	return result, nil
 }
