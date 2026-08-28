@@ -37,6 +37,7 @@ import (
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
 
@@ -232,6 +233,7 @@ type Handler struct {
 	orders                  legacyOrderApplication
 	orderBoard              legacyOrderBoardApplication
 	messageArchive          legacyMessageArchiveApplication
+	messageHistory          wecomport.MessageHistoryReader
 	messageArchiveUnionID   legacyMessageArchiveUnionResolver
 	customerQuestionnaires  *legacyCustomerProfileQuestionnaireAnswersHandler
 	adminOps                legacyAdminOps

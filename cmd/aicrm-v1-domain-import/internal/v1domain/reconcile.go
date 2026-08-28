@@ -82,6 +82,7 @@ var targetBySourceTable = map[string]struct {
 	"public/wecom_group_chat_snapshots":       {"groupops", "group_ops_v1_history_directory"},
 	"public/automation_group_ops_plan_groups": {"groupops", "group_ops_v1_history_groups"},
 	"public/automation_group_ops_plan_nodes":  {"groupops", "group_ops_v1_history_nodes"},
+	"public/archived_messages":                {"wecom", "wecom_v1_message_history"},
 }
 
 type ReconciliationResult struct {
@@ -222,7 +223,7 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 		}
 		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" || servicePeriodTarget(row.TableID) != "" ||
 			row.TableID == "public/commerce_coupons" || row.TableID == "public/commerce_coupon_product_bindings" ||
-			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) {
+			row.TableID == "public/commerce_coupon_claims" || row.TableID == "public/commerce_coupon_redemptions" || slices.Contains(groupOpsReconciledTables, row.TableID) || row.TableID == messageHistoryTableID {
 			var sourceMatches bool
 			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
 WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
@@ -294,6 +295,8 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	}
 	var proof string
 	switch expected.table {
+	case "wecom_v1_message_history":
+		return verifyMessageHistoryTarget(ctx, tx, row)
 	case "product_service_period_history", "product_service_period_entitlement_history", "product_service_period_event_history":
 		return verifyServicePeriodTarget(ctx, tx, row, importedTargets)
 	case "coupons", "coupon_targets", "coupon_v1_history_claims", "coupon_v1_history_redemptions":
