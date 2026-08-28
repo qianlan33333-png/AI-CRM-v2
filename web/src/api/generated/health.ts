@@ -5,6 +5,248 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+/**
+ * @minItems 32
+ * @maxItems 32
+ */
+export type AutomationHistoryDigest = number[];
+
+export interface AutomationHistorySOP {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  source_key_digest: AutomationHistoryDigest;
+  source_payload_digest: AutomationHistoryDigest;
+  pool_key: string;
+  day_index: number;
+  content_masked: string;
+  images_digest: AutomationHistoryDigest;
+  original_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AutomationHistorySOPPageSource =
+  (typeof AutomationHistorySOPPageSource)[keyof typeof AutomationHistorySOPPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistorySOPPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistorySOPPage {
+  source: AutomationHistorySOPPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AutomationHistorySOP[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type AutomationHistorySOPDetailSource =
+  (typeof AutomationHistorySOPDetailSource)[keyof typeof AutomationHistorySOPDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistorySOPDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistorySOPDetail {
+  source: AutomationHistorySOPDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: AutomationHistorySOP;
+}
+
+export interface AutomationHistoryConfig {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  source_key_digest: AutomationHistoryDigest;
+  source_payload_digest: AutomationHistoryDigest;
+  agent_code: string;
+  display_name: string;
+  scenario_code: string;
+  original_enabled: boolean;
+  draft_version: number;
+  published_version: number;
+  published_at: string;
+  last_modified_at: string;
+  last_modified_source: string;
+  submitted_for_publish: boolean;
+  submitted_at: string;
+  created_at: string;
+  updated_at: string;
+  actors_digest: AutomationHistoryDigest;
+  config_digest: AutomationHistoryDigest;
+}
+
+export type AutomationHistoryConfigPageSource =
+  (typeof AutomationHistoryConfigPageSource)[keyof typeof AutomationHistoryConfigPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistoryConfigPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistoryConfigPage {
+  source: AutomationHistoryConfigPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AutomationHistoryConfig[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type AutomationHistoryConfigDetailSource =
+  (typeof AutomationHistoryConfigDetailSource)[keyof typeof AutomationHistoryConfigDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistoryConfigDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistoryConfigDetail {
+  source: AutomationHistoryConfigDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: AutomationHistoryConfig;
+}
+
+export interface AutomationHistoryPrompt {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  source_key_digest: AutomationHistoryDigest;
+  source_payload_digest: AutomationHistoryDigest;
+  agent_code: string;
+  display_name: string;
+  original_enabled: boolean;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  prompt_digest: AutomationHistoryDigest;
+}
+
+export type AutomationHistoryPromptPageSource =
+  (typeof AutomationHistoryPromptPageSource)[keyof typeof AutomationHistoryPromptPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistoryPromptPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistoryPromptPage {
+  source: AutomationHistoryPromptPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AutomationHistoryPrompt[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type AutomationHistoryPromptDetailSource =
+  (typeof AutomationHistoryPromptDetailSource)[keyof typeof AutomationHistoryPromptDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistoryPromptDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistoryPromptDetail {
+  source: AutomationHistoryPromptDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: AutomationHistoryPrompt;
+}
+
+export interface AutomationHistoryAgent {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  source_id: number;
+  source_key_digest: AutomationHistoryDigest;
+  source_payload_digest: AutomationHistoryDigest;
+  program_source_id: number;
+  workflow_source_id: number;
+  node_source_id: number;
+  task_source_id: number;
+  agent_code: string;
+  agent_name: string;
+  original_type: string;
+  original_status: string;
+  sort_order: number;
+  original_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  archived_at: string;
+  actors_digest: AutomationHistoryDigest;
+  configuration_digest: AutomationHistoryDigest;
+}
+
+export type AutomationHistoryAgentPageSource =
+  (typeof AutomationHistoryAgentPageSource)[keyof typeof AutomationHistoryAgentPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistoryAgentPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistoryAgentPage {
+  source: AutomationHistoryAgentPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AutomationHistoryAgent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type AutomationHistoryAgentDetailSource =
+  (typeof AutomationHistoryAgentDetailSource)[keyof typeof AutomationHistoryAgentDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AutomationHistoryAgentDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AutomationHistoryAgentDetail {
+  source: AutomationHistoryAgentDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: AutomationHistoryAgent;
+}
+
 export interface CI01Customer {
   /** @minimum 1 */
   customer_id: number;
@@ -17926,6 +18168,54 @@ export type PushCenterCreatedToFilterParameter = string;
  */
 export type AdminOpsActionTokenParameter = string;
 
+export type ListAutomationHistorySOPsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAutomationHistoryConfigsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAutomationHistoryPromptsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAutomationHistoryAgentsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type MintSidebarContextBody = {
   /**
    * @minLength 1
@@ -20092,6 +20382,621 @@ export type ListAudienceHistoryMembersParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type listAutomationHistorySOPsResponse200 = {
+  data: AutomationHistorySOPPage;
+  status: 200;
+};
+
+export type listAutomationHistorySOPsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAutomationHistorySOPsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationHistorySOPsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationHistorySOPsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationHistorySOPsResponseSuccess =
+  listAutomationHistorySOPsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationHistorySOPsResponseError = (
+  | listAutomationHistorySOPsResponse400
+  | listAutomationHistorySOPsResponse401
+  | listAutomationHistorySOPsResponse403
+  | listAutomationHistorySOPsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationHistorySOPsResponse =
+  | listAutomationHistorySOPsResponseSuccess
+  | listAutomationHistorySOPsResponseError;
+
+export const getListAutomationHistorySOPsUrl = (
+  params?: ListAutomationHistorySOPsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-history/sops?${stringifiedParams}`
+    : `/api/admin/automation-history/sops`;
+};
+
+export const listAutomationHistorySOPs = async (
+  params?: ListAutomationHistorySOPsParams,
+  options?: RequestInit,
+): Promise<listAutomationHistorySOPsResponse> => {
+  const res = await fetch(getListAutomationHistorySOPsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationHistorySOPsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationHistorySOPsResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type getAutomationHistorySOPResponse200 = {
+  data: AutomationHistorySOPDetail;
+  status: 200;
+};
+
+export type getAutomationHistorySOPResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAutomationHistorySOPResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAutomationHistorySOPResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAutomationHistorySOPResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAutomationHistorySOPResponseSuccess =
+  getAutomationHistorySOPResponse200 & {
+    headers: Headers;
+  };
+export type getAutomationHistorySOPResponseError = (
+  | getAutomationHistorySOPResponse400
+  | getAutomationHistorySOPResponse401
+  | getAutomationHistorySOPResponse403
+  | getAutomationHistorySOPResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAutomationHistorySOPResponse =
+  getAutomationHistorySOPResponseSuccess | getAutomationHistorySOPResponseError;
+
+export const getGetAutomationHistorySOPUrl = (historyId: number) => {
+  return `/api/admin/automation-history/sops/${historyId}`;
+};
+
+export const getAutomationHistorySOP = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getAutomationHistorySOPResponse> => {
+  const res = await fetch(getGetAutomationHistorySOPUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAutomationHistorySOPResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAutomationHistorySOPResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type listAutomationHistoryConfigsResponse200 = {
+  data: AutomationHistoryConfigPage;
+  status: 200;
+};
+
+export type listAutomationHistoryConfigsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAutomationHistoryConfigsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationHistoryConfigsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationHistoryConfigsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationHistoryConfigsResponseSuccess =
+  listAutomationHistoryConfigsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationHistoryConfigsResponseError = (
+  | listAutomationHistoryConfigsResponse400
+  | listAutomationHistoryConfigsResponse401
+  | listAutomationHistoryConfigsResponse403
+  | listAutomationHistoryConfigsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationHistoryConfigsResponse =
+  | listAutomationHistoryConfigsResponseSuccess
+  | listAutomationHistoryConfigsResponseError;
+
+export const getListAutomationHistoryConfigsUrl = (
+  params?: ListAutomationHistoryConfigsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-history/configs?${stringifiedParams}`
+    : `/api/admin/automation-history/configs`;
+};
+
+export const listAutomationHistoryConfigs = async (
+  params?: ListAutomationHistoryConfigsParams,
+  options?: RequestInit,
+): Promise<listAutomationHistoryConfigsResponse> => {
+  const res = await fetch(getListAutomationHistoryConfigsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationHistoryConfigsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationHistoryConfigsResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type getAutomationHistoryConfigResponse200 = {
+  data: AutomationHistoryConfigDetail;
+  status: 200;
+};
+
+export type getAutomationHistoryConfigResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAutomationHistoryConfigResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAutomationHistoryConfigResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAutomationHistoryConfigResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAutomationHistoryConfigResponseSuccess =
+  getAutomationHistoryConfigResponse200 & {
+    headers: Headers;
+  };
+export type getAutomationHistoryConfigResponseError = (
+  | getAutomationHistoryConfigResponse400
+  | getAutomationHistoryConfigResponse401
+  | getAutomationHistoryConfigResponse403
+  | getAutomationHistoryConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAutomationHistoryConfigResponse =
+  | getAutomationHistoryConfigResponseSuccess
+  | getAutomationHistoryConfigResponseError;
+
+export const getGetAutomationHistoryConfigUrl = (historyId: number) => {
+  return `/api/admin/automation-history/configs/${historyId}`;
+};
+
+export const getAutomationHistoryConfig = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getAutomationHistoryConfigResponse> => {
+  const res = await fetch(getGetAutomationHistoryConfigUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAutomationHistoryConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAutomationHistoryConfigResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type listAutomationHistoryPromptsResponse200 = {
+  data: AutomationHistoryPromptPage;
+  status: 200;
+};
+
+export type listAutomationHistoryPromptsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAutomationHistoryPromptsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationHistoryPromptsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationHistoryPromptsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationHistoryPromptsResponseSuccess =
+  listAutomationHistoryPromptsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationHistoryPromptsResponseError = (
+  | listAutomationHistoryPromptsResponse400
+  | listAutomationHistoryPromptsResponse401
+  | listAutomationHistoryPromptsResponse403
+  | listAutomationHistoryPromptsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationHistoryPromptsResponse =
+  | listAutomationHistoryPromptsResponseSuccess
+  | listAutomationHistoryPromptsResponseError;
+
+export const getListAutomationHistoryPromptsUrl = (
+  params?: ListAutomationHistoryPromptsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-history/prompts?${stringifiedParams}`
+    : `/api/admin/automation-history/prompts`;
+};
+
+export const listAutomationHistoryPrompts = async (
+  params?: ListAutomationHistoryPromptsParams,
+  options?: RequestInit,
+): Promise<listAutomationHistoryPromptsResponse> => {
+  const res = await fetch(getListAutomationHistoryPromptsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationHistoryPromptsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationHistoryPromptsResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type getAutomationHistoryPromptResponse200 = {
+  data: AutomationHistoryPromptDetail;
+  status: 200;
+};
+
+export type getAutomationHistoryPromptResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAutomationHistoryPromptResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAutomationHistoryPromptResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAutomationHistoryPromptResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAutomationHistoryPromptResponseSuccess =
+  getAutomationHistoryPromptResponse200 & {
+    headers: Headers;
+  };
+export type getAutomationHistoryPromptResponseError = (
+  | getAutomationHistoryPromptResponse400
+  | getAutomationHistoryPromptResponse401
+  | getAutomationHistoryPromptResponse403
+  | getAutomationHistoryPromptResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAutomationHistoryPromptResponse =
+  | getAutomationHistoryPromptResponseSuccess
+  | getAutomationHistoryPromptResponseError;
+
+export const getGetAutomationHistoryPromptUrl = (historyId: number) => {
+  return `/api/admin/automation-history/prompts/${historyId}`;
+};
+
+export const getAutomationHistoryPrompt = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getAutomationHistoryPromptResponse> => {
+  const res = await fetch(getGetAutomationHistoryPromptUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAutomationHistoryPromptResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAutomationHistoryPromptResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type listAutomationHistoryAgentsResponse200 = {
+  data: AutomationHistoryAgentPage;
+  status: 200;
+};
+
+export type listAutomationHistoryAgentsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAutomationHistoryAgentsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationHistoryAgentsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationHistoryAgentsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationHistoryAgentsResponseSuccess =
+  listAutomationHistoryAgentsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationHistoryAgentsResponseError = (
+  | listAutomationHistoryAgentsResponse400
+  | listAutomationHistoryAgentsResponse401
+  | listAutomationHistoryAgentsResponse403
+  | listAutomationHistoryAgentsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationHistoryAgentsResponse =
+  | listAutomationHistoryAgentsResponseSuccess
+  | listAutomationHistoryAgentsResponseError;
+
+export const getListAutomationHistoryAgentsUrl = (
+  params?: ListAutomationHistoryAgentsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-history/agents?${stringifiedParams}`
+    : `/api/admin/automation-history/agents`;
+};
+
+export const listAutomationHistoryAgents = async (
+  params?: ListAutomationHistoryAgentsParams,
+  options?: RequestInit,
+): Promise<listAutomationHistoryAgentsResponse> => {
+  const res = await fetch(getListAutomationHistoryAgentsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationHistoryAgentsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationHistoryAgentsResponse;
+};
+
+/**
+ * @summary Read immutable V1 automation configuration without execution or publication
+ */
+export type getAutomationHistoryAgentResponse200 = {
+  data: AutomationHistoryAgentDetail;
+  status: 200;
+};
+
+export type getAutomationHistoryAgentResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAutomationHistoryAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAutomationHistoryAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAutomationHistoryAgentResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAutomationHistoryAgentResponseSuccess =
+  getAutomationHistoryAgentResponse200 & {
+    headers: Headers;
+  };
+export type getAutomationHistoryAgentResponseError = (
+  | getAutomationHistoryAgentResponse400
+  | getAutomationHistoryAgentResponse401
+  | getAutomationHistoryAgentResponse403
+  | getAutomationHistoryAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAutomationHistoryAgentResponse =
+  | getAutomationHistoryAgentResponseSuccess
+  | getAutomationHistoryAgentResponseError;
+
+export const getGetAutomationHistoryAgentUrl = (historyId: number) => {
+  return `/api/admin/automation-history/agents/${historyId}`;
+};
+
+export const getAutomationHistoryAgent = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getAutomationHistoryAgentResponse> => {
+  const res = await fetch(getGetAutomationHistoryAgentUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAutomationHistoryAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAutomationHistoryAgentResponse;
 };
 
 /**
