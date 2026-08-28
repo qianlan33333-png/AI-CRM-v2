@@ -32,6 +32,24 @@ func TestAdaptMetricPreservesNullableSignedAndSourceEnvelope(t *testing.T) {
 	}
 }
 
+func TestAdaptMetricPreservesJSONNullButRejectsMissingJSON(t *testing.T) {
+	key := []byte(strings.Repeat("k", sha256.Size))
+	at := time.Date(2026, 8, 29, 1, 2, 3, 0, time.UTC)
+	base := map[string]any{
+		"id": int64(3), "run_id": int64(1), "metric_key": "", "label": "", "numerator": nil, "denominator": nil, "value": nil,
+		"unit": "", "observation_window": "", "data_source": "", "data_quality": "", "limitations_json": nil, "is_causal": false,
+		"value_status": "", "last_snapshot_id": int64(1), "created_at": at, "updated_at": at,
+	}
+	fact, err := AdaptMetric(cycleObservationRow(t, key, MetricsTableID, 3, base), key)
+	if err != nil || string(fact.LimitationsJSON) != "null" {
+		t.Fatalf("fact=%+v err=%v", fact, err)
+	}
+	delete(base, "limitations_json")
+	if _, err = AdaptMetric(cycleObservationRow(t, key, MetricsTableID, 3, base), key); err != ErrFact {
+		t.Fatalf("missing limitations_json error=%v", err)
+	}
+}
+
 func TestAdaptReferencePreservesPrivateHrefWithoutExposure(t *testing.T) {
 	key := []byte(strings.Repeat("k", sha256.Size))
 	at := time.Date(2026, 8, 29, 1, 2, 3, 654321987, time.UTC)

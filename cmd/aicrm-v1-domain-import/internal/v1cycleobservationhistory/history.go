@@ -121,7 +121,7 @@ var referenceFields = []string{
 	"id", "run_id", "reference_key", "reference_type", "label", "source_system", "source_id", "href", "evidence_hash", "data_status", "last_snapshot_id", "created_at", "updated_at",
 }
 
-var metricNullable = map[string]bool{"numerator": true, "denominator": true, "value": true}
+var metricNullable = map[string]bool{"numerator": true, "denominator": true, "value": true, "limitations_json": true}
 
 // AdaptMetric authenticates and preserves all seventeen metric columns. It
 // intentionally applies no status, run, snapshot, or causal business rules.
@@ -131,7 +131,7 @@ func AdaptMetric(row v1archive.ArchivedRow, sourceHMACKey []byte) (MetricFact, e
 		return MetricFact{}, err
 	}
 	var value metricSource
-	if err = decodeExact(fields, row.Payload, &value, metricFields, metricNullable); err != nil || !validRequiredTimes(value.CreatedAt, value.UpdatedAt) || !json.Valid(value.LimitationsJSON) || isNull(value.LimitationsJSON) {
+	if err = decodeExact(fields, row.Payload, &value, metricFields, metricNullable); err != nil || !validRequiredTimes(value.CreatedAt, value.UpdatedAt) || !json.Valid(value.LimitationsJSON) {
 		return MetricFact{}, ErrFact
 	}
 	return MetricFact{
