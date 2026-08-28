@@ -443,6 +443,8 @@ owners:
     package: internal/campaign
     tables:
       - campaign_v1_history_segments
+      - campaign_v1_definition_history
+      - campaign_v1_definition_step_history
       - campaign_v1_history_members
       - campaign_v1_history_broadcast_plans
       - campaign_v1_history_broadcast_recipients

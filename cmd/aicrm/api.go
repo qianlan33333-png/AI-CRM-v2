@@ -2169,6 +2169,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.couponHistory = couponstore.NewHistoricalReader(uow)
 	legacyHandler.contactHistory = contactstore.NewContactHistoryReader(pool)
 	legacyHandler.campaignHistory = campaignstore.NewCampaignHistoryReader(pool)
+	legacyHandler.campaignDefinitionHistory = campaignstore.NewCampaignDefinitionHistoryReader(pool)
 	legacyHandler.wecomContactHistory = contactstore.NewWeComContactHistoryReader(pool)
 	legacyHandler.deferredIdentityHistory = contactstore.NewDeferredIdentityHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
@@ -3772,6 +3773,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/deferred-identity-history/conflicts/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetDeferredIdentityConflict)},
 			{http.MethodGet, "/api/admin/deferred-identity-history/missing-roots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMissingRootIdentities)},
 			{http.MethodGet, "/api/admin/deferred-identity-history/missing-roots/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetMissingRootIdentity)},
+			{http.MethodGet, "/api/admin/campaign-history/definitions", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryDefinitions)},
+			{http.MethodGet, "/api/admin/campaign-history/definitions/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCampaignHistoryDefinition)},
+			{http.MethodGet, "/api/admin/campaign-history/definition-steps", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCampaignHistoryDefinitionSteps)},
 			{http.MethodGet, "/api/admin/wecom-contact-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListWeComContactHistoryEvents)},
 			{http.MethodGet, "/api/admin/outbound-task-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListOutboundTaskHistory)},
 			{http.MethodGet, "/api/admin/outbound-task-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetOutboundTaskHistory)},

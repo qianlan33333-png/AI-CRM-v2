@@ -8,6 +8,59 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type CampaignV1DefinitionHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	Code                string             `json:"code"`
+	DisplayName         string             `json:"display_name"`
+	Intent              string             `json:"intent"`
+	AnchorMode          string             `json:"anchor_mode"`
+	AnchorDate          string             `json:"anchor_date"`
+	ReviewStatus        string             `json:"review_status"`
+	RunStatus           string             `json:"run_status"`
+	ApprovedAt          pgtype.Timestamptz `json:"approved_at"`
+	StartedAt           pgtype.Timestamptz `json:"started_at"`
+	FinishedAt          pgtype.Timestamptz `json:"finished_at"`
+	PausedAt            pgtype.Timestamptz `json:"paused_at"`
+	PausedReason        string             `json:"paused_reason"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	OriginalDisposition string             `json:"original_disposition"`
+	OriginalReason      string             `json:"original_reason"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	RedactedRoots       []string           `json:"redacted_roots"`
+}
+
+type CampaignV1DefinitionStepHistory struct {
+	ID                  int64              `json:"id"`
+	SourceID            int64              `json:"source_id"`
+	CampaignSourceID    int64              `json:"campaign_source_id"`
+	SegmentSourceID     int64              `json:"segment_source_id"`
+	HistoryDefinitionID pgtype.Int8        `json:"history_definition_id"`
+	CurrentCampaignCode pgtype.Text        `json:"current_campaign_code"`
+	SourceParentState   string             `json:"source_parent_state"`
+	StepIndex           int32              `json:"step_index"`
+	DayOffset           int32              `json:"day_offset"`
+	SendTime            string             `json:"send_time"`
+	Timezone            string             `json:"timezone"`
+	ContentMasked       string             `json:"content_masked"`
+	StopOnReply         bool               `json:"stop_on_reply"`
+	SkipRecentDays      int32              `json:"skip_recent_days"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	OriginalDisposition string             `json:"original_disposition"`
+	OriginalReason      string             `json:"original_reason"`
+	ContentDigest       []byte             `json:"content_digest"`
+	PrivateDigest       []byte             `json:"private_digest"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	RedactedRoots       []string           `json:"redacted_roots"`
+}
+
 type CampaignV1HistoryBroadcastMessage struct {
 	ID                   int64              `json:"id"`
 	SourceID             int64              `json:"source_id"`
