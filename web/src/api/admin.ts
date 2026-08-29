@@ -26,7 +26,7 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, listAIAudienceTemplates, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, previewAIAudienceTemplate, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, saveAIAudienceTemplateConfiguration, updateAIAudiencePackage, type AIAudiencePackageSender, type AIAudienceTemplateParameters, type AIAudienceTemplatePreviewRequest, type AIAudienceTemplateSaveRequest, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, getGroupOpsWebhookDescriptor, listAIAudienceOperationMembers, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, previewGroupOpsRunDue, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignMembers, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview, type CloudCampaignMemberStatusStatus, type ListCloudCampaignMembersParams } from './generated/health';
-import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
+import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, dispatchOutboundCampaignRecipient, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
 import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
@@ -81,7 +81,8 @@ export type CampaignTouchPlanRecipientPage = { items: CampaignTouchPlanRecipient
 export type CampaignTouchPlanRecipientReview = { customerID: number; messageOverride: string; status: 'pending_review' | 'approved' | 'rejected'; version: number; updatedByActorID: number; updatedAt: string };
 export type CampaignOutboundHandoff = { id: number; campaignCode: string; planID: string; reviewVersion: number; status: 'held'; targetCount: number; stepCount: number; acceptedAt: string; providerExecutionEligible: boolean };
 export type CampaignOutboundHandoffReconciliation = CampaignOutboundHandoff & { heldCount: number; blockedCount: number; pendingCount: number; notEvaluatedCount: number; eligibleCount: number; inactiveCount: number; contactPolicyCount: number };
-export type CampaignOutboundDispatchReconciliation = { handoffID: number; blocked: number; accepted: number; queued: number; attempted: number; executed: number; outcomeUnknown: number; reconciled: number; retryableFailed: number; finalFailed: number; providerExecutionEligible: boolean };
+export type CampaignOutboundDispatchReconciliation = { handoffID: number; blocked: number; accepted: number; queued: number; attempted: number; executed: number; outcomeUnknown: number; reconciled: number; retryableFailed: number; finalFailed: number; providerExecutionEligible: boolean; businessCallDispatched: boolean; realExternalCallExecuted: boolean; deliveryProven: false };
+export type CampaignOutboundRecipientDispatch = CampaignOutboundDispatchReconciliation & { customerID: number };
 
 const requiredText = (source: Obj, field: string): string => {
   const value = source[field];
@@ -136,8 +137,8 @@ const requireHandoffScope = (handoff: CampaignOutboundHandoff, campaignCode: str
 };
 const campaignDispatchReconciliationDto = (value: unknown): CampaignOutboundDispatchReconciliation => {
   const source = obj(value);
-  if (typeof source.provider_execution_eligible !== 'boolean' || source.business_call_dispatched !== false || source.real_external_call_executed !== false || source.delivery_proven !== false) throw new Error('Campaign dispatch 响应越过本地执行边界');
-  return { handoffID: requiredPositive(source, 'handoff_id'), blocked: requiredCount(source, 'blocked'), accepted: requiredCount(source, 'accepted'), queued: requiredCount(source, 'queued'), attempted: requiredCount(source, 'attempted'), executed: requiredCount(source, 'executed'), outcomeUnknown: requiredCount(source, 'outcome_unknown'), reconciled: requiredCount(source, 'reconciled'), retryableFailed: requiredCount(source, 'retryable_failed'), finalFailed: requiredCount(source, 'final_failed'), providerExecutionEligible: source.provider_execution_eligible };
+  if (typeof source.provider_execution_eligible !== 'boolean' || typeof source.business_call_dispatched !== 'boolean' || typeof source.real_external_call_executed !== 'boolean' || source.delivery_proven !== false) throw new Error('Campaign dispatch 响应缺少可验证的执行事实边界');
+  return { handoffID: requiredPositive(source, 'handoff_id'), blocked: requiredCount(source, 'blocked'), accepted: requiredCount(source, 'accepted'), queued: requiredCount(source, 'queued'), attempted: requiredCount(source, 'attempted'), executed: requiredCount(source, 'executed'), outcomeUnknown: requiredCount(source, 'outcome_unknown'), reconciled: requiredCount(source, 'reconciled'), retryableFailed: requiredCount(source, 'retryable_failed'), finalFailed: requiredCount(source, 'final_failed'), providerExecutionEligible: source.provider_execution_eligible, businessCallDispatched: source.business_call_dispatched, realExternalCallExecuted: source.real_external_call_executed, deliveryProven: false };
 };
 const campaignItemDto = (value: unknown): CampaignListItem => {
   const source = obj(value);
@@ -177,7 +178,7 @@ const mutationOptions = (): RequestInit => {
   if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交 Campaign 本地审核');
   return apiRequestOptions({ headers: { 'Idempotency-Key': `campaign-review-${globalThis.crypto.randomUUID()}` } });
 };
-const handoffMutationOptions = (operation: 'accept' | 'dispatch'): RequestInit => {
+const handoffMutationOptions = (operation: 'accept' | 'dispatch' | 'recipient-dispatch'): RequestInit => {
   if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交 Campaign handoff 操作');
   return apiRequestOptions({ headers: { 'Idempotency-Key': `campaign-handoff-${operation}-${globalThis.crypto.randomUUID()}` } });
 };
@@ -458,6 +459,18 @@ export async function dispatchCampaignOutboundHandoffDto(campaignCode: string, p
   const reconciliation = campaignDispatchReconciliationDto(await call(dispatchOutboundCampaignHandoff(campaignCode, planID, { external_gate: true }, handoffMutationOptions('dispatch'))));
   if (reconciliation.handoffID !== handoff.id) throw new Error('Campaign dispatch 返回 handoff 范围不匹配');
   return reconciliation;
+}
+export async function dispatchCampaignOutboundRecipientDto(campaignCode: string, planID: string, customerID: number): Promise<CampaignOutboundRecipientDispatch> {
+  if (!Number.isSafeInteger(customerID) || customerID < 1) throw new Error('Campaign 单客户受控发送范围无效');
+  const [review, recipientReview, handoff] = await Promise.all([
+    getCampaignTouchPlanReviewDto(campaignCode, planID),
+    getCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID),
+    getCampaignOutboundHandoffDto(campaignCode, planID),
+  ]);
+  if (review.status !== 'approved' || recipientReview?.status !== 'approved' || handoff.status !== 'held') throw new Error('Campaign 计划、单客户审核或 handoff 尚未就绪，已拒绝受控发送');
+  const reconciliation = campaignDispatchReconciliationDto(await call(dispatchOutboundCampaignRecipient(campaignCode, planID, customerID, { external_gate: true }, handoffMutationOptions('recipient-dispatch'))));
+  if (reconciliation.handoffID !== handoff.id || reconciliation.providerExecutionEligible) throw new Error('Campaign 单客户 dispatch 返回范围或本地边界不匹配');
+  return { ...reconciliation, customerID };
 }
 
 export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), stageId: customer.stage_id }; }

@@ -705,12 +705,19 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         const planID = 'ctp_' + 'a'.repeat(64);
         const local = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
         const plan = { id: planID, campaign_code: 'spring-campaign', campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 1, content_step_count: 1, created_at: '2026-08-27T00:00:00Z' };
+        const handoffSafety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false, delivery_proven: false };
+        const handoff = { id: 31, campaign_code: 'spring-campaign', plan_id: planID, review_version: 2, status: 'held', target_count: 1, step_count: 1, accepted_at: '2026-08-27T00:01:00Z', safety: handoffSafety };
+        const dispatch = { handoff_id: 31, blocked: 0, accepted: 1, queued: 1, attempted: 0, executed: 0, outcome_unknown: 0, reconciled: 0, retryable_failed: 0, final_failed: 0, provider_execution_eligible: false, business_call_dispatched: true, real_external_call_executed: true, delivery_proven: false };
         window.__recipientCalls = [];
-        window.fetch = async (input) => {
+        window.fetch = async (input, init = {}) => {
           const url = String(input);
-          window.__recipientCalls.push(url);
-          if (url.endsWith('/recipients/7/review')) return json({ review: { canonical_customer_id: 7, status: 'pending_review', version: 1, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, ...local });
-          if (url.endsWith(`/touch-plans/${planID}/review`)) return json({ review: { status: 'pending_review', version: 2, submitted_by_actor_id: 81, submitted_at: '2026-08-27T00:00:00Z', reviewed_by_actor_id: null, reviewed_at: null }, handoff: null, ...local });
+          window.__recipientCalls.push({ url, method: init.method || 'GET', body: init.body ? JSON.parse(String(init.body)) : null, headers: new Headers(init.headers) });
+          if (url.endsWith('/recipients/7/dispatch')) return json(dispatch);
+          if (url.endsWith('/dispatch-reconciliation')) return json(dispatch);
+          if (url.endsWith('/reconciliation')) return json({ ...handoff, held_count: 1, blocked_count: 0, pending_count: 0, not_evaluated_count: 0, eligible_count: 1, inactive_count: 0, contact_policy_count: 0 });
+          if (url.includes('/api/admin/outbound/campaign-handoffs/')) return json(handoff);
+          if (url.endsWith('/recipients/7/review')) return json({ review: { canonical_customer_id: 7, status: 'approved', version: 2, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, ...local });
+          if (url.endsWith(`/touch-plans/${planID}/review`)) return json({ review: { status: 'approved', version: 2, submitted_by_actor_id: 81, submitted_at: '2026-08-27T00:00:00Z', reviewed_by_actor_id: 82, reviewed_at: '2026-08-27T00:01:00Z' }, handoff: { status: 'held' }, ...local });
           if (url.endsWith('/recipients/7')) return json({ canonical_customer_id: 7, ...local });
           if (url.endsWith('/recipients?limit=50')) return json({ items: [{ canonical_customer_id: 7 }], next_cursor: null, ...local });
           if (url.endsWith(`/touch-plans/${planID}`)) return json({ ...plan, content: { steps: [{ step_index: 1, delay_minutes: 0, content: '本地审核内容' }] }, ...local });
@@ -725,7 +732,10 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         window.fetch = async (input, init = {}) => {
           const url = String(input);
           window.__observabilityCalls.push({ url, init });
-          const traceID = new URL('http://localhost' + url).searchParams.get('trace_id') || undefined;
+          const parsed = new URL('http://localhost' + url);
+          const traceID = parsed.searchParams.get('trace_id') || undefined;
+          const sessionID = parsed.searchParams.get('session_id') || undefined;
+          if (url.includes('/cloud-orchestrator/audit')) return json({ filter: { trace_id: traceID || '', session_id: sessionID || '', limit: 50 }, items: [{ event_id: 41, event_type: 'campaign_recipient_dispatch_requested', occurred_at: '2026-08-30T00:00:00Z', dispatched: true, pending: 0, processing: 0, completed: 1, final_failed: 0, outcome_unknown: 0 }], observed_at: '2026-08-30T00:00:01Z', local_facts_only: true, real_external_call_executed: false, delivery_proven: false });
           if (url.includes('/push-center/stats')) return json({ ok: true, counts: { total: 2, pending: 1, running: 0, succeeded: 0, sent: 1, failed: 0, shadow_warning: 0, by_effective_status: {}, by_status: {}, by_section: {} }, sections: [], status_definitions: [], filters: traceID ? { trace_id: traceID } : {}, route_owner: 'ai_crm_next', real_external_call_executed: false, runtime_queue: {}, capability_owner: 'ai_crm_next/platform_foundation/push_center' });
           return json({ ok: true, sections: [{ key: 'order', label: '订单', count: 2 }], status_definitions: [], filters: traceID ? { trace_id: traceID } : {}, route_owner: 'ai_crm_next' });
         };
@@ -2700,17 +2710,29 @@ console.log('admin/campaigns.html（目标人员 Customer360 链接）');
   const customer360 = doc.querySelector('a[href="customerDetail.html?id=7"]');
   ok('已验证的 plan 目标只用 canonical OneID 链接既有 Customer360 档案',
     customer360?.textContent === '在 Customer360 查看档案' &&
-    recipient.window.__recipientCalls.some((url) => url.endsWith('/recipients/7')));
+    recipient.window.__recipientCalls.some((call) => call.url.endsWith('/recipients/7')));
   ok('计划与单客户审核展示真实本地 actor/time 审计且保持外部效果边界',
     doc.querySelector('[data-campaign-review-audit]')?.textContent.includes('actor #81') &&
     doc.querySelector('[data-campaign-review-audit]')?.textContent.includes('2026-08-27T00:00:00Z') &&
     doc.querySelector('[data-campaign-recipient-review-audit]')?.textContent.includes('actor #1') &&
     text.includes('不代表 Provider 发送、回执或送达') &&
-    text.includes('trace/session 审计 JSON 仍为 backend_blocked'));
+    text.includes('按 trace/session 查看本地 audit 事实'));
   ok('目标人员列表没有可信状态投影时保持无成员状态筛选',
     text.includes('当前契约不含昵称、成员状态或消息任务') &&
     !doc.querySelector('[data-recipient-status]') &&
-    recipient.window.__recipientCalls.every((url) => !url.includes('status=')));
+    recipient.window.__recipientCalls.every((call) => !call.url.includes('status=')));
+  ok('只有计划、单客户审核通过且 handoff held 时展示受控发送动作',
+    !!doc.querySelector('[data-recipient-dispatch-ready]') && text.includes('accepted/queued 不等于 Provider 发送或送达'));
+  click(recipient, doc.querySelector('#recipient-dispatch'));
+  await sleep(20);
+  ok('单客户受控动作在发起前明确本地 EER 与外部边界',
+    doc.querySelector('#fb-mask')?.style.display === 'flex' && doc.querySelector('#fb-body')?.textContent.includes('accepted/queued 不等于 Provider 发送或送达'));
+  click(recipient, doc.querySelector('#fb-ok'));
+  await sleep(40);
+  const recipientDispatchCall = recipient.window.__recipientCalls.find((call) => call.url.endsWith('/recipients/7/dispatch'));
+  ok('单客户 dispatch 使用真实 scoped POST，并只展示 handoff 本地汇总',
+    recipientDispatchCall?.method === 'POST' && recipientDispatchCall.body?.external_gate === true &&
+    doc.querySelector('#fb-toast')?.textContent.includes('handoff 本地汇总') && doc.querySelector('#fb-toast')?.textContent.includes('不等于送达'));
   recipient.window.close();
 }
 
@@ -2748,30 +2770,34 @@ console.log('admin/campaigns.html（Campaign 成员状态本地投影）');
   failed.window.close();
 }
 
-console.log('admin/campaigns.html（trace_id 可观察性边界）');
+console.log('admin/campaigns.html（trace/session 可观察性边界）');
 {
   const observability = await loadPage('admin/campaigns.html', { q: 'view=observability' });
   await sleep(40);
   const doc = observability.window.document;
   let text = doc.querySelector('#stage')?.textContent || '';
-  ok('无 trace_id 时刷新本地聚合，并明确没有 audit JSON',
-    text.includes('未输入 trace_id') && text.includes('当前没有可渲染的 audit JSON') &&
+  ok('无 trace/session 时刷新本地 Push 聚合，不发起无范围 audit 请求',
+    text.includes('Push Center 保留全局本地聚合') && text.includes('本次不请求 audit 列表') &&
     observability.window.__observabilityCalls.length === 2 && observability.window.__observabilityCalls.every((call) => !call.url.includes('trace_id=')));
   input(observability, doc.querySelector('#observability-trace'), 'trace-audit-7');
   click(observability, doc.querySelector('#observability-filter'));
   await sleep(40);
   text = doc.querySelector('#stage')?.textContent || '';
-  ok('trace_id 只筛选真实 Push Center sections/stats，不伪造 session/audit',
-    text.includes('已以 trace-audit-7 调用真实 Push Center sections/stats 聚合') &&
-    observability.window.__observabilityCalls.some((call) => call.url.includes('trace_id=trace-audit-7')) &&
+  ok('trace_id 同时筛选真实 Push 聚合与 Cloud audit 本地事实',
+    text.includes('Push Center 已按 trace_id trace-audit-7 筛选') && text.includes('campaign_recipient_dispatch_requested') &&
+    observability.window.__observabilityCalls.length === 5 &&
+    observability.window.__observabilityCalls.some((call) => call.url.includes('/cloud-orchestrator/audit?trace_id=trace-audit-7')) &&
     observability.window.__observabilityCalls.every((call) => !call.url.includes('session_id')));
   observability.window.close();
 
   const session = await loadPage('admin/campaigns.html', { q: 'view=observability&session_id=session-7' });
   await sleep(40);
   const sessionText = session.window.document.querySelector('#stage')?.textContent || '';
-  ok('session_id 缺契约时 fail closed 且不降级为全局查询',
-    sessionText.includes('backend_blocked') && sessionText.includes('session_id') && session.window.__observabilityCalls.length === 0);
+  ok('session_id 只筛选 Cloud audit，Push 保留真实全局本地聚合',
+    sessionText.includes('Push Center 保留全局本地聚合') && sessionText.includes('session_id session-7') && sessionText.includes('campaign_recipient_dispatch_requested') &&
+    session.window.__observabilityCalls.length === 3 &&
+    session.window.__observabilityCalls.filter((call) => call.url.includes('/push-center/')).every((call) => !call.url.includes('session_id=')) &&
+    session.window.__observabilityCalls.some((call) => call.url.includes('/cloud-orchestrator/audit?session_id=session-7')));
   session.window.close();
 }
 
