@@ -56,6 +56,7 @@ case "${1:-}" in
   --check=schema) [[ "$*" = *--expect=135* || "$*" = *--expect=141* ]] ;;
   --check=external-effects) [[ "$*" = *--expect=0* ]] ;;
   --check=archive) [[ "$*" = *"--expected-sha=${AICRM_FINAL_TEST_ARCHIVE_SHA:?}"* ]] ;;
+  --check=journals-empty) [[ "${AICRM_FINAL_TEST_FAIL_CHECK:-}" != journals-empty ]] ;;
   --check=stopped) [[ "$*" = *--services=app,api,worker* ]] ;;
   --from=135) [[ "$*" = *--to=141* ]] ;;
   --mode=import) [[ "${AICRM_FINAL_TEST_FAIL_DOMAIN:-}" = '' || "$*" != *"--domain=$AICRM_FINAL_TEST_FAIL_DOMAIN"* ]] ;;
@@ -81,6 +82,10 @@ printf 'AICRM_V1_ARCHIVE_SOURCE_DATABASE_URL=postgres://forbidden\n' >>"$runtime
 if run_apply "${arguments[@]}" >"$fixture/live-source.log" 2>&1; then fail 'live V1 source DSN was accepted'; fi
 grep -Fq 'live V1 archive source database URL is forbidden' "$fixture/live-source.log" || fail 'live V1 source rejection changed'
 sed -i.bak '$d' "$runtime_env" && rm -f "$runtime_env.bak"
+printf 'COMPOSE_PROFILES=combined\n' >>"$runtime_env"
+if run_apply "${arguments[@]}" >"$fixture/compose-control.log" 2>&1; then fail 'runtime COMPOSE_* setting was accepted'; fi
+grep -Fq 'runtime environment must not set COMPOSE_*' "$fixture/compose-control.log" || fail 'runtime COMPOSE_* rejection changed'
+sed -i.bak '$d' "$runtime_env" && rm -f "$runtime_env.bak"
 AICRM_WECOM_OUTBOUND_ENABLED=true run_apply "${arguments[@]}" >"$fixture/success.log"
 grep -Fq 'PASS (schema=135->141 domains=40; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
 [[ "$(grep -c '^--mode=import ' "$log")" = 40 ]] || fail 'did not import exactly 40 domains'
@@ -96,6 +101,7 @@ start_line="$(grep -n '^--start=api,worker ' "$log" | cut -d: -f1)"
 [[ "$final_line" -lt "$last_effect_line" && "$last_effect_line" -lt "$start_line" ]] || fail 'post-reconcile effects gate must precede startup'
 grep -Fqx -- "--from=135 --to=141 --runtime-env-file=$runtime_env" "$log" || fail 'Goose was not one bounded 135->141 command'
 grep -Fqx -- "--check=schema --expect=141 --runtime-env-file=$runtime_env" "$log" || fail 'post-Goose schema gate is missing'
+grep -Fqx -- "--check=journals-empty --archive-run-id=archive-final --runtime-env-file=$runtime_env" "$log" || fail 'fresh journal gate is missing'
 if grep -Fq 'target-not-live' "$log"; then fail 'a command argument leaked the target DSN'; fi
 if grep -Fq 'env-outbound=true' "$log"; then fail 'generated external switch did not override parent environment'; fi
 stop_line="$(grep -n '^--stop=app,api,worker ' "$log" | cut -d: -f1)"
@@ -109,6 +115,10 @@ $(printf '%s\n' "$expected_domains" | awk '!/^(campaign|survey|media|radar|shop)
 actual_reconciliations="$(grep '^--mode=reconcile ' "$log" | sed -n 's/.*--domain=\([^ ]*\).*/\1/p')"
 [[ "$actual_reconciliations" = "$expected_reconciliations" ]] || fail 'reconciliation sequence does not match real importer semantics'
 grep '^--mode=final-reconcile ' "$log" | grep -Fq -- '--campaign-actors=owner=1' || fail 'final reconcile does not bind campaign actors'
+: >"$log"
+if AICRM_FINAL_TEST_FAIL_CHECK=journals-empty run_apply "${arguments[@]}" >"$fixture/journals.log" 2>&1; then fail 'non-empty journal gate was accepted'; fi
+[[ "$(grep -c '^--from=135 ' "$log")" = 0 ]] || fail 'journal rejection reached Goose'
+[[ "$(grep -c '^--mode=import ' "$log")" = 0 ]] || fail 'journal rejection reached import'
 : >"$log"
 if AICRM_FINAL_TEST_FAIL_DOMAIN=media run_apply "${arguments[@]}" >"$fixture/failure.log" 2>&1; then fail 'a failed domain import was accepted'; fi
 [[ "$(grep -c '^--mode=import .*--domain=media' "$log")" = 1 ]] || fail 'failed import was retried'

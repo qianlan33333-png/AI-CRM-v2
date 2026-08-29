@@ -93,6 +93,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   [[ -z "$line" || "$line" = \#* ]] && continue
   [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=(.*)$ ]] || fail 'runtime environment contains an invalid assignment'
   key="${BASH_REMATCH[1]}"; value="${BASH_REMATCH[2]}"; allowed=0
+  [[ "$key" != COMPOSE_* ]] || fail 'runtime environment must not set COMPOSE_*'
   for allowed_key in "${allowed_runtime_keys[@]}"; do [[ "$key" = "$allowed_key" ]] && allowed=1 && break; done
   [[ "$allowed" -eq 1 ]] || continue
   export "$key=$value"
@@ -136,6 +137,7 @@ go_command="$(resolve_command go)"
 "$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect="$expected_start_schema" --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_STATUS_COMMAND" --check=external-effects --expect=0 --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_STATUS_COMMAND" --check=archive --archive-run-id="$archive_run_id" --expected-sha="$expected_archive_source_sha" --source-slice="$source_slice" --source-seal-sha256="$source_seal_sha256" --runtime-env-file="$runtime_env_file"
+"$AICRM_FINAL_STATUS_COMMAND" --check=journals-empty --archive-run-id="$archive_run_id" --runtime-env-file="$runtime_env_file"
 # The injected commands must use the restricted env file themselves and fail
 # closed: status verifies the named checks, runtime verifies stopped services,
 # Goose performs its one bounded migration, and reconcile seals all imports.
