@@ -10996,6 +10996,21 @@ func (e OutboundCampaignHandoffSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for OutboundCampaignRecipientDispatchRequestExternalGate.
+const (
+	OutboundCampaignRecipientDispatchRequestExternalGateTrue OutboundCampaignRecipientDispatchRequestExternalGate = true
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignRecipientDispatchRequestExternalGate enum.
+func (e OutboundCampaignRecipientDispatchRequestExternalGate) Valid() bool {
+	switch e {
+	case OutboundCampaignRecipientDispatchRequestExternalGateTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OutboundTaskHistoryDetailReadOnly.
 const (
 	OutboundTaskHistoryDetailReadOnlyTrue OutboundTaskHistoryDetailReadOnly = true
@@ -14853,13 +14868,13 @@ func (e WeComContactHistoryRelationDetailSource) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageReadOnly.
 const (
-	True WeComContactHistoryRelationPageReadOnly = true
+	WeComContactHistoryRelationPageReadOnlyTrue WeComContactHistoryRelationPageReadOnly = true
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageReadOnly enum.
 func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
 	switch e {
-	case True:
+	case WeComContactHistoryRelationPageReadOnlyTrue:
 		return true
 	default:
 		return false
@@ -21746,6 +21761,15 @@ type OutboundCampaignHandoffSummary struct {
 // OutboundCampaignHandoffSummaryStatus defines model for OutboundCampaignHandoffSummary.Status.
 type OutboundCampaignHandoffSummaryStatus string
 
+// OutboundCampaignRecipientDispatchRequest defines model for OutboundCampaignRecipientDispatchRequest.
+type OutboundCampaignRecipientDispatchRequest struct {
+	// ExternalGate Explicitly requests gated local EER work for the approved recipient; Provider runtime switches remain independent and disabled by default.
+	ExternalGate OutboundCampaignRecipientDispatchRequestExternalGate `json:"external_gate"`
+}
+
+// OutboundCampaignRecipientDispatchRequestExternalGate Explicitly requests gated local EER work for the approved recipient; Provider runtime switches remain independent and disabled by default.
+type OutboundCampaignRecipientDispatchRequestExternalGate bool
+
 // OutboundMediaAcceptedRequest defines model for OutboundMediaAcceptedRequest.
 type OutboundMediaAcceptedRequest struct {
 	ContentPackageId int64 `json:"content_package_id"`
@@ -27070,7 +27094,7 @@ type DispatchOutboundCampaignHandoffJSONRequestBody = OutboundCampaignDispatchRe
 type ReconcileOutboundCampaignDispatchJSONRequestBody = OutboundCampaignDispatchReconcileRequest
 
 // DispatchOutboundCampaignRecipientJSONRequestBody defines body for DispatchOutboundCampaignRecipient for application/json ContentType.
-type DispatchOutboundCampaignRecipientJSONRequestBody = OutboundCampaignDispatchRequest
+type DispatchOutboundCampaignRecipientJSONRequestBody = OutboundCampaignRecipientDispatchRequest
 
 // DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
 type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest

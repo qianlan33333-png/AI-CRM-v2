@@ -10213,6 +10213,11 @@ export interface OutboundCampaignDispatchRequest {
   external_gate: boolean;
 }
 
+export interface OutboundCampaignRecipientDispatchRequest {
+  /** Explicitly requests gated local EER work for the approved recipient; Provider runtime switches remain independent and disabled by default. */
+  external_gate: boolean;
+}
+
 export interface OutboundCampaignDispatchReconciliation {
   /** @minimum 1 */
   handoff_id: number;
@@ -63221,7 +63226,7 @@ export const dispatchOutboundCampaignHandoff = async (
 };
 
 /**
- * The recipient must have an approved local review. Provider calls remain disabled in the default runtime, and the response never proves delivery.
+ * The recipient must have an approved local review. This request only accepts and queues gated work; when the independent Provider runtime switches are later enabled, the worker may make an external call. The response never proves delivery.
  * @summary Queue gated local dispatch work for one approved Campaign recipient
  */
 export type dispatchOutboundCampaignRecipientResponse200 = {
@@ -63290,7 +63295,7 @@ export const dispatchOutboundCampaignRecipient = async (
   campaignCode: string,
   planId: string,
   customerId: number,
-  outboundCampaignDispatchRequest: OutboundCampaignDispatchRequest,
+  outboundCampaignRecipientDispatchRequest: OutboundCampaignRecipientDispatchRequest,
   options?: RequestInit,
 ): Promise<dispatchOutboundCampaignRecipientResponse> => {
   const res = await fetch(
@@ -63299,7 +63304,7 @@ export const dispatchOutboundCampaignRecipient = async (
       ...options,
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
-      body: JSON.stringify(outboundCampaignDispatchRequest),
+      body: JSON.stringify(outboundCampaignRecipientDispatchRequest),
     },
   );
 

@@ -107,23 +107,23 @@ func (repository *CampaignDispatchRepository) ListCampaignDispatchCandidates(ctx
 	return result, nil
 }
 
-func (repository *CampaignDispatchRepository) IsCampaignDispatchRecipientApproved(ctx context.Context, handoffID, customerID int64) (bool, error) {
+func (repository *CampaignDispatchRepository) ReadCampaignDispatchRecipientApproval(ctx context.Context, handoffID, customerID int64) (outboundport.CampaignDispatchRecipientApproval, error) {
 	if repository == nil || handoffID < 1 || customerID < 1 {
-		return false, outbound.ErrCampaignDispatchInvalid
+		return outboundport.CampaignDispatchRecipientApproval{}, outbound.ErrCampaignDispatchInvalid
 	}
 	queries, err := dispatchQueries(ctx)
 	if err != nil {
-		return false, err
+		return outboundport.CampaignDispatchRecipientApproval{}, err
 	}
-	approved, err := queries.IsOutboundCampaignDispatchRecipientApproved(ctx, outbounddb.IsOutboundCampaignDispatchRecipientApprovedParams{HandoffID: handoffID, CustomerID: customerID})
+	row, err := queries.ReadOutboundCampaignDispatchRecipientApproval(ctx, outbounddb.ReadOutboundCampaignDispatchRecipientApprovalParams{HandoffID: handoffID, CustomerID: customerID})
 	if err != nil {
-		return false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+		return outboundport.CampaignDispatchRecipientApproval{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}
-	return approved, nil
+	return outboundport.CampaignDispatchRecipientApproval{Approved: row.Approved, MessageOverride: row.MessageOverride}, nil
 }
 
 func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx context.Context, binding outboundport.CampaignDispatchBinding) (outboundport.CampaignDispatchBinding, error) {
-	if repository == nil || binding.HandoffID < 1 || binding.CustomerID < 1 || binding.StepIndex < 1 || !outbound.ValidCampaignDispatchDigest(binding.RecipientDigest) || !outbound.ValidCampaignDispatchDigest(binding.PayloadDigest) || !validCampaignTargetSnapshot(binding.SenderUserIDSnapshot, binding.ExternalUserIDSnapshot) {
+	if repository == nil || binding.HandoffID < 1 || binding.CustomerID < 1 || binding.StepIndex < 1 || strings.TrimSpace(binding.ContentSnapshot) == "" || !outbound.ValidCampaignDispatchDigest(binding.RecipientDigest) || !outbound.ValidCampaignDispatchDigest(binding.PayloadDigest) || !validCampaignTargetSnapshot(binding.SenderUserIDSnapshot, binding.ExternalUserIDSnapshot) {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchInvalid
 	}
 	queries, err := dispatchQueries(ctx)
@@ -147,7 +147,7 @@ func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx 
 	}
 	row, err := queries.InsertOutboundCampaignDispatchWithAudienceSnapshot(ctx, outbounddb.InsertOutboundCampaignDispatchWithAudienceSnapshotParams{
 		HandoffID: binding.HandoffID, CustomerID: binding.CustomerID, StepIndex: binding.StepIndex, ExternalEffectID: effectID,
-		RecipientDigest: binding.RecipientDigest, PayloadDigest: binding.PayloadDigest, State: string(binding.State), BlockReason: blockReason,
+		RecipientDigest: binding.RecipientDigest, PayloadDigest: binding.PayloadDigest, ContentSnapshot: binding.ContentSnapshot, State: string(binding.State), BlockReason: blockReason,
 		SenderUseridSnapshot: sender, ExternalUseridSnapshot: external,
 	})
 	if err != nil {
@@ -155,14 +155,14 @@ func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx 
 	}
 	stored, valid := dispatchBindingFromAudienceRow(campaignDispatchBindingRow{
 		ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex,
-		ExternalEffectID: row.ExternalEffectID, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest,
+		ExternalEffectID: row.ExternalEffectID, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest, ContentSnapshot: row.ContentSnapshot,
 		State: row.State, BlockReason: row.BlockReason, SenderUserIDSnapshot: row.SenderUseridSnapshot,
 		ExternalUserIDSnapshot: row.ExternalUseridSnapshot, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 	})
 	if !valid {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchUnavailable
 	}
-	if stored.HandoffID != binding.HandoffID || stored.CustomerID != binding.CustomerID || stored.StepIndex != binding.StepIndex || stored.RecipientDigest != binding.RecipientDigest || stored.PayloadDigest != binding.PayloadDigest || stored.SenderUserIDSnapshot != binding.SenderUserIDSnapshot || stored.ExternalUserIDSnapshot != binding.ExternalUserIDSnapshot {
+	if stored.HandoffID != binding.HandoffID || stored.CustomerID != binding.CustomerID || stored.StepIndex != binding.StepIndex || stored.RecipientDigest != binding.RecipientDigest || stored.PayloadDigest != binding.PayloadDigest || stored.ContentSnapshot != binding.ContentSnapshot || stored.SenderUserIDSnapshot != binding.SenderUserIDSnapshot || stored.ExternalUserIDSnapshot != binding.ExternalUserIDSnapshot {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchConflict
 	}
 	return stored, nil
@@ -172,16 +172,16 @@ type campaignDispatchBindingRow struct {
 	ID, HandoffID, CustomerID                                 int64
 	StepIndex                                                 int32
 	ExternalEffectID                                          pgtype.Int8
-	RecipientDigest, PayloadDigest, State                     string
+	RecipientDigest, PayloadDigest, ContentSnapshot, State    string
 	BlockReason, SenderUserIDSnapshot, ExternalUserIDSnapshot pgtype.Text
 	CreatedAt, UpdatedAt                                      pgtype.Timestamptz
 }
 
 func dispatchBindingFromAudienceRow(row campaignDispatchBindingRow) (outboundport.CampaignDispatchBinding, bool) {
-	if row.ID < 1 || row.HandoffID < 1 || row.CustomerID < 1 || row.StepIndex < 1 || !outbound.ValidCampaignDispatchDigest(row.RecipientDigest) || !outbound.ValidCampaignDispatchDigest(row.PayloadDigest) || !row.CreatedAt.Valid || !row.UpdatedAt.Valid || !validCampaignTargetSnapshot(textOrEmpty(row.SenderUserIDSnapshot), textOrEmpty(row.ExternalUserIDSnapshot)) {
+	if row.ID < 1 || row.HandoffID < 1 || row.CustomerID < 1 || row.StepIndex < 1 || strings.TrimSpace(row.ContentSnapshot) == "" || !outbound.ValidCampaignDispatchDigest(row.RecipientDigest) || !outbound.ValidCampaignDispatchDigest(row.PayloadDigest) || !row.CreatedAt.Valid || !row.UpdatedAt.Valid || !validCampaignTargetSnapshot(textOrEmpty(row.SenderUserIDSnapshot), textOrEmpty(row.ExternalUserIDSnapshot)) {
 		return outboundport.CampaignDispatchBinding{}, false
 	}
-	result := outboundport.CampaignDispatchBinding{ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest, State: outbound.CampaignDispatchState(row.State), SenderUserIDSnapshot: textOrEmpty(row.SenderUserIDSnapshot), ExternalUserIDSnapshot: textOrEmpty(row.ExternalUserIDSnapshot), CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
+	result := outboundport.CampaignDispatchBinding{ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest, ContentSnapshot: row.ContentSnapshot, State: outbound.CampaignDispatchState(row.State), SenderUserIDSnapshot: textOrEmpty(row.SenderUserIDSnapshot), ExternalUserIDSnapshot: textOrEmpty(row.ExternalUserIDSnapshot), CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
 	if row.ExternalEffectID.Valid {
 		result.ExternalEffectID = formatCampaignExternalEffectID(row.ExternalEffectID.Int64)
 	}
@@ -216,7 +216,7 @@ func (repository *CampaignDispatchRepository) LoadCampaignDispatchByEffect(ctx c
 	}
 	result, valid := dispatchBindingFromRow(campaignDispatchBindingRow{
 		ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex,
-		ExternalEffectID: row.ExternalEffectID, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest,
+		ExternalEffectID: row.ExternalEffectID, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest, ContentSnapshot: row.ContentSnapshot,
 		State: row.State, BlockReason: row.BlockReason, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 	})
 	if !valid || result.ExternalEffectID != effectID {

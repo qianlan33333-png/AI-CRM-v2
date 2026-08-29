@@ -11292,7 +11292,7 @@ paths:
       tags: [p4-outbound-operations]
       operationId: dispatchOutboundCampaignRecipient
       summary: Queue gated local dispatch work for one approved Campaign recipient
-      description: The recipient must have an approved local review. Provider calls remain disabled in the default runtime, and the response never proves delivery.
+      description: The recipient must have an approved local review. This request only accepts and queues gated work; when the independent Provider runtime switches are later enabled, the worker may make an external call. The response never proves delivery.
       x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-CONTROL-2026-08-29
       x-aicrm-capability: operations.manage
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -11300,10 +11300,9 @@ paths:
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal
       x-aicrm-data-source: outbound_campaign_dispatches.recipient_local_control_transaction
-      x-aicrm-external-effect: none
-      x-aicrm-local-only: true
+      x-aicrm-external-effect: accepted_only
       parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchRequest" } } } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignRecipientDispatchRequest" } } } }
       responses:
         "200": { description: Handoff-level local reconciliation after the recipient-scoped action; queued or accepted is not delivery., content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchReconciliation" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -22475,6 +22474,12 @@ components:
       required: [external_gate]
       properties:
         external_gate: { type: boolean, description: Creates local EER work only; the production Provider adapter remains disabled by default. }
+    OutboundCampaignRecipientDispatchRequest:
+      type: object
+      additionalProperties: false
+      required: [external_gate]
+      properties:
+        external_gate: { type: boolean, enum: [true], description: Explicitly requests gated local EER work for the approved recipient; Provider runtime switches remain independent and disabled by default. }
     OutboundCampaignDispatchReconciliation:
       type: object
       additionalProperties: false

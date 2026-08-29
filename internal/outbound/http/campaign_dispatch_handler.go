@@ -170,6 +170,10 @@ func (handler *CampaignDispatchHandler) DispatchRecipient(writer http.ResponseWr
 		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchInvalid)
 		return
 	}
+	if !body.ExternalGate {
+		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchInvalid)
+		return
+	}
 	summary, err := application.DispatchRecipient(request.Context(), outboundapp.CampaignRecipientDispatchCommand{
 		CampaignCode: campaignCode, PlanID: planID, CustomerID: customerID, ActorID: actorID,
 		IdempotencyKey: keys[0], ExternalGate: body.ExternalGate,

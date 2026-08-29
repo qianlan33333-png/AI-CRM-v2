@@ -505,6 +505,7 @@ var nativePackageExternalEffects = map[string]string{
 
 	"startSurveyH5OAuth":                "external_protocol",
 	"callbackSurveyH5OAuth":             "external_protocol",
+	c01RecipientDispatchOperationID:     "accepted_only",
 	"updateSidebarProfile":              "accepted_only",
 	"prepareSidebarImageTemporaryMedia": "media_wecom_upload",
 	"reconcileWecomTagEffect":           "reconciliation_only",
@@ -2026,8 +2027,15 @@ func validateOutboundCampaignHandoffContract(doc *openapi3.T) error {
 			return fmt.Errorf("%s Outbound Campaign handoff path is missing", path)
 		}
 		operation := operationForMethod(item, contract.method)
-		if operation == nil || operation.Extensions["x-aicrm-local-only"] != true ||
-			!operationResponseUsesStatusLocalSchema(operation, contract.status, contract.schema) {
+		if operation == nil || !operationResponseUsesStatusLocalSchema(operation, contract.status, contract.schema) {
+			return fmt.Errorf("%s %s Outbound Campaign handoff contract drifted", contract.method, path)
+		}
+		if path == "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch" {
+			if operation.Extensions["x-aicrm-external-effect"] != "accepted_only" || operation.Extensions["x-aicrm-local-only"] != nil ||
+				!strings.Contains(operation.Description, "Provider runtime switches") || !strings.Contains(operation.Description, "external call") || !strings.Contains(operation.Description, "never proves delivery") {
+				return errors.New("Outbound Campaign recipient dispatch must disclose its accepted-only Provider boundary")
+			}
+		} else if operation.Extensions["x-aicrm-local-only"] != true {
 			return fmt.Errorf("%s %s Outbound Campaign handoff contract drifted", contract.method, path)
 		}
 		if path == "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept" {

@@ -42,7 +42,6 @@ type Querier interface {
 	InsertOutboundCampaignHandoffCustomerLinks(ctx context.Context, arg InsertOutboundCampaignHandoffCustomerLinksParams) error
 	InsertOutboundCampaignHandoffStep(ctx context.Context, arg InsertOutboundCampaignHandoffStepParams) error
 	InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) (InsertOutboundCampaignProviderAttemptReceiptRow, error)
-	IsOutboundCampaignDispatchRecipientApproved(ctx context.Context, arg IsOutboundCampaignDispatchRecipientApprovedParams) (bool, error)
 	ListAudienceSendRecords(ctx context.Context, arg ListAudienceSendRecordsParams) ([]ListAudienceSendRecordsRow, error)
 	ListHistoricalBroadcastJobs(ctx context.Context, arg ListHistoricalBroadcastJobsParams) ([]OutboundV1BroadcastJobHistory, error)
 	ListHistoricalOutboundTasks(ctx context.Context, arg ListHistoricalOutboundTasksParams) ([]OutboundV1TaskHistory, error)
@@ -76,6 +75,7 @@ type Querier interface {
 	ReadOutboundCampaignAudiencePackage(ctx context.Context, id int64) (ReadOutboundCampaignAudiencePackageRow, error)
 	ReadOutboundCampaignDispatchDeliveryEvidence(ctx context.Context, handoffID int64) (bool, error)
 	ReadOutboundCampaignDispatchEvidence(ctx context.Context, handoffID int64) (ReadOutboundCampaignDispatchEvidenceRow, error)
+	ReadOutboundCampaignDispatchRecipientApproval(ctx context.Context, arg ReadOutboundCampaignDispatchRecipientApprovalParams) (ReadOutboundCampaignDispatchRecipientApprovalRow, error)
 	ReadOutboundCampaignDispatchSourceKind(ctx context.Context, externalEffectID pgtype.Int8) (string, error)
 	ReadOutboundCampaignHandoffForDispatch(ctx context.Context, arg ReadOutboundCampaignHandoffForDispatchParams) (int64, error)
 	RecordOutboundTaskJobLink(ctx context.Context, arg RecordOutboundTaskJobLinkParams) (RecordOutboundTaskJobLinkRow, error)

@@ -37,6 +37,7 @@ type campaignDispatchFixture struct {
 	audienceEvidence                            outboundport.CampaignDispatchReconciliationEvidence
 	audienceEvidencePresent                     bool
 	recipientApproved                           bool
+	recipientMessageOverride                    string
 	recipientApprovalCalls                      int
 }
 
@@ -72,12 +73,12 @@ func (fixture *campaignDispatchFixture) ListCampaignDispatchCandidates(context.C
 	}
 	return []outboundport.CampaignDispatchCandidate{{CustomerID: 2, StepIndex: 1, Content: "hello"}, {CustomerID: 7, StepIndex: 1, Content: "hello"}}, nil
 }
-func (fixture *campaignDispatchFixture) IsCampaignDispatchRecipientApproved(_ context.Context, handoffID, customerID int64) (bool, error) {
+func (fixture *campaignDispatchFixture) ReadCampaignDispatchRecipientApproval(_ context.Context, handoffID, customerID int64) (outboundport.CampaignDispatchRecipientApproval, error) {
 	fixture.recipientApprovalCalls++
 	if handoffID != 19 || customerID < 1 {
-		return false, errors.New("unexpected recipient approval lookup")
+		return outboundport.CampaignDispatchRecipientApproval{}, errors.New("unexpected recipient approval lookup")
 	}
-	return fixture.recipientApproved, nil
+	return outboundport.CampaignDispatchRecipientApproval{Approved: fixture.recipientApproved, MessageOverride: fixture.recipientMessageOverride}, nil
 }
 func (fixture *campaignDispatchFixture) CheckContactEligibility(_ context.Context, check contactport.ContactEligibilityCheck) ([]contactport.ContactEligibility, error) {
 	fixture.eligibilityCalls++
@@ -272,8 +273,44 @@ func TestCampaignDispatchRecipientQueuesOnlyApprovedRecipient(t *testing.T) {
 	if err != nil || fixture.recipientApprovalCalls != 1 || fixture.runtimeAccepts != 1 || fixture.runtimeQueues != 1 || fixture.enqueueCalls != 1 || summary.Queued != 1 || summary.RealExternalCallExecuted || summary.DeliveryProven {
 		t.Fatalf("summary=%+v err=%v approval=%d accepts/queues/enqueues=%d/%d/%d", summary, err, fixture.recipientApprovalCalls, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls)
 	}
-	if len(fixture.bindings) != 1 || fixture.bindings[0].CustomerID != 7 {
+	if len(fixture.bindings) != 1 || fixture.bindings[0].CustomerID != 7 || fixture.bindings[0].ContentSnapshot != "hello" {
 		t.Fatalf("bindings=%+v", fixture.bindings)
+	}
+}
+
+func TestCampaignDispatchRecipientFreezesApprovedMessageOverride(t *testing.T) {
+	fixture := &campaignDispatchFixture{recipientApproved: true, recipientMessageOverride: "reviewed message"}
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = service.DispatchRecipient(context.Background(), CampaignRecipientDispatchCommand{
+		CampaignCode: "spring-campaign", PlanID: "ctp_" + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		CustomerID: 7, ActorID: 7, IdempotencyKey: "campaign-recipient-override", ExternalGate: true,
+	})
+	if err != nil || len(fixture.bindings) != 1 || fixture.bindings[0].ContentSnapshot != "reviewed message" || fixture.bindings[0].PayloadDigest != outbound.CampaignDispatchPayloadDigest(19, 7, 1, "reviewed message") {
+		t.Fatalf("err=%v bindings=%+v", err, fixture.bindings)
+	}
+}
+
+func TestCampaignDispatchRecipientOverrideFailsClosedForMultipleSteps(t *testing.T) {
+	fixture := &campaignDispatchFixture{
+		recipientApproved: true, recipientMessageOverride: "reviewed message",
+		candidates: []outboundport.CampaignDispatchCandidate{
+			{CustomerID: 7, StepIndex: 1, Content: "first"},
+			{CustomerID: 7, StepIndex: 2, Content: "second"},
+		},
+	}
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = service.DispatchRecipient(context.Background(), CampaignRecipientDispatchCommand{
+		CampaignCode: "spring-campaign", PlanID: "ctp_" + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		CustomerID: 7, ActorID: 7, IdempotencyKey: "campaign-recipient-ambiguous-override", ExternalGate: true,
+	})
+	if !errors.Is(err, outbound.ErrCampaignDispatchConflict) || fixture.runtimeAccepts != 0 || fixture.runtimeQueues != 0 || fixture.enqueueCalls != 0 || len(fixture.bindings) != 0 {
+		t.Fatalf("err=%v accepts/queues/enqueues=%d/%d/%d bindings=%+v", err, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls, fixture.bindings)
 	}
 }
 

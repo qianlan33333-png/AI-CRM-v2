@@ -52,3 +52,20 @@ func TestCampaignRecipientDispatchHTTPKeepsAcceptanceSeparateFromDelivery(t *tes
 		}
 	}
 }
+
+func TestCampaignRecipientDispatchHTTPRejectsDisabledActionGate(t *testing.T) {
+	application := &campaignDispatchHTTPApplication{}
+	handler, err := NewCampaignDispatchHandler(application)
+	if err != nil {
+		t.Fatal(err)
+	}
+	planID := "ctp_" + strings.Repeat("a", 64)
+	request := httptest.NewRequest(http.MethodPost, "/dispatch-recipient", strings.NewReader(`{"external_gate":false}`))
+	request.Header.Set("Idempotency-Key", "recipient-disabled-key")
+	request = authorizedCampaignHandoffRequest(t, request, authport.CapabilityOperationsManage)
+	response := httptest.NewRecorder()
+	handler.DispatchRecipient(response, request, "spring-campaign", planID, 7)
+	if response.Code != http.StatusBadRequest || application.recipientCommand.CustomerID != 0 {
+		t.Fatalf("status=%d command=%+v body=%s", response.Code, application.recipientCommand, response.Body)
+	}
+}

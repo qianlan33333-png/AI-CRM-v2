@@ -195,16 +195,22 @@ func (service *CampaignDispatchService) dispatch(ctx context.Context, command Ca
 			if !ok {
 				return outbound.ErrCampaignDispatchUnavailable
 			}
-			approved, approvalErr := reader.IsCampaignDispatchRecipientApproved(tx, handoffID, recipientID)
+			approval, approvalErr := reader.ReadCampaignDispatchRecipientApproval(tx, handoffID, recipientID)
 			if approvalErr != nil {
 				return approvalErr
 			}
-			if !approved {
+			if !approval.Approved {
 				return outbound.ErrCampaignDispatchConflict
 			}
 			candidates = campaignDispatchRecipientCandidates(candidates, recipientID)
 			if len(candidates) == 0 {
 				return outbound.ErrCampaignDispatchUnavailable
+			}
+			if strings.TrimSpace(approval.MessageOverride) != "" {
+				if len(candidates) != 1 {
+					return outbound.ErrCampaignDispatchConflict
+				}
+				candidates[0].Content = approval.MessageOverride
 			}
 		}
 		eligibility, err := service.dispatchEligibility(tx, candidates, evaluatedAt)
@@ -226,7 +232,7 @@ func (service *CampaignDispatchService) dispatch(ctx context.Context, command Ca
 			if candidate.CustomerID < 1 || candidate.StepIndex < 1 || strings.TrimSpace(candidate.Content) == "" {
 				return outbound.ErrCampaignDispatchUnavailable
 			}
-			binding := outboundport.CampaignDispatchBinding{HandoffID: handoffID, CustomerID: candidate.CustomerID, StepIndex: candidate.StepIndex, RecipientDigest: outbound.CampaignDispatchRecipientDigest(candidate.CustomerID), PayloadDigest: outbound.CampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content), CreatedAt: evaluatedAt, UpdatedAt: evaluatedAt}
+			binding := outboundport.CampaignDispatchBinding{HandoffID: handoffID, CustomerID: candidate.CustomerID, StepIndex: candidate.StepIndex, RecipientDigest: outbound.CampaignDispatchRecipientDigest(candidate.CustomerID), PayloadDigest: outbound.CampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content), ContentSnapshot: candidate.Content, CreatedAt: evaluatedAt, UpdatedAt: evaluatedAt}
 			decision, present := eligibility[candidate.CustomerID]
 			if !present {
 				return outbound.ErrCampaignDispatchUnavailable

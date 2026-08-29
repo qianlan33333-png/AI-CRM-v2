@@ -103,8 +103,8 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
 	var migrationsApplied bool
-	if err := pool.QueryRow(ctx, `SELECT count(*)=4 FROM public.goose_db_version WHERE version_id IN (78,92,94,99) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
-		t.Fatalf("migrations 78/92/94/99 applied=%t err=%v, want true", migrationsApplied, err)
+	if err := pool.QueryRow(ctx, `SELECT count(*)=5 FROM public.goose_db_version WHERE version_id IN (78,92,94,99,141) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92/94/99/141 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 	policyTime := time.Now().UTC().Truncate(time.Microsecond)
@@ -188,6 +188,10 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}
 	if len(effectIDs) != 2 {
 		t.Fatalf("effects=%v, want two", effectIDs)
+	}
+	var frozenContentCount int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.outbound_campaign_dispatches WHERE content_snapshot='approved immutable content'`).Scan(&frozenContentCount); err != nil || frozenContentCount != 3 {
+		t.Fatalf("frozen content snapshots=%d err=%v, want 3", frozenContentCount, err)
 	}
 
 	provider := &campaignDispatchWeComProviderFake{}
