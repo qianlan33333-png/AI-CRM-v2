@@ -21535,6 +21535,102 @@ export interface AudienceHistoryMember {
   payload_digest: number[];
 }
 
+export interface AudienceActivityRun {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  package_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  version_history_id: number | null;
+  run_type: string;
+  original_status: string;
+  refresh_started_at: string;
+  /** @nullable */
+  refresh_finished_at: string | null;
+  /** @nullable */
+  last_watermark_at: string | null;
+  /** @nullable */
+  next_watermark_at: string | null;
+  returned_count: number;
+  entered_count: number;
+  updated_count: number;
+  exited_count: number;
+  member_event_count: number;
+  duration_ms: number;
+  created_at: string;
+}
+
+export type AudienceActivityRunPageSource =
+  (typeof AudienceActivityRunPageSource)[keyof typeof AudienceActivityRunPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceActivityRunPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceActivityRunPage {
+  source: AudienceActivityRunPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AudienceActivityRun[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface AudienceActivityMemberEvent {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  package_history_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  run_history_id: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  member_history_id: number | null;
+  event_type: string;
+  occurred_at: string;
+  created_at: string;
+}
+
+export type AudienceActivityMemberEventPageSource =
+  (typeof AudienceActivityMemberEventPageSource)[keyof typeof AudienceActivityMemberEventPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AudienceActivityMemberEventPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface AudienceActivityMemberEventPage {
+  source: AudienceActivityMemberEventPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: AudienceActivityMemberEvent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
 export type AudienceHistoryMemberPageSource =
   (typeof AudienceHistoryMemberPageSource)[keyof typeof AudienceHistoryMemberPageSource];
 
@@ -24771,6 +24867,30 @@ export type ListSignupTagHistoryRulesParams = {
 };
 
 export type ListAudienceHistoryGroupsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryActivityRunsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAudienceHistoryActivityMemberEventsParams = {
   /**
    * @minimum 1
    * @maximum 100
@@ -77322,6 +77442,177 @@ export const listAudienceHistoryGroups = async (
     status: res.status,
     headers: res.headers,
   } as listAudienceHistoryGroupsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience activity runs without activating refreshes
+ */
+export type listAudienceHistoryActivityRunsResponse200 = {
+  data: AudienceActivityRunPage;
+  status: 200;
+};
+
+export type listAudienceHistoryActivityRunsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryActivityRunsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryActivityRunsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryActivityRunsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryActivityRunsResponseSuccess =
+  listAudienceHistoryActivityRunsResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryActivityRunsResponseError = (
+  | listAudienceHistoryActivityRunsResponse400
+  | listAudienceHistoryActivityRunsResponse401
+  | listAudienceHistoryActivityRunsResponse403
+  | listAudienceHistoryActivityRunsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryActivityRunsResponse =
+  | listAudienceHistoryActivityRunsResponseSuccess
+  | listAudienceHistoryActivityRunsResponseError;
+
+export const getListAudienceHistoryActivityRunsUrl = (
+  params?: ListAudienceHistoryActivityRunsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/activity-runs?${stringifiedParams}`
+    : `/api/admin/audience-history/activity-runs`;
+};
+
+export const listAudienceHistoryActivityRuns = async (
+  params?: ListAudienceHistoryActivityRunsParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryActivityRunsResponse> => {
+  const res = await fetch(getListAudienceHistoryActivityRunsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryActivityRunsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryActivityRunsResponse;
+};
+
+/**
+ * @summary Read immutable V1 Audience member event observations without activating members
+ */
+export type listAudienceHistoryActivityMemberEventsResponse200 = {
+  data: AudienceActivityMemberEventPage;
+  status: 200;
+};
+
+export type listAudienceHistoryActivityMemberEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAudienceHistoryActivityMemberEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAudienceHistoryActivityMemberEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAudienceHistoryActivityMemberEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAudienceHistoryActivityMemberEventsResponseSuccess =
+  listAudienceHistoryActivityMemberEventsResponse200 & {
+    headers: Headers;
+  };
+export type listAudienceHistoryActivityMemberEventsResponseError = (
+  | listAudienceHistoryActivityMemberEventsResponse400
+  | listAudienceHistoryActivityMemberEventsResponse401
+  | listAudienceHistoryActivityMemberEventsResponse403
+  | listAudienceHistoryActivityMemberEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAudienceHistoryActivityMemberEventsResponse =
+  | listAudienceHistoryActivityMemberEventsResponseSuccess
+  | listAudienceHistoryActivityMemberEventsResponseError;
+
+export const getListAudienceHistoryActivityMemberEventsUrl = (
+  params?: ListAudienceHistoryActivityMemberEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audience-history/activity-member-events?${stringifiedParams}`
+    : `/api/admin/audience-history/activity-member-events`;
+};
+
+export const listAudienceHistoryActivityMemberEvents = async (
+  params?: ListAudienceHistoryActivityMemberEventsParams,
+  options?: RequestInit,
+): Promise<listAudienceHistoryActivityMemberEventsResponse> => {
+  const res = await fetch(
+    getListAudienceHistoryActivityMemberEventsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAudienceHistoryActivityMemberEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAudienceHistoryActivityMemberEventsResponse;
 };
 
 /**

@@ -807,6 +807,67 @@ var (
 // It is deliberately V2-only and must run inside the caller's UoW.
 type CustomerTimelineArchiveReadySQL struct{}
 
+// AudienceActivityArchiveReadySQL is the same archive-completion proof used
+// by other immutable history domains. It is separate only because the owner
+// interface is deliberately narrow.
+type AudienceActivityArchiveReadySQL struct{}
+
+func NewAudienceActivityArchiveReadySQL() AudienceActivityArchiveReadySQL {
+	return AudienceActivityArchiveReadySQL{}
+}
+
+func (AudienceActivityArchiveReadySQL) VerifyAudienceActivityArchiveReady(ctx context.Context, run string) error {
+	if ctx == nil || run == "" {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	var ready bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(
+SELECT 1 FROM public.v1_archive_reconciliation_receipts archive
+JOIN public.data_migration_runs migration USING(run_id)
+WHERE archive.run_id=$1 AND migration.phase='reconciled'
+AND archive.source_row_count=archive.archive_record_count
+AND archive.source_row_count=archive.terminal_disposition_count
+AND archive.source_table_count=archive.archived_table_count)`, run).Scan(&ready); err != nil {
+		return err
+	}
+	if !ready {
+		return ErrConflict
+	}
+	return nil
+}
+
+// VerifyAudienceActivityReceiptCrosswalk proves an immutable historical
+// parent through its own generic terminal receipt. It intentionally has no
+// current-domain fallback and is kept beside the other allowed journal SQL.
+func VerifyAudienceActivityReceiptCrosswalk(ctx context.Context, version, run, adapter, table, domain, targetTable string, source [sha256.Size]byte, targetID int64, payload [sha256.Size]byte) error {
+	if ctx == nil || version == "" || run == "" || adapter == "" || table == "" || domain == "" || targetTable == "" || source == ([sha256.Size]byte{}) || targetID < 1 {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	args := []any{version, run, adapter, table, source[:], domain, targetTable, strconv.FormatInt(targetID, 10)}
+	query := `SELECT EXISTS(SELECT 1 FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 AND source_key_digest=$5 AND verified AND disposition='import' AND reason='' AND target_domain=$6 AND target_table=$7 AND target_id=$8`
+	if payload != ([sha256.Size]byte{}) {
+		query += " AND payload_digest=$9"
+		args = append(args, payload[:])
+	}
+	query += ")"
+	var found bool
+	if err = tx.QueryRow(ctx, query, args...).Scan(&found); err != nil {
+		return err
+	}
+	if !found {
+		return ErrConflict
+	}
+	return nil
+}
+
 func NewCustomerTimelineArchiveReadySQL() CustomerTimelineArchiveReadySQL {
 	return CustomerTimelineArchiveReadySQL{}
 }
@@ -839,6 +900,61 @@ AND archive.source_table_count=archive.archived_table_count)`, run).Scan(&ready)
 // to exactly one immutable reconciliation row for its version and archive run.
 // Per-source proof remains in generic import receipts.
 type CustomerTimelineReconciliationSealStore struct{}
+
+type AudienceActivityReconciliationSealStore struct{}
+
+func NewAudienceActivityReconciliationSealStore() AudienceActivityReconciliationSealStore {
+	return AudienceActivityReconciliationSealStore{}
+}
+
+func (AudienceActivityReconciliationSealStore) LoadAudienceActivityReconciliationSeal(ctx context.Context, version, run string) (AudienceActivitySeal, bool, error) {
+	if ctx == nil || version != AudienceActivityHistoryImportVersion || run == "" {
+		return AudienceActivitySeal{}, false, ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return AudienceActivitySeal{}, false, err
+	}
+	if _, err = tx.Exec(ctx, "LOCK TABLE public.v1_domain_import_receipts, public.v1_domain_import_reconciliation_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+		return AudienceActivitySeal{}, false, err
+	}
+	var value AudienceActivitySeal
+	var digest []byte
+	err = tx.QueryRow(ctx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, version, run).Scan(&value.SelectedSourceCount, &value.ReceiptCount, &value.ImportedCount, &value.ArchivedCount, &value.QuarantinedCount, &value.VerifiedCount, &digest)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return AudienceActivitySeal{}, false, nil
+	}
+	if err != nil || len(digest) != sha256.Size {
+		return AudienceActivitySeal{}, false, ErrConflict
+	}
+	value.Version, value.ArchiveRunID = version, run
+	copy(value.ComparisonDigest[:], digest)
+	if !validAudienceActivitySeal(value) {
+		return AudienceActivitySeal{}, false, ErrConflict
+	}
+	return value, true, nil
+}
+
+func (AudienceActivityReconciliationSealStore) RecordAudienceActivityReconciliationSeal(ctx context.Context, value AudienceActivitySeal) error {
+	if ctx == nil || !validAudienceActivitySeal(value) {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, "LOCK TABLE public.v1_domain_import_receipts, public.v1_domain_import_reconciliation_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+		return err
+	}
+	command, err := tx.Exec(ctx, `INSERT INTO public.v1_domain_import_reconciliation_receipts (import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(import_version,archive_run_id) DO NOTHING`, value.Version, value.ArchiveRunID, value.SelectedSourceCount, value.ReceiptCount, value.ImportedCount, value.ArchivedCount, value.QuarantinedCount, value.VerifiedCount, value.ComparisonDigest[:])
+	if err != nil {
+		return err
+	}
+	if command.RowsAffected() != 1 {
+		return ErrConflict
+	}
+	return nil
+}
 
 func NewCustomerTimelineReconciliationSealStore() CustomerTimelineReconciliationSealStore {
 	return CustomerTimelineReconciliationSealStore{}

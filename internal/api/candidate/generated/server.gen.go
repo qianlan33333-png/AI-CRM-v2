@@ -679,6 +679,96 @@ func (e AdminOpsReleaseComparisonExternalCalls) Valid() bool {
 	}
 }
 
+// Defines values for AudienceActivityMemberEventPageReadOnly.
+const (
+	AudienceActivityMemberEventPageReadOnlyTrue AudienceActivityMemberEventPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceActivityMemberEventPageReadOnly enum.
+func (e AudienceActivityMemberEventPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceActivityMemberEventPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceActivityMemberEventPageRealExternalCallExecuted.
+const (
+	AudienceActivityMemberEventPageRealExternalCallExecutedFalse AudienceActivityMemberEventPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceActivityMemberEventPageRealExternalCallExecuted enum.
+func (e AudienceActivityMemberEventPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceActivityMemberEventPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceActivityMemberEventPageSource.
+const (
+	AudienceActivityMemberEventPageSourceV1History AudienceActivityMemberEventPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceActivityMemberEventPageSource enum.
+func (e AudienceActivityMemberEventPageSource) Valid() bool {
+	switch e {
+	case AudienceActivityMemberEventPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceActivityRunPageReadOnly.
+const (
+	AudienceActivityRunPageReadOnlyTrue AudienceActivityRunPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AudienceActivityRunPageReadOnly enum.
+func (e AudienceActivityRunPageReadOnly) Valid() bool {
+	switch e {
+	case AudienceActivityRunPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceActivityRunPageRealExternalCallExecuted.
+const (
+	AudienceActivityRunPageRealExternalCallExecutedFalse AudienceActivityRunPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the AudienceActivityRunPageRealExternalCallExecuted enum.
+func (e AudienceActivityRunPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case AudienceActivityRunPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AudienceActivityRunPageSource.
+const (
+	AudienceActivityRunPageSourceV1History AudienceActivityRunPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the AudienceActivityRunPageSource enum.
+func (e AudienceActivityRunPageSource) Valid() bool {
+	switch e {
+	case AudienceActivityRunPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AudienceHistoryDefinitionDetailReadOnly.
 const (
 	AudienceHistoryDefinitionDetailReadOnlyTrue AudienceHistoryDefinitionDetailReadOnly = true
@@ -15521,6 +15611,77 @@ type ApproveIdentityMergeReviewRequest struct {
 	Reason            string `json:"reason"`
 }
 
+// AudienceActivityMemberEvent defines model for AudienceActivityMemberEvent.
+type AudienceActivityMemberEvent struct {
+	CreatedAt        time.Time `json:"created_at"`
+	EventType        string    `json:"event_type"`
+	Id               int64     `json:"id"`
+	MemberHistoryId  *int64    `json:"member_history_id"`
+	OccurredAt       time.Time `json:"occurred_at"`
+	PackageHistoryId int64     `json:"package_history_id"`
+	RunHistoryId     *int64    `json:"run_history_id"`
+}
+
+// AudienceActivityMemberEventPage defines model for AudienceActivityMemberEventPage.
+type AudienceActivityMemberEventPage struct {
+	Items                    []AudienceActivityMemberEvent                           `json:"items"`
+	Limit                    int32                                                   `json:"limit"`
+	Offset                   int32                                                   `json:"offset"`
+	ReadOnly                 AudienceActivityMemberEventPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceActivityMemberEventPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceActivityMemberEventPageSource                   `json:"source"`
+	Total                    int64                                                   `json:"total"`
+}
+
+// AudienceActivityMemberEventPageReadOnly defines model for AudienceActivityMemberEventPage.ReadOnly.
+type AudienceActivityMemberEventPageReadOnly bool
+
+// AudienceActivityMemberEventPageRealExternalCallExecuted defines model for AudienceActivityMemberEventPage.RealExternalCallExecuted.
+type AudienceActivityMemberEventPageRealExternalCallExecuted bool
+
+// AudienceActivityMemberEventPageSource defines model for AudienceActivityMemberEventPage.Source.
+type AudienceActivityMemberEventPageSource string
+
+// AudienceActivityRun defines model for AudienceActivityRun.
+type AudienceActivityRun struct {
+	CreatedAt         time.Time  `json:"created_at"`
+	DurationMs        int32      `json:"duration_ms"`
+	EnteredCount      int32      `json:"entered_count"`
+	ExitedCount       int32      `json:"exited_count"`
+	Id                int64      `json:"id"`
+	LastWatermarkAt   *time.Time `json:"last_watermark_at"`
+	MemberEventCount  int32      `json:"member_event_count"`
+	NextWatermarkAt   *time.Time `json:"next_watermark_at"`
+	OriginalStatus    string     `json:"original_status"`
+	PackageHistoryId  int64      `json:"package_history_id"`
+	RefreshFinishedAt *time.Time `json:"refresh_finished_at"`
+	RefreshStartedAt  time.Time  `json:"refresh_started_at"`
+	ReturnedCount     int32      `json:"returned_count"`
+	RunType           string     `json:"run_type"`
+	UpdatedCount      int32      `json:"updated_count"`
+	VersionHistoryId  *int64     `json:"version_history_id"`
+}
+
+// AudienceActivityRunPage defines model for AudienceActivityRunPage.
+type AudienceActivityRunPage struct {
+	Items                    []AudienceActivityRun                           `json:"items"`
+	Limit                    int32                                           `json:"limit"`
+	Offset                   int32                                           `json:"offset"`
+	ReadOnly                 AudienceActivityRunPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted AudienceActivityRunPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   AudienceActivityRunPageSource                   `json:"source"`
+	Total                    int64                                           `json:"total"`
+}
+
+// AudienceActivityRunPageReadOnly defines model for AudienceActivityRunPage.ReadOnly.
+type AudienceActivityRunPageReadOnly bool
+
+// AudienceActivityRunPageRealExternalCallExecuted defines model for AudienceActivityRunPage.RealExternalCallExecuted.
+type AudienceActivityRunPageRealExternalCallExecuted bool
+
+// AudienceActivityRunPageSource defines model for AudienceActivityRunPage.Source.
+type AudienceActivityRunPageSource string
+
 // AudienceHistoryDefinition defines model for AudienceHistoryDefinition.
 type AudienceHistoryDefinition struct {
 	CachedHeadcount  int64      `json:"cached_headcount"`
@@ -24465,6 +24626,18 @@ type PutMediaAttachmentMultipartPartParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListAudienceHistoryActivityMemberEventsParams defines parameters for ListAudienceHistoryActivityMemberEvents.
+type ListAudienceHistoryActivityMemberEventsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListAudienceHistoryActivityRunsParams defines parameters for ListAudienceHistoryActivityRuns.
+type ListAudienceHistoryActivityRunsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListAudienceHistoryDefinitionsParams defines parameters for ListAudienceHistoryDefinitions.
 type ListAudienceHistoryDefinitionsParams struct {
 	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
@@ -27939,6 +28112,12 @@ type ServerInterface interface {
 	// Persist one digest-checked local PDF multipart part
 	// (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 	PutMediaAttachmentMultipartPart(w http.ResponseWriter, r *http.Request, uploadId int64, partNumber int, params PutMediaAttachmentMultipartPartParams)
+	// Read immutable V1 Audience member event observations without activating members
+	// (GET /api/admin/audience-history/activity-member-events)
+	ListAudienceHistoryActivityMemberEvents(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryActivityMemberEventsParams)
+	// Read immutable V1 Audience activity runs without activating refreshes
+	// (GET /api/admin/audience-history/activity-runs)
+	ListAudienceHistoryActivityRuns(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryActivityRunsParams)
 	// Read immutable V1 Audience facts without activating queries or members
 	// (GET /api/admin/audience-history/definitions)
 	ListAudienceHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryDefinitionsParams)
@@ -29148,6 +29327,18 @@ func (_ Unimplemented) CompleteMediaAttachmentMultipartUpload(w http.ResponseWri
 // Persist one digest-checked local PDF multipart part
 // (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 func (_ Unimplemented) PutMediaAttachmentMultipartPart(w http.ResponseWriter, r *http.Request, uploadId int64, partNumber int, params PutMediaAttachmentMultipartPartParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience member event observations without activating members
+// (GET /api/admin/audience-history/activity-member-events)
+func (_ Unimplemented) ListAudienceHistoryActivityMemberEvents(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryActivityMemberEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable V1 Audience activity runs without activating refreshes
+// (GET /api/admin/audience-history/activity-runs)
+func (_ Unimplemented) ListAudienceHistoryActivityRuns(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryActivityRunsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -31901,6 +32092,88 @@ func (siw *ServerInterfaceWrapper) PutMediaAttachmentMultipartPart(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutMediaAttachmentMultipartPart(w, r, uploadId, partNumber, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryActivityMemberEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryActivityMemberEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryActivityMemberEventsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryActivityMemberEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAudienceHistoryActivityRuns operation middleware
+func (siw *ServerInterfaceWrapper) ListAudienceHistoryActivityRuns(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAudienceHistoryActivityRunsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAudienceHistoryActivityRuns(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -51991,6 +52264,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}", wrapper.PutMediaAttachmentMultipartPart)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/activity-member-events", wrapper.ListAudienceHistoryActivityMemberEvents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/audience-history/activity-runs", wrapper.ListAudienceHistoryActivityRuns)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/audience-history/definitions", wrapper.ListAudienceHistoryDefinitions)
 	})
 	r.Group(func(r chi.Router) {
@@ -53812,6 +54091,112 @@ func (response PutMediaAttachmentMultipartPart409JSONResponse) VisitPutMediaAtta
 type PutMediaAttachmentMultipartPart503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response PutMediaAttachmentMultipartPart503JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityMemberEventsRequestObject struct {
+	Params ListAudienceHistoryActivityMemberEventsParams
+}
+
+type ListAudienceHistoryActivityMemberEventsResponseObject interface {
+	VisitListAudienceHistoryActivityMemberEventsResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryActivityMemberEvents200JSONResponse AudienceActivityMemberEventPage
+
+func (response ListAudienceHistoryActivityMemberEvents200JSONResponse) VisitListAudienceHistoryActivityMemberEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityMemberEvents400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryActivityMemberEvents400JSONResponse) VisitListAudienceHistoryActivityMemberEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityMemberEvents401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryActivityMemberEvents401JSONResponse) VisitListAudienceHistoryActivityMemberEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityMemberEvents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryActivityMemberEvents403JSONResponse) VisitListAudienceHistoryActivityMemberEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityMemberEvents503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryActivityMemberEvents503JSONResponse) VisitListAudienceHistoryActivityMemberEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityRunsRequestObject struct {
+	Params ListAudienceHistoryActivityRunsParams
+}
+
+type ListAudienceHistoryActivityRunsResponseObject interface {
+	VisitListAudienceHistoryActivityRunsResponse(w http.ResponseWriter) error
+}
+
+type ListAudienceHistoryActivityRuns200JSONResponse AudienceActivityRunPage
+
+func (response ListAudienceHistoryActivityRuns200JSONResponse) VisitListAudienceHistoryActivityRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityRuns400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAudienceHistoryActivityRuns400JSONResponse) VisitListAudienceHistoryActivityRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityRuns401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAudienceHistoryActivityRuns401JSONResponse) VisitListAudienceHistoryActivityRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityRuns403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAudienceHistoryActivityRuns403JSONResponse) VisitListAudienceHistoryActivityRunsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAudienceHistoryActivityRuns503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAudienceHistoryActivityRuns503JSONResponse) VisitListAudienceHistoryActivityRunsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -76585,6 +76970,12 @@ type StrictServerInterface interface {
 	// Persist one digest-checked local PDF multipart part
 	// (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 	PutMediaAttachmentMultipartPart(ctx context.Context, request PutMediaAttachmentMultipartPartRequestObject) (PutMediaAttachmentMultipartPartResponseObject, error)
+	// Read immutable V1 Audience member event observations without activating members
+	// (GET /api/admin/audience-history/activity-member-events)
+	ListAudienceHistoryActivityMemberEvents(ctx context.Context, request ListAudienceHistoryActivityMemberEventsRequestObject) (ListAudienceHistoryActivityMemberEventsResponseObject, error)
+	// Read immutable V1 Audience activity runs without activating refreshes
+	// (GET /api/admin/audience-history/activity-runs)
+	ListAudienceHistoryActivityRuns(ctx context.Context, request ListAudienceHistoryActivityRunsRequestObject) (ListAudienceHistoryActivityRunsResponseObject, error)
 	// Read immutable V1 Audience facts without activating queries or members
 	// (GET /api/admin/audience-history/definitions)
 	ListAudienceHistoryDefinitions(ctx context.Context, request ListAudienceHistoryDefinitionsRequestObject) (ListAudienceHistoryDefinitionsResponseObject, error)
@@ -78047,6 +78438,58 @@ func (sh *strictHandler) PutMediaAttachmentMultipartPart(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutMediaAttachmentMultipartPartResponseObject); ok {
 		if err := validResponse.VisitPutMediaAttachmentMultipartPartResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryActivityMemberEvents operation middleware
+func (sh *strictHandler) ListAudienceHistoryActivityMemberEvents(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryActivityMemberEventsParams) {
+	var request ListAudienceHistoryActivityMemberEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryActivityMemberEvents(ctx, request.(ListAudienceHistoryActivityMemberEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryActivityMemberEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryActivityMemberEventsResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryActivityMemberEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAudienceHistoryActivityRuns operation middleware
+func (sh *strictHandler) ListAudienceHistoryActivityRuns(w http.ResponseWriter, r *http.Request, params ListAudienceHistoryActivityRunsParams) {
+	var request ListAudienceHistoryActivityRunsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAudienceHistoryActivityRuns(ctx, request.(ListAudienceHistoryActivityRunsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAudienceHistoryActivityRuns")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAudienceHistoryActivityRunsResponseObject); ok {
+		if err := validResponse.VisitListAudienceHistoryActivityRunsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
