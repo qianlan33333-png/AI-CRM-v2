@@ -135,7 +135,7 @@ func (r *CustomerTimelineHistoryReader) ListHistoricalCustomerTimelineEvents(ctx
 		eventTime, eventOK := timelineStoredTime(row.EventTime)
 		createdAt, createdOK := timelineStoredTime(row.CreatedAt)
 		customerID, customerOK := timelineStoredOptionalID(row.CustomerID)
-		if row.ID < 1 || row.SourceID < 1 || !eventOK || !createdOK || !customerOK {
+		if row.ID < 1 || !eventOK || !createdOK || !customerOK {
 			return nil, 0, contact.ErrCustomerTimelineHistoryUnavailable
 		}
 		items = append(items, contact.CustomerTimelineHistoryRead{ID: row.ID, SourceID: row.SourceID, EventID: row.EventID, EventType: row.EventType, EventTime: eventTime, SourceTable: row.SourceTable, SourceValue: row.SourceValue, CreatedAt: createdAt, CustomerID: customerID})
