@@ -3,7 +3,7 @@ import { esc } from './util';
 
 const button = 'padding:7px 12px;border:1px solid #D0D5DD;border-radius:6px;background:#fff;color:#344054;cursor:pointer';
 const cell = 'padding:9px 11px;border-bottom:1px solid #EEF0F3;text-align:left;vertical-align:top;white-space:pre-wrap';
-const kinds: HxcHistoryKind[] = ['meta', 'snapshot', 'activation', 'lead', 'batch', 'sender_config', 'send_record', 'member_usage'];
+const kinds: HxcHistoryKind[] = ['meta', 'snapshot', 'activation', 'lead', 'batch', 'sender_config', 'send_record', 'member_usage', 'chat_job'];
 type Options = { kind?: string; historyID?: string; generation?: string };
 const value = (input: string | number | null): string => input === null ? 'NULL' : input === '' ? '（空字符串）' : esc(input);
 const source = (item: HxcHistoryItem): string => 'generation' in item ? `历史 #${item.id} · 分代 #${item.generation}` : `历史 #${item.id} · 源行 #${item.source_id}`;
@@ -26,10 +26,11 @@ function summary(kind: HxcHistoryKind, item: HxcHistoryItem): string {
   if (kind === 'lead') { const x = item as Extract<HxcHistoryItem, { original_type: string }>; return `${source(x)}<br>类型：${value(x.original_type)} · is_active=${x.is_active ? 'true' : 'false'}<br>批次来源：${value(x.legacy_import_batch_ref)}<br>创建/更新：${value(x.created_at)} / ${value(x.updated_at)}`; }
   if (kind === 'batch') { const x = item as Extract<HxcHistoryItem, { import_type: string }>; return `${source(x)}<br>导入类型：${value(x.import_type)}<br>总计/成功/失败：${x.total_rows}/${x.success_rows}/${x.failed_rows}<br>创建：${value(x.created_at)}`; }
   if (kind === 'sender_config') { const x = item as Extract<HxcHistoryItem, { priority: number }>; return `${source(x)}<br>优先级：${x.priority} · V1启用标记=${x.original_is_active ? 'true' : 'false'}<br>创建/更新：${value(x.created_at)} / ${value(x.updated_at)}<br>该标记不授予当前发送权限。`; }
+  if (kind === 'chat_job') { const x = item as Extract<HxcHistoryItem, { queue_source_id: number | null }>; return `${source(x)}<br>历史队列/成员/发送记录源引用：${value(x.queue_source_id)} / ${value(x.member_source_id)} / ${value(x.send_record_source_id)}<br>原状态/发送渠道：${value(x.original_status)} / ${value(x.send_channel)}<br>创建/更新：${value(x.created_at)} / ${value(x.updated_at)}<br>完成字段原文：${value(x.finished_at_source)}<br>该历史对话任务不可执行，不表示当前完成或 Provider 成功。`; }
   const x = item as Extract<HxcHistoryItem, { task_type: string }>; return `${source(x)}<br>任务类型：${value(x.task_type)} · 原状态：${value(x.original_status)}<br>选择/合格/已发送/失败：${x.selected_count}/${x.eligible_count}/${x.sent_count}/${x.failed_count}<br>目标来源：${value(x.target_source)} #${value(x.target_source_id)}<br>创建/状态同步/刷新：${value(x.created_at)} / ${value(x.last_status_sync_at)} / ${value(x.last_refreshed_at)}<br>历史计数不表示本次任务或外部发送成功。`;
 }
 export async function mountHXCHistory(stage: HTMLElement, options: Options = {}): Promise<void> {
-  stage.innerHTML = `<main data-hxc-history style="padding:20px;display:grid;gap:14px"><a href="funnel.html">返回漏斗</a><nav aria-label="HXC 历史类别" style="display:flex;gap:8px;flex-wrap:wrap">${kinds.map((kind) => `<a data-hxc-kind="${kind}" href="${url(kind)}">${kind}</a>`).join('')}</nav><h1 style="margin:0;font-size:20px">V1 HXC 历史观察（只读）</h1><p style="color:#8F5A16">只展示已封存历史观察；不会刷新当前漏斗、创建群发、写权益或调用 Provider。发送配置与发送记录不代表当前权限、任务或外部成功；会员使用是历史分代观察，不代表当前会员资格。</p><section data-hxc-results></section></main>`;
+  stage.innerHTML = `<main data-hxc-history style="padding:20px;display:grid;gap:14px"><a href="funnel.html">返回漏斗</a><nav aria-label="HXC 历史类别" style="display:flex;gap:8px;flex-wrap:wrap">${kinds.map((kind) => `<a data-hxc-kind="${kind}" href="${url(kind)}">${kind}</a>`).join('')}</nav><h1 style="margin:0;font-size:20px">V1 HXC 历史观察（只读）</h1><p style="color:#8F5A16">只展示已封存历史观察；不会刷新当前漏斗、创建群发、写权益或调用 Provider。发送配置、发送记录和历史对话任务均不代表当前权限、完成状态或外部成功；会员使用是历史分代观察，不代表当前会员资格。</p><section data-hxc-results></section></main>`;
   const results = stage.querySelector<HTMLElement>('[data-hxc-results]')!;
   let input: { kind: HxcHistoryKind; id?: number; generation?: number };
   try { input = parse(options); } catch (error) { results.innerHTML = `<p role="alert">${esc(error instanceof Error ? error.message : '历史参数无效')}；未读取数据。</p>`; return; }

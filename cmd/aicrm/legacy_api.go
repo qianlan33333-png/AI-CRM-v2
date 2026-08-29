@@ -214,6 +214,7 @@ type Handler struct {
 	hxcHistory                  hxcport.HXCHistoryReader
 	hxcRuntimeHistory           hxcport.HXCRuntimeHistoryReader
 	hxcMemberUsageHistory       hxcport.HXCMemberUsageHistoryReader
+	hxcChatJobHistory           hxcport.HXCChatJobHistoryReader
 	staticMediaHistory          mediaport.StaticMediaHistoryReader
 	customerStateHistory        contactport.CustomerStateHistoryReader
 	marketingStateHistory       segmentport.MarketingStateHistoryReader

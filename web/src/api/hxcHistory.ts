@@ -1,12 +1,12 @@
 import {
-  getHXCHistoryActivation, getHXCHistoryBatch, getHXCHistoryLead, getHXCHistoryMemberUsage, getHXCHistoryMeta, getHXCHistorySendRecord, getHXCHistorySenderConfig, getHXCHistorySnapshot,
-  listHXCHistoryActivation, listHXCHistoryBatch, listHXCHistoryLead, listHXCHistoryMemberUsage, listHXCHistoryMeta, listHXCHistorySendRecord, listHXCHistorySenderConfig, listHXCHistorySnapshot,
-  type HXCHistoryActivation, type HXCHistoryBatch, type HXCHistoryLead, type HXCHistoryMemberUsage, type HXCHistoryMeta, type HXCHistorySendRecord, type HXCHistorySenderConfig, type HXCHistorySnapshot,
+  getHXCHistoryActivation, getHXCHistoryBatch, getHXCHistoryChatJob, getHXCHistoryLead, getHXCHistoryMemberUsage, getHXCHistoryMeta, getHXCHistorySendRecord, getHXCHistorySenderConfig, getHXCHistorySnapshot,
+  listHXCHistoryActivation, listHXCHistoryBatch, listHXCHistoryChatJob, listHXCHistoryLead, listHXCHistoryMemberUsage, listHXCHistoryMeta, listHXCHistorySendRecord, listHXCHistorySenderConfig, listHXCHistorySnapshot,
+  type HXCHistoryActivation, type HXCHistoryBatch, type HXCHistoryChatJob, type HXCHistoryLead, type HXCHistoryMemberUsage, type HXCHistoryMeta, type HXCHistorySendRecord, type HXCHistorySenderConfig, type HXCHistorySnapshot,
 } from './generated/health';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
-export type HxcHistoryKind = 'meta' | 'snapshot' | 'activation' | 'lead' | 'batch' | 'sender_config' | 'send_record' | 'member_usage';
-export type HxcHistoryItem = HXCHistoryMeta | HXCHistorySnapshot | HXCHistoryActivation | HXCHistoryLead | HXCHistoryBatch | HXCHistorySenderConfig | HXCHistorySendRecord | HXCHistoryMemberUsage;
+export type HxcHistoryKind = 'meta' | 'snapshot' | 'activation' | 'lead' | 'batch' | 'sender_config' | 'send_record' | 'member_usage' | 'chat_job';
+export type HxcHistoryItem = HXCHistoryMeta | HXCHistorySnapshot | HXCHistoryActivation | HXCHistoryLead | HXCHistoryBatch | HXCHistorySenderConfig | HXCHistorySendRecord | HXCHistoryMemberUsage | HXCHistoryChatJob;
 export type HxcHistoryPage = { items: HxcHistoryItem[]; total: number; limit: number; offset: number };
 type Row = Record<string, unknown>;
 const invalid = (): never => { throw new Error('HXC 历史响应不完整，未显示历史数据'); };
@@ -39,10 +39,11 @@ const kinds: Record<HxcHistoryKind, string[]> = {
   sender_config: ['id', 'source_id', 'priority', 'original_is_active', 'created_at', 'updated_at'],
   send_record: ['id', 'source_id', 'task_type', 'original_status', 'selected_count', 'eligible_count', 'sent_count', 'skipped_count', 'planned_count', 'queued_count', 'dispatching_count', 'succeeded_count', 'failed_count', 'blocked_count', 'cancelled_count', 'image_count', 'include_do_not_disturb', 'target_source', 'target_source_id', 'created_at', 'last_status_sync_at', 'last_refreshed_at'],
   member_usage: ['id', 'generation', 'is_member', 'is_registered', 'has_real_usage', 'registered_at', 'first_used_at', 'last_used_at', 'member_since', 'membership_expires_at', 'updated_at', 'membership_tier', 'membership_status', 'membership_source', 'registration_source', 'usage_source', 'projected_at'],
+  chat_job: ['id', 'source_id', 'queue_source_id', 'member_source_id', 'original_status', 'send_channel', 'send_record_source_id', 'created_at', 'updated_at', 'finished_at_source'],
 };
 function item(kind: HxcHistoryKind, value: unknown): HxcHistoryItem {
   const row = object(value, kinds[kind]);
-  if ((kind === 'sender_config' || kind === 'send_record') ? !integer(row.id, 1) || !integer(row.source_id) : kind === 'member_usage' ? !integer(row.id, 1) || !integer(row.generation) : !base(row)) invalid();
+  if ((kind === 'sender_config' || kind === 'send_record' || kind === 'chat_job') ? !integer(row.id, 1) || !integer(row.source_id) : kind === 'member_usage' ? !integer(row.id, 1) || !integer(row.generation) : !base(row)) invalid();
   if (kind === 'meta') {
     if (!instant(row.started_at) || !nullable(row.finished_at, instant) || !text(row.status) || !integer(row.row_count) || !integer(row.member_hit) || !integer(row.user_hit) || !integer(row.only_member) || !text(row.trigger_source)) invalid();
   } else if (kind === 'snapshot') {
@@ -63,6 +64,8 @@ function item(kind: HxcHistoryKind, value: unknown): HxcHistoryItem {
     const times = ['registered_at', 'first_used_at', 'last_used_at', 'member_since', 'membership_expires_at', 'updated_at'];
     const texts = ['membership_tier', 'membership_status', 'membership_source', 'registration_source', 'usage_source'];
     if (typeof row.is_member !== 'boolean' || typeof row.is_registered !== 'boolean' || typeof row.has_real_usage !== 'boolean' || !times.every((key) => nullable(row[key], instant)) || !texts.every((key) => text(row[key])) || !instant(row.projected_at)) invalid();
+  } else if (kind === 'chat_job') {
+    if (!nullable(row.queue_source_id, integer) || !nullable(row.member_source_id, integer) || !text(row.original_status) || !text(row.send_channel) || !nullable(row.send_record_source_id, integer) || !instant(row.created_at) || !instant(row.updated_at) || !text(row.finished_at_source)) invalid();
   } else {
     const counts = ['selected_count', 'eligible_count', 'sent_count', 'skipped_count', 'planned_count', 'queued_count', 'dispatching_count', 'succeeded_count', 'failed_count', 'blocked_count', 'cancelled_count', 'image_count'];
     if (!text(row.task_type) || !text(row.original_status) || !counts.every((key) => integer(row[key])) || typeof row.include_do_not_disturb !== 'boolean' || !text(row.target_source) || !nullable(row.target_source_id, integer) || !instant(row.created_at) || !nullable(row.last_status_sync_at, instant) || !nullable(row.last_refreshed_at, instant)) invalid();
@@ -94,6 +97,7 @@ export async function readHxcHistory(kind: HxcHistoryKind, offset = 0, limit = 2
     case 'sender_config': return page(kind, unwrapGenerated(await listHXCHistorySenderConfig(query, apiRequestOptions())), limit, offset);
     case 'send_record': return page(kind, unwrapGenerated(await listHXCHistorySendRecord(query, apiRequestOptions())), limit, offset);
     case 'member_usage': { const result = page(kind, unwrapGenerated(await listHXCHistoryMemberUsage({ ...query, ...(generation === undefined ? {} : { generation }) }, apiRequestOptions())), limit, offset); if (generation !== undefined && result.items.some((item) => (item as HXCHistoryMemberUsage).generation !== generation)) invalid(); return result; }
+    case 'chat_job': return page(kind, unwrapGenerated(await listHXCHistoryChatJob(query, apiRequestOptions())), limit, offset);
   }
 }
 export async function getHxcHistory(kind: HxcHistoryKind, id: number): Promise<HxcHistoryItem> {
@@ -107,5 +111,6 @@ export async function getHxcHistory(kind: HxcHistoryKind, id: number): Promise<H
     case 'sender_config': return detail(kind, unwrapGenerated(await getHXCHistorySenderConfig(id, apiRequestOptions())), id);
     case 'send_record': return detail(kind, unwrapGenerated(await getHXCHistorySendRecord(id, apiRequestOptions())), id);
     case 'member_usage': return detail(kind, unwrapGenerated(await getHXCHistoryMemberUsage(id, apiRequestOptions())), id);
+    case 'chat_job': return detail(kind, unwrapGenerated(await getHXCHistoryChatJob(id, apiRequestOptions())), id);
   }
 }

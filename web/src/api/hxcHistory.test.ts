@@ -42,6 +42,14 @@ export async function runHxcHistoryAdapterTests(): Promise<void> {
     for (const patch of [{ generation: 1.5 }, { projected_at: '' }, { registered_at: '' }, { union_id: 'private' }, { source_key_digest: digest }]) { body = { ...safety, item: { ...usage, ...patch } }; await rejects(() => getHxcHistory('member_usage', 8)); }
     body = { ...safety, items: [{ ...usage, generation: -8 }], total: 1, limit: 20, offset: 0 }; await rejects(() => readHxcHistory('member_usage', 0, 20, undefined, undefined, -9));
     const usageCalls = calls.length; await rejects(() => readHxcHistory('member_usage', 0, 20, undefined, undefined, 1.5)); await rejects(() => readHxcHistory('meta', 0, 20, undefined, undefined, 1)); assert(calls.length === usageCalls, 'invalid generation fails before transport');
+    const chat = { id: 9, source_id: -9, queue_source_id: -3, member_source_id: null, original_status: '', send_channel: '', send_record_source_id: 0, created_at: stamp, updated_at: stamp, finished_at_source: 'not-a-timestamp' };
+    body = { ...safety, items: [chat], total: 1, limit: 20, offset: 0 };
+    assert(((await readHxcHistory('chat_job')).items[0] as typeof chat).source_id === -9 && calls[calls.length - 1].url === '/api/admin/hxc-history/chat-jobs?limit=20&offset=0', 'chat job uses generated GET and preserves signed source IDs');
+    body = { ...safety, item: chat };
+    assert((await getHxcHistory('chat_job', 9)).id === 9 && calls[calls.length - 1].url === '/api/admin/hxc-history/chat-jobs/9', 'chat job detail uses generated GET');
+    for (const patch of [{ queue_source_id: 1.5 }, { member_source_id: '1' }, { created_at: '' }, { finished_at_source: null }, { phone: 'private' }, { request_payload: '{}' }, { source_key_digest: digest }]) { body = { ...safety, item: { ...chat, ...patch } }; await rejects(() => getHxcHistory('chat_job', 9)); }
+    body = { ...safety, items: [], total: 0, limit: 20, offset: 0 };
+    assert((await readHxcHistory('chat_job')).items.length === 0, 'chat job accepts an empty page');
     status = 503; await rejects(() => readHxcHistory('meta')); assert(calls[calls.length - 1]?.init?.method === 'GET' && calls.every((call) => call.init?.credentials === 'include' && call.init?.body === undefined), 'history is same-origin GET only');
   } finally { globalThis.fetch = previous; }
 }

@@ -1161,7 +1161,7 @@ console.log('admin/funnel.html?hxc_history=1（HXC 发送历史只读）');
   const sender = await loadPage('admin/funnel.html', { q: 'hxc_history=1&history_kind=sender_config', hxcHistoryHttp: {} });
   const senderDocument = sender.window.document;
   const senderCalls = sender.window.__hxcHistoryHttpTest.calls;
-  ok('发送配置历史展示 8 类入口、signed 源 ID 与只读边界', senderDocument.querySelectorAll('[data-hxc-kind]').length === 8 && senderDocument.body.textContent.includes('源行 #0') && senderDocument.body.textContent.includes('不授予当前发送权限'));
+  ok('发送配置历史展示 9 类入口、signed 源 ID 与只读边界', senderDocument.querySelectorAll('[data-hxc-kind]').length === 9 && senderDocument.body.textContent.includes('源行 #0') && senderDocument.body.textContent.includes('不授予当前发送权限'));
   ok('发送配置历史只发生成 GET', senderCalls.length === 1 && senderCalls[0].path === '/api/admin/hxc-history/sender-configs' && senderCalls[0].query === '?limit=20&offset=0' && senderCalls[0].method === 'GET' && senderCalls[0].credentials === 'include' && senderCalls[0].body === undefined);
   sender.window.close();
 

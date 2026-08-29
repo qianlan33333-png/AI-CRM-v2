@@ -42,6 +42,29 @@ func TestParseActorIDs(t *testing.T) {
 	}
 }
 
+func TestHXCChatJobHistoryRequiresLocalArchiveKeys(t *testing.T) {
+	if !validDomain("hxc-chat-job-history") {
+		t.Fatal("history domain missing")
+	}
+	for _, mode := range []string{"import", "reconcile"} {
+		for _, field := range []string{"source", "hmac", "archive"} {
+			env := appconfig.V1ArchiveRuntime{TargetDatabaseURL: "invalid://must-not-connect", SourceHMACKey: strings.Repeat("h", 32), ArchiveKey: strings.Repeat("k", 32)}
+			switch field {
+			case "source":
+				env.SourceDatabaseURL = "postgres:///forbidden-source"
+			case "hmac":
+				env.SourceHMACKey = ""
+			case "archive":
+				env.ArchiveKey = ""
+			}
+			err := run([]string{"--domain=hxc-chat-job-history", "--mode=" + mode, "--archive-run-id=archive"}, env)
+			if err == nil || (!strings.Contains(err.Error(), "local-only archive keys") && !strings.Contains(err.Error(), "32-byte archive key")) {
+				t.Fatalf("%s/%s did not fail before DB configuration: %v", mode, field, err)
+			}
+		}
+	}
+}
+
 func TestCycleObservationRequiresLocalArchiveKeysBeforeConnecting(t *testing.T) {
 	if !validDomain("cycle-observation-history") {
 		t.Fatal("cycle observation domain missing")

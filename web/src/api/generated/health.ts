@@ -2568,6 +2568,62 @@ export interface HXCHistorySendRecordDetail {
   item: HXCHistorySendRecord;
 }
 
+export interface HXCHistoryChatJob {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  /** @nullable */
+  queue_source_id: number | null;
+  /** @nullable */
+  member_source_id: number | null;
+  original_status: string;
+  send_channel: string;
+  /** @nullable */
+  send_record_source_id: number | null;
+  created_at: string;
+  updated_at: string;
+  finished_at_source: string;
+}
+
+export type HXCHistoryChatJobPageSource =
+  (typeof HXCHistoryChatJobPageSource)[keyof typeof HXCHistoryChatJobPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryChatJobPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryChatJobPage {
+  source: HXCHistoryChatJobPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistoryChatJob[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistoryChatJobDetailSource =
+  (typeof HXCHistoryChatJobDetailSource)[keyof typeof HXCHistoryChatJobDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryChatJobDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryChatJobDetail {
+  source: HXCHistoryChatJobDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistoryChatJob;
+}
+
 export interface AutomationHistorySOP {
   /** @minimum 1 */
   id: number;
@@ -22343,6 +22399,18 @@ export type ListHXCHistoryMemberUsageParams = {
   offset?: number;
 };
 
+export type ListHXCHistoryChatJobParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListAutomationHistorySOPsParams = {
   /**
    * @minimum 1
@@ -31179,6 +31247,158 @@ export const getHXCHistoryMemberUsage = async (
     status: res.status,
     headers: res.headers,
   } as getHXCHistoryMemberUsageResponse;
+};
+
+/**
+ * @summary Read immutable HXC chat-job history without executing jobs or Provider calls
+ */
+export type listHXCHistoryChatJobResponse200 = {
+  data: HXCHistoryChatJobPage;
+  status: 200;
+};
+
+export type listHXCHistoryChatJobResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistoryChatJobResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistoryChatJobResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistoryChatJobResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistoryChatJobResponseSuccess =
+  listHXCHistoryChatJobResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistoryChatJobResponseError = (
+  | listHXCHistoryChatJobResponse400
+  | listHXCHistoryChatJobResponse401
+  | listHXCHistoryChatJobResponse403
+  | listHXCHistoryChatJobResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistoryChatJobResponse =
+  listHXCHistoryChatJobResponseSuccess | listHXCHistoryChatJobResponseError;
+
+export const getListHXCHistoryChatJobUrl = (
+  params?: ListHXCHistoryChatJobParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/chat-jobs?${stringifiedParams}`
+    : `/api/admin/hxc-history/chat-jobs`;
+};
+
+export const listHXCHistoryChatJob = async (
+  params?: ListHXCHistoryChatJobParams,
+  options?: RequestInit,
+): Promise<listHXCHistoryChatJobResponse> => {
+  const res = await fetch(getListHXCHistoryChatJobUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistoryChatJobResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistoryChatJobResponse;
+};
+
+/**
+ * @summary Read immutable HXC chat-job history without executing jobs or Provider calls
+ */
+export type getHXCHistoryChatJobResponse200 = {
+  data: HXCHistoryChatJobDetail;
+  status: 200;
+};
+
+export type getHXCHistoryChatJobResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistoryChatJobResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistoryChatJobResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistoryChatJobResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistoryChatJobResponseSuccess =
+  getHXCHistoryChatJobResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistoryChatJobResponseError = (
+  | getHXCHistoryChatJobResponse400
+  | getHXCHistoryChatJobResponse401
+  | getHXCHistoryChatJobResponse403
+  | getHXCHistoryChatJobResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistoryChatJobResponse =
+  getHXCHistoryChatJobResponseSuccess | getHXCHistoryChatJobResponseError;
+
+export const getGetHXCHistoryChatJobUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/chat-jobs/${historyId}`;
+};
+
+export const getHXCHistoryChatJob = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistoryChatJobResponse> => {
+  const res = await fetch(getGetHXCHistoryChatJobUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistoryChatJobResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistoryChatJobResponse;
 };
 
 /**
