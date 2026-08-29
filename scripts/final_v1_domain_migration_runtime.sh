@@ -54,6 +54,274 @@ read_env_value() {
   printf '%s' "$value"
 }
 
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{ print $1 }'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{ print $1 }'
+  else
+    fail 'sha256sum or shasum is required'
+  fi
+}
+
+file_mode() {
+  case "$(uname -s)" in
+    Darwin) stat -f '%Lp' "$1" ;;
+    Linux) stat -c '%a' "$1" ;;
+    *) fail 'unsupported platform for file mode checks' ;;
+  esac
+}
+
+manual_mode() {
+  [[ "$(read_env_value AICRM_FINAL_RUNTIME_MODE)" = 'external-postgres-manual' ]]
+}
+
+require_manual_value() {
+  local key="$1" value
+  value="$(read_env_value "$key")"
+  [[ -n "$value" ]] || fail "$key is required for external-postgres-manual"
+  printf '%s' "$value"
+}
+
+require_manual_name() {
+  local value="$1" label="$2"
+  [[ "$value" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$ ]] || fail "$label is invalid"
+}
+
+require_manual_sha() {
+  local value="$1" label="$2"
+  [[ "$value" =~ ^[a-f0-9]{40}$ ]] || fail "$label is invalid"
+}
+
+require_manual_image_id() {
+  local value="$1" label="$2"
+  [[ "$value" =~ ^sha256:[a-f0-9]{64}$ ]] || fail "$label is invalid"
+}
+
+require_manual_port() {
+  local value="$1" label="$2"
+  [[ "$value" =~ ^[1-9][0-9]{0,4}$ ]] && (( value <= 65535 )) || fail "$label is invalid"
+}
+
+manual_container_hardened() {
+  local container="$1" state
+  state="$("$docker_command" inspect --format '{{.HostConfig.ReadonlyRootfs}}|{{.HostConfig.Init}}|{{.HostConfig.RestartPolicy.Name}}|{{json .HostConfig.CapDrop}}|{{json .HostConfig.SecurityOpt}}|{{json .HostConfig.Tmpfs}}' "$container")"
+  [[ "$state" = true\|true\|unless-stopped\|* ]] || fail "$container is not read-only/init/restart hardened"
+  [[ "$state" = *'"ALL"'* && "$state" = *'no-new-privileges:true'* && "$state" = *'"/tmp"'* && "$state" = *'size=64m,mode=1777'* ]] || fail "$container is missing hardened tmpfs/capability/security settings"
+}
+
+manual_container_network() {
+  local container="$1" network="$2" actual
+  actual="$("$docker_command" inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{end}}' "$container")"
+  [[ "$actual" = "$network" ]] || fail "$container is not attached only to the expected network"
+}
+
+manual_image_matches() {
+  local image="$1" expected_id="$2" expected_sha="$3" label="$4" actual_id actual_sha
+  actual_id="$("$docker_command" image inspect --format '{{.Id}}' "$image")"
+  [[ "$actual_id" = "$expected_id" ]] || fail "$label image ID does not match the declared local image"
+  actual_sha="$("$docker_command" image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
+  [[ "$actual_sha" = "$expected_sha" ]] || fail "$label image revision label does not match its SHA"
+}
+
+manual_tail_bounds() {
+  local file="$1" host="$2" begin_line end_line trailing block
+  begin_line="$(grep -n -F -x '# AICRM_ID_DEV_BEGIN' "$file" | cut -d: -f1 || true)"
+  end_line="$(grep -n -F -x '# AICRM_ID_DEV_END' "$file" | cut -d: -f1 || true)"
+  [[ "$begin_line" =~ ^[1-9][0-9]*$ && "$end_line" =~ ^[1-9][0-9]*$ && "$begin_line" -lt "$end_line" ]] || fail 'id-dev Caddy markers must occur exactly once in order'
+  block="$(sed -n "${begin_line},${end_line}p" "$file")"
+  grep -F -x -q "$host {" <<<"$block" || fail 'id-dev Caddy host is missing from the marked tail'
+  trailing="$(tail -n +$((end_line + 1)) "$file")"
+  [[ -z "${trailing//[[:space:]]/}" ]] || fail 'id-dev Caddy block must be the last block'
+  printf '%s:%s' "$begin_line" "$end_line"
+}
+
+manual_tail_contains() {
+  local file="$1" host="$2" needle="$3" bounds begin_line end_line
+  bounds="$(manual_tail_bounds "$file" "$host")"
+  begin_line="${bounds%%:*}"
+  end_line="${bounds##*:}"
+  sed -n "${begin_line},${end_line}p" "$file" | grep -F -q "$needle"
+}
+
+manual_validate_caddy() {
+  local caddy_file="$1" caddy_sha="$2" host="$3" old_port="$4" old_web="$5" tail_file="$6" new_port="$7" new_web="$8"
+  [[ "$caddy_file" = /* && -f "$caddy_file" && ! -L "$caddy_file" ]] || fail 'manual Caddy file is invalid'
+  [[ "$caddy_sha" =~ ^[a-f0-9]{64}$ ]] || fail 'manual Caddy SHA-256 is invalid'
+  [[ "$(sha256_file "$caddy_file")" = "$caddy_sha" ]] || fail 'manual Caddy file SHA-256 drifted'
+  [[ "$host" =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]] || fail 'manual id-dev host is invalid'
+  manual_tail_bounds "$caddy_file" "$host" >/dev/null
+  manual_tail_contains "$caddy_file" "$host" "reverse_proxy 127.0.0.1:$old_port" || fail 'manual Caddy tail does not reference the current API port'
+  manual_tail_contains "$caddy_file" "$host" "root * $old_web" || fail 'manual Caddy tail does not reference the current web release'
+  [[ "$tail_file" = /* && -f "$tail_file" && ! -L "$tail_file" ]] || fail 'staged id-dev Caddy tail is invalid'
+  manual_tail_bounds "$tail_file" "$host" >/dev/null
+  manual_tail_contains "$tail_file" "$host" "reverse_proxy 127.0.0.1:$new_port" || fail 'staged id-dev Caddy tail does not reference the new API port'
+  manual_tail_contains "$tail_file" "$host" "root * $new_web" || fail 'staged id-dev Caddy tail does not reference the staged web release'
+}
+
+manual_switch_caddy_tail() {
+  local caddy_file="$1" caddy_sha="$2" host="$3" tail_file="$4" caddy_command="$5" bounds begin_line prefix_hash tmp prefix_after
+  manual_validate_caddy "$caddy_file" "$caddy_sha" "$host" "$manual_current_port" "$manual_current_web" "$tail_file" "$manual_new_port" "$manual_new_web"
+  bounds="$(manual_tail_bounds "$caddy_file" "$host")"
+  begin_line="${bounds%%:*}"
+  prefix_hash="$(head -n $((begin_line - 1)) "$caddy_file" | sha256sum | awk '{ print $1 }')"
+  tmp="$(mktemp "${caddy_file}.next.XXXXXX")"
+  head -n $((begin_line - 1)) "$caddy_file" >"$tmp"
+  cat "$tail_file" >>"$tmp"
+  prefix_after="$(head -n $((begin_line - 1)) "$tmp" | sha256sum | awk '{ print $1 }')"
+  [[ "$prefix_after" = "$prefix_hash" ]] || fail 'protected Caddy prefix changed while staging id-dev tail'
+  "$caddy_command" validate --config "$tmp" --adapter caddyfile
+  chmod "$(file_mode "$caddy_file")" "$tmp"
+  mv -f "$tmp" "$caddy_file"
+  "$caddy_command" reload --config "$caddy_file" --adapter caddyfile --force
+}
+
+manual_check_unused_port() {
+  local port="$1" ss_command output
+  ss_command="$(command -v ss 2>/dev/null || true)"
+  [[ "$ss_command" = /* && -x "$ss_command" ]] || fail 'ss is required to verify the declared unused API port'
+  output="$("$ss_command" -ltnH "sport = :$port")"
+  [[ -z "$output" ]] || fail 'declared new API port is already listening'
+}
+
+manual_load() {
+  manual_release_sha="$(require_manual_value AICRM_RELEASE_SHA)"
+  manual_image="$(require_manual_value AICRM_IMAGE)"
+  manual_image_id="$(require_manual_value AICRM_FINAL_MANUAL_IMAGE_ID)"
+  manual_rollback_sha="$(require_manual_value AICRM_ROLLBACK_RELEASE_SHA)"
+  manual_rollback_image="$(require_manual_value AICRM_ROLLBACK_IMAGE)"
+  manual_rollback_image_id="$(require_manual_value AICRM_FINAL_MANUAL_ROLLBACK_IMAGE_ID)"
+  manual_current_sha="$(require_manual_value AICRM_FINAL_MANUAL_CURRENT_RELEASE_SHA)"
+  manual_current_api="$(require_manual_value AICRM_FINAL_MANUAL_CURRENT_API_CONTAINER)"
+  manual_current_worker="$(require_manual_value AICRM_FINAL_MANUAL_CURRENT_WORKER_CONTAINER)"
+  manual_current_port="$(require_manual_value AICRM_FINAL_MANUAL_CURRENT_API_PORT)"
+  manual_network="$(require_manual_value AICRM_FINAL_MANUAL_NETWORK)"
+  manual_postgres="$(require_manual_value AICRM_FINAL_MANUAL_POSTGRES_CONTAINER)"
+  manual_new_api="$(require_manual_value AICRM_FINAL_MANUAL_NEW_API_CONTAINER)"
+  manual_new_worker="$(require_manual_value AICRM_FINAL_MANUAL_NEW_WORKER_CONTAINER)"
+  manual_new_port="$(require_manual_value AICRM_FINAL_MANUAL_NEW_API_PORT)"
+  manual_current_web="$(require_manual_value AICRM_FINAL_MANUAL_CURRENT_WEB_RELEASE_DIR)"
+  manual_new_web="$(require_manual_value AICRM_FINAL_MANUAL_WEB_RELEASE_DIR)"
+  manual_caddy_file="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_FILE)"
+  manual_caddy_sha="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_SHA256)"
+  manual_caddy_host="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_HOST)"
+  manual_caddy_tail="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_TAIL_FILE)"
+  manual_caddy_command="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_COMMAND)"
+  manual_generated_env="$(require_manual_value AICRM_GENERATED_ENV_FILE)"
+  for pair in \
+    "$manual_release_sha:release SHA" "$manual_rollback_sha:rollback SHA" "$manual_current_sha:current SHA"; do
+    require_manual_sha "${pair%%:*}" "${pair#*:}"
+  done
+  [[ -z "$expected_sha" || "$manual_release_sha" = "$expected_sha" ]] || fail 'manual release SHA must equal expected SHA'
+  [[ "$manual_current_sha" = "$manual_rollback_sha" && "$manual_current_sha" != "$manual_release_sha" ]] || fail 'manual current release must be the declared rollback release'
+  require_manual_image_id "$manual_image_id" 'manual image ID'
+  require_manual_image_id "$manual_rollback_image_id" 'manual rollback image ID'
+  require_manual_name "$manual_network" 'manual network'
+  require_manual_name "$manual_postgres" 'manual PostgreSQL container'
+  [[ "$manual_network" = 'aicrm-prod_default' ]] || fail 'manual external PostgreSQL network must be aicrm-prod_default'
+  [[ "$manual_postgres" = 'aicrm-prod-postgres-1' ]] || fail 'manual external PostgreSQL container must be aicrm-prod-postgres-1'
+  require_manual_name "$manual_current_api" 'manual current API container'
+  require_manual_name "$manual_current_worker" 'manual current worker container'
+  require_manual_name "$manual_new_api" 'manual new API container'
+  require_manual_name "$manual_new_worker" 'manual new worker container'
+  [[ "$manual_current_api" = "aicrm-manual-api-${manual_current_sha:0:8}" && "$manual_current_worker" = "aicrm-manual-worker-${manual_current_sha:0:8}" ]] || fail 'manual current container names must bind the current SHA prefix'
+  [[ "$manual_new_api" = "aicrm-manual-api-${manual_release_sha:0:8}" && "$manual_new_worker" = "aicrm-manual-worker-${manual_release_sha:0:8}" ]] || fail 'manual new container names must bind the release SHA prefix'
+  [[ "$manual_current_api" != "$manual_new_api" && "$manual_current_worker" != "$manual_new_worker" ]] || fail 'manual new containers must differ from current containers'
+  require_manual_port "$manual_current_port" 'manual current API port'
+  require_manual_port "$manual_new_port" 'manual new API port'
+  [[ "$manual_current_port" != "$manual_new_port" ]] || fail 'manual new API port must differ from the current API port'
+  [[ "$manual_current_web" = /* && -d "$manual_current_web" && ! -L "$manual_current_web" && "$(basename -- "$manual_current_web")" = "${manual_current_sha:0:8}" ]] || fail 'manual current web release is invalid'
+  [[ "$manual_new_web" = /* && -d "$manual_new_web" && ! -L "$manual_new_web" && "$(basename -- "$manual_new_web")" = "$manual_release_sha" ]] || fail 'manual staged web release must be the exact SHA directory'
+  [[ "$manual_generated_env" = /* && -f "$manual_generated_env" && ! -L "$manual_generated_env" ]] || fail 'manual generated environment is invalid'
+  [[ "$manual_caddy_command" = /* && -f "$manual_caddy_command" && ! -L "$manual_caddy_command" && -x "$manual_caddy_command" ]] || fail 'manual Caddy command is invalid'
+  manual_validate_caddy "$manual_caddy_file" "$manual_caddy_sha" "$manual_caddy_host" "$manual_current_port" "$manual_current_web" "$manual_caddy_tail" "$manual_new_port" "$manual_new_web"
+}
+
+manual_validate_current() {
+  "$docker_command" network inspect "$manual_network" >/dev/null
+  "$docker_command" inspect "$manual_postgres" >/dev/null
+  "$docker_command" inspect "$manual_current_api" >/dev/null
+  "$docker_command" inspect "$manual_current_worker" >/dev/null
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_postgres")" = true ]] || fail 'manual PostgreSQL container must be running'
+  manual_container_network "$manual_postgres" "$manual_network"
+  manual_container_network "$manual_current_api" "$manual_network"
+  manual_container_network "$manual_current_worker" "$manual_network"
+  manual_container_hardened "$manual_current_api"
+  manual_container_hardened "$manual_current_worker"
+  [[ "$("$docker_command" port "$manual_current_api" 8080/tcp)" = "127.0.0.1:$manual_current_port" ]] || fail 'manual current API port does not match the declared loopback port'
+  manual_image_matches "$manual_rollback_image" "$manual_rollback_image_id" "$manual_rollback_sha" 'manual rollback'
+  [[ "$("$docker_command" inspect --format '{{.Image}}' "$manual_current_api")" = "$manual_rollback_image_id" ]] || fail 'manual current API does not use the rollback image ID'
+  [[ "$("$docker_command" inspect --format '{{.Image}}' "$manual_current_worker")" = "$manual_rollback_image_id" ]] || fail 'manual current worker does not use the rollback image ID'
+}
+
+manual_validate_release() {
+  manual_image_matches "$manual_image" "$manual_image_id" "$manual_release_sha" 'manual release'
+}
+
+manual_export_container_environment() {
+  local key value
+  for key in AICRM_DATABASE_URL AICRM_ENV AICRM_IDENTITY_HMAC_KEY AICRM_RELEASE_SHA; do
+    value="$(require_manual_value "$key")"
+    export "$key=$value"
+  done
+}
+
+manual_start_container() {
+  local name="$1" role="$2"
+  if [[ "$role" = api ]]; then
+    "$docker_command" run -d --name "$name" --network "$manual_network" --restart unless-stopped \
+      --read-only --tmpfs /tmp:size=64m,mode=1777 --security-opt no-new-privileges:true --cap-drop ALL --init \
+      --env-file "$manual_generated_env" \
+      -e AICRM_DATABASE_URL -e AICRM_ENV -e AICRM_IDENTITY_HMAC_KEY -e AICRM_RELEASE_SHA \
+      -p "127.0.0.1:$manual_new_port:8080" "$manual_image" --role=api >/dev/null
+  else
+    "$docker_command" run -d --name "$name" --network "$manual_network" --restart unless-stopped \
+      --read-only --tmpfs /tmp:size=64m,mode=1777 --security-opt no-new-privileges:true --cap-drop ALL --init \
+      --env-file "$manual_generated_env" \
+      -e AICRM_DATABASE_URL -e AICRM_ENV -e AICRM_IDENTITY_HMAC_KEY -e AICRM_RELEASE_SHA \
+      "$manual_image" --role=worker >/dev/null
+  fi
+}
+
+manual_start() {
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_api")" = false ]] || fail 'manual current API must be stopped before start'
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_worker")" = false ]] || fail 'manual current worker must be stopped before start'
+  if "$docker_command" inspect "$manual_new_api" >/dev/null 2>&1 || "$docker_command" inspect "$manual_new_worker" >/dev/null 2>&1; then
+    fail 'manual new container names already exist; refusing replay'
+  fi
+  manual_check_unused_port "$manual_new_port"
+  manual_export_container_environment
+  manual_start_container "$manual_new_api" api
+  manual_start_container "$manual_new_worker" worker
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_new_api")" = true ]] || fail 'manual new API is not running'
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_new_worker")" = true ]] || fail 'manual new worker is not running'
+  curl --fail --silent --show-error --max-time 10 "http://127.0.0.1:$manual_new_port/healthz" >/dev/null
+  manual_switch_caddy_tail "$manual_caddy_file" "$manual_caddy_sha" "$manual_caddy_host" "$manual_caddy_tail" "$manual_caddy_command"
+}
+
+if manual_mode; then
+  manual_load
+  case "$action" in
+    config) manual_validate_current ;;
+    release) manual_validate_current; manual_validate_release ;;
+    stop)
+      manual_validate_current
+      "$docker_command" stop "$manual_current_api" "$manual_current_worker" >/dev/null
+      ;;
+    check)
+      [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_api")" = false ]] || fail 'manual current API must be stopped'
+      [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_worker")" = false ]] || fail 'manual current worker must be stopped'
+      ;;
+    start)
+      [[ "$services" = 'api,worker' && "$web" = 'api' ]] || fail 'only split api+worker with web=api may start'
+      manual_validate_release
+      manual_start
+      ;;
+    *) fail 'runtime action is required' ;;
+  esac
+  exit 0
+fi
+
 case "$action" in
   stop) "$docker_command" compose --env-file "$runtime_env_file" -f "$compose_file" stop app api worker ;;
   check)
