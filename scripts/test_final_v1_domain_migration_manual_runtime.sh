@@ -20,7 +20,7 @@ old_api="aicrm-manual-api-${old_sha:0:8}"
 old_worker="aicrm-manual-worker-${old_sha:0:8}"
 new_api="aicrm-manual-api-${new_sha:0:8}"
 new_worker="aicrm-manual-worker-${new_sha:0:8}"
-old_web="$fixture/${old_sha:0:8}"; new_web="$fixture/$new_sha"
+old_web="$fixture/$old_sha"; new_web="$fixture/$new_sha"
 mkdir -p "$old_web" "$new_web"
 printf 'old web\n' >"$old_web/index.html"
 printf 'new web\n' >"$new_web/index.html"
@@ -33,12 +33,11 @@ cat >"$caddy" <<EOF
 aa.youcangogogo.com {
 \treverse_proxy 127.0.0.1:8080
 }
-# AICRM_ID_DEV_BEGIN
+# V2 independent manual-test login. Existing aa site is unchanged.
 id-dev.example.test {
 \treverse_proxy 127.0.0.1:18123
 \troot * $old_web
 }
-# AICRM_ID_DEV_END
 EOF
 cat >"$tail_file" <<EOF
 # AICRM_ID_DEV_BEGIN
@@ -49,6 +48,11 @@ id-dev.example.test {
 # AICRM_ID_DEV_END
 EOF
 prefix_before="$(head -n 3 "$caddy" | sha256sum | awk '{print $1}')"
+post_caddy="$fixture/post-switch.Caddyfile"
+{
+  head -n 3 "$caddy"
+  cat "$tail_file"
+} >"$post_caddy"
 
 state="$fixture/state"; printf '%s=true\n%s=true\n%s=true\n' aicrm-prod-postgres-1 "$old_api" "$old_worker" >"$state"
 docker_log="$fixture/docker.log"
@@ -71,7 +75,10 @@ case "$1" in
       [[ "$*" = *new-local-image* ]] && printf '%s\n' "$new_sha" || printf '%s\n' "$old_sha"
     fi
     ;;
-  port) [[ "$2" = "$old_api" && "$3" = 8080/tcp ]] && printf '127.0.0.1:18123\n' ;;
+  port)
+    [[ "$3" = 8080/tcp ]] || exit 90
+    if [[ "$2" = "$old_api" ]]; then printf '127.0.0.1:18123\n'; else printf '127.0.0.1:18124\n'; fi
+    ;;
   inspect)
     format=''; container=''
     if [[ "${2:-}" = --format ]]; then format="$3"; container="$4"; else container="$2"; fi
@@ -81,7 +88,11 @@ case "$1" in
     case "$format" in
       '{{.HostConfig.ReadonlyRootfs}}|'*) printf 'true|true|unless-stopped|["ALL"]|["no-new-privileges:true"]|{"/tmp":"size=64m,mode=1777"}\n' ;;
       '{{range $name, $_ := .NetworkSettings.Networks}}'* ) printf 'aicrm-prod_default\n' ;;
-      '{{.Image}}') [[ "$container" = "$old_api" || "$container" = "$old_worker" ]] && printf '%s\n' "$old_id" || printf '%s\n' "$new_id" ;;
+      '{{.Image}}')
+        if [[ "$container" = "$old_api" || "$container" = "$old_worker" ]]; then printf '%s\n' "$old_id"
+        elif [[ -f "${AICRM_FINAL_MANUAL_TEST_TAMPER_NEW_CONTAINER:?}" ]]; then printf 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n'
+        else printf '%s\n' "$new_id"; fi
+        ;;
       '{{.State.Running}}') printf '%s\n' "$current" ;;
       *) exit 91 ;;
     esac
@@ -146,6 +157,7 @@ AICRM_FINAL_MANUAL_CURRENT_WEB_RELEASE_DIR=$old_web
 AICRM_FINAL_MANUAL_WEB_RELEASE_DIR=$new_web
 AICRM_FINAL_MANUAL_CADDY_FILE=$caddy
 AICRM_FINAL_MANUAL_CADDY_SHA256=$(sha256_file "$caddy")
+AICRM_FINAL_MANUAL_POST_SWITCH_CADDY_SHA256=$(sha256_file "$post_caddy")
 AICRM_FINAL_MANUAL_CADDY_HOST=id-dev.example.test
 AICRM_FINAL_MANUAL_CADDY_TAIL_FILE=$tail_file
 AICRM_FINAL_MANUAL_CADDY_COMMAND=$fixture/caddy
@@ -165,6 +177,7 @@ run_runtime() {
     AICRM_FINAL_MANUAL_TEST_OLD_SHA="$old_sha" \
     AICRM_FINAL_MANUAL_TEST_NEW_ID="$new_id" \
     AICRM_FINAL_MANUAL_TEST_OLD_ID="$old_id" \
+    AICRM_FINAL_MANUAL_TEST_TAMPER_NEW_CONTAINER="$fixture/tamper-new-container" \
     "$runtime" "$@"
 }
 
@@ -189,10 +202,19 @@ grep '^run ' "$docker_log" | grep -Fq -- "--env-file $generated" || fail 'restri
 grep -Fq 'reverse_proxy 127.0.0.1:18124' "$caddy" || fail 'id-dev tail did not switch to new API'
 grep -Fq "root * $new_web" "$caddy" || fail 'id-dev tail did not switch to staged exact-SHA web'
 [[ "$(grep -c '^validate ' "$caddy_log")" = 1 && "$(grep -c '^reload ' "$caddy_log")" = 1 ]] || fail 'Caddy tail was not validated and gracefully reloaded'
+run_runtime --check=release --expected-sha="$new_sha" --runtime-env-file="$env_file"
 
 before_runs="$(grep -c '^run ' "$docker_log")"
-if run_runtime --start=api,worker --web=api --runtime-env-file="$env_file" >"$fixture/replay.log" 2>&1; then fail 'changed Caddy state was accepted for replay'; fi
+printf 'drift\n' >>"$caddy"
+if run_runtime --check=release --expected-sha="$new_sha" --runtime-env-file="$env_file" >"$fixture/caddy-drift.log" 2>&1; then fail 'new Caddy drift was accepted'; fi
+grep -Fq 'manual post-switch Caddy file SHA-256 drifted' "$fixture/caddy-drift.log" || fail 'new Caddy drift rejection changed'
+cp "$post_caddy" "$caddy"
+touch "$fixture/tamper-new-container"
+if run_runtime --check=release --expected-sha="$new_sha" --runtime-env-file="$env_file" >"$fixture/container-drift.log" 2>&1; then fail 'new container drift was accepted'; fi
+grep -Fq 'manual new API does not use the release image ID' "$fixture/container-drift.log" || fail 'new container drift rejection changed'
+rm -f "$fixture/tamper-new-container"
+if run_runtime --start=api,worker --web=api --runtime-env-file="$env_file" >"$fixture/replay.log" 2>&1; then fail 'post-switch start was accepted'; fi
 [[ "$(grep -c '^run ' "$docker_log")" = "$before_runs" ]] || fail 'replay rejection started another container'
-grep -Fq 'manual Caddy file SHA-256 drifted' "$fixture/replay.log" || fail 'post-switch Caddy drift was not explicit'
+grep -Fq 'manual new container names already exist; refusing replay' "$fixture/replay.log" || fail 'post-switch start rejection was not explicit'
 
 printf 'test-final-v1-domain-migration-manual-runtime: PASS\n'

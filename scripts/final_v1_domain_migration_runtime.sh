@@ -136,9 +136,38 @@ manual_tail_bounds() {
   printf '%s:%s' "$begin_line" "$end_line"
 }
 
+manual_legacy_tail_bounds() {
+  local file="$1" host="$2" marker_line host_line total_lines trailing
+  marker_line="$(grep -n -F -x '# V2 independent manual-test login. Existing aa site is unchanged.' "$file" | cut -d: -f1 || true)"
+  host_line="$(grep -n -F -x "$host {" "$file" | cut -d: -f1 || true)"
+  [[ "$marker_line" =~ ^[1-9][0-9]*$ && "$host_line" =~ ^[1-9][0-9]*$ && "$host_line" -eq $((marker_line + 1)) ]] || fail 'legacy id-dev marker and host must occur exactly once in order'
+  total_lines="$(wc -l <"$file" | tr -d '[:space:]')"
+  [[ "$total_lines" =~ ^[1-9][0-9]*$ && "$marker_line" -lt "$total_lines" ]] || fail 'legacy id-dev tail is invalid'
+  trailing="$(tail -n +$((total_lines + 1)) "$file")"
+  [[ -z "${trailing//[[:space:]]/}" ]] || fail 'legacy id-dev block must be the last block'
+  printf '%s:%s' "$marker_line" "$total_lines"
+}
+
+manual_pre_tail_bounds() {
+  local file="$1" host="$2"
+  if grep -F -x -q '# AICRM_ID_DEV_BEGIN' "$file" || grep -F -x -q '# AICRM_ID_DEV_END' "$file"; then
+    manual_tail_bounds "$file" "$host"
+  else
+    manual_legacy_tail_bounds "$file" "$host"
+  fi
+}
+
 manual_tail_contains() {
   local file="$1" host="$2" needle="$3" bounds begin_line end_line
   bounds="$(manual_tail_bounds "$file" "$host")"
+  begin_line="${bounds%%:*}"
+  end_line="${bounds##*:}"
+  sed -n "${begin_line},${end_line}p" "$file" | grep -F -q "$needle"
+}
+
+manual_pre_tail_contains() {
+  local file="$1" host="$2" needle="$3" bounds begin_line end_line
+  bounds="$(manual_pre_tail_bounds "$file" "$host")"
   begin_line="${bounds%%:*}"
   end_line="${bounds##*:}"
   sed -n "${begin_line},${end_line}p" "$file" | grep -F -q "$needle"
@@ -150,19 +179,29 @@ manual_validate_caddy() {
   [[ "$caddy_sha" =~ ^[a-f0-9]{64}$ ]] || fail 'manual Caddy SHA-256 is invalid'
   [[ "$(sha256_file "$caddy_file")" = "$caddy_sha" ]] || fail 'manual Caddy file SHA-256 drifted'
   [[ "$host" =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]] || fail 'manual id-dev host is invalid'
-  manual_tail_bounds "$caddy_file" "$host" >/dev/null
-  manual_tail_contains "$caddy_file" "$host" "reverse_proxy 127.0.0.1:$old_port" || fail 'manual Caddy tail does not reference the current API port'
-  manual_tail_contains "$caddy_file" "$host" "root * $old_web" || fail 'manual Caddy tail does not reference the current web release'
+  manual_pre_tail_bounds "$caddy_file" "$host" >/dev/null
+  manual_pre_tail_contains "$caddy_file" "$host" "reverse_proxy 127.0.0.1:$old_port" || fail 'manual Caddy tail does not reference the current API port'
+  manual_pre_tail_contains "$caddy_file" "$host" "root * $old_web" || fail 'manual Caddy tail does not reference the current web release'
   [[ "$tail_file" = /* && -f "$tail_file" && ! -L "$tail_file" ]] || fail 'staged id-dev Caddy tail is invalid'
   manual_tail_bounds "$tail_file" "$host" >/dev/null
   manual_tail_contains "$tail_file" "$host" "reverse_proxy 127.0.0.1:$new_port" || fail 'staged id-dev Caddy tail does not reference the new API port'
   manual_tail_contains "$tail_file" "$host" "root * $new_web" || fail 'staged id-dev Caddy tail does not reference the staged web release'
 }
 
+manual_validate_post_switch_caddy() {
+  local caddy_file="$1" caddy_sha="$2" host="$3" new_port="$4" new_web="$5"
+  [[ "$caddy_file" = /* && -f "$caddy_file" && ! -L "$caddy_file" ]] || fail 'manual Caddy file is invalid'
+  [[ "$caddy_sha" =~ ^[a-f0-9]{64}$ ]] || fail 'manual post-switch Caddy SHA-256 is invalid'
+  [[ "$(sha256_file "$caddy_file")" = "$caddy_sha" ]] || fail 'manual post-switch Caddy file SHA-256 drifted'
+  manual_tail_bounds "$caddy_file" "$host" >/dev/null
+  manual_tail_contains "$caddy_file" "$host" "reverse_proxy 127.0.0.1:$new_port" || fail 'manual post-switch Caddy tail does not reference the new API port'
+  manual_tail_contains "$caddy_file" "$host" "root * $new_web" || fail 'manual post-switch Caddy tail does not reference the staged web release'
+}
+
 manual_switch_caddy_tail() {
   local caddy_file="$1" caddy_sha="$2" host="$3" tail_file="$4" caddy_command="$5" bounds begin_line prefix_hash tmp prefix_after
   manual_validate_caddy "$caddy_file" "$caddy_sha" "$host" "$manual_current_port" "$manual_current_web" "$tail_file" "$manual_new_port" "$manual_new_web"
-  bounds="$(manual_tail_bounds "$caddy_file" "$host")"
+  bounds="$(manual_pre_tail_bounds "$caddy_file" "$host")"
   begin_line="${bounds%%:*}"
   prefix_hash="$(head -n $((begin_line - 1)) "$caddy_file" | sha256sum | awk '{ print $1 }')"
   tmp="$(mktemp "${caddy_file}.next.XXXXXX")"
@@ -170,6 +209,7 @@ manual_switch_caddy_tail() {
   cat "$tail_file" >>"$tmp"
   prefix_after="$(head -n $((begin_line - 1)) "$tmp" | sha256sum | awk '{ print $1 }')"
   [[ "$prefix_after" = "$prefix_hash" ]] || fail 'protected Caddy prefix changed while staging id-dev tail'
+  [[ "$(sha256_file "$tmp")" = "$manual_post_caddy_sha" ]] || fail 'staged post-switch Caddy file does not match its declared SHA-256'
   "$caddy_command" validate --config "$tmp" --adapter caddyfile
   chmod "$(file_mode "$caddy_file")" "$tmp"
   mv -f "$tmp" "$caddy_file"
@@ -204,6 +244,7 @@ manual_load() {
   manual_new_web="$(require_manual_value AICRM_FINAL_MANUAL_WEB_RELEASE_DIR)"
   manual_caddy_file="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_FILE)"
   manual_caddy_sha="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_SHA256)"
+  manual_post_caddy_sha="$(require_manual_value AICRM_FINAL_MANUAL_POST_SWITCH_CADDY_SHA256)"
   manual_caddy_host="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_HOST)"
   manual_caddy_tail="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_TAIL_FILE)"
   manual_caddy_command="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_COMMAND)"
@@ -230,11 +271,10 @@ manual_load() {
   require_manual_port "$manual_current_port" 'manual current API port'
   require_manual_port "$manual_new_port" 'manual new API port'
   [[ "$manual_current_port" != "$manual_new_port" ]] || fail 'manual new API port must differ from the current API port'
-  [[ "$manual_current_web" = /* && -d "$manual_current_web" && ! -L "$manual_current_web" && "$(basename -- "$manual_current_web")" = "${manual_current_sha:0:8}" ]] || fail 'manual current web release is invalid'
+  [[ "$manual_current_web" = /* && -d "$manual_current_web" && ! -L "$manual_current_web" && "$(basename -- "$manual_current_web")" = "$manual_current_sha" ]] || fail 'manual current web release is invalid'
   [[ "$manual_new_web" = /* && -d "$manual_new_web" && ! -L "$manual_new_web" && "$(basename -- "$manual_new_web")" = "$manual_release_sha" ]] || fail 'manual staged web release must be the exact SHA directory'
   [[ "$manual_generated_env" = /* && -f "$manual_generated_env" && ! -L "$manual_generated_env" ]] || fail 'manual generated environment is invalid'
   [[ "$manual_caddy_command" = /* && -f "$manual_caddy_command" && ! -L "$manual_caddy_command" && -x "$manual_caddy_command" ]] || fail 'manual Caddy command is invalid'
-  manual_validate_caddy "$manual_caddy_file" "$manual_caddy_sha" "$manual_caddy_host" "$manual_current_port" "$manual_current_web" "$manual_caddy_tail" "$manual_new_port" "$manual_new_web"
 }
 
 manual_validate_current() {
@@ -256,6 +296,48 @@ manual_validate_current() {
 
 manual_validate_release() {
   manual_image_matches "$manual_image" "$manual_image_id" "$manual_release_sha" 'manual release'
+}
+
+manual_expect_current_state() {
+  local expected="$1"
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_api")" = "$expected" ]] || fail "manual current API must be $expected"
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_worker")" = "$expected" ]] || fail "manual current worker must be $expected"
+}
+
+manual_validate_pre_switch() {
+  manual_validate_current
+  manual_expect_current_state false
+  manual_validate_caddy "$manual_caddy_file" "$manual_caddy_sha" "$manual_caddy_host" "$manual_current_port" "$manual_current_web" "$manual_caddy_tail" "$manual_new_port" "$manual_new_web"
+}
+
+manual_validate_post_switch() {
+  manual_validate_current
+  manual_expect_current_state false
+  "$docker_command" inspect "$manual_new_api" >/dev/null
+  "$docker_command" inspect "$manual_new_worker" >/dev/null
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_new_api")" = true ]] || fail 'manual new API is not running'
+  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_new_worker")" = true ]] || fail 'manual new worker is not running'
+  manual_container_network "$manual_new_api" "$manual_network"
+  manual_container_network "$manual_new_worker" "$manual_network"
+  manual_container_hardened "$manual_new_api"
+  manual_container_hardened "$manual_new_worker"
+  [[ "$("$docker_command" inspect --format '{{.Image}}' "$manual_new_api")" = "$manual_image_id" ]] || fail 'manual new API does not use the release image ID'
+  [[ "$("$docker_command" inspect --format '{{.Image}}' "$manual_new_worker")" = "$manual_image_id" ]] || fail 'manual new worker does not use the release image ID'
+  [[ "$("$docker_command" port "$manual_new_api" 8080/tcp)" = "127.0.0.1:$manual_new_port" ]] || fail 'manual new API port does not match the declared loopback port'
+  manual_validate_post_switch_caddy "$manual_caddy_file" "$manual_post_caddy_sha" "$manual_caddy_host" "$manual_new_port" "$manual_new_web"
+}
+
+manual_release_state() {
+  local api_exists=0 worker_exists=0
+  "$docker_command" inspect "$manual_new_api" >/dev/null 2>&1 && api_exists=1
+  "$docker_command" inspect "$manual_new_worker" >/dev/null 2>&1 && worker_exists=1
+  if [[ "$api_exists" = 0 && "$worker_exists" = 0 ]]; then
+    manual_validate_current
+  elif [[ "$api_exists" = 1 && "$worker_exists" = 1 ]]; then
+    manual_validate_post_switch
+  else
+    fail 'manual runtime is in a half-switched state'
+  fi
 }
 
 manual_export_container_environment() {
@@ -284,11 +366,10 @@ manual_start_container() {
 }
 
 manual_start() {
-  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_api")" = false ]] || fail 'manual current API must be stopped before start'
-  [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_worker")" = false ]] || fail 'manual current worker must be stopped before start'
   if "$docker_command" inspect "$manual_new_api" >/dev/null 2>&1 || "$docker_command" inspect "$manual_new_worker" >/dev/null 2>&1; then
     fail 'manual new container names already exist; refusing replay'
   fi
+  manual_validate_pre_switch
   manual_check_unused_port "$manual_new_port"
   manual_export_container_environment
   manual_start_container "$manual_new_api" api
@@ -302,15 +383,20 @@ manual_start() {
 if manual_mode; then
   manual_load
   case "$action" in
-    config) manual_validate_current ;;
-    release) manual_validate_current; manual_validate_release ;;
+    config)
+      manual_validate_current
+      manual_expect_current_state true
+      manual_validate_caddy "$manual_caddy_file" "$manual_caddy_sha" "$manual_caddy_host" "$manual_current_port" "$manual_current_web" "$manual_caddy_tail" "$manual_new_port" "$manual_new_web"
+      ;;
+    release) manual_validate_release; manual_release_state ;;
     stop)
       manual_validate_current
+      manual_expect_current_state true
       "$docker_command" stop "$manual_current_api" "$manual_current_worker" >/dev/null
       ;;
     check)
-      [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_api")" = false ]] || fail 'manual current API must be stopped'
-      [[ "$("$docker_command" inspect --format '{{.State.Running}}' "$manual_current_worker")" = false ]] || fail 'manual current worker must be stopped'
+      manual_validate_current
+      manual_expect_current_state false
       ;;
     start)
       [[ "$services" = 'api,worker' && "$web" = 'api' ]] || fail 'only split api+worker with web=api may start'
