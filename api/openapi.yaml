@@ -1849,6 +1849,49 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/chat-jobs:
+    get:
+      operationId: listHXCHistoryChatJob
+      tags: [p4-hxc-history]
+      summary: Read immutable HXC chat-job history without executing jobs or Provider calls
+      x-p4-decision-evidence: P4-V1-HXC-CHAT-JOB-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryChatJobPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/chat-jobs/{history_id}:
+    get:
+      operationId: getHXCHistoryChatJob
+      tags: [p4-hxc-history]
+      summary: Read immutable HXC chat-job history without executing jobs or Provider calls
+      x-p4-decision-evidence: P4-V1-HXC-CHAT-JOB-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryChatJobDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/automation-history/sops:
     get:
       tags: [p4-automation-history]
@@ -17808,6 +17851,42 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/HXCHistorySendRecord" }
+    HXCHistoryChatJob:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, queue_source_id, member_source_id, original_status, send_channel, send_record_source_id, created_at, updated_at, finished_at_source]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        queue_source_id: { type: integer, format: int64, nullable: true }
+        member_source_id: { type: integer, format: int64, nullable: true }
+        original_status: { type: string }
+        send_channel: { type: string }
+        send_record_source_id: { type: integer, format: int64, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        finished_at_source: { type: string }
+    HXCHistoryChatJobPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistoryChatJob" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistoryChatJobDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistoryChatJob" }
     AutomationHistorySOP:
       type: object
       additionalProperties: false

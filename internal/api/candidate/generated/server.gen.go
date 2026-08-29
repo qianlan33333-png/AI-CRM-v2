@@ -4912,6 +4912,96 @@ func (e HXCHistoryBatchPageSource) Valid() bool {
 	}
 }
 
+// Defines values for HXCHistoryChatJobDetailReadOnly.
+const (
+	HXCHistoryChatJobDetailReadOnlyTrue HXCHistoryChatJobDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryChatJobDetailReadOnly enum.
+func (e HXCHistoryChatJobDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryChatJobDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryChatJobDetailRealExternalCallExecuted.
+const (
+	HXCHistoryChatJobDetailRealExternalCallExecutedFalse HXCHistoryChatJobDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryChatJobDetailRealExternalCallExecuted enum.
+func (e HXCHistoryChatJobDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryChatJobDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryChatJobDetailSource.
+const (
+	HXCHistoryChatJobDetailSourceV1History HXCHistoryChatJobDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryChatJobDetailSource enum.
+func (e HXCHistoryChatJobDetailSource) Valid() bool {
+	switch e {
+	case HXCHistoryChatJobDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryChatJobPageReadOnly.
+const (
+	HXCHistoryChatJobPageReadOnlyTrue HXCHistoryChatJobPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryChatJobPageReadOnly enum.
+func (e HXCHistoryChatJobPageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryChatJobPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryChatJobPageRealExternalCallExecuted.
+const (
+	HXCHistoryChatJobPageRealExternalCallExecutedFalse HXCHistoryChatJobPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryChatJobPageRealExternalCallExecuted enum.
+func (e HXCHistoryChatJobPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryChatJobPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryChatJobPageSource.
+const (
+	HXCHistoryChatJobPageSourceV1History HXCHistoryChatJobPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryChatJobPageSource enum.
+func (e HXCHistoryChatJobPageSource) Valid() bool {
+	switch e {
+	case HXCHistoryChatJobPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HXCHistoryLeadDetailReadOnly.
 const (
 	HXCHistoryLeadDetailReadOnlyTrue HXCHistoryLeadDetailReadOnly = true
@@ -17882,6 +17972,57 @@ type HXCHistoryBatchPageRealExternalCallExecuted bool
 // HXCHistoryBatchPageSource defines model for HXCHistoryBatchPage.Source.
 type HXCHistoryBatchPageSource string
 
+// HXCHistoryChatJob defines model for HXCHistoryChatJob.
+type HXCHistoryChatJob struct {
+	CreatedAt          time.Time `json:"created_at"`
+	FinishedAtSource   string    `json:"finished_at_source"`
+	Id                 int64     `json:"id"`
+	MemberSourceId     *int64    `json:"member_source_id"`
+	OriginalStatus     string    `json:"original_status"`
+	QueueSourceId      *int64    `json:"queue_source_id"`
+	SendChannel        string    `json:"send_channel"`
+	SendRecordSourceId *int64    `json:"send_record_source_id"`
+	SourceId           int64     `json:"source_id"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+// HXCHistoryChatJobDetail defines model for HXCHistoryChatJobDetail.
+type HXCHistoryChatJobDetail struct {
+	Item                     HXCHistoryChatJob                               `json:"item"`
+	ReadOnly                 HXCHistoryChatJobDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryChatJobDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryChatJobDetailSource                   `json:"source"`
+}
+
+// HXCHistoryChatJobDetailReadOnly defines model for HXCHistoryChatJobDetail.ReadOnly.
+type HXCHistoryChatJobDetailReadOnly bool
+
+// HXCHistoryChatJobDetailRealExternalCallExecuted defines model for HXCHistoryChatJobDetail.RealExternalCallExecuted.
+type HXCHistoryChatJobDetailRealExternalCallExecuted bool
+
+// HXCHistoryChatJobDetailSource defines model for HXCHistoryChatJobDetail.Source.
+type HXCHistoryChatJobDetailSource string
+
+// HXCHistoryChatJobPage defines model for HXCHistoryChatJobPage.
+type HXCHistoryChatJobPage struct {
+	Items                    []HXCHistoryChatJob                           `json:"items"`
+	Limit                    int                                           `json:"limit"`
+	Offset                   int                                           `json:"offset"`
+	ReadOnly                 HXCHistoryChatJobPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryChatJobPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryChatJobPageSource                   `json:"source"`
+	Total                    int64                                         `json:"total"`
+}
+
+// HXCHistoryChatJobPageReadOnly defines model for HXCHistoryChatJobPage.ReadOnly.
+type HXCHistoryChatJobPageReadOnly bool
+
+// HXCHistoryChatJobPageRealExternalCallExecuted defines model for HXCHistoryChatJobPage.RealExternalCallExecuted.
+type HXCHistoryChatJobPageRealExternalCallExecuted bool
+
+// HXCHistoryChatJobPageSource defines model for HXCHistoryChatJobPage.Source.
+type HXCHistoryChatJobPageSource string
+
 // HXCHistoryDigest defines model for HXCHistoryDigest.
 type HXCHistoryDigest = []int
 
@@ -24584,6 +24725,12 @@ type ListHXCHistoryBatchParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListHXCHistoryChatJobParams defines parameters for ListHXCHistoryChatJob.
+type ListHXCHistoryChatJobParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListHXCHistoryLeadParams defines parameters for ListHXCHistoryLead.
 type ListHXCHistoryLeadParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -27836,6 +27983,12 @@ type ServerInterface interface {
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/batches/{history_id})
 	GetHXCHistoryBatch(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable HXC chat-job history without executing jobs or Provider calls
+	// (GET /api/admin/hxc-history/chat-jobs)
+	ListHXCHistoryChatJob(w http.ResponseWriter, r *http.Request, params ListHXCHistoryChatJobParams)
+	// Read immutable HXC chat-job history without executing jobs or Provider calls
+	// (GET /api/admin/hxc-history/chat-jobs/{history_id})
+	GetHXCHistoryChatJob(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/leads)
 	ListHXCHistoryLead(w http.ResponseWriter, r *http.Request, params ListHXCHistoryLeadParams)
@@ -29372,6 +29525,18 @@ func (_ Unimplemented) ListHXCHistoryBatch(w http.ResponseWriter, r *http.Reques
 // Read immutable HXC observations without refreshing or executing tasks
 // (GET /api/admin/hxc-history/batches/{history_id})
 func (_ Unimplemented) GetHXCHistoryBatch(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC chat-job history without executing jobs or Provider calls
+// (GET /api/admin/hxc-history/chat-jobs)
+func (_ Unimplemented) ListHXCHistoryChatJob(w http.ResponseWriter, r *http.Request, params ListHXCHistoryChatJobParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable HXC chat-job history without executing jobs or Provider calls
+// (GET /api/admin/hxc-history/chat-jobs/{history_id})
+func (_ Unimplemented) GetHXCHistoryChatJob(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -36988,6 +37153,78 @@ func (siw *ServerInterfaceWrapper) GetHXCHistoryBatch(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHXCHistoryBatch(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListHXCHistoryChatJob operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistoryChatJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistoryChatJobParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistoryChatJob(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistoryChatJob operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistoryChatJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistoryChatJob(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -51610,6 +51847,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/hxc-history/batches/{history_id}", wrapper.GetHXCHistoryBatch)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/chat-jobs", wrapper.ListHXCHistoryChatJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/chat-jobs/{history_id}", wrapper.GetHXCHistoryChatJob)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/hxc-history/leads", wrapper.ListHXCHistoryLead)
 	})
 	r.Group(func(r chi.Router) {
@@ -59586,6 +59829,112 @@ func (response GetHXCHistoryBatch403JSONResponse) VisitGetHXCHistoryBatchRespons
 type GetHXCHistoryBatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetHXCHistoryBatch503JSONResponse) VisitGetHXCHistoryBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryChatJobRequestObject struct {
+	Params ListHXCHistoryChatJobParams
+}
+
+type ListHXCHistoryChatJobResponseObject interface {
+	VisitListHXCHistoryChatJobResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistoryChatJob200JSONResponse HXCHistoryChatJobPage
+
+func (response ListHXCHistoryChatJob200JSONResponse) VisitListHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryChatJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistoryChatJob400JSONResponse) VisitListHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryChatJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistoryChatJob401JSONResponse) VisitListHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryChatJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistoryChatJob403JSONResponse) VisitListHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryChatJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistoryChatJob503JSONResponse) VisitListHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryChatJobRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistoryChatJobResponseObject interface {
+	VisitGetHXCHistoryChatJobResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistoryChatJob200JSONResponse HXCHistoryChatJobDetail
+
+func (response GetHXCHistoryChatJob200JSONResponse) VisitGetHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryChatJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistoryChatJob400JSONResponse) VisitGetHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryChatJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistoryChatJob401JSONResponse) VisitGetHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryChatJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistoryChatJob403JSONResponse) VisitGetHXCHistoryChatJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryChatJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistoryChatJob503JSONResponse) VisitGetHXCHistoryChatJobResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -75868,6 +76217,12 @@ type StrictServerInterface interface {
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/batches/{history_id})
 	GetHXCHistoryBatch(ctx context.Context, request GetHXCHistoryBatchRequestObject) (GetHXCHistoryBatchResponseObject, error)
+	// Read immutable HXC chat-job history without executing jobs or Provider calls
+	// (GET /api/admin/hxc-history/chat-jobs)
+	ListHXCHistoryChatJob(ctx context.Context, request ListHXCHistoryChatJobRequestObject) (ListHXCHistoryChatJobResponseObject, error)
+	// Read immutable HXC chat-job history without executing jobs or Provider calls
+	// (GET /api/admin/hxc-history/chat-jobs/{history_id})
+	GetHXCHistoryChatJob(ctx context.Context, request GetHXCHistoryChatJobRequestObject) (GetHXCHistoryChatJobResponseObject, error)
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/leads)
 	ListHXCHistoryLead(ctx context.Context, request ListHXCHistoryLeadRequestObject) (ListHXCHistoryLeadResponseObject, error)
@@ -80173,6 +80528,58 @@ func (sh *strictHandler) GetHXCHistoryBatch(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHXCHistoryBatchResponseObject); ok {
 		if err := validResponse.VisitGetHXCHistoryBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHXCHistoryChatJob operation middleware
+func (sh *strictHandler) ListHXCHistoryChatJob(w http.ResponseWriter, r *http.Request, params ListHXCHistoryChatJobParams) {
+	var request ListHXCHistoryChatJobRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistoryChatJob(ctx, request.(ListHXCHistoryChatJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistoryChatJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistoryChatJobResponseObject); ok {
+		if err := validResponse.VisitListHXCHistoryChatJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistoryChatJob operation middleware
+func (sh *strictHandler) GetHXCHistoryChatJob(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistoryChatJobRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistoryChatJob(ctx, request.(GetHXCHistoryChatJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistoryChatJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistoryChatJobResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistoryChatJobResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
