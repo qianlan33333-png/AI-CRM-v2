@@ -1463,7 +1463,7 @@ console.log('admin/automation.html?history=1（真实 Audience 历史只读入�
   const doc = dom.window.document;
   const state = dom.window.__audienceHistoryHttpTest;
   const stage = doc.querySelector('#stage');
-  ok('历史入口直接读取四个历史列表，不加载当前人群编辑器', !!stage.querySelector('[data-audience-history]') && stage.querySelectorAll('[data-history-kind]').length === 4 && state.calls.length === 4 && state.calls.every((c) => c.path.startsWith('/api/admin/audience-history/') && c.method === 'GET' && c.body === undefined));
+  ok('历史入口直接读取六个历史列表，不加载当前人群编辑器', !!stage.querySelector('[data-audience-history]') && stage.querySelectorAll('[data-history-kind]').length === 6 && state.calls.length === 6 && state.calls.every((c) => c.path.startsWith('/api/admin/audience-history/') && c.method === 'GET' && c.body === undefined));
   ok('历史包链接使用实际 V2 ID，不使用源 ID', stage.querySelector('[data-history-kind="packages"] a')?.getAttribute('href') === 'automation.html?history=1&history_package_id=42');
   ok('历史页面无保存、预览、物化或启动按钮', !stage.querySelector('input,textarea') && !Array.from(stage.querySelectorAll('button')).some((b) => /保存|预览|物化|刷新|activate|启用|群发/.test(b.textContent)) && !stage.querySelector('a[href*="audienceEdit"]'));
   state.fail = true;
