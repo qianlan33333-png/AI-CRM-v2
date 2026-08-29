@@ -128,8 +128,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
       [[ "$signoff" == APPROVED && "$decision_evidence" == "$p4_w2_a_evidence" ]] || fail "P4 W2 A row lacks exact approved decision evidence at line $line_number"
     elif [[ "$feature_id" =~ ^LEGACY-S05-00(1|2|3|5|8|9)$ ]]; then
       [[ "$signoff" == APPROVED && "$decision_evidence" == "$p4_w1_a_evidence" ]] || fail "P4 W1 A row lacks exact approved decision evidence at line $line_number"
-    elif [[ "$feature_id" == LEGACY-S07-153 || "$feature_id" == LEGACY-S07-154 ]]; then
-      [[ "$signoff" == APPROVED && "$decision_evidence" == "$member_grid_partial_evidence" ]] || fail "member-grid partial row lacks exact approved decision evidence at line $line_number"
+    elif [[ "$feature_id" =~ ^LEGACY-S07-(153|154|160|161|162)$ ]]; then
+      if [[ "$implementation" == IMPLEMENTED ]]; then
+        [[ "$signoff" == APPROVED && "$decision_evidence" =~ ^decision=P4-MEMBER-GRID-A-2026-08-29\;approved_by=repository_owner\;approved_at=2026-08-29\;semantics=[a-z0-9_]+\;verification=LOCAL_CONTRACT_AND_BROWSER$ ]] || fail "implemented member-grid row lacks approved A-logic decision evidence at line $line_number"
+      else
+        [[ "$signoff" == APPROVED && "$decision_evidence" == "$member_grid_partial_evidence" ]] || fail "member-grid partial row lacks exact approved decision evidence at line $line_number"
+      fi
     else
       [[ "$signoff" == APPROVED && "$decision_evidence" == "$g1_d02_evidence" ]] || fail "MIGRATE row lacks exact G1-D02 decision evidence at line $line_number"
     fi
