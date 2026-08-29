@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"reflect"
 	"sort"
 	"strings"
@@ -502,8 +503,22 @@ func descriptor(reference string) groupopsport.WebhookDescriptor {
 	if reference == "" {
 		return groupopsport.WebhookDescriptor{Description: "not configured"}
 	}
-	return groupopsport.WebhookDescriptor{Configured: true, Reference: reference, Description: "local opaque reference only"}
+	path := strings.Replace(groupopsport.WebhookPathTemplate, "{webhook_key}", url.PathEscape(reference), 1)
+	return groupopsport.WebhookDescriptor{
+		Configured: true, Reference: reference, Path: path, URL: path,
+		SignatureAlgorithm: groupopsport.WebhookSignatureAlgorithm,
+		SignatureHeader:    groupopsport.WebhookSignatureHeader,
+		TimestampHeader:    groupopsport.WebhookTimestampHeader,
+		NonceHeader:        groupopsport.WebhookNonceHeader,
+		ClientIDHeader:     groupopsport.WebhookClientIDHeader,
+		ClientID:           groupopsport.WebhookClientID,
+		Description:        "same-origin webhook endpoint; signing credentials are withheld",
+	}
 }
+
+// WebhookDescriptor projects the persisted opaque reference into the public,
+// non-secret integration contract used by the repository read path.
+func WebhookDescriptor(reference string) groupopsport.WebhookDescriptor { return descriptor(reference) }
 
 func memberPage(items []groupopsport.Member, limit, offset int32) groupopsport.MemberPage {
 	result := groupopsport.MemberPage{Items: page(items, limit, offset), Total: int64(len(items)), Limit: limit, Offset: offset, Safety: groupopsport.LocalSafety()}

@@ -240,7 +240,7 @@ func detail(ctx context.Context, q *groupopsdb.Queries, row groupopsdb.GroupOpsP
 	if reference == "" {
 		result.WebhookDescriptor = groupopsport.WebhookDescriptor{Description: "not configured"}
 	} else {
-		result.WebhookDescriptor = groupopsport.WebhookDescriptor{Configured: true, Reference: reference, Description: "local opaque reference only"}
+		result.WebhookDescriptor = groupopsapp.WebhookDescriptor(reference)
 	}
 	return result, nil
 }

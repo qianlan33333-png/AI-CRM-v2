@@ -33,7 +33,7 @@ const (
 	OperationMembersPath   = "/api/admin/common/operation-members"
 	OperationMembersSync   = OperationMembersPath + "/sync"
 	BroadcastPath          = "/api/automation/group-ops/broadcast"
-	WebhookPath            = "/api/automation/group-ops/webhooks/{webhook_key}"
+	WebhookPath            = groupopsport.WebhookPathTemplate
 )
 
 var ErrProtocolAuthentication = errors.New("group ops protocol authentication failed")

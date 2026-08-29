@@ -107,7 +107,7 @@ func TestCreateReplayAndDescriptorAreOpaqueOnly(t *testing.T) {
 		}
 	}
 	detail, err := service.PutWebhookDescriptor(context.Background(), groupopsport.WebhookDescriptorCommand{PlanID: first.Plan.ID, ExpectedRevision: first.Plan.Revision, Reference: "local-webhook-7", Actor: 7, IdempotencyKey: "group-ops-webhook-0002"})
-	if err != nil || detail.WebhookDescriptor.Reference != "local-webhook-7" || detail.WebhookDescriptor.Description != "local opaque reference only" {
+	if err != nil || detail.WebhookDescriptor.Reference != "local-webhook-7" || detail.WebhookDescriptor.Path != "/api/automation/group-ops/webhooks/local-webhook-7" || detail.WebhookDescriptor.SignatureAlgorithm != "HMAC-SHA256" || detail.WebhookDescriptor.NonceHeader != "X-AICRM-Event-Id" {
 		t.Fatalf("descriptor=%#v err=%v", detail.WebhookDescriptor, err)
 	}
 	read, err := service.GetWebhookDescriptor(context.Background(), first.Plan.ID)
@@ -115,7 +115,7 @@ func TestCreateReplayAndDescriptorAreOpaqueOnly(t *testing.T) {
 		t.Fatalf("read descriptor=%#v err=%v", read, err)
 	}
 	encoded, err := json.Marshal(read)
-	if err != nil || strings.Contains(string(encoded), "url") || strings.Contains(string(encoded), "signature") || strings.Contains(string(encoded), "receipt") {
+	if err != nil || !strings.Contains(string(encoded), `"url":"/api/automation/group-ops/webhooks/local-webhook-7"`) || !strings.Contains(string(encoded), `"signature_header":"X-AICRM-Signature"`) || strings.Contains(string(encoded), `"secret"`) || strings.Contains(string(encoded), `"token"`) || strings.Contains(string(encoded), `"receipt"`) {
 		t.Fatalf("descriptor JSON=%s err=%v", encoded, err)
 	}
 }

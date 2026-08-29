@@ -264,12 +264,30 @@ func TestRefreshGroupsRequiresCompleteSnapshotBeforeReplacingOwnerProjection(t *
 	service, runtime, _ := newRuntimeFixture(t)
 	source := &runtimeDirectorySource{snapshot: groupopsport.GroupDirectorySnapshot{Items: []groupopsport.GroupDirectoryItem{{ChatReference: "chat-1", OwnerStaffID: 7, DisplayName: "Group 1"}}, Complete: true}}
 	service.groups = source
-	if _, err := service.RefreshGroups(context.Background(), groupopsport.GroupRefreshCommand{OwnerStaffID: 7, ActorID: 7, Limit: 200, IdempotencyKey: "groupops-full-0001"}); err != nil || source.limit != completeDirectorySnapshotLimit || runtime.directoryReplacements != 1 || len(runtime.directoryItems) != 1 {
+	if _, err := service.RefreshGroups(context.Background(), groupopsport.GroupRefreshCommand{OwnerStaffID: 7, ActorID: 7, Limit: 200, IdempotencyKey: "groupops-full-0001"}); err != nil || source.limit != completeDirectorySnapshotLimit || runtime.directoryReplacements != 1 || len(runtime.directoryItems) != 1 || runtime.directoryRefreshes != 1 || runtime.lastDirectoryKind != "groups" || !runtime.lastProviderRead {
 		t.Fatalf("err=%v source=%+v runtime=%+v", err, source, runtime)
 	}
 	source.snapshot.Complete = false
 	if _, err := service.RefreshGroups(context.Background(), groupopsport.GroupRefreshCommand{OwnerStaffID: 7, ActorID: 7, Limit: 200, IdempotencyKey: "groupops-partial-0001"}); !errors.Is(err, ErrUnavailable) || runtime.directoryReplacements != 1 {
 		t.Fatalf("partial err=%v replacements=%d", err, runtime.directoryReplacements)
+	}
+	if runtime.directoryRefreshes != 1 {
+		t.Fatalf("partial snapshot recorded receipt: %d", runtime.directoryRefreshes)
+	}
+}
+
+func TestRefreshOperationMembersRecordsReceiptOnlyAfterProviderSuccess(t *testing.T) {
+	service, runtime, _ := newRuntimeFixture(t)
+	source := &runtimeDirectorySource{members: []groupopsport.OperationMember{{StaffID: 7, SenderUserID: "staff-7", DisplayName: "Staff 7"}}}
+	service.groups = source
+	page, err := service.RefreshOperationMembers(context.Background(), groupopsport.OperationMemberRefreshCommand{ActorID: 7, PageSize: 100, IdempotencyKey: "groupops-members-full-0001"})
+	if err != nil || len(page.Items) != 1 || runtime.directoryRefreshes != 1 || runtime.lastDirectoryKind != "members" || !runtime.lastProviderRead {
+		t.Fatalf("page=%+v runtime=%+v err=%v", page, runtime, err)
+	}
+	source.membersErr = errors.New("provider unavailable")
+	_, err = service.RefreshOperationMembers(context.Background(), groupopsport.OperationMemberRefreshCommand{ActorID: 7, PageSize: 100, IdempotencyKey: "groupops-members-fail-0001"})
+	if !errors.Is(err, ErrUnavailable) || runtime.directoryRefreshes != 1 {
+		t.Fatalf("provider failure err=%v receipts=%d", err, runtime.directoryRefreshes)
 	}
 }
 
@@ -341,8 +359,10 @@ func (boundary *runtimeMaterialBoundary) FreezePrepared(_ context.Context, _ jso
 }
 
 type runtimeDirectorySource struct {
-	snapshot groupopsport.GroupDirectorySnapshot
-	limit    int32
+	snapshot   groupopsport.GroupDirectorySnapshot
+	limit      int32
+	members    []groupopsport.OperationMember
+	membersErr error
 }
 
 func (source *runtimeDirectorySource) ListOwnedGroups(_ context.Context, _ int64, limit int32) (groupopsport.GroupDirectorySnapshot, error) {
@@ -350,8 +370,8 @@ func (source *runtimeDirectorySource) ListOwnedGroups(_ context.Context, _ int64
 	return source.snapshot, nil
 }
 
-func (*runtimeDirectorySource) RefreshOperationMembers(context.Context, int32) ([]groupopsport.OperationMember, error) {
-	return nil, errors.New("unexpected")
+func (source *runtimeDirectorySource) RefreshOperationMembers(context.Context, int32) ([]groupopsport.OperationMember, error) {
+	return source.members, source.membersErr
 }
 
 func (stub evidenceVerifierStub) VerifyReconciliationEvidence(_ context.Context, evidence groupopsport.ReconciliationEvidence) (groupopsport.ReconciliationEvidenceResult, error) {
@@ -415,6 +435,9 @@ type runtimeStoreFixture struct {
 	webhookPlan           int64
 	directoryReplacements int
 	directoryItems        []groupopsport.GroupDirectoryItem
+	directoryRefreshes    int
+	lastDirectoryKind     string
+	lastProviderRead      bool
 }
 
 func (fixture *runtimeStoreFixture) InsertExecutionIntent(_ context.Context, draft ExecutionIntentDraft) (ExecutionIntentRecord, error) {
@@ -577,7 +600,10 @@ func (fixture *runtimeStoreFixture) ReplaceDirectoryGroups(_ context.Context, _ 
 	fixture.directoryItems = append([]groupopsport.GroupDirectoryItem{}, items...)
 	return nil
 }
-func (*runtimeStoreFixture) RecordDirectoryRefresh(context.Context, string, int64, int64, [sha256.Size]byte, string, int32, bool, time.Time) error {
+func (fixture *runtimeStoreFixture) RecordDirectoryRefresh(_ context.Context, kind string, _ int64, _ int64, _ [sha256.Size]byte, _ string, _ int32, providerRead bool, _ time.Time) error {
+	fixture.directoryRefreshes++
+	fixture.lastDirectoryKind = kind
+	fixture.lastProviderRead = providerRead
 	return nil
 }
 

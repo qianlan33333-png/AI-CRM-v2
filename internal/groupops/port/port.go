@@ -92,12 +92,30 @@ type PreparedMaterial struct {
 	ReadyUntil time.Time
 }
 
-// WebhookDescriptor never contains a URL, credential, token, payload, or
-// provider result. Description is server-generated, not caller supplied.
+const (
+	WebhookPathTemplate       = "/api/automation/group-ops/webhooks/{webhook_key}"
+	WebhookSignatureAlgorithm = "HMAC-SHA256"
+	WebhookSignatureHeader    = "X-AICRM-Signature"
+	WebhookTimestampHeader    = "X-AICRM-Timestamp"
+	WebhookNonceHeader        = "X-AICRM-Event-Id"
+	WebhookClientIDHeader     = "X-AICRM-Client-Id"
+	WebhookClientID           = "aicrm-webhook-group-ops"
+)
+
+// WebhookDescriptor contains the public integration contract only. It never
+// contains a credential, token, signing secret, payload, or provider result.
 type WebhookDescriptor struct {
-	Configured  bool   `json:"configured"`
-	Reference   string `json:"reference,omitempty"`
-	Description string `json:"description"`
+	Configured         bool   `json:"configured"`
+	Reference          string `json:"reference,omitempty"`
+	Path               string `json:"path,omitempty"`
+	URL                string `json:"url,omitempty"`
+	SignatureAlgorithm string `json:"signature_algorithm,omitempty"`
+	SignatureHeader    string `json:"signature_header,omitempty"`
+	TimestampHeader    string `json:"timestamp_header,omitempty"`
+	NonceHeader        string `json:"nonce_header,omitempty"`
+	ClientIDHeader     string `json:"client_id_header,omitempty"`
+	ClientID           string `json:"client_id,omitempty"`
+	Description        string `json:"description"`
 }
 
 type Detail struct {

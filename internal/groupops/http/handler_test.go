@@ -88,22 +88,35 @@ func TestPreviewUsesOnlyPlanIDAndRejectsPayload(t *testing.T) {
 	}
 }
 
-func TestGetWebhookDescriptorReturnsOnlyLocalOpaqueMetadata(t *testing.T) {
+func TestGetWebhookDescriptorReturnsPublicSigningContractWithoutCredential(t *testing.T) {
 	called := 0
 	app := applicationStub{webhookDescriptor: func(_ context.Context, id int64) (groupopsport.WebhookDescriptor, error) {
 		called++
 		if id != 7 {
 			t.Fatalf("plan ID=%d", id)
 		}
-		return groupopsport.WebhookDescriptor{Configured: true, Reference: "local-webhook-7", Description: "local opaque reference only"}, nil
+		return groupopsport.WebhookDescriptor{
+			Configured: true, Reference: "local-webhook-7",
+			Path: "/api/automation/group-ops/webhooks/local-webhook-7", URL: "/api/automation/group-ops/webhooks/local-webhook-7",
+			SignatureAlgorithm: groupopsport.WebhookSignatureAlgorithm, SignatureHeader: groupopsport.WebhookSignatureHeader,
+			TimestampHeader: groupopsport.WebhookTimestampHeader, NonceHeader: groupopsport.WebhookNonceHeader,
+			ClientIDHeader: groupopsport.WebhookClientIDHeader, ClientID: groupopsport.WebhookClientID,
+			Description: "same-origin webhook endpoint; signing credentials are withheld",
+		}, nil
 	}}
 	request := groupOpsRequest(http.MethodGet, PlansPath+"/7/webhook-descriptor", nil, authport.RoleAdmin, authport.CapabilityAdminRead)
 	response := httptest.NewRecorder()
 	New(app).GetWebhookDescriptor(response, request)
 	body := response.Body.String()
 	if response.Code != http.StatusOK || called != 1 || !strings.Contains(body, `"configured":true`) ||
+		!strings.Contains(body, `"url":"/api/automation/group-ops/webhooks/local-webhook-7"`) ||
+		!strings.Contains(body, `"signature_algorithm":"HMAC-SHA256"`) ||
+		!strings.Contains(body, `"signature_header":"X-AICRM-Signature"`) ||
+		!strings.Contains(body, `"timestamp_header":"X-AICRM-Timestamp"`) ||
+		!strings.Contains(body, `"nonce_header":"X-AICRM-Event-Id"`) ||
+		!strings.Contains(body, `"client_id":"aicrm-webhook-group-ops"`) ||
 		!strings.Contains(body, `"provider_execution_eligible":false`) || !strings.Contains(body, `"real_external_call_executed":false`) ||
-		strings.Contains(body, "url") || strings.Contains(body, "signature") || strings.Contains(body, "receipt") {
+		strings.Contains(body, `"secret"`) || strings.Contains(body, `"token"`) || strings.Contains(body, `"receipt"`) {
 		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, called, body)
 	}
 }
