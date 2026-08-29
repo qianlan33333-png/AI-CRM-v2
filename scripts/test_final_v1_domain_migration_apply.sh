@@ -146,4 +146,9 @@ if AICRM_FINAL_TEST_FAIL_DOMAIN=hxc-member-usage-history run_apply "${arguments[
 [[ "$(grep -c '^--mode=final-reconcile ' "$log")" = 0 ]] || fail 'failure continued to final reconciliation'
 [[ "$(grep -c '^--mode=reconcile ' "$log")" = 0 ]] || fail 'failure continued to domain reconciliation'
 [[ "$(grep -c '^--start=api,worker ' "$log")" = 0 ]] || fail 'failure started the runtime'
+: >"$log"
+no_go_path='/usr/bin:/bin:/usr/sbin:/sbin'
+if PATH="$no_go_path" command -v go >/dev/null 2>&1; then fail 'no-Go fixture PATH unexpectedly resolves go'; fi
+PATH="$no_go_path" run_apply "${arguments[@]}" >"$fixture/no-go.log"
+grep -Fq 'PASS (schema=135->142 imported-domains=5; reconciled-scopes=36; split api+worker started)' "$fixture/no-go.log" || fail 'fully injected execution required Go on PATH'
 printf 'test-final-v1-domain-migration-apply: PASS\n'

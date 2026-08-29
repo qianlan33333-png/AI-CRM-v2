@@ -124,7 +124,13 @@ repository_root="$(CDPATH= cd -- "$script_directory/.." && pwd -P)"
 : "${AICRM_FINAL_STATUS_COMMAND:=$repository_root/scripts/final_v1_domain_migration_status.sh}"
 : "${AICRM_FINAL_RUNTIME_COMMAND:=$repository_root/scripts/final_v1_domain_migration_runtime.sh}"
 for command_name in AICRM_FINAL_PLAN_COMMAND AICRM_FINAL_GIT_COMMAND AICRM_FINAL_STATUS_COMMAND AICRM_FINAL_RUNTIME_COMMAND; do require_command "$command_name"; done
-go_command="$(resolve_command go)"
+# A final release may inject compiled, exact-SHA Goose/import/reconcile
+# commands on a host that intentionally has no Go toolchain. Resolve Go only
+# if one of the safe in-repository fallbacks will actually be used.
+go_command=''
+if [[ -z "${AICRM_FINAL_GOOSE_COMMAND:-}" || -z "${AICRM_FINAL_IMPORT_COMMAND:-}" || -z "${AICRM_FINAL_RECONCILE_COMMAND:-}" ]]; then
+  go_command="$(resolve_command go)"
+fi
 
 [[ "$("$AICRM_FINAL_GIT_COMMAND" -C "$repository_root" rev-parse HEAD)" = "$expected_sha" ]] || fail '--expected-sha must equal the current checkout HEAD'
 [[ -z "$("$AICRM_FINAL_GIT_COMMAND" -C "$repository_root" status --porcelain --untracked-files=normal)" ]] || fail 'the release checkout must be clean'
