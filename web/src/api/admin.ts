@@ -17,7 +17,7 @@ import { listSurveyExternalPushLogs } from './generated/health';
 import { setServicePeriodMemberGridExternalShare } from './generated/health';
 import { completeMediaAttachmentMultipartUpload, initiateMediaAttachmentMultipartUpload, putMediaAttachmentMultipartPart } from './generated/health';
 import { getExportRadarLinkEventsUrl } from './generated/health';
-import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
+import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, refreshLegacyHXCDirectory, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
 import { getLegacyAppSettingsResource, saveLegacyAppSettingsResource } from './generated/health';
 import { getAdminOpsPushCapabilities, listAdminOpsReleases } from './generated/health';
 import { archiveLegacyCoupon, copyLegacyCoupon, createLegacyCoupon, deleteLegacyCoupon, deleteLegacyWechatPayProduct, publishLegacyCoupon, stopLegacyCoupon, updateLegacyCoupon, type CouponUpsertRequest } from './generated/health';
@@ -606,6 +606,8 @@ export function channelAcquisitionAssetDto(value: unknown): ChannelAcquisitionAs
   const assetVersion = Number(x.asset_version);
   if (!effectId || !Number.isSafeInteger(channelId) || channelId < 1 || !channelAssetKinds.includes(kind as ChannelAcquisitionAssetKind) || !channelAssetStates.includes(state as typeof channelAssetStates[number]) || !Number.isSafeInteger(assetVersion) || assetVersion < 1) throw new Error('获客渠道资产回执不完整');
   const assetUrl = typeof x.asset_url === 'string' && x.asset_url.trim() ? x.asset_url.trim() : typeof x.assetUrl === 'string' && x.assetUrl.trim() ? x.assetUrl.trim() : undefined;
+  const expectedDownloadUrl = `/api/admin/channels/${channelId}/qrcode/download`;
+  const downloadUrl = x.download_url === expectedDownloadUrl ? expectedDownloadUrl : undefined;
   return {
     effectId,
     channelId,
@@ -615,6 +617,7 @@ export function channelAcquisitionAssetDto(value: unknown): ChannelAcquisitionAs
     updatedAt: text(x.updated_at, ''),
     createdAt: text(x.created_at, ''),
     ...(assetUrl ? { assetUrl } : {}),
+    ...(downloadUrl ? { downloadUrl } : {}),
     ...(x.queue_receipt_id ? { receiptId: String(x.queue_receipt_id) } : x.accept_receipt_id ? { receiptId: String(x.accept_receipt_id) } : {}),
     ...(typeof x.entrant_ready === 'boolean' ? { entrantReady: x.entrant_ready } : {}),
   };
@@ -696,7 +699,7 @@ export async function getChannelAcquisitionAssetDto(channelId: number, effectId:
   return channelAcquisitionAssetDto(source.asset || source);
 }
 
-export const channelAcquisitionAssetReady = (asset: ChannelAcquisitionAsset | null | undefined): boolean => asset?.state === 'executed' && Boolean(asset.assetUrl?.trim());
+export const channelAcquisitionAssetReady = (asset: ChannelAcquisitionAsset | null | undefined): boolean => asset?.state === 'executed' && (asset.kind === 'contact_way_qrcode' ? Boolean(asset.downloadUrl) : Boolean(asset.assetUrl?.trim()));
 
 export function buildChannelFinalUrl(linkUrl: string, customerChannel: string): string {
   const link = linkUrl.trim();
@@ -757,7 +760,7 @@ const groupOpsMaterialPlanDto = (value: unknown): GroupOpsMaterialPlan => {
     return { kind, id };
   }) };
 };
-export const groupOpsDetailDto = (value: unknown, preview?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, ''), materialPlan: groupOpsMaterialPlanDto(obj(item).material_plan) })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
+export const groupOpsDetailDto = (value: unknown, preview?: unknown, descriptor?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); const webhook = obj(descriptor); const webhookUrl = text(webhook.url, ''); if (webhook.configured === true && !/^\/api\/automation\/group-ops\/webhooks\/[A-Za-z0-9._:-]{1,128}$/.test(webhookUrl)) throw new Error('Group Ops webhook URL 描述符不安全'); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, ''), materialPlan: groupOpsMaterialPlanDto(obj(item).material_plan) })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), webhookUrl, previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
 const memberGridStaffRows = (value: unknown): MemberGridStaffOption[] => {
   const page = obj(value); const pageSize = Number(page.page_size); const items = page.items;
   if (!Array.isArray(items)) throw new Error('真实员工目录缺少 items');
@@ -791,9 +794,12 @@ const groupOpsPreviewDto = (planId: string, value: unknown): AdminDb['rows']['or
 const groupOpsWebhookDescriptorDto = (value: unknown): AdminDb['rows']['orderKv'] => {
   const source = obj(value);
   if (source.real_external_call_executed !== false || typeof source.provider_execution_eligible !== 'boolean') throw new Error('Group Ops webhook 描述符越过本地读取边界');
+  const url = source.configured === true ? text(source.url, '') : '';
+  if (source.configured === true && !/^\/api\/automation\/group-ops\/webhooks\/[A-Za-z0-9._:-]{1,128}$/.test(url)) throw new Error('Group Ops webhook URL 描述符不安全');
   return [
-    { k: 'Webhook 描述符', v: source.configured === true ? text(source.description, 'local opaque reference only') : 'not configured', mono: false },
+    { k: 'Webhook 描述符', v: source.configured === true ? text(source.description, 'same-origin webhook endpoint; signing credentials are withheld') : 'not configured', mono: false },
     { k: 'Webhook opaque reference', v: typeof source.reference === 'string' ? source.reference : '—', mono: true },
+    { k: 'Webhook URL（可复制）', v: url || '—', mono: true },
   ];
 };
 const groupOpsExecutionRows = (planId: string, value: unknown): AdminDb['rows']['orderEvents'] => {
@@ -1324,6 +1330,7 @@ export type HxcSenderWriteInput = { id: string; senderUserid: string; displayNam
 export async function saveHxcSenderDto(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { if (!input.id || !input.senderUserid) throw new Error('配置 ID 和 sender_userid 不能为空'); if (!Number.isInteger(input.priority) || input.priority < 0 || input.priority > 100000) throw new Error('优先级必须是 0-100000 的整数'); const result = obj(await call(upsertLegacyHXCSendConfig({ id: input.id, sender_userid: input.senderUserid, display_name: input.displayName, priority: input.priority, is_active: input.active }, apiRequestOptions()))); return hxcSenderPageDto(result.item as LegacyHXCSenderConfig); }
 export async function reorderHxcSendersDto(ids: string[]): Promise<void> { const clean = ids.map((id) => id.trim()).filter(Boolean); if (!clean.length || new Set(clean).size !== clean.length) throw new Error('排序列表不能为空且 ID 不能重复'); await call(reorderLegacyHXCSendConfigs({ ids: clean }, apiRequestOptions())); }
 export async function archiveHxcSenderDto(senderUserid: string): Promise<void> { await call(archiveLegacyHXCSendConfig(senderUserid, apiRequestOptions())); }
+export async function refreshHxcDirectoryDto(): Promise<{ syncedCount: number }> { const response = obj(await call(refreshLegacyHXCDirectory({}, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `hxc-directory-${Date.now()}` } })))); const syncedCount = Number(response.synced_count); if (response.provider_read_executed !== true || !Number.isSafeInteger(syncedCount) || syncedCount < 0 || !Array.isArray(obj(response.projection).directory)) throw new Error('HXC 发送资格校验响应无效'); return { syncedCount }; }
 export async function saveAppSettingsDto(category: ConfigCategory, values: Record<string, string>): Promise<void> { if (!category.actionToken) throw new Error('后端未返回 route-bound Admin Action Token，未发送请求'); const settings: Record<string, string | number> = {}; for (const field of category.blocks.flatMap((block) => block.fields)) { if (field.kind === 'secret') continue; const value = values[field.key]; if (value === undefined) continue; if (field.kind === 'number') { const number = Number(value); if (!Number.isFinite(number)) throw new Error(`${field.key} 必须是数字`); settings[field.key] = number; } else settings[field.key] = value; } await call(saveLegacyAppSettingsResource({ settings, confirm: true, admin_action_token: category.actionToken }, apiRequestOptions())); }
 const writeMeta = () => ({ idempotency_key: globalThis.crypto?.randomUUID?.() || `web-${Date.now()}` });
 export async function saveTagGroupDto(input: { id?: number; name: string; firstTag?: string }): Promise<TagGroup> { const opt = apiRequestOptions(); if (input.id == null) { if (!input.firstTag) throw new Error('新建标签组必须提供首个标签'); const result = obj(await call(createLegacyWecomTagGroup({ group_name: input.name, first_tag_name: input.firstTag, ...writeMeta() }, opt))); return tagGroupPageDto(result.group); } const result = obj(await call(updateLegacyWecomTagGroupPatch(input.id, { group_name: input.name, ...writeMeta() }, opt))); return tagGroupPageDto(result.group); }
@@ -1467,7 +1474,7 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
       call(listGroupOpsExecutions(id, { limit: 100, offset: 0 }, opt)),
       call(getGroupOpsWebhookDescriptor(id, opt)),
     ]);
-    db.groupOpsDetail = groupOpsDetailDto(detail, preview);
+    db.groupOpsDetail = groupOpsDetailDto(detail, preview, webhook);
     db.groupOpsPlans = [db.groupOpsDetail.plan];
     db.rows.orderKv = [...groupOpsPreviewDto(id, runDue), ...groupOpsWebhookDescriptorDto(webhook)];
     db.rows.orderEvents = groupOpsExecutionRows(id, executions);

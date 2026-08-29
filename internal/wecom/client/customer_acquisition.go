@@ -226,8 +226,10 @@ func (client *CustomerAcquisitionClient) CreateCustomerAcquisitionLink(ctx conte
 	var payload struct {
 		ErrCode int    `json:"errcode"`
 		ErrMsg  string `json:"errmsg"`
-		LinkID  string `json:"link_id"`
-		URL     string `json:"url"`
+		Link    struct {
+			LinkID string `json:"link_id"`
+			URL    string `json:"url"`
+		} `json:"link"`
 	}
 	err := client.write(ctx, "/cgi-bin/externalcontact/customer_acquisition/create_link", map[string]any{
 		"link_name":   input.LinkName,
@@ -237,7 +239,7 @@ func (client *CustomerAcquisitionClient) CreateCustomerAcquisitionLink(ctx conte
 	if err != nil {
 		return CustomerAcquisitionLink{}, err
 	}
-	value := CustomerAcquisitionLink{LinkID: payload.LinkID, LinkName: input.LinkName, URL: payload.URL, UserIDs: cloneStrings(input.UserIDs), DepartmentIDs: cloneInt64s(input.DepartmentIDs), SkipVerify: input.SkipVerify}
+	value := CustomerAcquisitionLink{LinkID: payload.Link.LinkID, LinkName: input.LinkName, URL: payload.Link.URL, UserIDs: cloneStrings(input.UserIDs), DepartmentIDs: cloneInt64s(input.DepartmentIDs), SkipVerify: input.SkipVerify}
 	if !validCustomerAcquisitionLink(value, true) {
 		return CustomerAcquisitionLink{}, ErrWriteOutcomeUnknown
 	}
@@ -263,7 +265,13 @@ func (client *CustomerAcquisitionClient) UpdateCustomerAcquisitionLink(ctx conte
 	}, &payload); err != nil {
 		return CustomerAcquisitionLink{}, err
 	}
-	return client.GetCustomerAcquisitionLink(ctx, linkID)
+	link, err := client.GetCustomerAcquisitionLink(ctx, linkID)
+	if err != nil {
+		// The provider accepted the write before this readback. A failed read
+		// must stay outcome-unknown and must never cause an automatic retry.
+		return CustomerAcquisitionLink{}, errors.Join(ErrWriteOutcomeUnknown, err)
+	}
+	return link, nil
 }
 
 // DeleteCustomerAcquisitionLink returns nil only after WeCom accepts the
@@ -288,55 +296,52 @@ func (client *CustomerAcquisitionClient) GetCustomerAcquisitionLink(ctx context.
 		ErrCode int    `json:"errcode"`
 		ErrMsg  string `json:"errmsg"`
 		Link    struct {
-			LinkID     string `json:"link_id"`
 			LinkName   string `json:"link_name"`
 			URL        string `json:"url"`
 			SkipVerify bool   `json:"skip_verify"`
-			Range      struct {
-				UserIDs       []string `json:"user_list"`
-				DepartmentIDs []int64  `json:"department_list"`
-			} `json:"range"`
 		} `json:"link"`
+		Range struct {
+			UserIDs       []string `json:"user_list"`
+			DepartmentIDs []int64  `json:"department_list"`
+		} `json:"range"`
 	}
 	if err := client.read(ctx, "/cgi-bin/externalcontact/customer_acquisition/get", map[string]string{"link_id": linkID}, &payload); err != nil {
 		return CustomerAcquisitionLink{}, err
 	}
-	value := CustomerAcquisitionLink{LinkID: payload.Link.LinkID, LinkName: payload.Link.LinkName, URL: payload.Link.URL, UserIDs: payload.Link.Range.UserIDs, DepartmentIDs: payload.Link.Range.DepartmentIDs, SkipVerify: payload.Link.SkipVerify}
-	if value.LinkID != linkID || !validCustomerAcquisitionLink(value, true) {
+	value := CustomerAcquisitionLink{LinkID: linkID, LinkName: payload.Link.LinkName, URL: payload.Link.URL, UserIDs: payload.Range.UserIDs, DepartmentIDs: payload.Range.DepartmentIDs, SkipVerify: payload.Link.SkipVerify}
+	if !validCustomerAcquisitionLink(value, true) {
 		return CustomerAcquisitionLink{}, ErrUnexpectedResponse
 	}
 	return value, nil
 }
 
 func (client *CustomerAcquisitionClient) ListCustomerAcquisitionLinks(ctx context.Context, cursor string, limit int) (CustomerAcquisitionLinkPage, error) {
-	if client == nil || !validCursor(cursor) || limit < 1 || limit > 1000 {
+	if client == nil || !validCursor(cursor) || limit < 1 || limit > 100 {
 		return CustomerAcquisitionLinkPage{}, ErrInvalidConfig
 	}
 	var payload struct {
-		ErrCode int    `json:"errcode"`
-		ErrMsg  string `json:"errmsg"`
-		Links   []struct {
-			LinkID string `json:"link_id"`
-		} `json:"link"`
-		NextCursor string `json:"next_cursor"`
+		ErrCode    int      `json:"errcode"`
+		ErrMsg     string   `json:"errmsg"`
+		LinkIDs    []string `json:"link_id_list"`
+		NextCursor string   `json:"next_cursor"`
 	}
 	if err := client.read(ctx, "/cgi-bin/externalcontact/customer_acquisition/list_link", map[string]any{"cursor": cursor, "limit": limit}, &payload); err != nil {
 		return CustomerAcquisitionLinkPage{}, err
 	}
-	if !validCursor(payload.NextCursor) || payload.Links == nil || len(payload.Links) > limit {
+	if !validCursor(payload.NextCursor) || payload.LinkIDs == nil || len(payload.LinkIDs) > limit {
 		return CustomerAcquisitionLinkPage{}, ErrUnexpectedResponse
 	}
-	page := CustomerAcquisitionLinkPage{Links: make([]CustomerAcquisitionLink, 0, len(payload.Links)), NextCursor: payload.NextCursor}
-	seen := make(map[string]struct{}, len(payload.Links))
-	for _, item := range payload.Links {
-		if !validProviderID(item.LinkID) {
+	page := CustomerAcquisitionLinkPage{Links: make([]CustomerAcquisitionLink, 0, len(payload.LinkIDs)), NextCursor: payload.NextCursor}
+	seen := make(map[string]struct{}, len(payload.LinkIDs))
+	for _, linkID := range payload.LinkIDs {
+		if !validProviderID(linkID) {
 			return CustomerAcquisitionLinkPage{}, ErrUnexpectedResponse
 		}
-		if _, duplicate := seen[item.LinkID]; duplicate {
+		if _, duplicate := seen[linkID]; duplicate {
 			return CustomerAcquisitionLinkPage{}, ErrUnexpectedResponse
 		}
-		seen[item.LinkID] = struct{}{}
-		page.Links = append(page.Links, CustomerAcquisitionLink{LinkID: item.LinkID})
+		seen[linkID] = struct{}{}
+		page.Links = append(page.Links, CustomerAcquisitionLink{LinkID: linkID})
 	}
 	return page, nil
 }
@@ -486,11 +491,15 @@ func validContactWay(value ContactWay, requireURL bool) bool {
 }
 
 func validCustomerAcquisitionLinkRequest(value CustomerAcquisitionLinkRequest) bool {
-	return validRequiredText(value.LinkName, 120) && validStringSlice(value.UserIDs, 0, 500) && validPositiveInt64Slice(value.DepartmentIDs, 500) && len(value.UserIDs)+len(value.DepartmentIDs) > 0
+	return validCustomerAcquisitionLinkName(value.LinkName) && validStringSlice(value.UserIDs, 0, 500) && validPositiveInt64Slice(value.DepartmentIDs, 500) && len(value.UserIDs)+len(value.DepartmentIDs) > 0
 }
 
 func validCustomerAcquisitionLink(value CustomerAcquisitionLink, requireURL bool) bool {
-	return validProviderID(value.LinkID) && validRequiredText(value.LinkName, 120) && validStringSlice(value.UserIDs, 0, 500) && validPositiveInt64Slice(value.DepartmentIDs, 500) && len(value.UserIDs)+len(value.DepartmentIDs) > 0 && (!requireURL || validOpaqueHTTPSURL(value.URL)) && (value.URL == "" || validOpaqueHTTPSURL(value.URL))
+	return validProviderID(value.LinkID) && validCustomerAcquisitionLinkName(value.LinkName) && validStringSlice(value.UserIDs, 0, 500) && validPositiveInt64Slice(value.DepartmentIDs, 500) && len(value.UserIDs)+len(value.DepartmentIDs) > 0 && (!requireURL || validOpaqueHTTPSURL(value.URL)) && (value.URL == "" || validOpaqueHTTPSURL(value.URL))
+}
+
+func validCustomerAcquisitionLinkName(value string) bool {
+	return validRequiredText(value, 120) && utf8.RuneCountInString(value) <= 30
 }
 
 func validProviderID(value string) bool { return validRequiredText(value, 1024) }

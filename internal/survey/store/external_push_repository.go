@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
@@ -15,8 +16,34 @@ import (
 type ExternalPushRepository struct{}
 
 var _ surveyapp.ExternalPushStore = (*ExternalPushRepository)(nil)
+var _ surveyapp.ExternalPushLogReader = (*ExternalPushRepository)(nil)
 
 func NewExternalPushRepository() *ExternalPushRepository { return &ExternalPushRepository{} }
+
+func (r *ExternalPushRepository) ListExternalPushLogs(ctx context.Context, questionnaireID *surveyport.ID, limit, offset int32) ([]surveyapp.ExternalPushLog, int64, error) {
+	q, err := queries(ctx)
+	if r == nil || err != nil || limit < 1 || limit > 100 || offset < 0 || questionnaireID != nil && *questionnaireID < 1 {
+		return nil, 0, surveyapp.ErrExternalPushUnavailable
+	}
+	var queryQuestionnaireID pgtype.Int8
+	if questionnaireID != nil {
+		queryQuestionnaireID = pgtype.Int8{Int64: int64(*questionnaireID), Valid: true}
+	}
+	total, err := q.CountSurveyExternalPushLogs(ctx, queryQuestionnaireID)
+	if err != nil {
+		return nil, 0, err
+	}
+	rows, err := q.ListSurveyExternalPushLogs(ctx, surveydb.ListSurveyExternalPushLogsParams{QuestionnaireID: queryQuestionnaireID, RowLimit: limit, RowOffset: offset})
+	if err != nil {
+		return nil, 0, err
+	}
+	items := make([]surveyapp.ExternalPushLog, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, surveyapp.ExternalPushLog{BindingID: row.ID, QuestionnaireID: surveyport.ID(row.QuestionnaireID), SubmissionID: row.PublicSubmissionID, CustomerID: row.CustomerID, EffectID: fmt.Sprintf("eer_%d", row.ExternalEffectID), State: eer.State(row.State), AttemptCount: row.AttemptCount, ProviderAccepted: row.ProviderAccepted, DeliveryProven: row.DeliveryProven, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()})
+	}
+	return items, total, nil
+}
+
 func (r *ExternalPushRepository) BindExternalPush(ctx context.Context, v surveyapp.ExternalPushBinding) (surveyapp.ExternalPushBinding, error) {
 	q, e := queries(ctx)
 	if r == nil || e != nil {

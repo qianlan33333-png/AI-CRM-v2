@@ -40,6 +40,7 @@ func TestCH02AcquisitionAssetRoutesUseExactRootRBACAndCSRF(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range []struct{ method, path string }{
+		{http.MethodPost, "/api/admin/channels/41/qrcode/generate"},
 		{http.MethodPost, "/api/admin/channels/41/acquisition-assets"},
 		{http.MethodGet, "/api/admin/channels/41/acquisition-assets"},
 		{http.MethodGet, "/api/admin/channels/41/acquisition-assets/eer_7"},

@@ -223,6 +223,7 @@ export interface GroupOpsPlanDetailItem {
   assets: Array<{ id: string; reference: string }>;
   nodes: GroupOpsNodeItem[];
   webhookReference: string;
+  webhookUrl: string;
   previewLines: string[];
   previewIssues: string[];
 }
@@ -609,7 +610,7 @@ export interface ChannelHistoryPage {
 export type ChannelAcquisitionAssetKind = 'contact_way_qrcode' | 'customer_acquisition_link';
 export type ChannelAcquisitionAssetState = 'accepted' | 'queued' | 'attempted' | 'executed' | 'final_failed' | 'outcome_unknown' | 'reconciled';
 
-/** 本地获客资产回执；assetUrl 只有服务端明确返回时才存在。 */
+/** 本地获客资产回执；二维码只通过同源受控下载地址提供给浏览器。 */
 export interface ChannelAcquisitionAsset {
   effectId: string;
   channelId: number;
@@ -619,6 +620,7 @@ export interface ChannelAcquisitionAsset {
   updatedAt: string;
   createdAt: string;
   assetUrl?: string;
+  downloadUrl?: string;
   receiptId?: string;
   entrantReady?: boolean;
 }

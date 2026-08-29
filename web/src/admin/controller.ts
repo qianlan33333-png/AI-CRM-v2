@@ -22,6 +22,7 @@ import { copyText } from './sections/util';
 import { downloadQr, renderQr } from './sections/qr';
 import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
 import { openGroupOpsDirectory } from './sections/groupOpsDirectory';
+import { createWeComAcquisitionLink, deleteWeComAcquisitionLink, getWeComAcquisitionLink, listWeComAcquisitionLinks, reconcileWeComAcquisitionLink, updateWeComAcquisitionLink, type CustomerAcquisitionLink, type CustomerAcquisitionLinkInput, type WeComAcquisitionLinkWriteResult } from '../api/wecomAcquisitionLinks';
 
 const ACCENT = '#3370ff';
 const CHANNEL_HISTORY_PAGE_SIZE = 50;
@@ -109,6 +110,11 @@ type AdminState = {
   channelFormPreviewError: string;
   channelFormAssetError: string;
   channelFormAssetBusy: boolean;
+  channelProviderLinks: string[];
+  channelProviderLink: CustomerAcquisitionLink | null;
+  channelProviderReceipt: WeComAcquisitionLinkWriteResult | null;
+  channelProviderBusy: boolean;
+  channelProviderError: string;
   channelHistory: ChannelHistoryPage | null;
   channelHistoryLoading: boolean;
   channelHistoryError: string;
@@ -205,6 +211,11 @@ export class AdminController extends PageBase {
     channelFormPreviewError: '',
     channelFormAssetError: '',
     channelFormAssetBusy: false,
+    channelProviderLinks: [],
+    channelProviderLink: null,
+    channelProviderReceipt: null,
+    channelProviderBusy: false,
+    channelProviderError: '',
     channelHistory: null,
     channelHistoryLoading: false,
     channelHistoryError: '',
@@ -269,6 +280,11 @@ export class AdminController extends PageBase {
       this.state.channelHistory = null;
       this.state.channelHistoryLoading = false;
       this.state.channelHistoryError = '';
+      this.state.channelProviderLinks = [];
+      this.state.channelProviderLink = null;
+      this.state.channelProviderReceipt = null;
+      this.state.channelProviderBusy = false;
+      this.state.channelProviderError = '';
     }
     if (this.page === 'channelForm' && resourceId && !this.state.channelFormNotFound) {
       const channelId = Number(resourceId);
@@ -852,20 +868,20 @@ export class AdminController extends PageBase {
     if (!asset) return '尚未申请';
     if (asset.state === 'final_failed') return '执行失败';
     if (asset.state === 'outcome_unknown') return '结果未知，需对账';
-    if (asset.state === 'executed') return asset.assetUrl ? '已执行' : '已执行但未返回资产地址';
-    if (asset.state === 'reconciled') return asset.assetUrl ? '已对账' : '已对账但未返回资产地址';
+    if (asset.state === 'executed') return channelAcquisitionAssetReady(asset) ? '已执行' : '已执行但未返回受控资产地址';
+    if (asset.state === 'reconciled') return channelAcquisitionAssetReady(asset) ? '已对账' : '已对账但未返回受控资产地址';
     return '已排队';
   }
 
   private channelAssetOpen(asset: ChannelAcquisitionAsset | null | undefined): void {
-    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回 asset_url', true);
-    window.open(asset!.assetUrl, '_blank', 'noopener');
+    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回受控地址', true);
+    window.open(asset!.kind === 'contact_way_qrcode' ? asset!.downloadUrl : asset!.assetUrl, '_blank', 'noopener');
   }
 
   private channelAssetDownload(asset: ChannelAcquisitionAsset | null | undefined): void {
-    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回 asset_url', true);
+    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回受控地址', true);
     const anchor = document.createElement('a');
-    anchor.href = asset!.assetUrl!;
+    anchor.href = asset!.kind === 'contact_way_qrcode' ? asset!.downloadUrl! : asset!.assetUrl!;
     anchor.download = `${asset!.kind}-${asset!.assetVersion}`;
     anchor.target = '_blank';
     anchor.rel = 'noopener';
@@ -873,8 +889,8 @@ export class AdminController extends PageBase {
   }
 
   private channelAssetCopy(asset: ChannelAcquisitionAsset | null | undefined): void {
-    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回 asset_url', true);
-    copyText(asset!.assetUrl!, (message, error) => toast(message, error));
+    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回受控地址', true);
+    copyText(asset!.kind === 'contact_way_qrcode' ? asset!.downloadUrl! : asset!.assetUrl!, (message, error) => toast(message, error));
   }
 
   private requestChannelAsset(channelId: number | undefined, kind: ChannelAcquisitionAsset['kind'], target: 'drawer' | 'form'): void {
@@ -971,6 +987,91 @@ export class AdminController extends PageBase {
 
   private channelFormValue(id: string): string {
     return (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
+  }
+
+  private channelProviderKey(scope: string): string {
+    if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交企微获客链接操作');
+    return `wecom-link-${scope}-${globalThis.crypto.randomUUID()}`;
+  }
+
+  private channelProviderLinkID(): string {
+    return this.channelFormValue('providerLinkId');
+  }
+
+  private channelProviderInput(): CustomerAcquisitionLinkInput {
+    const userIds = this.channelFormValue('providerLinkUserIds').split(',').map((item) => item.trim()).filter(Boolean);
+    const departmentText = this.channelFormValue('providerLinkDepartmentIds').split(',').map((item) => item.trim()).filter(Boolean);
+    if (departmentText.some((item) => !/^[1-9][0-9]*$/.test(item))) throw new Error('部门 ID 必须是逗号分隔的正整数');
+    return {
+      link_name: this.channelFormValue('providerLinkName'),
+      user_ids: userIds,
+      department_ids: departmentText.map(Number),
+      skip_verify: (document.getElementById('providerLinkSkipVerify') as HTMLInputElement | null)?.checked === true,
+    };
+  }
+
+  private channelProviderResult(result: WeComAcquisitionLinkWriteResult, success: string): void {
+    this.setState({
+      channelProviderBusy: false,
+      channelProviderError: result.outcome === 'unknown' ? 'Provider 结果未知；禁止重试写操作，请使用下方回执做显式对账。' : '',
+      channelProviderReceipt: result,
+      channelProviderLink: result.receipt.link || this.state.channelProviderLink,
+    });
+    toast(result.outcome === 'applied' ? success : result.outcome === 'unknown' ? '结果未知，等待人工对账' : result.outcome === 'pending' ? '操作已受理，尚未证明 Provider 执行' : result.outcome === 'not_applied' ? '对账确认 Provider 未落地' : 'Provider 操作最终失败', result.outcome === 'failed');
+  }
+
+  private loadChannelProviderLinks(): void {
+    if (this.state.channelProviderBusy) return;
+    this.setState({ channelProviderBusy: true, channelProviderError: '' });
+    void listWeComAcquisitionLinks('', 100).then((page) => this.setState({ channelProviderBusy: false, channelProviderLinks: page.items.map((item) => item.link_id), channelProviderError: '' })).catch((error) => this.setState({ channelProviderBusy: false, channelProviderError: error instanceof Error ? error.message : '企微获客链接列表读取失败' }));
+  }
+
+  private loadChannelProviderLink(): void {
+    if (this.state.channelProviderBusy) return;
+    const linkId = this.channelProviderLinkID();
+    this.setState({ channelProviderBusy: true, channelProviderError: '' });
+    void getWeComAcquisitionLink(linkId).then((link) => this.setState({ channelProviderBusy: false, channelProviderLink: link, channelProviderReceipt: null, channelProviderError: '' })).catch((error) => this.setState({ channelProviderBusy: false, channelProviderError: error instanceof Error ? error.message : '企微获客链接读取失败' }));
+  }
+
+  private createChannelProviderLink(): void {
+    if (this.state.channelProviderBusy) return;
+    let input: CustomerAcquisitionLinkInput;
+    let key: string;
+    try { input = this.channelProviderInput(); key = this.channelProviderKey('create'); } catch (error) { return toast(error instanceof Error ? error.message : '企微获客链接输入无效', true); }
+    this.setState({ channelProviderBusy: true, channelProviderError: '' });
+    void createWeComAcquisitionLink(input, key).then((result) => this.channelProviderResult(result, 'Provider 已确认创建获客链接')).catch((error) => this.setState({ channelProviderBusy: false, channelProviderError: error instanceof Error ? error.message : '企微获客链接创建失败' }));
+  }
+
+  private updateChannelProviderLink(): void {
+    if (this.state.channelProviderBusy) return;
+    let input: CustomerAcquisitionLinkInput;
+    let key: string;
+    try { input = this.channelProviderInput(); key = this.channelProviderKey('update'); } catch (error) { return toast(error instanceof Error ? error.message : '企微获客链接输入无效', true); }
+    const linkId = this.channelProviderLinkID();
+    this.setState({ channelProviderBusy: true, channelProviderError: '' });
+    void updateWeComAcquisitionLink(linkId, input, key).then((result) => this.channelProviderResult(result, 'Provider 已确认更新获客链接')).catch((error) => this.setState({ channelProviderBusy: false, channelProviderError: error instanceof Error ? error.message : '企微获客链接更新失败' }));
+  }
+
+  private deleteChannelProviderLink(): void {
+    if (this.state.channelProviderBusy) return;
+    const linkId = this.channelProviderLinkID();
+    confirmBox('删除企微获客链接', `该操作会在开关允许时调用 Provider 删除 ${linkId}。确认继续？`, '确认删除', true, () => {
+      let key: string;
+      try { key = this.channelProviderKey('delete'); } catch (error) { return toast(error instanceof Error ? error.message : '无法生成安全幂等键', true); }
+      this.setState({ channelProviderBusy: true, channelProviderError: '' });
+      void deleteWeComAcquisitionLink(linkId, key).then((result) => this.channelProviderResult(result, 'Provider 已确认删除获客链接')).catch((error) => this.setState({ channelProviderBusy: false, channelProviderError: error instanceof Error ? error.message : '企微获客链接删除失败' }));
+    });
+  }
+
+  private reconcileChannelProviderLink(): void {
+    if (this.state.channelProviderBusy) return;
+    const receiptId = Number(this.channelFormValue('providerLinkReceiptId'));
+    const resolution = this.channelFormValue('providerLinkResolution') === 'provider_not_applied' ? 'provider_not_applied' : 'provider_applied';
+    const digest = this.channelFormValue('providerLinkEvidenceDigest');
+    let key: string;
+    try { key = this.channelProviderKey('reconcile'); } catch (error) { return toast(error instanceof Error ? error.message : '无法生成安全幂等键', true); }
+    this.setState({ channelProviderBusy: true, channelProviderError: '' });
+    void reconcileWeComAcquisitionLink(this.channelProviderLinkID(), receiptId, resolution, digest, key).then((result) => this.channelProviderResult(result, '对账确认 Provider 已落地')).catch((error) => this.setState({ channelProviderBusy: false, channelProviderError: error instanceof Error ? error.message : '企微获客链接对账失败' }));
   }
 
   private currentChannelFinalUrl(): string {
@@ -1435,6 +1536,13 @@ export class AdminController extends PageBase {
 
   private archiveHxcSender(senderUserid: string): void {
     confirmBox('归档发送人配置', `仅归档 ${senderUserid} 的本地配置，不删除企微成员。确认继续？`, '确认归档', true, () => { void this.api.archiveHxcSender(senderUserid).then(() => { toast('本地发送人配置已归档；未调用企微 Provider'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '发送人归档失败', true)); });
+  }
+
+  private refreshHxcDirectory(): void {
+    if (this.api.mode !== 'http') return this.blocked('发送资格校验只支持当前 HttpApi / OpenAPI；Mock 不提供伪成功');
+    confirmBox('校验 HXC 发送资格', '仅读取企微成员资格并回读既有本地 staff 目录；不会创建、更新发送人，也不会发送消息。', '确认校验', true, () => {
+      void this.api.refreshHxcDirectory().then((result) => { toast(`已校验 ${result.syncedCount} 位本地发送资格交集；未发送消息`); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : 'HXC 发送资格校验失败', true));
+    });
   }
 
   private saveCouponForm(publish: boolean): void {
@@ -2052,7 +2160,7 @@ export class AdminController extends PageBase {
         version: asset?.assetVersion || '—',
         effectId: asset?.effectId || '—',
         ready,
-        url: ready ? asset!.assetUrl : '',
+        url: ready ? (asset!.kind === 'contact_way_qrcode' ? asset!.downloadUrl : asset!.assetUrl) : '',
         open: () => this.channelAssetOpen(asset),
         download: () => this.channelAssetDownload(asset),
         copy: () => this.channelAssetCopy(asset),
@@ -2060,6 +2168,8 @@ export class AdminController extends PageBase {
     };
     const latestDrawerAsset = channelAssetView(s.channelDrawerAssets[0]);
     const latestFormAsset = channelAssetView(s.channelFormAssets[0]);
+    const channelProviderLink = s.channelProviderLink;
+    const channelProviderReceipt = s.channelProviderReceipt;
     const channelHistory = s.channelHistory;
     const channelHistoryAvailable = this.api.mode === 'http' && Number.isSafeInteger(channelFormValue?.resourceId) && (channelFormValue?.resourceId || 0) > 0;
     const channelHistoryRange = !channelHistory || channelHistory.total === 0
@@ -2321,6 +2431,38 @@ export class AdminController extends PageBase {
         noResource: !channelFormValue?.resourceId,
         assetKindLabel: this.channelAssetKindLabel(channelAssetKind(channelFormValue)),
         assetRequest: () => this.requestChannelAsset(channelFormValue?.resourceId, channelAssetKind(channelFormValue), 'form'),
+        providerLinks: {
+          busy: s.channelProviderBusy,
+          error: s.channelProviderError,
+          ids: s.channelProviderLinks,
+          hasIds: s.channelProviderLinks.length > 0,
+          noIds: s.channelProviderLinks.length === 0,
+          loadList: () => this.loadChannelProviderLinks(),
+          loadOne: () => this.loadChannelProviderLink(),
+          create: () => this.createChannelProviderLink(),
+          update: () => this.updateChannelProviderLink(),
+          delete: () => this.deleteChannelProviderLink(),
+          reconcile: () => this.reconcileChannelProviderLink(),
+          item: channelProviderLink ? {
+            id: channelProviderLink.link_id,
+            name: channelProviderLink.link_name,
+            url: channelProviderLink.url,
+            userIds: channelProviderLink.user_ids.join(', '),
+            departmentIds: channelProviderLink.department_ids.join(', '),
+            skipVerify: channelProviderLink.skip_verify,
+            noSkipVerify: !channelProviderLink.skip_verify,
+          } : { id: '', name: '', url: '', userIds: '', departmentIds: '', skipVerify: false, noSkipVerify: true },
+          receipt: channelProviderReceipt ? {
+            has: true,
+            id: String(channelProviderReceipt.receipt.receipt_id),
+            state: channelProviderReceipt.receipt.state,
+            outcome: channelProviderReceipt.outcome,
+            dispatched: channelProviderReceipt.receipt.business_endpoint_dispatched ? '是' : '否',
+            external: channelProviderReceipt.receipt.real_external_call_executed ? '是' : '否',
+            digest: channelProviderReceipt.receipt.outcome_digest || '—',
+            canReconcile: channelProviderReceipt.canReconcile,
+          } : { has: false, id: '', state: '', outcome: '', dispatched: '否', external: '否', digest: '—', canReconcile: false },
+        },
         history: {
           available: channelHistoryAvailable,
           loading: s.channelHistoryLoading,
@@ -2364,15 +2506,16 @@ export class AdminController extends PageBase {
       },
       groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directory: () => this.openGroupOpsDirectory() },
       groupOpsDetailPage: {
-        item: groupOpsDetail ? { ...groupOpsDetail, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        item: groupOpsDetail ? { ...groupOpsDetail, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', webhookUrl: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
         members: groupOpsMemberOptions,
         directory: () => this.openGroupOpsDirectory(),
-        save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'),
+        save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'), copyWebhookUrl: () => { const value = groupOpsDetail?.webhookUrl || ''; if (!value) return toast('尚未配置可复制的 Webhook URL', true); copyText(value, (message, error) => toast(message, error)); },
       },
       hxcPage: {
         rows: rows.agents.map((item) => ({ ...item, cs: mk(item.tone), edit: () => this.goto('agentEdit', '?id=' + encodeURIComponent(item.code)), archive: () => this.archiveHxcSender(item.code) })),
         orderText: rows.agents.map((item) => item.senderId || item.code).join('\n'),
         create: () => this.goto('agentEdit'),
+        refresh: () => this.refreshHxcDirectory(),
         reorder: () => this.reorderHxcSenders(),
         item: hxcEdit ? { ...hxcEdit, activeOff: hxcEdit.isActive === false } : { senderId: '', code: '', name: '', priority: rows.agents.length, isActive: true, activeOff: false },
         save: () => this.saveHxcSender(),

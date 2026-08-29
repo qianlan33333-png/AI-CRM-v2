@@ -61,6 +61,21 @@ func (q *Queries) BindSurveyExternalPush(ctx context.Context, arg BindSurveyExte
 	return i, err
 }
 
+const countSurveyExternalPushLogs = `-- name: CountSurveyExternalPushLogs :one
+SELECT count(*)::bigint
+FROM questionnaire_submission_external_push_bindings b
+JOIN external_effects e ON e.id = b.external_effect_id
+  AND e.owner = 'survey' AND e.kind = 'survey_webhook'
+WHERE ($1::bigint IS NULL OR b.questionnaire_id = $1::bigint)
+`
+
+func (q *Queries) CountSurveyExternalPushLogs(ctx context.Context, questionnaireID pgtype.Int8) (int64, error) {
+	row := q.db.QueryRow(ctx, countSurveyExternalPushLogs, questionnaireID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getSurveyExternalPush = `-- name: GetSurveyExternalPush :one
 SELECT b.id,b.questionnaire_id,b.public_submission_id,b.customer_id,b.external_effect_id,b.created_at,e.state,
 COALESCE((SELECT bool_or(r.provider_accepted) FROM questionnaire_external_push_delivery_receipts r WHERE r.binding_id=b.id),false) provider_accepted,
@@ -145,6 +160,75 @@ func (q *Queries) InsertSurveyExternalPushDeliveryReceipt(ctx context.Context, a
 		arg.EvidenceDigest,
 	)
 	return err
+}
+
+const listSurveyExternalPushLogs = `-- name: ListSurveyExternalPushLogs :many
+SELECT b.id, b.questionnaire_id, b.public_submission_id, b.customer_id,
+       b.external_effect_id, e.state, e.attempt_count,
+       COALESCE(bool_or(r.provider_accepted), FALSE)::boolean AS provider_accepted,
+       COALESCE(bool_or(r.delivery_proven), FALSE)::boolean AS delivery_proven,
+       b.created_at, e.updated_at
+FROM questionnaire_submission_external_push_bindings b
+JOIN external_effects e ON e.id = b.external_effect_id
+  AND e.owner = 'survey' AND e.kind = 'survey_webhook'
+LEFT JOIN questionnaire_external_push_delivery_receipts r ON r.binding_id = b.id
+WHERE ($1::bigint IS NULL OR b.questionnaire_id = $1::bigint)
+GROUP BY b.id, e.id
+ORDER BY b.created_at DESC, b.id DESC
+LIMIT $3::integer
+OFFSET $2::integer
+`
+
+type ListSurveyExternalPushLogsParams struct {
+	QuestionnaireID pgtype.Int8 `json:"questionnaire_id"`
+	RowOffset       int32       `json:"row_offset"`
+	RowLimit        int32       `json:"row_limit"`
+}
+
+type ListSurveyExternalPushLogsRow struct {
+	ID                 int64              `json:"id"`
+	QuestionnaireID    int64              `json:"questionnaire_id"`
+	PublicSubmissionID int64              `json:"public_submission_id"`
+	CustomerID         int64              `json:"customer_id"`
+	ExternalEffectID   int64              `json:"external_effect_id"`
+	State              string             `json:"state"`
+	AttemptCount       int32              `json:"attempt_count"`
+	ProviderAccepted   bool               `json:"provider_accepted"`
+	DeliveryProven     bool               `json:"delivery_proven"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListSurveyExternalPushLogs(ctx context.Context, arg ListSurveyExternalPushLogsParams) ([]ListSurveyExternalPushLogsRow, error) {
+	rows, err := q.db.Query(ctx, listSurveyExternalPushLogs, arg.QuestionnaireID, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSurveyExternalPushLogsRow{}
+	for rows.Next() {
+		var i ListSurveyExternalPushLogsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuestionnaireID,
+			&i.PublicSubmissionID,
+			&i.CustomerID,
+			&i.ExternalEffectID,
+			&i.State,
+			&i.AttemptCount,
+			&i.ProviderAccepted,
+			&i.DeliveryProven,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const lockSurveyExternalPushDeliveryReceipt = `-- name: LockSurveyExternalPushDeliveryReceipt :one

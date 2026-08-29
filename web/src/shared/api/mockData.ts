@@ -491,7 +491,7 @@ export const SEED_DB: AdminDb = {
     2: [], 3: [], 4: [],
   },
   groupOpsPlans: [{ id: '1', name: '新客入群欢迎', status: 'paused', revision: 1, updatedAt: '2026-08-25 10:00' }],
-  groupOpsDetail: { plan: { id: '1', name: '新客入群欢迎', status: 'paused', revision: 1, updatedAt: '2026-08-25 10:00' }, staffIds: [1], assets: [{ id: '1', reference: 'group:new-customers' }], nodes: [{ id: '1', position: 1, kind: 'message', messageText: '欢迎加入', materialReference: 'image:welcome' }], webhookReference: '', previewLines: ['1. 欢迎加入'], previewIssues: [] },
+  groupOpsDetail: { plan: { id: '1', name: '新客入群欢迎', status: 'paused', revision: 1, updatedAt: '2026-08-25 10:00' }, staffIds: [1], assets: [{ id: '1', reference: 'group:new-customers' }], nodes: [{ id: '1', position: 1, kind: 'message', messageText: '欢迎加入', materialReference: 'image:welcome' }], webhookReference: '', webhookUrl: '', previewLines: ['1. 欢迎加入'], previewIssues: [] },
   cycleTasks: CYCLE_TASKS,
   cycleRuns: CYCLE_RUNS,
   qOps: makeQOps(),

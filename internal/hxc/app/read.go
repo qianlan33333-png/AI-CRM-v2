@@ -18,20 +18,20 @@ type Reader struct {
 }
 
 type Candidate struct {
-	WeComUserID string
-	DisplayName string
-	Position    string
-	WeComStatus int
-	IsSender    bool
-	Priority    int
-	IsActive    bool
+	WeComUserID string `json:"wecom_userid"`
+	DisplayName string `json:"display_name"`
+	Position    string `json:"position"`
+	WeComStatus int    `json:"wecom_status"`
+	IsSender    bool   `json:"is_sender"`
+	Priority    int    `json:"priority"`
+	IsActive    bool   `json:"is_active"`
 }
 
 type Projection struct {
-	SendConfigs       []port.SenderConfig
-	Directory         []Candidate
-	ActiveSenderCount int
-	LastSyncedAt      time.Time
+	SendConfigs       []port.SenderConfig `json:"send_configs"`
+	Directory         []Candidate         `json:"directory"`
+	ActiveSenderCount int                 `json:"active_sender_count"`
+	LastSyncedAt      time.Time           `json:"last_synced_at"`
 }
 
 func (r Reader) Read(ctx context.Context) (Projection, error) {

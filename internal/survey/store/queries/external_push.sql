@@ -11,6 +11,29 @@ COALESCE((SELECT bool_or(r.delivery_proven) FROM questionnaire_external_push_del
 FROM questionnaire_submission_external_push_bindings b JOIN external_effects e ON e.id=b.external_effect_id
 WHERE b.questionnaire_id=sqlc.arg(questionnaire_id) AND b.public_submission_id=sqlc.arg(public_submission_id);
 
+-- name: CountSurveyExternalPushLogs :one
+SELECT count(*)::bigint
+FROM questionnaire_submission_external_push_bindings b
+JOIN external_effects e ON e.id = b.external_effect_id
+  AND e.owner = 'survey' AND e.kind = 'survey_webhook'
+WHERE (sqlc.narg(questionnaire_id)::bigint IS NULL OR b.questionnaire_id = sqlc.narg(questionnaire_id)::bigint);
+
+-- name: ListSurveyExternalPushLogs :many
+SELECT b.id, b.questionnaire_id, b.public_submission_id, b.customer_id,
+       b.external_effect_id, e.state, e.attempt_count,
+       COALESCE(bool_or(r.provider_accepted), FALSE)::boolean AS provider_accepted,
+       COALESCE(bool_or(r.delivery_proven), FALSE)::boolean AS delivery_proven,
+       b.created_at, e.updated_at
+FROM questionnaire_submission_external_push_bindings b
+JOIN external_effects e ON e.id = b.external_effect_id
+  AND e.owner = 'survey' AND e.kind = 'survey_webhook'
+LEFT JOIN questionnaire_external_push_delivery_receipts r ON r.binding_id = b.id
+WHERE (sqlc.narg(questionnaire_id)::bigint IS NULL OR b.questionnaire_id = sqlc.narg(questionnaire_id)::bigint)
+GROUP BY b.id, e.id
+ORDER BY b.created_at DESC, b.id DESC
+LIMIT sqlc.arg(row_limit)::integer
+OFFSET sqlc.arg(row_offset)::integer;
+
 -- name: LockSurveyExternalPushReconcile :one
 SELECT b.id,b.questionnaire_id,b.public_submission_id,b.customer_id,b.external_effect_id,b.created_at,e.state,e.owner,e.kind
 FROM questionnaire_submission_external_push_bindings b

@@ -139,6 +139,8 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"reconcileWeComCustomerAcquisitionLink": {"/api/admin/wecom-customer-acquisition-links/{link_id}/reconcile", "POST", "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29", "channels.write", "human_session", "sensitive", "wecom_customer_acquisition_link_receipts", "required", map[string]string{"admin": "global", "ops": "global"}},
+
 	"listSurveyUnresolvedHistorySubmissions": {"/api/admin/survey-history/submissions", "GET", "P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28", "questionnaires.read", "human_session", "internal_pii", "survey.read_only_v1_unresolved_history", "none", map[string]string{"admin": "global"}},
 	"getSurveyUnresolvedHistorySubmission":   {"/api/admin/survey-history/submissions/{history_id}", "GET", "P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28", "questionnaires.read", "human_session", "internal_pii", "survey.read_only_v1_unresolved_history", "none", map[string]string{"admin": "global"}},
 	"listSurveyUnresolvedHistoryAnswers":     {"/api/admin/survey-history/submissions/{history_id}/answers", "GET", "P4-V1-SURVEY-UNRESOLVED-HISTORY-2026-08-28", "questionnaires.read", "human_session", "internal_pii", "survey.read_only_v1_unresolved_history", "none", map[string]string{"admin": "global"}},
@@ -494,6 +496,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageExternalEffects = map[string]string{
+	"reconcileWeComCustomerAcquisitionLink": "reconciliation_only",
+
 	"startSurveyH5OAuth":                "external_protocol",
 	"callbackSurveyH5OAuth":             "external_protocol",
 	"updateSidebarProfile":              "accepted_only",
@@ -617,11 +621,13 @@ var p4APIClientOAuthOperations = map[string]bool{
 var p4HXCSenderManagementOperations = map[string]bool{
 	"upsertLegacyHXCSendConfig":  true,
 	"archiveLegacyHXCSendConfig": true,
+	"refreshLegacyHXCDirectory":  true,
 }
 
 var p4HXCSenderManagementLegacyMappings = map[string][]string{
 	"upsertLegacyHXCSendConfig":  {"LEGACY-API-0350"},
 	"archiveLegacyHXCSendConfig": {"LEGACY-API-0351"},
+	"refreshLegacyHXCDirectory":  {"LEGACY-API-0347"},
 }
 
 var p4AutomationAgentOperations = map[string]bool{
@@ -881,8 +887,20 @@ var p4SurveyEvidence = map[string]string{
 }
 
 var p4ChannelOperations = map[string]bool{
-	"listLegacyChannels": true, "createLegacyChannel": true, "getLegacyChannel": true, "updateLegacyChannel": true,
+	"listLegacyChannels":        true,
+	"createLegacyChannel":       true,
+	"getLegacyChannel":          true,
+	"updateLegacyChannel":       true,
 	"listLegacyChannelEntrants": true,
+
+	"generateChannelQRCode":                  true,
+	"downloadChannelQRCode":                  true,
+	"listWeComCustomerAcquisitionLinks":      true,
+	"createWeComCustomerAcquisitionLink":     true,
+	"getWeComCustomerAcquisitionLink":        true,
+	"updateWeComCustomerAcquisitionLink":     true,
+	"deleteWeComCustomerAcquisitionLink":     true,
+	"rejectLegacyWeComAcquisitionLinkAction": true,
 }
 
 var p4ChannelLegacyMappings = map[string][]string{
@@ -891,6 +909,15 @@ var p4ChannelLegacyMappings = map[string][]string{
 	"getLegacyChannel":          {"LEGACY-API-0195"},
 	"updateLegacyChannel":       {"LEGACY-API-0196"},
 	"listLegacyChannelEntrants": {"LEGACY-API-0201"},
+
+	"generateChannelQRCode":                  {"LEGACY-API-0203"},
+	"downloadChannelQRCode":                  {"LEGACY-API-0202"},
+	"listWeComCustomerAcquisitionLinks":      {"LEGACY-API-0546"},
+	"createWeComCustomerAcquisitionLink":     {"LEGACY-API-0546"},
+	"getWeComCustomerAcquisitionLink":        {"LEGACY-API-0547"},
+	"updateWeComCustomerAcquisitionLink":     {"LEGACY-API-0547"},
+	"deleteWeComCustomerAcquisitionLink":     {"LEGACY-API-0547"},
+	"rejectLegacyWeComAcquisitionLinkAction": {"LEGACY-API-0548"},
 }
 
 var p4ChannelEvidence = map[string]string{
@@ -899,6 +926,15 @@ var p4ChannelEvidence = map[string]string{
 	"getLegacyChannel":          p4ChannelDecisionEvidence,
 	"updateLegacyChannel":       p4ChannelDecisionEvidence,
 	"listLegacyChannelEntrants": "P4-S06-002-LOCAL-READ-2026-08-22",
+
+	"generateChannelQRCode":                  "P4-S06-004-CONTROLLED-QR-2026-08-29",
+	"downloadChannelQRCode":                  "P4-S06-004-CONTROLLED-QR-2026-08-29",
+	"listWeComCustomerAcquisitionLinks":      "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29",
+	"createWeComCustomerAcquisitionLink":     "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29",
+	"getWeComCustomerAcquisitionLink":        "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29",
+	"updateWeComCustomerAcquisitionLink":     "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29",
+	"deleteWeComCustomerAcquisitionLink":     "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29",
+	"rejectLegacyWeComAcquisitionLinkAction": "P4-S06-012-CUSTOMER-ACQUISITION-LINK-2026-08-29",
 }
 
 var p4TagOperations = map[string]bool{
@@ -1429,6 +1465,16 @@ var authorizationContracts = map[string]authorizationContract{
 	"getLegacyAdminLogoutCompat":                 {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 	"upsertLegacyHXCSendConfig":                  {"operations.manage", map[string]string{"admin": "global"}},
 	"archiveLegacyHXCSendConfig":                 {"operations.manage", map[string]string{"admin": "global"}},
+	"refreshLegacyHXCDirectory":                  {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
+
+	"generateChannelQRCode":                  {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
+	"downloadChannelQRCode":                  {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listWeComCustomerAcquisitionLinks":      {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createWeComCustomerAcquisitionLink":     {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getWeComCustomerAcquisitionLink":        {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
+	"updateWeComCustomerAcquisitionLink":     {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
+	"deleteWeComCustomerAcquisitionLink":     {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
+	"rejectLegacyWeComAcquisitionLinkAction": {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 const g1DecisionEvidence = "G1-D01-2026-08-10"
@@ -2196,12 +2242,18 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				}
 			} else if p4HXCSenderManagementOperations[op.OperationID] {
 				seenP4HXCSenderManagement[op.OperationID] = true
-				if op.Extensions["x-p4-decision-evidence"] != p4HXCSenderManagementEvidence ||
+				evidence, source, effect := p4HXCSenderManagementEvidence, "local_command", "none"
+				if op.OperationID == "refreshLegacyHXCDirectory" {
+					evidence = "P4-HXC-SENDER-DIRECTORY-READBACK-2026-08-29"
+					source = "operation_members.wecom_read_then_local_staff_readback"
+					effect = "provider_read"
+				}
+				if op.Extensions["x-p4-decision-evidence"] != evidence ||
 					op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
 					op.Extensions["x-aicrm-session-bound-csrf"] != "required" ||
-					op.Extensions["x-aicrm-data-source"] != "local_command" ||
-					op.Extensions["x-aicrm-external-effect"] != "none" {
-					return fmt.Errorf("%s HXC local management boundary drifted", op.OperationID)
+					op.Extensions["x-aicrm-data-source"] != source ||
+					op.Extensions["x-aicrm-external-effect"] != effect {
+					return fmt.Errorf("%s HXC sender management boundary drifted", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4HXCSenderManagementLegacyMappings[op.OperationID]) {
