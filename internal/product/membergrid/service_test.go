@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -32,6 +33,14 @@ type memoryStore struct {
 	invalidResult []MemberRecord
 }
 
+type legacyOnlyStore struct{ queryCalls int }
+
+func (*legacyOnlyStore) ProductExists(context.Context, int64) (bool, error) { return true, nil }
+func (store *legacyOnlyStore) QueryMembers(context.Context, StoreQuery) ([]MemberRecord, error) {
+	store.queryCalls++
+	return []MemberRecord{}, nil
+}
+
 func (store *memoryStore) ProductExists(context.Context, int64) (bool, error) {
 	return store.exists, store.existsErr
 }
@@ -52,6 +61,31 @@ func (store *memoryStore) QueryMembers(_ context.Context, query StoreQuery) ([]M
 		filtered = append(filtered, record)
 	}
 	sort.Slice(filtered, func(left, right int) bool { return recordBefore(filtered[right], filtered[left]) })
+	if len(filtered) > query.Limit {
+		filtered = filtered[:query.Limit]
+	}
+	return append([]MemberRecord(nil), filtered...), nil
+}
+
+func (store *memoryStore) QuerySelectedMembers(_ context.Context, query selectedStoreQuery) ([]MemberRecord, error) {
+	store.queryCalls++
+	if store.queryErr != nil {
+		return nil, store.queryErr
+	}
+	if store.invalidResult != nil {
+		return append([]MemberRecord(nil), store.invalidResult...), nil
+	}
+	filtered := make([]MemberRecord, 0, len(store.records))
+	for _, record := range store.records {
+		if record.ServiceProductID != query.ProductID || (query.State != StateAll && record.State != query.State) ||
+			(query.Source != SourceAny && record.Source != query.Source) || (query.After != nil && !recordAfterSelection(record, *query.After, query.Selection)) {
+			continue
+		}
+		filtered = append(filtered, record)
+	}
+	sort.Slice(filtered, func(left, right int) bool {
+		return recordBeforeSelection(filtered[right], filtered[left], query.Selection)
+	})
 	if len(filtered) > query.Limit {
 		filtered = filtered[:query.Limit]
 	}
@@ -125,6 +159,102 @@ func TestQueryCanonicalPaginationFiltersAndBoundCursor(t *testing.T) {
 		if _, queryErr := service.Query(context.Background(), input); !errors.Is(queryErr, ErrInvalidCursor) {
 			t.Fatalf("input=%+v error=%v", input, queryErr)
 		}
+	}
+}
+
+func TestSelectedQuerySupportsOnlyCanonicalSortGroupDefaultViewAndBoundCursor(t *testing.T) {
+	stamp := time.Date(2026, 8, 27, 10, 0, 0, 0, time.UTC)
+	active := memberRecord("spm_0000000000000000000001", 71, StateActive, SourceManual, stamp.Add(2*time.Hour), "有效成员")
+	active.StartsAt = stamp
+	expired := memberRecord("spm_0000000000000000000002", 71, StateExpired, SourcePaidOrder, stamp.Add(time.Hour), "过期成员")
+	expired.StartsAt = stamp.Add(3 * time.Hour)
+	expiredAt := stamp.Add(3 * time.Hour)
+	expired.ExpiredAt = &expiredAt
+	removed := memberRecord("spm_0000000000000000000003", 71, StateRemoved, SourceManual, stamp.Add(3*time.Hour), "移除成员")
+	removed.StartsAt = stamp.Add(2 * time.Hour)
+	store := &memoryStore{exists: true, records: []MemberRecord{active, expired, removed}}
+	service, _ := newTestService(t, store)
+
+	byStarts, err := service.querySelected(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 2}, querySelection{Sort: querySortStartsAtDesc})
+	if err != nil || !byStarts.HasMore || len(byStarts.Rows) != 2 || byStarts.Rows[0].MemberRef != expired.MemberRef || byStarts.Rows[1].MemberRef != removed.MemberRef || !strings.HasPrefix(byStarts.NextCursor, selectedCursorPrefix) {
+		t.Fatalf("start sort response=%+v error=%v", byStarts, err)
+	}
+	secondByStarts, err := service.querySelected(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 2, Cursor: byStarts.NextCursor}, querySelection{Sort: querySortStartsAtDesc})
+	if err != nil || secondByStarts.HasMore || len(secondByStarts.Rows) != 1 || secondByStarts.Rows[0].MemberRef != active.MemberRef {
+		t.Fatalf("start sort continuation=%+v error=%v", secondByStarts, err)
+	}
+
+	byState, err := service.querySelected(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 2}, querySelection{GroupBy: queryGroupState})
+	if err != nil || !byState.HasMore || len(byState.Rows) != 2 || byState.Rows[0].State != string(StateActive) || byState.Rows[1].State != string(StateExpired) {
+		t.Fatalf("state group response=%+v error=%v", byState, err)
+	}
+	secondByState, err := service.querySelected(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 2, Cursor: byState.NextCursor}, querySelection{GroupBy: queryGroupState})
+	if err != nil || secondByState.HasMore || len(secondByState.Rows) != 1 || secondByState.Rows[0].State != string(StateRemoved) {
+		t.Fatalf("state group continuation=%+v error=%v", secondByState, err)
+	}
+
+	defaultView, err := service.querySelected(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 50}, querySelection{ViewID: "default"})
+	if err != nil || len(defaultView.Rows) != 3 || defaultView.Rows[0].MemberRef != removed.MemberRef {
+		t.Fatalf("default view=%+v error=%v", defaultView, err)
+	}
+	for _, testCase := range []struct {
+		name      string
+		input     QueryInput
+		selection querySelection
+	}{
+		{"legacy saved view", QueryInput{ProductID: 71, State: StateAll, Limit: 2}, querySelection{ViewID: "9"}},
+		{"default with filter", QueryInput{ProductID: 71, State: StateActive, Limit: 2}, querySelection{ViewID: "default"}},
+		{"unknown sort", QueryInput{ProductID: 71, State: StateAll, Limit: 2}, querySelection{Sort: "granted_at_desc"}},
+		{"unknown group", QueryInput{ProductID: 71, State: StateAll, Limit: 2}, querySelection{GroupBy: "source"}},
+		{"cursor selection mismatch", QueryInput{ProductID: 71, State: StateAll, Limit: 2, Cursor: byStarts.NextCursor}, querySelection{GroupBy: queryGroupState}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if _, queryErr := service.querySelected(context.Background(), testCase.input, testCase.selection); !errors.Is(queryErr, ErrInvalidQuery) && !errors.Is(queryErr, ErrInvalidCursor) {
+				t.Fatalf("input=%+v selection=%+v error=%v", testCase.input, testCase.selection, queryErr)
+			}
+		})
+	}
+}
+
+func TestQuerySelectsMG2OnlyForDefaultAndMG3ForBoundSelections(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 1, 2, 3, 0, time.UTC)
+	store := &memoryStore{exists: true, records: []MemberRecord{
+		memberRecord("spm_0000000000000000000001", 71, StateActive, SourceManual, stamp.Add(time.Hour), "A"),
+		memberRecord("spm_0000000000000000000002", 71, StateExpired, SourceManual, stamp, "B"),
+		memberRecord("spm_0000000000000000000003", 71, StateRemoved, SourceManual, stamp.Add(-time.Hour), "C"),
+	}}
+	service, _ := newTestService(t, store)
+	defaultPage, err := service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1})
+	if err != nil || !strings.HasPrefix(defaultPage.NextCursor, cursorPrefix) {
+		t.Fatalf("default page=%+v error=%v", defaultPage, err)
+	}
+	defaultView, err := service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1, ViewID: "default"})
+	if err != nil || !strings.HasPrefix(defaultView.NextCursor, cursorPrefix) {
+		t.Fatalf("default view page=%+v error=%v", defaultView, err)
+	}
+	selectedPage, err := service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1, Sort: string(querySortStartsAtDesc), GroupBy: string(queryGroupState)})
+	if err != nil || !strings.HasPrefix(selectedPage.NextCursor, selectedCursorPrefix) {
+		t.Fatalf("selected page=%+v error=%v", selectedPage, err)
+	}
+	if _, err = service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1, Sort: string(querySortStartsAtDesc), Cursor: defaultPage.NextCursor}); !errors.Is(err, ErrInvalidCursor) {
+		t.Fatalf("legacy cursor accepted for selection: %v", err)
+	}
+	if _, err = service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1, Sort: "name_asc"}); !errors.Is(err, ErrInvalidQuery) {
+		t.Fatalf("unknown sort error=%v", err)
+	}
+	if _, err = service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1, GroupBy: "source"}); !errors.Is(err, ErrInvalidQuery) {
+		t.Fatalf("unknown group error=%v", err)
+	}
+	if _, err = service.Query(context.Background(), QueryInput{ProductID: 71, State: StateAll, Limit: 1, ViewID: "legacy"}); !errors.Is(err, ErrInvalidQuery) {
+		t.Fatalf("unknown view error=%v", err)
+	}
+}
+
+func TestSelectedQueryDoesNotFallBackToLegacyStore(t *testing.T) {
+	store := &legacyOnlyStore{}
+	service, _ := newTestService(t, store)
+	if _, err := service.querySelected(context.Background(), QueryInput{ProductID: 1, State: StateAll, Limit: 1}, querySelection{}); !errors.Is(err, ErrUnavailable) || store.queryCalls != 0 {
+		t.Fatalf("error/query calls=%v/%d", err, store.queryCalls)
 	}
 }
 

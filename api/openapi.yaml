@@ -11964,8 +11964,8 @@ paths:
       summary: Compare-and-swap bounded local remark and alliance fields
       description: Uses the opaque member_ref, not a phone, unionid, openid, or other external identity key.
       x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
-      x-aicrm-capability: entitlements.write
-      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-capability: member_grid.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal_pii
@@ -12049,8 +12049,8 @@ paths:
       summary: Read local member-grid access; external sharing remains disabled
       x-legacy-mapping-ids: [LEGACY-API-0476]
       x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
-      x-aicrm-capability: products.read
-      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-capability: member_grid.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal_pii
@@ -12070,8 +12070,8 @@ paths:
       operationId: getServicePeriodMemberGridSchema
       summary: Read the closed local member-grid schema
       x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24
-      x-aicrm-capability: products.read
-      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-capability: member_grid.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal_pii
@@ -12091,8 +12091,8 @@ paths:
       operationId: queryServicePeriodMemberGrid
       summary: Query canonical local service-period member rows; it neither adds nor changes members
       x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24
-      x-aicrm-capability: entitlements.read
-      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-capability: member_grid.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal_pii
@@ -12114,8 +12114,8 @@ paths:
       summary: List closed built-in member-grid views
       x-legacy-mapping-ids: [LEGACY-API-0484]
       x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
-      x-aicrm-capability: products.read
-      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-capability: member_grid.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal_pii
@@ -21545,11 +21545,12 @@ components:
     ServicePeriodMemberGridAccess:
       type: object
       additionalProperties: false
-      required: [product_id, can_view, can_query, can_manage_views, can_share]
+      required: [product_id, can_view, can_query, can_edit, can_manage_views, can_share]
       properties:
         product_id: { type: integer, format: int64, minimum: 1 }
         can_view: { type: boolean, enum: [true] }
         can_query: { type: boolean, enum: [true] }
+        can_edit: { type: boolean }
         can_manage_views: { type: boolean, enum: [false] }
         can_share: { type: boolean, enum: [false] }
     ServicePeriodMemberGridColumn:
@@ -21592,6 +21593,9 @@ components:
         source: { $ref: "#/components/schemas/ServicePeriodMemberSource" }
         limit: { type: integer, minimum: 1, maximum: 50, default: 50 }
         cursor: { type: string, nullable: true, maxLength: 256 }
+        sort: { type: string, enum: [updated_at_desc, starts_at_desc], default: updated_at_desc }
+        group_by: { type: string, enum: [state] }
+        view_id: { type: string, enum: [default] }
     ServicePeriodMemberGridMember:
       type: object
       additionalProperties: false
@@ -21718,7 +21722,7 @@ components:
       properties:
         ok: { type: boolean, enum: [true] }
         collaborator: { $ref: "#/components/schemas/ServicePeriodMemberGridCollaborator" }
-        edit_permission_is_local_metadata_only: { type: boolean, enum: [true] }
+        edit_permission_is_local_metadata_only: { type: boolean, enum: [false] }
         grants_central_products_permission: { type: boolean, enum: [false] }
     ServicePeriodMemberGridCollaboratorDeleteResponse:
       type: object
@@ -21728,7 +21732,7 @@ components:
         ok: { type: boolean, enum: [true] }
         deleted: { type: boolean, enum: [true] }
         collaborator: { $ref: "#/components/schemas/ServicePeriodMemberGridCollaborator" }
-        edit_permission_is_local_metadata_only: { type: boolean, enum: [true] }
+        edit_permission_is_local_metadata_only: { type: boolean, enum: [false] }
         grants_central_products_permission: { type: boolean, enum: [false] }
     ServicePeriodMemberGridShareSettings:
       type: object
@@ -21742,7 +21746,7 @@ components:
         external_share_enabled: { type: boolean }
         external_share_version: { type: integer, format: int64, minimum: 0 }
         real_external_call_executed: { type: boolean, enum: [false] }
-        collaborator_edit_is_local_metadata_only: { type: boolean, enum: [true] }
+        collaborator_edit_is_local_metadata_only: { type: boolean, enum: [false] }
         collaborator_edit_grants_central_permission: { type: boolean, enum: [false] }
     ServicePeriodMemberGridExternalShareSetRequest:
       type: object

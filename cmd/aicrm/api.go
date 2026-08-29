@@ -1251,12 +1251,18 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	memberGridService, err := membergrid.NewService(uow, membergrid.NewRepository(), memberGridCursor)
+	memberGridRepository := membergrid.NewRepository()
+	memberGridService, err := membergrid.NewService(uow, memberGridRepository, memberGridCursor)
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
-	memberGridHandler, err := membergrid.NewHandler(memberGridService)
+	memberGridAccessService, err := membergrid.NewAccessService(memberGridService, uow, memberGridRepository, servicePeriodMemberService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridHandler, err := membergrid.NewHandler(memberGridAccessService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -2824,7 +2830,6 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.AddServicePeriodMember)},
 		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members/export", authport.CapabilityEntitlementsRead, true, http.HandlerFunc(wrapper.ExportServicePeriodMembers)},
 		{http.MethodGet, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.GetServicePeriodMember)},
-		{http.MethodPut, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}/fields", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.UpdateServicePeriodMemberFields)},
 		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}/expire", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.ExpireServicePeriodMember)},
 		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.RemoveServicePeriodMember)},
 		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
@@ -3187,13 +3192,15 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			for _, route := range []struct {
 				method, pattern string
 				capability      authport.Capability
+				csrf            bool
 			}{
-				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/access", authport.CapabilityProductsRead},
-				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/schema", authport.CapabilityProductsRead},
-				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-views", authport.CapabilityProductsRead},
-				{http.MethodPost, membergrid.RoutePrefix + "/{service_product_id}/member-grid/query", authport.CapabilityEntitlementsRead},
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/access", authport.CapabilityMemberGridRead, false},
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/schema", authport.CapabilityMemberGridRead, false},
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-views", authport.CapabilityMemberGridRead, false},
+				{http.MethodPost, membergrid.RoutePrefix + "/{service_product_id}/member-grid/query", authport.CapabilityMemberGridRead, false},
+				{http.MethodPut, membergrid.RoutePrefix + "/{service_product_id}/members/{member_ref}/fields", authport.CapabilityMemberGridWrite, true},
 			} {
-				if err = registerLegacy(route.method, route.pattern, route.capability, false, legacy.memberGrid); err != nil {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.memberGrid); err != nil {
 					return nil, err
 				}
 			}

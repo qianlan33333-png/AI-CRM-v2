@@ -536,7 +536,7 @@ func TestManagementCollaboratorLifecycleActiveUniqueScopeAndShareSettings(t *tes
 	}
 	created, err := service.CreateCollaborator(context.Background(), createCommand)
 	if err != nil || !created.OK || created.Collaborator.Version != 1 ||
-		!created.EditPermissionIsLocalMetadataOnly || created.GrantsCentralProductsPermission {
+		created.EditPermissionIsLocalMetadataOnly || created.GrantsCentralProductsPermission {
 		t.Fatalf("created=%+v err=%v", created, err)
 	}
 	replayed, err := service.CreateCollaborator(context.Background(), createCommand)
@@ -599,7 +599,7 @@ func TestManagementCollaboratorLifecycleActiveUniqueScopeAndShareSettings(t *tes
 		t.Fatal(err)
 	}
 	if settings.ExternalShareSupported || settings.ExternalShareEnabled || settings.RealExternalCallExecuted ||
-		!settings.CollaboratorEditIsLocalMetadataOnly || settings.CollaboratorEditGrantsCentralPermission ||
+		settings.CollaboratorEditIsLocalMetadataOnly || settings.CollaboratorEditGrantsCentralPermission ||
 		len(settings.Collaborators) != 1 || settings.Collaborators[0].Permission != CollaboratorPermissionEdit {
 		t.Fatalf("settings=%+v", settings)
 	}
@@ -616,7 +616,7 @@ func TestManagementCollaboratorLifecycleActiveUniqueScopeAndShareSettings(t *tes
 		ActorID: 3, IdempotencyKey: "collaborator-delete-01",
 	}
 	deleted, err := service.DeleteCollaborator(context.Background(), deleteCommand)
-	if err != nil || !deleted.Deleted || !deleted.EditPermissionIsLocalMetadataOnly || deleted.GrantsCentralProductsPermission {
+	if err != nil || !deleted.Deleted || deleted.EditPermissionIsLocalMetadataOnly || deleted.GrantsCentralProductsPermission {
 		t.Fatalf("deleted=%+v err=%v", deleted, err)
 	}
 	replayedDelete, err := service.DeleteCollaborator(context.Background(), deleteCommand)

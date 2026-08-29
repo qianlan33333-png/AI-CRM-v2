@@ -59,8 +59,8 @@ type SavedView struct {
 	UpdatedAt        time.Time   `json:"updated_at"`
 }
 
-// Collaborator is local staff permission metadata for this member grid. The
-// edit value is not an authorization grant for Product or any central service.
+// Collaborator is a product-local Member Grid permission. It never grants
+// Product or any central service permission.
 type Collaborator struct {
 	ID               int64                  `json:"collaborator_id"`
 	ServiceProductID int64                  `json:"service_product_id"`

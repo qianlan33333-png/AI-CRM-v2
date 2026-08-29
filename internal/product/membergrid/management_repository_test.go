@@ -61,6 +61,11 @@ func TestManagementRepositorySQLIsClosedScopedAndCASBound(t *testing.T) {
 		strings.Contains(staffSQL, "wecom") || strings.Contains(staffSQL, "provider") {
 		t.Fatalf("active staff validation SQL=%s", activeStaffExistsSQL)
 	}
+	permissionSQL := strings.ToLower(collaboratorPermissionSQL)
+	if !strings.Contains(permissionSQL, "service_product_id = $1") || !strings.Contains(permissionSQL, "staff_id = $2") ||
+		!strings.Contains(permissionSQL, "is_active = true") || strings.Contains(permissionSQL, "provider") || strings.Contains(permissionSQL, "wecom") {
+		t.Fatalf("collaborator permission SQL=%s", collaboratorPermissionSQL)
+	}
 	for _, query := range []string{reserveManagementReceiptSQL, getManagementReceiptSQL, completeManagementReceiptSQL} {
 		if !strings.Contains(query, "public.product_operation_receipts") || strings.Contains(strings.ToLower(query), "external") {
 			t.Fatalf("receipt query escaped local Product receipt boundary: %s", query)
@@ -117,6 +122,14 @@ func TestManagementRepositoryReadsAndWritesClosedRows(t *testing.T) {
 	active, err := repository.ActiveStaffExists(context.Background(), 29)
 	if err != nil || !active || executor.queryRowSQL != activeStaffExistsSQL || !reflect.DeepEqual(executor.queryRowArgs, []any{int64(29)}) {
 		t.Fatalf("active/err/sql/args=%v/%v/%q/%v", active, err, executor.queryRowSQL, executor.queryRowArgs)
+	}
+
+	executor = &fakeSQLExecutor{row: fakeSQLRow{values: []any{"edit"}}}
+	repository = repositoryForExecutor(executor)
+	permission, found, err := repository.CollaboratorPermission(context.Background(), 7, 29)
+	if err != nil || !found || permission != CollaboratorPermissionEdit || executor.queryRowSQL != collaboratorPermissionSQL ||
+		!reflect.DeepEqual(executor.queryRowArgs, []any{int64(7), int64(29)}) {
+		t.Fatalf("permission/found/error/sql/args=%q/%v/%v/%q/%v", permission, found, err, executor.queryRowSQL, executor.queryRowArgs)
 	}
 }
 

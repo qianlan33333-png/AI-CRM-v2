@@ -47,17 +47,19 @@ No customer ID, raw mobile, unionid, external identity, opaque field, SQL, or
 arbitrary expression is accepted.
 
 Collaborators reference an existing active local `staff_id`. No provider sync or
-invitation is sent. `permission: "edit"` is **local metadata only**: it does not
-grant `products.write`, does not modify central RBAC, and is never consumed by
-this package as authorization.
+invitation is sent. The grant does not change central RBAC or grant
+`products.write`; the read fragment resolves the current product-local grant on
+each request. `view` allows the closed grid read routes, while `edit` additionally
+allows the bounded member `remark` and `alliance` CAS route.
 
 `share-settings` always returns:
 
 - `external_share_supported: false`
 - `external_share_enabled: false`
 - `real_external_call_executed: false`
-- `collaborator_edit_is_local_metadata_only: true`
+- `collaborator_edit_is_local_metadata_only: false`
 - `collaborator_edit_grants_central_permission: false`
 
-No public token, public route, QR code, member mutation, external invitation, or
-real external call exists in this fragment.
+No public token, public route, QR code, external invitation, or real external
+call exists in this fragment. Collaborator management remains restricted to the
+central `products.write` boundary.

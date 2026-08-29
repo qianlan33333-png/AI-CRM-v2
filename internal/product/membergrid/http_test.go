@@ -11,6 +11,7 @@ import (
 	"time"
 
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
 )
 
 type fakeApplication struct {
@@ -22,12 +23,16 @@ type fakeApplication struct {
 	schemaErr      error
 	viewsErr       error
 	queryErr       error
+	updateErr      error
+	member         memberdomain.Member
 	lastProductID  int64
 	lastQuery      QueryInput
+	lastUpdate     UpdateFieldsCommand
 	accessCalls    int
 	schemaCalls    int
 	viewsCalls     int
 	queryCalls     int
+	updateCalls    int
 }
 
 func (application *fakeApplication) Access(_ context.Context, productID int64) (AccessResponse, error) {
@@ -52,6 +57,12 @@ func (application *fakeApplication) Query(_ context.Context, input QueryInput) (
 	application.queryCalls++
 	application.lastQuery = input
 	return application.queryResponse, application.queryErr
+}
+
+func (application *fakeApplication) UpdateFields(_ context.Context, command UpdateFieldsCommand) (memberdomain.Member, error) {
+	application.updateCalls++
+	application.lastUpdate = command
+	return application.member, application.updateErr
 }
 
 func testFragment(t *testing.T, application *fakeApplication) http.Handler {
@@ -125,10 +136,10 @@ func TestRouteFragmentServesFourClosedRoutes(t *testing.T) {
 		capability authport.Capability
 		wantCall   *int
 	}{
-		{name: "access", method: http.MethodGet, path: "/17/member-grid/access", role: authport.RoleAdmin, capability: authport.CapabilityProductsRead, wantCall: &application.accessCalls},
-		{name: "schema", method: http.MethodGet, path: RoutePrefix + "/17/member-grid/schema", role: authport.RoleOps, capability: authport.CapabilityProductsRead, wantCall: &application.schemaCalls},
-		{name: "views", method: http.MethodGet, path: "/17/member-views", role: authport.RoleAdmin, capability: authport.CapabilityProductsRead, wantCall: &application.viewsCalls},
-		{name: "query", method: http.MethodPost, path: "/17/member-grid/query", body: `{"state":"active","source":"manual","limit":10,"cursor":""}`, role: authport.RoleOps, capability: authport.CapabilityEntitlementsRead, wantCall: &application.queryCalls},
+		{name: "access", method: http.MethodGet, path: "/17/member-grid/access", role: authport.RoleAdmin, capability: authport.CapabilityMemberGridRead, wantCall: &application.accessCalls},
+		{name: "schema", method: http.MethodGet, path: RoutePrefix + "/17/member-grid/schema", role: authport.RoleOps, capability: authport.CapabilityMemberGridRead, wantCall: &application.schemaCalls},
+		{name: "views", method: http.MethodGet, path: "/17/member-views", role: authport.RoleAdmin, capability: authport.CapabilityMemberGridRead, wantCall: &application.viewsCalls},
+		{name: "query", method: http.MethodPost, path: "/17/member-grid/query", body: `{"state":"active","source":"manual","limit":10,"cursor":""}`, role: authport.RoleOps, capability: authport.CapabilityMemberGridRead, wantCall: &application.queryCalls},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -156,7 +167,7 @@ func TestQueryResponseUsesOnlyClosedSafeFields(t *testing.T) {
 		Limit: 1, NextCursor: "opaque", HasMore: true,
 	}}
 	recorder := httptest.NewRecorder()
-	testFragment(t, application).ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/2/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityEntitlementsRead))
+	testFragment(t, application).ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/2/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityMemberGridRead))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status/body=%d/%s", recorder.Code, recorder.Body.String())
 	}
@@ -190,9 +201,9 @@ func TestAuthorizationFailsClosedByRoleAndCapability(t *testing.T) {
 		wantStatus int
 	}{
 		{name: "unauthenticated", request: unauthenticated, wantStatus: http.StatusUnauthorized},
-		{name: "sales", request: authorizedRequest(t, http.MethodGet, "/1/member-grid/access", "", authport.RoleSales, authport.CapabilityProductsRead), wantStatus: http.StatusForbidden},
+		{name: "sales with global scope", request: authorizedRequest(t, http.MethodGet, "/1/member-grid/access", "", authport.RoleSales, authport.CapabilityMemberGridRead), wantStatus: http.StatusForbidden},
 		{name: "no capability", request: authorizedRequest(t, http.MethodGet, "/1/member-grid/access", "", authport.RoleAdmin, ""), wantStatus: http.StatusForbidden},
-		{name: "wrong metadata capability", request: authorizedRequest(t, http.MethodGet, "/1/member-grid/access", "", authport.RoleAdmin, authport.CapabilityEntitlementsRead), wantStatus: http.StatusForbidden},
+		{name: "wrong metadata capability", request: authorizedRequest(t, http.MethodGet, "/1/member-grid/access", "", authport.RoleAdmin, authport.CapabilityProductsRead), wantStatus: http.StatusForbidden},
 		{name: "wrong query capability", request: authorizedRequest(t, http.MethodPost, "/1/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityProductsRead), wantStatus: http.StatusForbidden},
 	}
 	for _, testCase := range cases {
@@ -223,7 +234,7 @@ func TestInvalidIDsPathsQueriesAndMethodsAreRejected(t *testing.T) {
 	for _, rawID := range []string{"0", "-1", "01", "+1", "9223372036854775808"} {
 		t.Run("id_"+rawID, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodGet, "/"+rawID+"/member-grid/access", "", authport.RoleAdmin, authport.CapabilityProductsRead))
+			fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodGet, "/"+rawID+"/member-grid/access", "", authport.RoleAdmin, authport.CapabilityMemberGridRead))
 			if recorder.Code != http.StatusBadRequest {
 				t.Fatalf("status/body=%d/%s", recorder.Code, recorder.Body.String())
 			}
@@ -244,7 +255,7 @@ func TestInvalidIDsPathsQueriesAndMethodsAreRejected(t *testing.T) {
 	}
 	for _, testCase := range pathCases {
 		recorder := httptest.NewRecorder()
-		fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodGet, testCase.path, "", authport.RoleAdmin, authport.CapabilityProductsRead))
+		fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodGet, testCase.path, "", authport.RoleAdmin, authport.CapabilityMemberGridRead))
 		if recorder.Code != testCase.wantStatus {
 			t.Errorf("path=%q status/body=%d/%s", testCase.path, recorder.Code, recorder.Body.String())
 		}
@@ -262,11 +273,11 @@ func TestInvalidIDsPathsQueriesAndMethodsAreRejected(t *testing.T) {
 	}
 	for _, testCase := range methodCases {
 		method := http.MethodPost
-		capability := authport.CapabilityProductsRead
+		capability := authport.CapabilityMemberGridRead
 		body := `{}`
 		if testCase.allow == http.MethodPost {
 			method = http.MethodGet
-			capability = authport.CapabilityEntitlementsRead
+			capability = authport.CapabilityMemberGridRead
 			body = ""
 		}
 		recorder := httptest.NewRecorder()
@@ -288,7 +299,7 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 	}{
 		{name: "empty", body: "", wantStatus: http.StatusBadRequest},
 		{name: "array", body: `[]`, wantStatus: http.StatusBadRequest},
-		{name: "unknown", body: `{"sort":"id"}`, wantStatus: http.StatusBadRequest},
+		{name: "unknown", body: `{"unknown":"id"}`, wantStatus: http.StatusBadRequest},
 		{name: "columns", body: `{"columns":["customer_id"]}`, wantStatus: http.StatusBadRequest},
 		{name: "raw filter", body: `{"raw_filter":{"sql":"1=1"}}`, wantStatus: http.StatusBadRequest},
 		{name: "duplicate", body: `{"limit":1,"limit":2}`, wantStatus: http.StatusBadRequest},
@@ -309,7 +320,7 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			before := application.queryCalls
 			recorder := httptest.NewRecorder()
-			fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/1/member-grid/query", testCase.body, authport.RoleAdmin, authport.CapabilityEntitlementsRead))
+			fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/1/member-grid/query", testCase.body, authport.RoleAdmin, authport.CapabilityMemberGridRead))
 			if recorder.Code != testCase.wantStatus {
 				t.Fatalf("status/body=%d/%s", recorder.Code, recorder.Body.String())
 			}
@@ -320,7 +331,7 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 		})
 	}
 
-	request := authorizedRequest(t, http.MethodPost, "/1/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityEntitlementsRead)
+	request := authorizedRequest(t, http.MethodPost, "/1/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityMemberGridRead)
 	request.Header.Set("Content-Type", "text/plain")
 	recorder := httptest.NewRecorder()
 	fragment.ServeHTTP(recorder, request)
@@ -330,10 +341,63 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 
 	for _, body := range []string{`{}`, `{"cursor":null}`, `{"cursor":""}`} {
 		recorder = httptest.NewRecorder()
-		fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/1/member-grid/query", body, authport.RoleAdmin, authport.CapabilityEntitlementsRead))
+		fragment.ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/1/member-grid/query", body, authport.RoleAdmin, authport.CapabilityMemberGridRead))
 		if recorder.Code != http.StatusOK || application.lastQuery.State != StateAll || application.lastQuery.Limit != DefaultLimit || application.lastQuery.Cursor != "" {
 			t.Fatalf("empty cursor/default query body/status/input/response=%s/%d/%+v/%s", body, recorder.Code, application.lastQuery, recorder.Body.String())
 		}
+	}
+	selected := httptest.NewRecorder()
+	testFragment(t, application).ServeHTTP(selected, authorizedRequest(t, http.MethodPost, "/1/member-grid/query", `{"sort":"starts_at_desc","group_by":"state"}`, authport.RoleAdmin, authport.CapabilityMemberGridRead))
+	if selected.Code != http.StatusOK || application.lastQuery.Sort != "starts_at_desc" || application.lastQuery.GroupBy != "state" {
+		t.Fatalf("selected status/query=%d/%+v body=%s", selected.Code, application.lastQuery, selected.Body.String())
+	}
+}
+
+func TestUpdateFieldsUsesNarrowMemberGridWriteContract(t *testing.T) {
+	application := &fakeApplication{}
+	request := authorizedRequest(t, http.MethodPut, "/7/members/spm_0000000000000000000001/fields", `{"expected_version":2,"remark":"备注","alliance":"联盟"}`, authport.RoleAdmin, authport.CapabilityMemberGridWrite)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "member-grid-fields-0001")
+	recorder := httptest.NewRecorder()
+	testFragment(t, application).ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK || application.updateCalls != 1 || application.lastUpdate.ProductID != 7 || application.lastUpdate.ExpectedVersion != 2 ||
+		application.lastUpdate.Remark == nil || *application.lastUpdate.Remark != "备注" || application.lastUpdate.Alliance == nil || *application.lastUpdate.Alliance != "联盟" ||
+		application.lastUpdate.IdempotencyKey != "member-grid-fields-0001" {
+		t.Fatalf("status/calls/command=%d/%d/%+v body=%s", recorder.Code, application.updateCalls, application.lastUpdate, recorder.Body.String())
+	}
+	assertSecurityHeaders(t, recorder)
+
+	for _, testCase := range []struct {
+		body       string
+		wantStatus int
+	}{
+		{body: `{}`, wantStatus: http.StatusUnprocessableEntity},
+		{body: `{"expected_version":0,"remark":"备注"}`, wantStatus: http.StatusUnprocessableEntity},
+		{body: `{"expected_version":2,"unknown":true}`, wantStatus: http.StatusBadRequest},
+	} {
+		request = authorizedRequest(t, http.MethodPut, "/7/members/spm_0000000000000000000001/fields", testCase.body, authport.RoleAdmin, authport.CapabilityMemberGridWrite)
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Idempotency-Key", "member-grid-fields-0001")
+		recorder = httptest.NewRecorder()
+		testFragment(t, application).ServeHTTP(recorder, request)
+		if recorder.Code != testCase.wantStatus {
+			t.Fatalf("body=%s status/body=%d/%s", testCase.body, recorder.Code, recorder.Body.String())
+		}
+	}
+	request = authorizedRequest(t, http.MethodPut, "/7/members/spm_0000000000000000000001/fields", `{"expected_version":2,"remark":"备注"}`, authport.RoleAdmin, authport.CapabilityMemberGridWrite)
+	request.Header.Set("Content-Type", "application/json")
+	recorder = httptest.NewRecorder()
+	testFragment(t, application).ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusUnprocessableEntity || application.updateCalls != 1 {
+		t.Fatalf("missing key status/calls=%d/%d body=%s", recorder.Code, application.updateCalls, recorder.Body.String())
+	}
+	request = authorizedRequest(t, http.MethodPut, "/7/members/spm_0000000000000000000001/fields", `{"expected_version":2,"remark":"备注"}`, authport.RoleAdmin, authport.CapabilityMemberGridWrite)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", " member-grid-fields-0001")
+	recorder = httptest.NewRecorder()
+	testFragment(t, application).ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusUnprocessableEntity || application.updateCalls != 1 {
+		t.Fatalf("whitespace key status/calls=%d/%d body=%s", recorder.Code, application.updateCalls, recorder.Body.String())
 	}
 }
 
@@ -345,6 +409,7 @@ func TestApplicationFailuresUseCanonicalErrorShapeAndHeaders(t *testing.T) {
 		wantCode   string
 	}{
 		{name: "not found", err: ErrNotFound, wantStatus: http.StatusNotFound, wantCode: "NOT_FOUND"},
+		{name: "forbidden", err: authport.ErrUnauthorized, wantStatus: http.StatusForbidden, wantCode: "UNAUTHORIZED"},
 		{name: "cursor", err: ErrInvalidCursor, wantStatus: http.StatusBadRequest, wantCode: "CURSOR_INVALID"},
 		{name: "database", err: errors.New("database failed"), wantStatus: http.StatusServiceUnavailable, wantCode: "DEPENDENCY_UNAVAILABLE"},
 	}
@@ -352,7 +417,7 @@ func TestApplicationFailuresUseCanonicalErrorShapeAndHeaders(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			application := &fakeApplication{queryErr: testCase.err}
 			recorder := httptest.NewRecorder()
-			testFragment(t, application).ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/3/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityEntitlementsRead))
+			testFragment(t, application).ServeHTTP(recorder, authorizedRequest(t, http.MethodPost, "/3/member-grid/query", `{}`, authport.RoleAdmin, authport.CapabilityMemberGridRead))
 			if recorder.Code != testCase.wantStatus {
 				t.Fatalf("status/body=%d/%s", recorder.Code, recorder.Body.String())
 			}
