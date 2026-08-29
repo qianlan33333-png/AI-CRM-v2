@@ -35,7 +35,7 @@ func TestCustomerTimelineHistoryImportReplayAndReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first != (CustomerTimelineHistoryImportResult{Imported: 2, Quarantined: 1}) || ready.calls != 1 || state.uow.commits != 1 || len(state.targets) != 2 || len(state.terminals) != 3 {
+	if first != (CustomerTimelineHistoryImportResult{Imported: 2, Quarantined: 1}) || ready.calls != 1 || state.uow.commits != 2 || len(state.targets) != 2 || len(state.terminals) != 3 {
 		t.Fatalf("first import=%#v ready=%d state=%#v", first, ready.calls, state)
 	}
 	if got := state.targets[1].CustomerID; got == nil || *got != 17 {
@@ -108,7 +108,7 @@ func TestCustomerTimelineHistoryFailsClosedBeforeWriteAndOnTargetDrift(t *testin
 	ready := &customerTimelineHistoryReady{err: errors.New("not reconciled")}
 	archive := &customerTimelineHistoryArchive{rows: []v1archive.ArchivedRow{customerTimelineHistoryRow(t, 1, 1, "")}}
 	importer := customerTimelineHistoryImporter(t, ready, archive, state, customerTimelineHistoryResolver{})
-	if _, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey); !errors.Is(err, ready.err) || archive.calls != 0 || state.uow.calls != 0 {
+	if _, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey); !errors.Is(err, ready.err) || archive.calls != 0 || state.uow.calls != 1 || state.uow.commits != 0 || state.uow.rollbacks != 1 {
 		t.Fatalf("archive readiness did not stop writes: err=%v archive=%d uow=%d", err, archive.calls, state.uow.calls)
 	}
 
@@ -126,6 +126,41 @@ func TestCustomerTimelineHistoryFailsClosedBeforeWriteAndOnTargetDrift(t *testin
 	state.targets[1] = tampered
 	if _, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey); !errors.Is(err, ErrConflict) || state.reconciliation == nil || *state.reconciliation != sealed || state.sealRecords != 1 || state.uow.rollbacks == 0 || first.Replayed {
 		t.Fatalf("target drift accepted or seal changed: err=%v seal=%#v records=%d rollbacks=%d", err, state.reconciliation, state.sealRecords, state.uow.rollbacks)
+	}
+}
+
+func TestCustomerTimelineHistoryReconcileRechecksVerifiedUnionIDBinding(t *testing.T) {
+	state := newCustomerTimelineHistoryState()
+	resolver := customerTimelineHistoryResolver{"verified": customerTimelineHistoryInt64Pointer(17)}
+	archive := &customerTimelineHistoryArchive{rows: []v1archive.ArchivedRow{customerTimelineHistoryRow(t, 1, 1, "verified")}}
+	importer := customerTimelineHistoryImporter(t, &customerTimelineHistoryReady{}, archive, state, resolver)
+	if _, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey); err != nil {
+		t.Fatal(err)
+	}
+	resolver["verified"] = nil
+	if _, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey); !errors.Is(err, ErrConflict) || state.reconciliation != nil {
+		t.Fatalf("unverified customer reference accepted: err=%v seal=%#v", err, state.reconciliation)
+	}
+}
+
+func TestCustomerTimelineHistoryReconcileKeepsSealStableAcrossBatchRetry(t *testing.T) {
+	state := newCustomerTimelineHistoryState()
+	archive := &customerTimelineHistoryArchive{rows: []v1archive.ArchivedRow{customerTimelineHistoryRow(t, 1, 1, "")}}
+	importer := customerTimelineHistoryImporter(t, &customerTimelineHistoryReady{}, archive, state, customerTimelineHistoryResolver{})
+	if _, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey); err != nil {
+		t.Fatal(err)
+	}
+	state.uow.retryAtCall = state.uow.calls + 2 // readiness is next; retry the source/target comparison batch.
+	retried, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
+	if err != nil || state.uow.retries != 1 || state.reconciliation == nil {
+		t.Fatalf("reconciliation retry failed: result=%#v retries=%d seal=%#v err=%v", retried, state.uow.retries, state.reconciliation, err)
+	}
+	state.reconciliation = nil
+	state.sealRecords = 0
+	state.uow.retryAtCall = 0
+	plain, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
+	if err != nil || retried.ComparisonDigest != plain.ComparisonDigest || retried.SelectedSourceCount != plain.SelectedSourceCount {
+		t.Fatalf("retry altered aggregate proof: retry=%#v plain=%#v err=%v", retried, plain, err)
 	}
 }
 
@@ -194,6 +229,8 @@ type customerTimelineHistoryUOW struct {
 	state          *customerTimelineHistoryState
 	calls, commits int
 	rollbacks      int
+	retryAtCall    int
+	retries        int
 }
 
 func (uow *customerTimelineHistoryUOW) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -206,6 +243,15 @@ func (uow *customerTimelineHistoryUOW) Within(ctx context.Context, callback func
 		uow.state.restore(before)
 		uow.rollbacks++
 		return err
+	}
+	if uow.retryAtCall == uow.calls {
+		uow.state.restore(before)
+		uow.retries++
+		if err := callback(ctx); err != nil {
+			uow.state.restore(before)
+			uow.rollbacks++
+			return err
+		}
 	}
 	uow.commits++
 	return nil

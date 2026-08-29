@@ -1,6 +1,7 @@
 package v1domain
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -103,7 +104,9 @@ func (importer *CustomerTimelineHistoryImporter) Import(ctx context.Context, arc
 	if !importer.valid(ctx, archiveRunID, sourceHMACKey) {
 		return CustomerTimelineHistoryImportResult{}, ErrInvalidScope
 	}
-	if err := importer.ready.VerifyCustomerTimelineArchiveReady(ctx, archiveRunID); err != nil {
+	if err := importer.uow.Within(ctx, func(bound context.Context) error {
+		return importer.ready.VerifyCustomerTimelineArchiveReady(bound, archiveRunID)
+	}); err != nil {
 		return CustomerTimelineHistoryImportResult{}, err
 	}
 	consumer := &customerTimelineImportConsumer{importer: importer, archiveRunID: archiveRunID}
@@ -119,7 +122,9 @@ func (importer *CustomerTimelineHistoryImporter) Reconcile(ctx context.Context, 
 	if !importer.valid(ctx, archiveRunID, sourceHMACKey) {
 		return CustomerTimelineHistoryReconciliationResult{}, ErrInvalidScope
 	}
-	if err := importer.ready.VerifyCustomerTimelineArchiveReady(ctx, archiveRunID); err != nil {
+	if err := importer.uow.Within(ctx, func(bound context.Context) error {
+		return importer.ready.VerifyCustomerTimelineArchiveReady(bound, archiveRunID)
+	}); err != nil {
 		return CustomerTimelineHistoryReconciliationResult{}, err
 	}
 	consumer := &customerTimelineReconcileConsumer{importer: importer, archiveRunID: archiveRunID, hash: sha256.New()}
@@ -252,8 +257,10 @@ func (consumer *customerTimelineReconcileConsumer) ConsumeCustomerTimelineBatch(
 		return ErrInvalidScope
 	}
 	var selected, imported, quarantined, verified int64
+	var comparison bytes.Buffer
 	err := consumer.importer.uow.Within(ctx, func(tx context.Context) error {
 		selected, imported, quarantined, verified = 0, 0, 0, 0
+		comparison.Reset()
 		for _, row := range batch.Rows {
 			terminal, found, err := consumer.importer.journal.LoadCustomerTimelineTerminal(tx, customerTimelineHistoryVersion, row.Source.SourceKeyHMAC)
 			if err != nil || !found || !customerTimelineTerminalMatchesRow(terminal, consumer.archiveRunID, row) {
@@ -267,7 +274,7 @@ func (consumer *customerTimelineReconcileConsumer) ConsumeCustomerTimelineBatch(
 				if getErr != nil {
 					return getErr
 				}
-				expected, valueErr := consumer.importer.targetValueWithoutResolve(*row.Fact, actual.CustomerID)
+				expected, valueErr := consumer.importer.targetValue(tx, *row.Fact)
 				if valueErr != nil {
 					return valueErr
 				}
@@ -283,7 +290,7 @@ func (consumer *customerTimelineReconcileConsumer) ConsumeCustomerTimelineBatch(
 			} else {
 				quarantined++
 			}
-			if err := json.NewEncoder(consumer.hash).Encode([]any{
+			if err := json.NewEncoder(&comparison).Encode([]any{
 				timeline.TableID, row.Source.SourceOrdinal, hex.EncodeToString(row.Source.SourceKeyHMAC[:]),
 				hex.EncodeToString(row.Source.PayloadHMAC[:]), hex.EncodeToString(row.Source.FieldHMAC[:]),
 				row.Disposition, row.Reason, terminal.TargetID, hex.EncodeToString(terminal.TargetDigest[:]),
@@ -298,26 +305,15 @@ func (consumer *customerTimelineReconcileConsumer) ConsumeCustomerTimelineBatch(
 	if err != nil {
 		return err
 	}
+	if _, err := consumer.hash.Write(comparison.Bytes()); err != nil {
+		return err
+	}
 	consumer.result.SelectedSourceCount += selected
 	consumer.result.ReceiptCount += selected
 	consumer.result.ImportedCount += imported
 	consumer.result.QuarantinedCount += quarantined
 	consumer.result.VerifiedCount += verified
 	return nil
-}
-
-func (importer *CustomerTimelineHistoryImporter) targetValueWithoutResolve(fact timeline.TimelineEventFact, customerID *int64) (contact.HistoricalCustomerTimelineEvent, error) {
-	value := contact.HistoricalCustomerTimelineEvent{SourceKeyDigest: fact.Source.SourceKeyHMAC, SourcePayloadDigest: fact.Source.PayloadHMAC, SourceFieldDigest: fact.Source.FieldHMAC,
-		SourceID: fact.SourceID, EventID: fact.EventID, EventType: fact.EventType, EventTime: fact.EventTime, Title: fact.Title, Summary: fact.Summary,
-		SourceTable: fact.SourceTable, SourceValue: fact.SourceValue, MetadataJSON: append([]byte(nil), fact.MetadataJSON...), CreatedAt: fact.CreatedAt, UnionID: fact.UnionID}
-	if customerID != nil {
-		if *customerID < 1 {
-			return contact.HistoricalCustomerTimelineEvent{}, ErrConflict
-		}
-		copied := *customerID
-		value.CustomerID = &copied
-	}
-	return value, nil
 }
 
 func (consumer *customerTimelineReconcileConsumer) seal(ctx context.Context) (CustomerTimelineHistoryReconciliationResult, error) {
