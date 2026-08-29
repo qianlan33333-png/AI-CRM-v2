@@ -41,6 +41,7 @@ type Querier interface {
 	LockActiveBindCustomersForMerge(ctx context.Context, customerIds []int64) ([]int64, error)
 	LockActiveMergeReviewCustomers(ctx context.Context, customerIds []int64) ([]int64, error)
 	LockHistoricalScopedWeComIdentity(ctx context.Context, identityID int64) (LockHistoricalScopedWeComIdentityRow, error)
+	LockHistoricalScopedWeComIdentityEvidence(ctx context.Context, identityID int64) (LockHistoricalScopedWeComIdentityEvidenceRow, error)
 	LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error)
 	LockMergeReview(ctx context.Context, reviewID int64) (LockMergeReviewRow, error)
 	LockPendingReplayIdentities(ctx context.Context, identityIds []int64) ([]LockPendingReplayIdentitiesRow, error)

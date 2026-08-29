@@ -1051,6 +1051,41 @@ func (q *Queries) LockHistoricalScopedWeComIdentity(ctx context.Context, identit
 	return i, err
 }
 
+const lockHistoricalScopedWeComIdentityEvidence = `-- name: LockHistoricalScopedWeComIdentityEvidence :one
+SELECT id, customer_id, kind, scope, normalized_value, assurance,
+       fingerprint_key_version, review_fingerprint
+FROM identities
+WHERE id = $1::bigint
+FOR SHARE
+`
+
+type LockHistoricalScopedWeComIdentityEvidenceRow struct {
+	ID                    int64       `json:"id"`
+	CustomerID            pgtype.Int8 `json:"customer_id"`
+	Kind                  string      `json:"kind"`
+	Scope                 string      `json:"scope"`
+	NormalizedValue       string      `json:"normalized_value"`
+	Assurance             string      `json:"assurance"`
+	FingerprintKeyVersion int16       `json:"fingerprint_key_version"`
+	ReviewFingerprint     []byte      `json:"review_fingerprint"`
+}
+
+func (q *Queries) LockHistoricalScopedWeComIdentityEvidence(ctx context.Context, identityID int64) (LockHistoricalScopedWeComIdentityEvidenceRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalScopedWeComIdentityEvidence, identityID)
+	var i LockHistoricalScopedWeComIdentityEvidenceRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.Kind,
+		&i.Scope,
+		&i.NormalizedValue,
+		&i.Assurance,
+		&i.FingerprintKeyVersion,
+		&i.ReviewFingerprint,
+	)
+	return i, err
+}
+
 const lockIdentityForBind = `-- name: LockIdentityForBind :one
 SELECT id, customer_id
 FROM identities

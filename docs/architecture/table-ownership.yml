@@ -62,6 +62,8 @@ owners:
       - contact_v1_class_term_tag_history
       - contact_v1_wecom_event_log_history
       - contact_v1_deferred_person_history
+      - contact_v1_external_binding_history
+      - contact_v1_directory_member_history
       - contact_v1_deferred_identity_conflict_history
       - contact_v1_missing_root_identity_history
       - contact_v1_wecom_follow_user_history
@@ -391,6 +393,8 @@ owners:
   operationcycle:
     package: internal/operationcycle
     tables:
+      - operation_cycle_v1_metric_history
+      - operation_cycle_v1_reference_history
       - operation_cycle_v1_strategy_history
       - operation_cycle_v1_version_history
       - operation_cycle_v1_document_history

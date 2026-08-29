@@ -65,6 +65,50 @@ type OperationCycleV1DocumentHistory struct {
 	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
 }
 
+type OperationCycleV1MetricHistory struct {
+	ID                   int64              `json:"id"`
+	SourceID             int64              `json:"source_id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	SourceFieldDigest    []byte             `json:"source_field_digest"`
+	RunSourceID          int64              `json:"run_source_id"`
+	MetricKey            string             `json:"metric_key"`
+	Label                string             `json:"label"`
+	Numerator            pgtype.Float8      `json:"numerator"`
+	Denominator          pgtype.Float8      `json:"denominator"`
+	Value                pgtype.Float8      `json:"value"`
+	Unit                 string             `json:"unit"`
+	ObservationWindow    string             `json:"observation_window"`
+	DataSource           string             `json:"data_source"`
+	DataQuality          string             `json:"data_quality"`
+	LimitationsJson      string             `json:"limitations_json"`
+	IsCausal             bool               `json:"is_causal"`
+	ValueStatus          string             `json:"value_status"`
+	LastSnapshotSourceID int64              `json:"last_snapshot_source_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OperationCycleV1ReferenceHistory struct {
+	ID                   int64              `json:"id"`
+	SourceID             int64              `json:"source_id"`
+	SourceKeyDigest      []byte             `json:"source_key_digest"`
+	SourcePayloadDigest  []byte             `json:"source_payload_digest"`
+	SourceFieldDigest    []byte             `json:"source_field_digest"`
+	RunSourceID          int64              `json:"run_source_id"`
+	ReferenceKey         string             `json:"reference_key"`
+	ReferenceType        string             `json:"reference_type"`
+	Label                string             `json:"label"`
+	SourceSystem         string             `json:"source_system"`
+	ReferenceSourceID    string             `json:"reference_source_id"`
+	Href                 string             `json:"href"`
+	EvidenceHash         string             `json:"evidence_hash"`
+	DataStatus           string             `json:"data_status"`
+	LastSnapshotSourceID int64              `json:"last_snapshot_source_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
 type OperationCycleV1StrategyHistory struct {
 	ID                  int64              `json:"id"`
 	SourceID            int64              `json:"source_id"`

@@ -1,16 +1,18 @@
-import { listStaticHistoryGroupInvite, getStaticHistoryGroupInvite, type StaticHistoryGroupInvite, listStaticHistoryProductPageSlice, getStaticHistoryProductPageSlice, type StaticHistoryProductPageSlice, listStaticHistoryCycleStrategy, getStaticHistoryCycleStrategy, type StaticHistoryCycleStrategy, listStaticHistoryCycleVersion, getStaticHistoryCycleVersion, type StaticHistoryCycleVersion, listStaticHistoryCycleDocument, getStaticHistoryCycleDocument, type StaticHistoryCycleDocument } from './generated/health';
+import { listStaticHistoryGroupInvite, getStaticHistoryGroupInvite, type StaticHistoryGroupInvite, listStaticHistoryProductPageSlice, getStaticHistoryProductPageSlice, type StaticHistoryProductPageSlice, listStaticHistoryCycleStrategy, getStaticHistoryCycleStrategy, type StaticHistoryCycleStrategy, listStaticHistoryCycleVersion, getStaticHistoryCycleVersion, type StaticHistoryCycleVersion, listStaticHistoryCycleDocument, getStaticHistoryCycleDocument, type StaticHistoryCycleDocument, listStaticHistoryCycleMetric, getStaticHistoryCycleMetric, type StaticHistoryCycleMetric, listStaticHistoryCycleReference, getStaticHistoryCycleReference, type StaticHistoryCycleReference } from './generated/health';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
-export type StaticHistoryKind = 'GroupInvite' | 'ProductPageSlice' | 'CycleStrategy' | 'CycleVersion' | 'CycleDocument';
-export type StaticHistoryItem = StaticHistoryGroupInvite | StaticHistoryProductPageSlice | StaticHistoryCycleStrategy | StaticHistoryCycleVersion | StaticHistoryCycleDocument;
+export type StaticHistoryKind = 'GroupInvite' | 'ProductPageSlice' | 'CycleStrategy' | 'CycleVersion' | 'CycleDocument' | 'CycleMetric' | 'CycleReference';
+export type StaticHistoryItem = StaticHistoryGroupInvite | StaticHistoryProductPageSlice | StaticHistoryCycleStrategy | StaticHistoryCycleVersion | StaticHistoryCycleDocument | StaticHistoryCycleMetric | StaticHistoryCycleReference;
 export type StaticHistoryPage = { items: StaticHistoryItem[]; total: number; limit: number; offset: number };
 type Row = Record<string, unknown>;
 const invalid = (): never => { throw new Error('静态历史响应无效，未显示旧数据'); };
 const integer = (x: unknown, min?: number): x is number => typeof x === 'number' && Number.isSafeInteger(x) && (min === undefined || x >= min);
+const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 const text = (x: unknown): x is string => typeof x === 'string';
 const instant = (x: unknown): boolean => text(x) && /(?:Z|[+-]\d{2}:\d{2})$/.test(x) && Number.isFinite(Date.parse(x));
 const digest = (x: unknown): boolean => Array.isArray(x) && x.length === 32 && x.every((v) => integer(v, 0) && v <= 255) && x.some((v) => v !== 0);
 const nullable = (x: unknown, check: (v: unknown) => boolean): boolean => x === null || check(x);
+const json = (x: unknown): boolean => x === null || typeof x === 'boolean' || text(x) || finite(x) || Array.isArray(x) || (typeof x === 'object' && x !== null);
 const fields: Record<StaticHistoryKind, Record<string, (x: unknown) => boolean>> = {
  GroupInvite: {
   name: text,
@@ -70,6 +72,37 @@ const fields: Record<StaticHistoryKind, Record<string, (x: unknown) => boolean>>
   document_pack_hash: text,
   created_at: instant,
  },
+ CycleMetric: {
+  run_source_id: integer,
+  metric_key: text,
+  label: text,
+  numerator: (x: unknown) => nullable(x, finite),
+  denominator: (x: unknown) => nullable(x, finite),
+  value: (x: unknown) => nullable(x, finite),
+  unit: text,
+  observation_window: text,
+  data_source: text,
+  data_quality: text,
+  limitations: json,
+  is_causal: (x: unknown) => typeof x === 'boolean',
+  value_status: text,
+  last_snapshot_source_id: integer,
+  created_at: instant,
+  updated_at: instant,
+ },
+ CycleReference: {
+  run_source_id: integer,
+  reference_key: text,
+  reference_type: text,
+  label: text,
+  source_system: text,
+  reference_source_id: text,
+  evidence_hash: text,
+  data_status: text,
+  last_snapshot_source_id: integer,
+  created_at: instant,
+  updated_at: instant,
+ },
 };
 function object(x: unknown, keys: string[]): Row {
  if (!x || typeof x !== 'object' || Array.isArray(x) || Object.keys(x).length !== keys.length || Object.keys(x).some((k) => !keys.includes(k))) invalid();
@@ -81,8 +114,9 @@ function envelope(x: unknown, keys: string[]): Row {
  return row;
 }
 function item(kind: StaticHistoryKind, x: unknown): StaticHistoryItem {
- const row = object(x, ['id', 'source_id', 'source_key_digest', 'source_payload_digest', ...Object.keys(fields[kind])]);
- if (!integer(row.id, 1) || !integer(row.source_id) || !digest(row.source_key_digest) || !digest(row.source_payload_digest) || Object.entries(fields[kind]).some(([key, check]) => !check(row[key]))) invalid();
+ const hasDigests = !['CycleMetric', 'CycleReference'].includes(kind);
+ const row = object(x, ['id', 'source_id', ...(hasDigests ? ['source_key_digest', 'source_payload_digest'] : []), ...Object.keys(fields[kind])]);
+ if (!integer(row.id, 1) || !integer(row.source_id) || hasDigests && (!digest(row.source_key_digest) || !digest(row.source_payload_digest)) || Object.entries(fields[kind]).some(([key, check]) => !check(row[key]))) invalid();
  return row as unknown as StaticHistoryItem;
 }
 function page(kind: StaticHistoryKind, x: unknown, limit: number, offset: number, parent?: number): StaticHistoryPage {
@@ -101,6 +135,8 @@ export async function readStaticHistory(kind: StaticHistoryKind, offset = 0, lim
  case 'CycleStrategy': return page(kind, unwrapGenerated(await listStaticHistoryCycleStrategy({limit,offset},apiRequestOptions())),limit,offset,parent);
  case 'CycleVersion': return page(kind, unwrapGenerated(await listStaticHistoryCycleVersion({limit,offset,strategy_history_id:parent},apiRequestOptions())),limit,offset,parent);
  case 'CycleDocument': return page(kind, unwrapGenerated(await listStaticHistoryCycleDocument({limit,offset,version_history_id:parent},apiRequestOptions())),limit,offset,parent);
+ case 'CycleMetric': return page(kind, unwrapGenerated(await listStaticHistoryCycleMetric({limit,offset},apiRequestOptions())),limit,offset,parent);
+ case 'CycleReference': return page(kind, unwrapGenerated(await listStaticHistoryCycleReference({limit,offset},apiRequestOptions())),limit,offset,parent);
  }
 }
 export async function getStaticHistory(kind: StaticHistoryKind, id: number): Promise<StaticHistoryItem> {
@@ -112,6 +148,8 @@ export async function getStaticHistory(kind: StaticHistoryKind, id: number): Pro
  case 'CycleStrategy': response=unwrapGenerated(await getStaticHistoryCycleStrategy(id,apiRequestOptions())); break;
  case 'CycleVersion': response=unwrapGenerated(await getStaticHistoryCycleVersion(id,apiRequestOptions())); break;
  case 'CycleDocument': response=unwrapGenerated(await getStaticHistoryCycleDocument(id,apiRequestOptions())); break;
+ case 'CycleMetric': response=unwrapGenerated(await getStaticHistoryCycleMetric(id,apiRequestOptions())); break;
+ case 'CycleReference': response=unwrapGenerated(await getStaticHistoryCycleReference(id,apiRequestOptions())); break;
  }
  const result=item(kind,envelope(response,['item']).item);
  if(result.id!==id) invalid();
