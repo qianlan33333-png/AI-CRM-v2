@@ -117,7 +117,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   [[ "$feature_id" =~ ^[A-Z][A-Z0-9-]+$ ]] || fail "invalid feature_id at line $line_number"
   for required_index in 1 2 3 4 5 6; do [[ -n "${CSV_FIELDS[$required_index]}" ]] || fail "required fact is empty at line $line_number"; done
   [[ "$legacy_sha" =~ ^[0-9a-f]{40}$ && -n "$source_evidence" ]] || fail "legacy source evidence is incomplete at line $line_number"
-  [[ "$disposition" =~ ^(UNREVIEWED|MIGRATE|MERGED|DEPRECATED)$ ]] || fail "invalid disposition at line $line_number"
+  [[ "$disposition" =~ ^(UNREVIEWED|MIGRATE|MERGED|DEPRECATED|DEFERRED_REDESIGN)$ ]] || fail "invalid disposition at line $line_number"
   [[ "$implementation" =~ ^(NOT_STARTED|IN_PROGRESS|IMPLEMENTED)$ ]] || fail "invalid implementation at line $line_number"
   [[ "$verification" =~ ^(NOT_RUN|SYNTHETIC_PASS|STAGING_PASS|PRODUCTION_PASS)$ ]] || fail "invalid verification at line $line_number"
   [[ "$signoff" =~ ^(NOT_REQUIRED|PENDING_HUMAN_SIGNOFF|APPROVED)$ ]] || fail "invalid signoff at line $line_number"
@@ -133,6 +133,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     else
       [[ "$signoff" == APPROVED && "$decision_evidence" == "$g1_d02_evidence" ]] || fail "MIGRATE row lacks exact G1-D02 decision evidence at line $line_number"
     fi
+  elif [[ "$disposition" == DEFERRED_REDESIGN ]]; then
+    [[ "$signoff" == APPROVED && "$implementation" == NOT_STARTED && "$verification" == NOT_RUN && -z "$target" && "$decision_evidence" =~ decision=DEFERRED_REDESIGN-[^\;]+ && "$decision_evidence" =~ approved_by=[^\;]+ && "$decision_evidence" =~ approved_at=[^\;]+ && "$decision_evidence" =~ reason=[^\;]+ && "$decision_evidence" =~ denominator=unchanged ]] || fail "DEFERRED_REDESIGN row lacks approved non-completion evidence at line $line_number"
   else
     [[ "$signoff" == APPROVED && "$decision_evidence" =~ approved_by=[^\;]+ && "$decision_evidence" =~ approved_at=[^\;]+ ]] || fail "decided row lacks approved decision evidence at line $line_number"
   fi
