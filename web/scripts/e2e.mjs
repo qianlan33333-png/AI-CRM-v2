@@ -1525,6 +1525,16 @@ console.log('admin/audienceEdit.html（HTTP V2 模板目录/预览/保存）');
   ok('Audience 模板保存调用真实配置契约并展示保存结果',
     save?.method === 'PUT' && save.body?.expected_package_version === 3 && save.body?.expected_configuration_version === 2 &&
     d.querySelector('[data-template-preview="已保存"]')?.textContent.includes('包 v4'));
+  const mismatchedKey = d.querySelector('#aeTemplateKey');
+  const mismatchedParams = d.querySelector('#aeTemplateParams');
+  if (mismatchedKey) mismatchedKey.value = 'stage_any';
+  if (mismatchedParams) mismatchedParams.value = '{"stage_ids":[1],"tag_ids":[1]}';
+  const previewCount = calls.filter((call) => call.path.endsWith('/template-preview')).length;
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '预览模板'));
+  await sleep(40);
+  ok('模板与参数错配在浏览器端拒绝且不发送请求',
+    calls.filter((call) => call.path.endsWith('/template-preview')).length === previewCount &&
+    d.querySelector('#fb-toast')?.textContent.includes('参数与模板不匹配'));
   dom.window.close();
 }
 

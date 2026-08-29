@@ -173,13 +173,24 @@ const audienceTemplateParameters = (value: unknown): AudienceTemplateParameters 
   }
   return result;
 };
+const audienceTemplateRequestParameters = (key: AudienceTemplateKey, value: unknown): AudienceTemplateParameters => {
+  const parameters = audienceTemplateParameters(value);
+  const expected = key === 'stage_any' ? 'stage_ids'
+    : key === 'tag_any' ? 'tag_ids'
+      : key === 'owner_any' ? 'owner_staff_ids'
+        : key === 'channel_any' ? 'channel_ids'
+          : null;
+  const keys = Object.keys(parameters);
+  if (expected === null ? keys.length !== 0 : keys.length !== 1 || keys[0] !== expected) throw new Error('Audience 模板参数与模板不匹配');
+  return parameters;
+};
 const audienceTemplateEvaluationDto = (value: unknown, packageId: number): AudienceTemplateEvaluation => {
   const source = obj(value);
   if (requiredPositive(source, 'package_id') !== packageId || source.local_projection !== true || source.real_external_call_executed !== false) throw new Error('Audience 模板响应越过本地边界或范围不匹配');
   const selection = obj(source.selection);
   const templateKey = audienceTemplateKey(selection.key);
   if (Number(selection.version) !== 1) throw new Error('Audience 模板版本无效');
-  audienceTemplateParameters(selection.parameters);
+  audienceTemplateRequestParameters(templateKey, selection.parameters);
   const memberDigest = source.member_digest;
   if (typeof memberDigest !== 'string' || !/^[0-9a-f]{64}$/.test(memberDigest)) throw new Error('Audience 模板响应缺少成员摘要');
   if (!source.definition || typeof source.definition !== 'object') throw new Error('Audience 模板响应缺少 SegmentDefinition');
@@ -221,12 +232,12 @@ export async function listAudienceTemplatesDto(): Promise<AudienceTemplate[]> {
 }
 export async function previewAudienceTemplateDto(packageId: number, input: { templateKey: AudienceTemplateKey; parameters: AudienceTemplateParameters }): Promise<AudienceTemplateEvaluation> {
   if (!Number.isSafeInteger(packageId) || packageId < 1) throw new Error('Audience package_id 无效');
-  const body: AIAudienceTemplatePreviewRequest = { template_key: input.templateKey, template_version: 1, parameters: input.parameters };
+  const body: AIAudienceTemplatePreviewRequest = { template_key: input.templateKey, template_version: 1, parameters: audienceTemplateRequestParameters(input.templateKey, input.parameters) };
   return audienceTemplateEvaluationDto(await call(previewAIAudienceTemplate(packageId, body, apiRequestOptions())), packageId);
 }
 export async function saveAudienceTemplateConfigurationDto(packageId: number, input: { templateKey: AudienceTemplateKey; parameters: AudienceTemplateParameters; expectedPackageVersion: number; expectedConfigurationVersion: number }): Promise<AudienceTemplateEvaluation> {
   if (!Number.isSafeInteger(packageId) || packageId < 1 || !Number.isSafeInteger(input.expectedPackageVersion) || input.expectedPackageVersion < 1 || !Number.isSafeInteger(input.expectedConfigurationVersion) || input.expectedConfigurationVersion < 0) throw new Error('Audience 模板保存版本无效');
-  const body: AIAudienceTemplateSaveRequest = { template_key: input.templateKey, template_version: 1, parameters: input.parameters, expected_package_version: input.expectedPackageVersion, expected_configuration_version: input.expectedConfigurationVersion };
+  const body: AIAudienceTemplateSaveRequest = { template_key: input.templateKey, template_version: 1, parameters: audienceTemplateRequestParameters(input.templateKey, input.parameters), expected_package_version: input.expectedPackageVersion, expected_configuration_version: input.expectedConfigurationVersion };
   return audienceTemplateEvaluationDto(await call(saveAIAudienceTemplateConfiguration(packageId, body, audienceTemplateMutationOptions())), packageId);
 }
 
