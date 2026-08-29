@@ -802,6 +802,103 @@ var (
 	ErrConflict     = errors.New("V1 domain import receipt conflict")
 )
 
+// CustomerTimelineArchiveReadySQL proves the sealed archive completed its own
+// reconciliation before the Timeline importer opens a target-write batch.
+// It is deliberately V2-only and must run inside the caller's UoW.
+type CustomerTimelineArchiveReadySQL struct{}
+
+func NewCustomerTimelineArchiveReadySQL() CustomerTimelineArchiveReadySQL {
+	return CustomerTimelineArchiveReadySQL{}
+}
+
+func (CustomerTimelineArchiveReadySQL) VerifyCustomerTimelineArchiveReady(ctx context.Context, run string) error {
+	if ctx == nil || run == "" {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	var ready bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(
+SELECT 1 FROM public.v1_archive_reconciliation_receipts archive
+JOIN public.data_migration_runs migration USING(run_id)
+WHERE archive.run_id=$1 AND migration.phase='reconciled'
+AND archive.source_row_count=archive.archive_record_count
+AND archive.source_row_count=archive.terminal_disposition_count
+AND archive.source_table_count=archive.archived_table_count)`, run).Scan(&ready); err != nil {
+		return err
+	}
+	if !ready {
+		return ErrConflict
+	}
+	return nil
+}
+
+// CustomerTimelineReconciliationSealStore maps the Timeline aggregate proof
+// to exactly one immutable reconciliation row for its version and archive run.
+// Per-source proof remains in generic import receipts.
+type CustomerTimelineReconciliationSealStore struct{}
+
+func NewCustomerTimelineReconciliationSealStore() CustomerTimelineReconciliationSealStore {
+	return CustomerTimelineReconciliationSealStore{}
+}
+
+func (CustomerTimelineReconciliationSealStore) LoadCustomerTimelineReconciliationSeal(ctx context.Context, version, run string) (CustomerTimelineReconciliationSeal, bool, error) {
+	if ctx == nil || version != customerTimelineHistoryVersion || run == "" {
+		return CustomerTimelineReconciliationSeal{}, false, ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return CustomerTimelineReconciliationSeal{}, false, err
+	}
+	if _, err = tx.Exec(ctx, "LOCK TABLE public.v1_domain_import_receipts, public.v1_domain_import_reconciliation_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+		return CustomerTimelineReconciliationSeal{}, false, err
+	}
+	var value CustomerTimelineReconciliationSeal
+	var digest []byte
+	err = tx.QueryRow(ctx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
+FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, version, run).
+		Scan(&value.SelectedSourceCount, &value.ReceiptCount, &value.ImportedCount, &value.ArchivedCount, &value.QuarantinedCount, &value.VerifiedCount, &digest)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return CustomerTimelineReconciliationSeal{}, false, nil
+	}
+	if err != nil || len(digest) != sha256.Size {
+		return CustomerTimelineReconciliationSeal{}, false, ErrConflict
+	}
+	value.Version, value.ArchiveRunID = version, run
+	copy(value.ComparisonDigest[:], digest)
+	if !validCustomerTimelineReconciliationSeal(value) {
+		return CustomerTimelineReconciliationSeal{}, false, ErrConflict
+	}
+	return value, true, nil
+}
+
+func (CustomerTimelineReconciliationSealStore) RecordCustomerTimelineReconciliationSeal(ctx context.Context, value CustomerTimelineReconciliationSeal) error {
+	if ctx == nil || !validCustomerTimelineReconciliationSeal(value) {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, "LOCK TABLE public.v1_domain_import_receipts, public.v1_domain_import_reconciliation_receipts IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+		return err
+	}
+	command, err := tx.Exec(ctx, `INSERT INTO public.v1_domain_import_reconciliation_receipts
+(import_version,archive_run_id,selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(import_version,archive_run_id) DO NOTHING`,
+		value.Version, value.ArchiveRunID, value.SelectedSourceCount, value.ReceiptCount, value.ImportedCount,
+		value.ArchivedCount, value.QuarantinedCount, value.VerifiedCount, value.ComparisonDigest[:])
+	if err != nil {
+		return err
+	}
+	if command.RowsAffected() != 1 {
+		return ErrConflict
+	}
+	return nil
+}
+
 type CampaignDefinitionReceiptReader struct{ pool *pgxpool.Pool }
 
 func NewCampaignDefinitionReceiptReader(pool *pgxpool.Pool) *CampaignDefinitionReceiptReader {

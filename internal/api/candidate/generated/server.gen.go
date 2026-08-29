@@ -3955,6 +3955,96 @@ func (e CustomerSurveyChoiceAnswerQuestionType) Valid() bool {
 	}
 }
 
+// Defines values for CustomerTimelineHistoryDetailReadOnly.
+const (
+	CustomerTimelineHistoryDetailReadOnlyTrue CustomerTimelineHistoryDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerTimelineHistoryDetailReadOnly enum.
+func (e CustomerTimelineHistoryDetailReadOnly) Valid() bool {
+	switch e {
+	case CustomerTimelineHistoryDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerTimelineHistoryDetailRealExternalCallExecuted.
+const (
+	CustomerTimelineHistoryDetailRealExternalCallExecutedFalse CustomerTimelineHistoryDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerTimelineHistoryDetailRealExternalCallExecuted enum.
+func (e CustomerTimelineHistoryDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerTimelineHistoryDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerTimelineHistoryDetailSource.
+const (
+	CustomerTimelineHistoryDetailSourceV1History CustomerTimelineHistoryDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerTimelineHistoryDetailSource enum.
+func (e CustomerTimelineHistoryDetailSource) Valid() bool {
+	switch e {
+	case CustomerTimelineHistoryDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerTimelineHistoryPageReadOnly.
+const (
+	CustomerTimelineHistoryPageReadOnlyTrue CustomerTimelineHistoryPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerTimelineHistoryPageReadOnly enum.
+func (e CustomerTimelineHistoryPageReadOnly) Valid() bool {
+	switch e {
+	case CustomerTimelineHistoryPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerTimelineHistoryPageRealExternalCallExecuted.
+const (
+	CustomerTimelineHistoryPageRealExternalCallExecutedFalse CustomerTimelineHistoryPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerTimelineHistoryPageRealExternalCallExecuted enum.
+func (e CustomerTimelineHistoryPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerTimelineHistoryPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerTimelineHistoryPageSource.
+const (
+	CustomerTimelineHistoryPageSourceV1History CustomerTimelineHistoryPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the CustomerTimelineHistoryPageSource enum.
+func (e CustomerTimelineHistoryPageSource) Valid() bool {
+	switch e {
+	case CustomerTimelineHistoryPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DeferredIdentityHistoryConflictDetailReadOnly.
 const (
 	DeferredIdentityHistoryConflictDetailReadOnlyTrue DeferredIdentityHistoryConflictDetailReadOnly = true
@@ -17549,6 +17639,56 @@ type CustomerSurveyChoiceAnswer struct {
 // CustomerSurveyChoiceAnswerQuestionType defines model for CustomerSurveyChoiceAnswer.QuestionType.
 type CustomerSurveyChoiceAnswerQuestionType string
 
+// CustomerTimelineHistoryDetail defines model for CustomerTimelineHistoryDetail.
+type CustomerTimelineHistoryDetail struct {
+	Item                     CustomerTimelineHistoryEvent                          `json:"item"`
+	ReadOnly                 CustomerTimelineHistoryDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerTimelineHistoryDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerTimelineHistoryDetailSource                   `json:"source"`
+}
+
+// CustomerTimelineHistoryDetailReadOnly defines model for CustomerTimelineHistoryDetail.ReadOnly.
+type CustomerTimelineHistoryDetailReadOnly bool
+
+// CustomerTimelineHistoryDetailRealExternalCallExecuted defines model for CustomerTimelineHistoryDetail.RealExternalCallExecuted.
+type CustomerTimelineHistoryDetailRealExternalCallExecuted bool
+
+// CustomerTimelineHistoryDetailSource defines model for CustomerTimelineHistoryDetail.Source.
+type CustomerTimelineHistoryDetailSource string
+
+// CustomerTimelineHistoryEvent defines model for CustomerTimelineHistoryEvent.
+type CustomerTimelineHistoryEvent struct {
+	CreatedAt   time.Time `json:"created_at"`
+	CustomerId  *int64    `json:"customer_id"`
+	EventId     string    `json:"event_id"`
+	EventTime   time.Time `json:"event_time"`
+	EventType   string    `json:"event_type"`
+	Id          int64     `json:"id"`
+	SourceId    int64     `json:"source_id"`
+	SourceTable string    `json:"source_table"`
+	SourceValue string    `json:"source_value"`
+}
+
+// CustomerTimelineHistoryPage defines model for CustomerTimelineHistoryPage.
+type CustomerTimelineHistoryPage struct {
+	Items                    []CustomerTimelineHistoryEvent                      `json:"items"`
+	Limit                    int32                                               `json:"limit"`
+	Offset                   int32                                               `json:"offset"`
+	ReadOnly                 CustomerTimelineHistoryPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted CustomerTimelineHistoryPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   CustomerTimelineHistoryPageSource                   `json:"source"`
+	Total                    int64                                               `json:"total"`
+}
+
+// CustomerTimelineHistoryPageReadOnly defines model for CustomerTimelineHistoryPage.ReadOnly.
+type CustomerTimelineHistoryPageReadOnly bool
+
+// CustomerTimelineHistoryPageRealExternalCallExecuted defines model for CustomerTimelineHistoryPage.RealExternalCallExecuted.
+type CustomerTimelineHistoryPageRealExternalCallExecuted bool
+
+// CustomerTimelineHistoryPageSource defines model for CustomerTimelineHistoryPage.Source.
+type CustomerTimelineHistoryPageSource string
+
 // CustomerUpdateRequest defines model for CustomerUpdateRequest.
 type CustomerUpdateRequest struct {
 	AvatarUrl    *string                 `json:"avatar_url,omitempty"`
@@ -24807,6 +24947,12 @@ type ListCustomerStateHistoryClassTermTagMappingParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListCustomerTimelineHistoryEventsParams defines parameters for ListCustomerTimelineHistoryEvents.
+type ListCustomerTimelineHistoryEventsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListDeferredIdentityConflictsParams defines parameters for ListDeferredIdentityConflicts.
 type ListDeferredIdentityConflictsParams struct {
 	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
@@ -28084,6 +28230,12 @@ type ServerInterface interface {
 	// Read immutable customer-state observations without changing current status or tags
 	// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
 	GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read safe immutable V1 customer timeline observations without creating current events
+	// (GET /api/admin/customer-timeline-history/events)
+	ListCustomerTimelineHistoryEvents(w http.ResponseWriter, r *http.Request, params ListCustomerTimelineHistoryEventsParams)
+	// Read one safe immutable V1 customer timeline observation
+	// (GET /api/admin/customer-timeline-history/events/{history_id})
+	GetCustomerTimelineHistoryEvent(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read unbound V1 evidence without creating or binding a Customer
 	// (GET /api/admin/deferred-identity-history/conflicts)
 	ListDeferredIdentityConflicts(w http.ResponseWriter, r *http.Request, params ListDeferredIdentityConflictsParams)
@@ -29578,6 +29730,18 @@ func (_ Unimplemented) ListCustomerStateHistoryClassTermTagMapping(w http.Respon
 // Read immutable customer-state observations without changing current status or tags
 // (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
 func (_ Unimplemented) GetCustomerStateHistoryClassTermTagMapping(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read safe immutable V1 customer timeline observations without creating current events
+// (GET /api/admin/customer-timeline-history/events)
+func (_ Unimplemented) ListCustomerTimelineHistoryEvents(w http.ResponseWriter, r *http.Request, params ListCustomerTimelineHistoryEventsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one safe immutable V1 customer timeline observation
+// (GET /api/admin/customer-timeline-history/events/{history_id})
+func (_ Unimplemented) GetCustomerTimelineHistoryEvent(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -36577,6 +36741,78 @@ func (siw *ServerInterfaceWrapper) GetCustomerStateHistoryClassTermTagMapping(w 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCustomerStateHistoryClassTermTagMapping(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomerTimelineHistoryEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerTimelineHistoryEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerTimelineHistoryEventsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerTimelineHistoryEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerTimelineHistoryEvent operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerTimelineHistoryEvent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerTimelineHistoryEvent(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -52046,6 +52282,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/customer-state-history/term-tag-mappings/{history_id}", wrapper.GetCustomerStateHistoryClassTermTagMapping)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-timeline-history/events", wrapper.ListCustomerTimelineHistoryEvents)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/customer-timeline-history/events/{history_id}", wrapper.GetCustomerTimelineHistoryEvent)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/deferred-identity-history/conflicts", wrapper.ListDeferredIdentityConflicts)
 	})
 	r.Group(func(r chi.Router) {
@@ -59077,6 +59319,112 @@ func (response GetCustomerStateHistoryClassTermTagMapping403JSONResponse) VisitG
 type GetCustomerStateHistoryClassTermTagMapping503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetCustomerStateHistoryClassTermTagMapping503JSONResponse) VisitGetCustomerStateHistoryClassTermTagMappingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerTimelineHistoryEventsRequestObject struct {
+	Params ListCustomerTimelineHistoryEventsParams
+}
+
+type ListCustomerTimelineHistoryEventsResponseObject interface {
+	VisitListCustomerTimelineHistoryEventsResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerTimelineHistoryEvents200JSONResponse CustomerTimelineHistoryPage
+
+func (response ListCustomerTimelineHistoryEvents200JSONResponse) VisitListCustomerTimelineHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerTimelineHistoryEvents400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerTimelineHistoryEvents400JSONResponse) VisitListCustomerTimelineHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerTimelineHistoryEvents401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerTimelineHistoryEvents401JSONResponse) VisitListCustomerTimelineHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerTimelineHistoryEvents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerTimelineHistoryEvents403JSONResponse) VisitListCustomerTimelineHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerTimelineHistoryEvents503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerTimelineHistoryEvents503JSONResponse) VisitListCustomerTimelineHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerTimelineHistoryEventRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetCustomerTimelineHistoryEventResponseObject interface {
+	VisitGetCustomerTimelineHistoryEventResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerTimelineHistoryEvent200JSONResponse CustomerTimelineHistoryDetail
+
+func (response GetCustomerTimelineHistoryEvent200JSONResponse) VisitGetCustomerTimelineHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerTimelineHistoryEvent400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerTimelineHistoryEvent400JSONResponse) VisitGetCustomerTimelineHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerTimelineHistoryEvent401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerTimelineHistoryEvent401JSONResponse) VisitGetCustomerTimelineHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerTimelineHistoryEvent403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerTimelineHistoryEvent403JSONResponse) VisitGetCustomerTimelineHistoryEventResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerTimelineHistoryEvent503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerTimelineHistoryEvent503JSONResponse) VisitGetCustomerTimelineHistoryEventResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -76528,6 +76876,12 @@ type StrictServerInterface interface {
 	// Read immutable customer-state observations without changing current status or tags
 	// (GET /api/admin/customer-state-history/term-tag-mappings/{history_id})
 	GetCustomerStateHistoryClassTermTagMapping(ctx context.Context, request GetCustomerStateHistoryClassTermTagMappingRequestObject) (GetCustomerStateHistoryClassTermTagMappingResponseObject, error)
+	// Read safe immutable V1 customer timeline observations without creating current events
+	// (GET /api/admin/customer-timeline-history/events)
+	ListCustomerTimelineHistoryEvents(ctx context.Context, request ListCustomerTimelineHistoryEventsRequestObject) (ListCustomerTimelineHistoryEventsResponseObject, error)
+	// Read one safe immutable V1 customer timeline observation
+	// (GET /api/admin/customer-timeline-history/events/{history_id})
+	GetCustomerTimelineHistoryEvent(ctx context.Context, request GetCustomerTimelineHistoryEventRequestObject) (GetCustomerTimelineHistoryEventResponseObject, error)
 	// Read unbound V1 evidence without creating or binding a Customer
 	// (GET /api/admin/deferred-identity-history/conflicts)
 	ListDeferredIdentityConflicts(ctx context.Context, request ListDeferredIdentityConflictsRequestObject) (ListDeferredIdentityConflictsResponseObject, error)
@@ -80418,6 +80772,58 @@ func (sh *strictHandler) GetCustomerStateHistoryClassTermTagMapping(w http.Respo
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCustomerStateHistoryClassTermTagMappingResponseObject); ok {
 		if err := validResponse.VisitGetCustomerStateHistoryClassTermTagMappingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomerTimelineHistoryEvents operation middleware
+func (sh *strictHandler) ListCustomerTimelineHistoryEvents(w http.ResponseWriter, r *http.Request, params ListCustomerTimelineHistoryEventsParams) {
+	var request ListCustomerTimelineHistoryEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerTimelineHistoryEvents(ctx, request.(ListCustomerTimelineHistoryEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerTimelineHistoryEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerTimelineHistoryEventsResponseObject); ok {
+		if err := validResponse.VisitListCustomerTimelineHistoryEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerTimelineHistoryEvent operation middleware
+func (sh *strictHandler) GetCustomerTimelineHistoryEvent(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetCustomerTimelineHistoryEventRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerTimelineHistoryEvent(ctx, request.(GetCustomerTimelineHistoryEventRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerTimelineHistoryEvent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerTimelineHistoryEventResponseObject); ok {
+		if err := validResponse.VisitGetCustomerTimelineHistoryEventResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

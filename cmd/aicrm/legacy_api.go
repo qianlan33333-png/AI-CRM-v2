@@ -185,6 +185,7 @@ type Handler struct {
 	radarInvalidSourceHistory   radarport.InvalidSourceHistoryReader
 	wecomContactHistory         contactport.WeComContactHistoryReader
 	contactReferenceHistory     contactport.ReferenceHistoryReader
+	customerTimelineHistory     contactport.CustomerTimelineHistoryReader
 	campaignHistory             campaignport.CampaignHistoryReader
 	auth                        authport.Service
 	customers                   customerListApplication

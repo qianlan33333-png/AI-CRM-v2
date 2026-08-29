@@ -69,10 +69,12 @@ owners:
       - contact_v1_wecom_follow_user_history
       - contact_v1_unbound_tag_history
       - contact_v1_invalid_channel_history
+      - contact_v1_customer_timeline_history
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
       contact_v1_signup_tag_rules: immutable_history_without_current_tag_sync_or_rule_activation
+      contact_v1_customer_timeline_history: immutable_v1_timeline_observations_without_current_customer_event_or_provider_effect
       customer_merge_lineage: contact_owned_effective_customer_projection
       customer_event_idempotency: external_event_fact_registry
       customer_contact_policies: canonical_OneID_local_contact_suppression_policy_without_provider_or_outbound_execution

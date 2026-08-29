@@ -883,6 +883,62 @@ export interface ContactReferenceHistoryDirectoryDetail {
   item: ContactReferenceHistoryDirectory;
 }
 
+export interface CustomerTimelineHistoryEvent {
+  /** @minimum 1 */
+  id: number;
+  source_id: number;
+  event_id: string;
+  event_type: string;
+  event_time: string;
+  source_table: string;
+  source_value: string;
+  created_at: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+}
+
+export type CustomerTimelineHistoryPageSource =
+  (typeof CustomerTimelineHistoryPageSource)[keyof typeof CustomerTimelineHistoryPageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerTimelineHistoryPageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface CustomerTimelineHistoryPage {
+  source: CustomerTimelineHistoryPageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: CustomerTimelineHistoryEvent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type CustomerTimelineHistoryDetailSource =
+  (typeof CustomerTimelineHistoryDetailSource)[keyof typeof CustomerTimelineHistoryDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerTimelineHistoryDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface CustomerTimelineHistoryDetail {
+  source: CustomerTimelineHistoryDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: CustomerTimelineHistoryEvent;
+}
+
 export interface BroadcastJobHistory {
   /** @minimum 1 */
   id: number;
@@ -22046,6 +22102,18 @@ export type ListContactReferenceHistoryDirectoryParams = {
   offset?: number;
 };
 
+export type ListCustomerTimelineHistoryEventsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListBroadcastJobHistoryParams = {
   /**
    * @minimum 1
@@ -27153,6 +27221,160 @@ export const getContactReferenceHistoryDirectory = async (
     status: res.status,
     headers: res.headers,
   } as getContactReferenceHistoryDirectoryResponse;
+};
+
+/**
+ * @summary Read safe immutable V1 customer timeline observations without creating current events
+ */
+export type listCustomerTimelineHistoryEventsResponse200 = {
+  data: CustomerTimelineHistoryPage;
+  status: 200;
+};
+
+export type listCustomerTimelineHistoryEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCustomerTimelineHistoryEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCustomerTimelineHistoryEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCustomerTimelineHistoryEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCustomerTimelineHistoryEventsResponseSuccess =
+  listCustomerTimelineHistoryEventsResponse200 & {
+    headers: Headers;
+  };
+export type listCustomerTimelineHistoryEventsResponseError = (
+  | listCustomerTimelineHistoryEventsResponse400
+  | listCustomerTimelineHistoryEventsResponse401
+  | listCustomerTimelineHistoryEventsResponse403
+  | listCustomerTimelineHistoryEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCustomerTimelineHistoryEventsResponse =
+  | listCustomerTimelineHistoryEventsResponseSuccess
+  | listCustomerTimelineHistoryEventsResponseError;
+
+export const getListCustomerTimelineHistoryEventsUrl = (
+  params?: ListCustomerTimelineHistoryEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/customer-timeline-history/events?${stringifiedParams}`
+    : `/api/admin/customer-timeline-history/events`;
+};
+
+export const listCustomerTimelineHistoryEvents = async (
+  params?: ListCustomerTimelineHistoryEventsParams,
+  options?: RequestInit,
+): Promise<listCustomerTimelineHistoryEventsResponse> => {
+  const res = await fetch(getListCustomerTimelineHistoryEventsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCustomerTimelineHistoryEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCustomerTimelineHistoryEventsResponse;
+};
+
+/**
+ * @summary Read one safe immutable V1 customer timeline observation
+ */
+export type getCustomerTimelineHistoryEventResponse200 = {
+  data: CustomerTimelineHistoryDetail;
+  status: 200;
+};
+
+export type getCustomerTimelineHistoryEventResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCustomerTimelineHistoryEventResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCustomerTimelineHistoryEventResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCustomerTimelineHistoryEventResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCustomerTimelineHistoryEventResponseSuccess =
+  getCustomerTimelineHistoryEventResponse200 & {
+    headers: Headers;
+  };
+export type getCustomerTimelineHistoryEventResponseError = (
+  | getCustomerTimelineHistoryEventResponse400
+  | getCustomerTimelineHistoryEventResponse401
+  | getCustomerTimelineHistoryEventResponse403
+  | getCustomerTimelineHistoryEventResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCustomerTimelineHistoryEventResponse =
+  | getCustomerTimelineHistoryEventResponseSuccess
+  | getCustomerTimelineHistoryEventResponseError;
+
+export const getGetCustomerTimelineHistoryEventUrl = (historyId: number) => {
+  return `/api/admin/customer-timeline-history/events/${historyId}`;
+};
+
+export const getCustomerTimelineHistoryEvent = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getCustomerTimelineHistoryEventResponse> => {
+  const res = await fetch(getGetCustomerTimelineHistoryEventUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCustomerTimelineHistoryEventResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCustomerTimelineHistoryEventResponse;
 };
 
 /**
