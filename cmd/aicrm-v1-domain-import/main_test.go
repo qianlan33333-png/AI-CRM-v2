@@ -1,11 +1,122 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 )
+
+func TestFinalMigrationManifestRegistersExactlyFortyDomains(t *testing.T) {
+	manifest, err := loadFinalMigrationManifest("../../docs/release/final-v1-domain-migration-manifest.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Domains) != finalManifestDomainCount || len(finalDomainSpecs) != finalManifestDomainCount {
+		t.Fatalf("manifest/spec domains = %d/%d, want %d", len(manifest.Domains), len(finalDomainSpecs), finalManifestDomainCount)
+	}
+	for _, item := range manifest.Domains {
+		if item.Domain == "all" {
+			t.Fatal("final manifest must not use the five-domain all shortcut")
+		}
+		if _, found := finalDomainSpecs[item.Domain]; !found {
+			t.Fatalf("manifest domain %q has no final verifier", item.Domain)
+		}
+	}
+	for _, domain := range []string{"campaign", "survey", "media", "radar", "shop"} {
+		spec := finalDomainSpecs[domain]
+		if spec.ImportVersion != domainImportVersion || len(spec.SourceTables) == 0 {
+			t.Fatalf("%s was not explicitly split from domain=all: %#v", domain, spec)
+		}
+	}
+	if !slices.Contains(finalDomainNames(manifest), "customer-timeline-history") {
+		t.Fatal("final manifest is missing a late-history domain")
+	}
+	scopes := finalDomainsByReconciliationScope(manifest)
+	if len(scopes) != 36 {
+		t.Fatalf("reconciliation scopes = %d, want 36", len(scopes))
+	}
+	if shared := scopes[domainImportVersion]; !slices.Equal(shared, []string{"campaign", "media", "radar", "shop", "survey"}) {
+		t.Fatalf("v1-domain-a1 must be one explicit five-domain proof, got %#v", shared)
+	}
+	for version, domains := range scopes {
+		if version != domainImportVersion && len(domains) != 1 {
+			t.Fatalf("non-shared reconciliation scope %s covers %#v", version, domains)
+		}
+	}
+	if finalVerificationModel != "36_fresh_domain_reconciliations_then_read_only_aggregate" {
+		t.Fatalf("unexpected verification model %q", finalVerificationModel)
+	}
+	short := manifest
+	short.Domains = append([]finalMigrationDomain(nil), manifest.Domains[:len(manifest.Domains)-1]...)
+	if err := validateFinalMigrationManifest(short); err == nil || !strings.Contains(err.Error(), "enumerate") {
+		t.Fatalf("short manifest was accepted: %v", err)
+	}
+	shortcut := manifest
+	shortcut.Domains = append([]finalMigrationDomain(nil), manifest.Domains...)
+	shortcut.Domains[0].Domain = "all"
+	if err := validateFinalMigrationManifest(shortcut); err == nil || !strings.Contains(err.Error(), "invalid domain") {
+		t.Fatalf("all shortcut was accepted: %v", err)
+	}
+}
+
+func TestFinalReconcileRejectsAmbiguousOrSourceConnectedInvocationBeforeDatabase(t *testing.T) {
+	t.Setenv("AICRM_DM01_SOURCE_DATABASE_URL", "")
+	environment := appconfig.V1ArchiveRuntime{TargetDatabaseURL: "postgres:///must-not-connect"}
+	if err := run([]string{"--mode=final-reconcile", "--domain=all", "--archive-run-id=archive", "--dm01-run-id=1"}, environment); err == nil || !strings.Contains(err.Error(), "domain=final") {
+		t.Fatalf("domain=all was accepted as final reconciliation: %v", err)
+	}
+	if err := run([]string{"--mode=final-reconcile", "--domain=final", "--archive-run-id=archive"}, environment); err == nil || !strings.Contains(err.Error(), "dm01-run-id") {
+		t.Fatalf("missing DM01 identity proof reached database: %v", err)
+	}
+	environment.SourceDatabaseURL = "postgres:///forbidden-v1"
+	if err := run([]string{"--mode=final-reconcile", "--domain=final", "--archive-run-id=archive", "--dm01-run-id=1"}, environment); err == nil || !strings.Contains(err.Error(), "connections to be unset") {
+		t.Fatalf("final reconciliation accepted a source connection: %v", err)
+	}
+}
+
+func TestFinalReconcileUsesStoredSelectionForSingleDomainReceipt(t *testing.T) {
+	current := reconciliationCounts{Receipts: 7, Imported: 5, Archived: 1, Quarantined: 1, Verified: 7}
+	reconciled := reconciliationCounts{Selected: 7, Receipts: 7, Imported: 5, Archived: 1, Quarantined: 1, Verified: 7}
+	if sameCounts(current, reconciled) {
+		t.Fatal("a receipt-only domain cannot invent selected_source_count")
+	}
+	if !sameReceiptCounts(current, reconciled) {
+		t.Fatal("receipt-only domain must validate its current receipt counts before loading stored selection")
+	}
+	current.Selected = reconciled.Selected
+	if !sameCounts(current, reconciled) {
+		t.Fatal("stored selected_source_count was not restored after receipt validation")
+	}
+}
+
+func TestFinalReconciliationGroupsFailClosedWhenMissingOrIncomplete(t *testing.T) {
+	manifest, err := loadFinalMigrationManifest("../../docs/release/final-v1-domain-migration-manifest.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	scopes := finalDomainsByReconciliationScope(manifest)
+	actual := make(map[string]reconciliationCounts, len(scopes))
+	reconciled := make(map[string]reconciliationCounts, len(scopes))
+	for version := range scopes {
+		actual[version] = reconciliationCounts{}
+		reconciled[version] = reconciliationCounts{}
+	}
+	if err := validateFinalReconciliationGroups(scopes, actual, reconciled); err != nil {
+		t.Fatalf("complete zero-row reconciliation groups rejected: %v", err)
+	}
+	delete(reconciled, staticImportVersion)
+	if err := validateFinalReconciliationGroups(scopes, actual, reconciled); err == nil || !strings.Contains(err.Error(), "is missing") {
+		t.Fatalf("missing reconciliation group accepted: %v", err)
+	}
+	reconciled[staticImportVersion] = reconciliationCounts{}
+	actual[domainImportVersion] = reconciliationCounts{Selected: 4, Receipts: 4, Imported: 4, Verified: 4}
+	reconciled[domainImportVersion] = reconciliationCounts{Selected: 5, Receipts: 5, Imported: 5, Verified: 5}
+	if err := validateFinalReconciliationGroups(scopes, actual, reconciled); err == nil || !strings.Contains(err.Error(), "does not cover") {
+		t.Fatalf("incomplete shared reconciliation group accepted: %v", err)
+	}
+}
 
 func TestHXCMemberUsageHistoryRequiresLocalKeysBeforeConnecting(t *testing.T) {
 	for _, mode := range []string{"import", "reconcile"} {
