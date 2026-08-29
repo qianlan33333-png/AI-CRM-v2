@@ -88,10 +88,31 @@ func TestPreviewUsesOnlyPlanIDAndRejectsPayload(t *testing.T) {
 	}
 }
 
+func TestGetWebhookDescriptorReturnsOnlyLocalOpaqueMetadata(t *testing.T) {
+	called := 0
+	app := applicationStub{webhookDescriptor: func(_ context.Context, id int64) (groupopsport.WebhookDescriptor, error) {
+		called++
+		if id != 7 {
+			t.Fatalf("plan ID=%d", id)
+		}
+		return groupopsport.WebhookDescriptor{Configured: true, Reference: "local-webhook-7", Description: "local opaque reference only"}, nil
+	}}
+	request := groupOpsRequest(http.MethodGet, PlansPath+"/7/webhook-descriptor", nil, authport.RoleAdmin, authport.CapabilityAdminRead)
+	response := httptest.NewRecorder()
+	New(app).GetWebhookDescriptor(response, request)
+	body := response.Body.String()
+	if response.Code != http.StatusOK || called != 1 || !strings.Contains(body, `"configured":true`) ||
+		!strings.Contains(body, `"provider_execution_eligible":false`) || !strings.Contains(body, `"real_external_call_executed":false`) ||
+		strings.Contains(body, "url") || strings.Contains(body, "signature") || strings.Contains(body, "receipt") {
+		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, called, body)
+	}
+}
+
 type applicationStub struct {
-	create  func(context.Context, groupopsport.CreatePlanCommand) (groupopsport.Detail, error)
-	detail  func(context.Context, int64) (groupopsport.Detail, error)
-	preview func(context.Context, int64) (groupopsport.ContentValidation, error)
+	create            func(context.Context, groupopsport.CreatePlanCommand) (groupopsport.Detail, error)
+	detail            func(context.Context, int64) (groupopsport.Detail, error)
+	preview           func(context.Context, int64) (groupopsport.ContentValidation, error)
+	webhookDescriptor func(context.Context, int64) (groupopsport.WebhookDescriptor, error)
 }
 
 func (s applicationStub) List(context.Context, int32, int32) (groupopsport.PlanPage, error) {
@@ -151,8 +172,11 @@ func (s applicationStub) UpdateNode(context.Context, groupopsport.NodeUpdateComm
 func (s applicationStub) RemoveNode(context.Context, groupopsport.NodeDeleteCommand) (groupopsport.Detail, error) {
 	return groupopsport.Detail{}, errors.New("unexpected")
 }
-func (s applicationStub) GetWebhookDescriptor(context.Context, int64) (groupopsport.WebhookDescriptor, error) {
-	return groupopsport.WebhookDescriptor{}, errors.New("unexpected")
+func (s applicationStub) GetWebhookDescriptor(ctx context.Context, id int64) (groupopsport.WebhookDescriptor, error) {
+	if s.webhookDescriptor == nil {
+		return groupopsport.WebhookDescriptor{}, errors.New("unexpected")
+	}
+	return s.webhookDescriptor(ctx, id)
 }
 func (s applicationStub) PutWebhookDescriptor(context.Context, groupopsport.WebhookDescriptorCommand) (groupopsport.Detail, error) {
 	return groupopsport.Detail{}, errors.New("unexpected")

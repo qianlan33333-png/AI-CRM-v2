@@ -67,6 +67,8 @@ func (fragment *routeFragment) ServeHTTP(writer http.ResponseWriter, request *ht
 		fragment.handler.packageGroup(writer, request, segments[1])
 	case path == "/packages":
 		fragment.handler.packages(writer, request)
+	case path == "/templates":
+		fragment.handler.templates(writer, request)
 	case len(segments) == 2 && segments[0] == "packages":
 		fragment.handler.packageItem(writer, request, segments[1])
 	case len(segments) == 3 && segments[0] == "packages" && (segments[2] == "copy" || segments[2] == "pause" || segments[2] == "activate"):
@@ -74,6 +76,17 @@ func (fragment *routeFragment) ServeHTTP(writer http.ResponseWriter, request *ht
 	default:
 		writeHTTPError(writer, request, http.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 	}
+}
+
+func (handler *Handler) templates(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodGet {
+		writeMethodNotAllowed(writer, request, http.MethodGet)
+		return
+	}
+	if !requireNoQuery(writer, request) || !handler.authorize(writer, request, false, nil) {
+		return
+	}
+	writeJSON(writer, http.StatusOK, AudienceTemplateCatalogResponse{Items: ListAudienceTemplates(), Projection: localProjection()})
 }
 
 func ownedPath(request *http.Request) (string, *requestProblem) {

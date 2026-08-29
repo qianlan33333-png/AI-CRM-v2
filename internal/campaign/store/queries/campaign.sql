@@ -254,6 +254,43 @@ SET state = 'completed', event_id = sqlc.arg(event_id), result_snapshot = sqlc.a
 WHERE id = sqlc.arg(id) AND state = 'reserved'
 RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot;
 
+-- name: ListLatestCampaignMemberStatuses :many
+WITH selected AS (
+  SELECT (
+    SELECT plan.id
+    FROM public.cloud_campaign_touch_plans AS plan
+    WHERE plan.campaign_code = campaign.campaign_code
+    ORDER BY plan.created_at DESC, plan.id DESC
+    LIMIT 1
+  ) AS plan_id
+  FROM public.cloud_campaigns AS campaign
+  WHERE campaign.campaign_code = sqlc.arg(campaign_code)
+), projected AS (
+  SELECT selected.plan_id,
+         target.customer_id,
+         COALESCE(review.status, 'pending_review') AS status
+  FROM selected
+  JOIN public.cloud_campaign_touch_plan_targets AS target
+    ON target.plan_id = selected.plan_id
+  LEFT JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = target.plan_id
+   AND review.customer_id = target.customer_id
+  WHERE sqlc.narg(status_filter)::text IS NULL
+     OR COALESCE(review.status, 'pending_review') = sqlc.narg(status_filter)
+), page AS (
+  SELECT plan_id, customer_id, status
+  FROM projected
+  ORDER BY customer_id
+  LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset)
+)
+SELECT COALESCE(selected.plan_id, '') AS plan_id,
+       (SELECT count(*) FROM projected) AS total,
+       page.customer_id,
+       page.status
+FROM selected
+LEFT JOIN page ON TRUE
+ORDER BY page.customer_id;
+
 -- name: LockApprovedCampaignTouchPlanHandoff :one
 SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
        plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,

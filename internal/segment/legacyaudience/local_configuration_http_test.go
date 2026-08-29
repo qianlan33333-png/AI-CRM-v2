@@ -11,14 +11,16 @@ import (
 )
 
 type localConfigurationHTTPApplication struct {
-	membersPageSize    int
-	syncInput          OperationMemberSyncInput
-	bindingInput       PutAutomationBindingInput
-	sendersInput       ReplaceSendersInput
-	deleteInput        DeleteAutomationBindingInput
-	configurationInput PutConfigurationInput
-	previewInput       PreviewConfigurationInput
-	materializeInput   MaterializeConfigurationInput
+	membersPageSize      int
+	syncInput            OperationMemberSyncInput
+	bindingInput         PutAutomationBindingInput
+	sendersInput         ReplaceSendersInput
+	deleteInput          DeleteAutomationBindingInput
+	configurationInput   PutConfigurationInput
+	previewInput         PreviewConfigurationInput
+	materializeInput     MaterializeConfigurationInput
+	templatePreviewInput PreviewTemplateInput
+	templateSaveInput    SaveTemplateConfigurationInput
 }
 
 func (*localConfigurationHTTPApplication) GetConfiguration(context.Context, int64) (ConfigurationResponse, error) {
@@ -35,6 +37,14 @@ func (application *localConfigurationHTTPApplication) PreviewConfiguration(_ con
 func (application *localConfigurationHTTPApplication) MaterializeConfiguration(_ context.Context, input MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error) {
 	application.materializeInput = input
 	return ConfigurationEvaluationResponse{PackageID: input.PackageID, ConfigurationVersion: input.ConfigurationVersion, Materialized: true, Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) PreviewTemplate(_ context.Context, input PreviewTemplateInput) (TemplateEvaluationResponse, error) {
+	application.templatePreviewInput = input
+	return TemplateEvaluationResponse{PackageID: input.PackageID, Selection: input.Selection, Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) SaveTemplateConfiguration(_ context.Context, input SaveTemplateConfigurationInput) (TemplateEvaluationResponse, error) {
+	application.templateSaveInput = input
+	return TemplateEvaluationResponse{PackageID: input.PackageID, Selection: input.Selection, Saved: true, Projection: localProjection()}, nil
 }
 
 type groupOpsOperationMemberHTTPApplication struct {
@@ -268,5 +278,32 @@ func TestLocalConfigurationHTTPVersionsPreviewsAndMaterializesTypedConfiguration
 	if materialized.Code != http.StatusOK || application.materializeInput.PackageID != 42 || application.materializeInput.ConfigurationVersion != 1 ||
 		application.materializeInput.ExpectedPackageVersion != 3 || application.materializeInput.Actor.AdminUserID != 7 {
 		t.Fatalf("materialize response=%d input=%+v", materialized.Code, application.materializeInput)
+	}
+}
+
+func TestLocalConfigurationHTTPPreviewsAndSavesClosedTemplateSelection(t *testing.T) {
+	application := &localConfigurationHTTPApplication{}
+	handler := newLocalConfigurationHTTPHandler(t, application, &localConfigurationHTTPSecurity{})
+
+	preview := httptest.NewRecorder()
+	previewRequest := httptest.NewRequest(http.MethodPost, RoutePrefix+"/packages/42/template-preview",
+		strings.NewReader(`{"template_key":"tag_any","template_version":1,"parameters":{"tag_ids":[3,2]},"evaluated_at":"2026-08-29T01:02:03Z"}`))
+	previewRequest.Header.Set("Content-Type", "application/json")
+	handler.ServeHTTP(preview, previewRequest)
+	if preview.Code != http.StatusOK || application.templatePreviewInput.PackageID != 42 || application.templatePreviewInput.Selection.Key != TemplateTagAny ||
+		application.templatePreviewInput.EvaluatedAt != time.Date(2026, 8, 29, 1, 2, 3, 0, time.UTC) {
+		t.Fatalf("preview response=%d input=%+v body=%s", preview.Code, application.templatePreviewInput, preview.Body.String())
+	}
+
+	saved := httptest.NewRecorder()
+	saveRequest := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/template-config",
+		strings.NewReader(`{"template_key":"owner_any","template_version":1,"parameters":{"owner_staff_ids":[9]},"expected_package_version":3,"expected_configuration_version":1}`))
+	saveRequest.Header.Set("Content-Type", "application/json")
+	saveRequest.Header.Set("Idempotency-Key", "template-config-http-key-01")
+	handler.ServeHTTP(saved, saveRequest)
+	if saved.Code != http.StatusOK || application.templateSaveInput.PackageID != 42 || application.templateSaveInput.ExpectedPackageVersion != 3 ||
+		application.templateSaveInput.ExpectedConfigurationVersion != 1 || application.templateSaveInput.Actor.AdminUserID != 7 ||
+		application.templateSaveInput.IdempotencyKey != "template-config-http-key-01" {
+		t.Fatalf("save response=%d input=%+v body=%s", saved.Code, application.templateSaveInput, saved.Body.String())
 	}
 }

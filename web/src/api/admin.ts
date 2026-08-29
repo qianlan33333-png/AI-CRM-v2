@@ -23,9 +23,9 @@ import { getAdminOpsPushCapabilities, listAdminOpsReleases } from './generated/h
 import { archiveLegacyCoupon, copyLegacyCoupon, createLegacyCoupon, deleteLegacyCoupon, deleteLegacyWechatPayProduct, publishLegacyCoupon, stopLegacyCoupon, updateLegacyCoupon, type CouponUpsertRequest } from './generated/health';
 import { createLegacyQuestionnaire, deleteLegacyQuestionnaire, disableLegacyQuestionnaire, duplicateLegacyQuestionnaire, enableLegacyQuestionnaire, publishQuestionnairePublicDefinition, updateLegacyQuestionnaire, type LegacyQuestionnaireCreateRequest } from './generated/health';
 import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteRequest } from './generated/health';
-import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
+import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, listAIAudienceTemplates, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, previewAIAudienceTemplate, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, saveAIAudienceTemplateConfiguration, updateAIAudiencePackage, type AIAudiencePackageSender, type AIAudienceTemplateParameters, type AIAudienceTemplatePreviewRequest, type AIAudienceTemplateSaveRequest, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, getGroupOpsWebhookDescriptor, listAIAudienceOperationMembers, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, previewGroupOpsRunDue, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
-import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview } from './generated/health';
+import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignMembers, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview, type CloudCampaignMemberStatusStatus, type ListCloudCampaignMembersParams } from './generated/health';
 import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
@@ -139,6 +139,139 @@ const handoffMutationOptions = (operation: 'accept' | 'dispatch'): RequestInit =
   if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交 Campaign handoff 操作');
   return apiRequestOptions({ headers: { 'Idempotency-Key': `campaign-handoff-${operation}-${globalThis.crypto.randomUUID()}` } });
 };
+
+export type AudienceTemplateKey = AIAudienceTemplatePreviewRequest['template_key'];
+export type AudienceTemplateParameters = AIAudienceTemplateParameters;
+export type AudienceTemplate = { key: AudienceTemplateKey; version: 1; parameters: Array<{ key: string; required: boolean }> };
+export type AudienceTemplateEvaluation = {
+  packageId: number;
+  packageVersion: number;
+  configurationVersion: number;
+  templateKey: AudienceTemplateKey;
+  definition: SegmentDefinition;
+  memberCount: number;
+  memberDigest: string;
+  evaluatedAt: string;
+  saved: boolean;
+};
+
+const audienceTemplateKeys: AudienceTemplateKey[] = ['active_contacts', 'stage_any', 'tag_any', 'owner_any', 'channel_any'];
+const audienceTemplateKey = (value: unknown): AudienceTemplateKey => {
+  if (!audienceTemplateKeys.includes(value as AudienceTemplateKey)) throw new Error('Audience 模板 key 无效');
+  return value as AudienceTemplateKey;
+};
+const audienceTemplateParameters = (value: unknown): AudienceTemplateParameters => {
+  const source = obj(value);
+  const allowed = new Set(['stage_ids', 'tag_ids', 'owner_staff_ids', 'channel_ids']);
+  if (Object.keys(source).some((key) => !allowed.has(key))) throw new Error('Audience 模板参数包含未知字段');
+  const result: AudienceTemplateParameters = {};
+  for (const key of allowed) {
+    const raw = source[key];
+    if (raw === undefined) continue;
+    if (!Array.isArray(raw) || raw.length < 1 || raw.length > 100 || raw.some((item) => !Number.isSafeInteger(Number(item)) || Number(item) < 1)) throw new Error('Audience 模板参数必须是正整数数组');
+    result[key as keyof AudienceTemplateParameters] = raw.map((item) => Number(item)) as never;
+  }
+  return result;
+};
+const audienceTemplateRequestParameters = (key: AudienceTemplateKey, value: unknown): AudienceTemplateParameters => {
+  const parameters = audienceTemplateParameters(value);
+  const expected = key === 'stage_any' ? 'stage_ids'
+    : key === 'tag_any' ? 'tag_ids'
+      : key === 'owner_any' ? 'owner_staff_ids'
+        : key === 'channel_any' ? 'channel_ids'
+          : null;
+  const keys = Object.keys(parameters);
+  if (expected === null ? keys.length !== 0 : keys.length !== 1 || keys[0] !== expected) throw new Error('Audience 模板参数与模板不匹配');
+  return parameters;
+};
+const audienceTemplateEvaluationDto = (value: unknown, packageId: number): AudienceTemplateEvaluation => {
+  const source = obj(value);
+  if (requiredPositive(source, 'package_id') !== packageId || source.local_projection !== true || source.real_external_call_executed !== false) throw new Error('Audience 模板响应越过本地边界或范围不匹配');
+  const selection = obj(source.selection);
+  const templateKey = audienceTemplateKey(selection.key);
+  if (Number(selection.version) !== 1) throw new Error('Audience 模板版本无效');
+  audienceTemplateRequestParameters(templateKey, selection.parameters);
+  const memberDigest = source.member_digest;
+  if (typeof memberDigest !== 'string' || !/^[0-9a-f]{64}$/.test(memberDigest)) throw new Error('Audience 模板响应缺少成员摘要');
+  if (!source.definition || typeof source.definition !== 'object') throw new Error('Audience 模板响应缺少 SegmentDefinition');
+  return {
+    packageId,
+    packageVersion: requiredPositive(source, 'package_version'),
+    configurationVersion: requiredCount(source, 'configuration_version'),
+    templateKey,
+    definition: source.definition as SegmentDefinition,
+    memberCount: requiredCount(source, 'member_count'),
+    memberDigest,
+    evaluatedAt: requiredText(source, 'evaluated_at'),
+    saved: source.saved === true,
+  };
+};
+const audienceTemplateMutationOptions = (): RequestInit => {
+  const key = globalThis.crypto?.randomUUID?.();
+  if (!key) throw new Error('浏览器不支持安全幂等键，已拒绝保存 Audience 模板');
+  return apiRequestOptions({ headers: { 'Idempotency-Key': `audience-template-${key}` } });
+};
+
+export async function listAudienceTemplatesDto(): Promise<AudienceTemplate[]> {
+  const source = obj(await call(listAIAudienceTemplates(apiRequestOptions())));
+  if (source.local_projection !== true || source.real_external_call_executed !== false) throw new Error('Audience 模板目录越过本地边界');
+  const items = list(source, 'items').map((item) => {
+    const template = obj(item);
+    const key = audienceTemplateKey(template.key);
+    if (Number(template.version) !== 1) throw new Error('Audience 模板版本无效');
+    const parameters = list(template, 'parameters').map((parameter) => {
+      const entry = obj(parameter);
+      const parameterKey = requiredText(entry, 'key');
+      if (!['stage_ids', 'tag_ids', 'owner_staff_ids', 'channel_ids'].includes(parameterKey)) throw new Error('Audience 模板参数 key 无效');
+      return { key: parameterKey, required: entry.required === true };
+    });
+    return { key, version: 1 as const, parameters };
+  });
+  if (items.length !== 5 || new Set(items.map((item) => item.key)).size !== 5) throw new Error('Audience 模板目录不完整');
+  return items;
+}
+export async function previewAudienceTemplateDto(packageId: number, input: { templateKey: AudienceTemplateKey; parameters: AudienceTemplateParameters }): Promise<AudienceTemplateEvaluation> {
+  if (!Number.isSafeInteger(packageId) || packageId < 1) throw new Error('Audience package_id 无效');
+  const body: AIAudienceTemplatePreviewRequest = { template_key: input.templateKey, template_version: 1, parameters: audienceTemplateRequestParameters(input.templateKey, input.parameters) };
+  return audienceTemplateEvaluationDto(await call(previewAIAudienceTemplate(packageId, body, apiRequestOptions())), packageId);
+}
+export async function saveAudienceTemplateConfigurationDto(packageId: number, input: { templateKey: AudienceTemplateKey; parameters: AudienceTemplateParameters; expectedPackageVersion: number; expectedConfigurationVersion: number }): Promise<AudienceTemplateEvaluation> {
+  if (!Number.isSafeInteger(packageId) || packageId < 1 || !Number.isSafeInteger(input.expectedPackageVersion) || input.expectedPackageVersion < 1 || !Number.isSafeInteger(input.expectedConfigurationVersion) || input.expectedConfigurationVersion < 0) throw new Error('Audience 模板保存版本无效');
+  const body: AIAudienceTemplateSaveRequest = { template_key: input.templateKey, template_version: 1, parameters: audienceTemplateRequestParameters(input.templateKey, input.parameters), expected_package_version: input.expectedPackageVersion, expected_configuration_version: input.expectedConfigurationVersion };
+  return audienceTemplateEvaluationDto(await call(saveAIAudienceTemplateConfiguration(packageId, body, audienceTemplateMutationOptions())), packageId);
+}
+
+export type CampaignMemberStatus = { planID: string; customerID: number; status: CloudCampaignMemberStatusStatus };
+export type CampaignMemberStatusPage = { items: CampaignMemberStatus[]; total: number; limit: number; offset: number; planID: string | null };
+const campaignMemberStatus = (value: unknown): CloudCampaignMemberStatusStatus => {
+  if (value !== 'pending_review' && value !== 'approved' && value !== 'rejected') throw new Error('Campaign 成员状态无效');
+  return value;
+};
+export async function listCampaignMembersDto(campaignCode: string, input: { status?: CloudCampaignMemberStatusStatus; limit?: number; offset?: number } = {}): Promise<CampaignMemberStatusPage> {
+  if (!campaignCode.trim()) throw new Error('Campaign code 不能为空');
+  const limit = input.limit ?? 50;
+  const offset = input.offset ?? 0;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || !Number.isSafeInteger(offset) || offset < 0) throw new Error('Campaign 成员分页参数无效');
+  const params: ListCloudCampaignMembersParams = { status: input.status, limit, offset };
+  const source = obj(await call(listCloudCampaignMembers(campaignCode, params, apiRequestOptions())));
+  const safety = obj(source.safety);
+  if (safety.local_only !== true || safety.provider_execution_eligible !== false || safety.runtime_executed !== false || safety.real_external_call_executed !== false || safety.delivery_proven !== false) throw new Error('Campaign 成员响应越过本地边界');
+  const total = requiredCount(source, 'total');
+  const responseLimit = requiredPositive(source, 'limit');
+  const responseOffset = requiredCount(source, 'offset');
+  if (responseLimit > 100 || responseOffset !== offset || responseLimit !== limit) throw new Error('Campaign 成员分页响应不匹配');
+  const rawPlanID = source.plan_id;
+  const planID = rawPlanID == null ? null : requiredText(source, 'plan_id');
+  if (planID && !/^ctp_[0-9a-f]{64}$/.test(planID)) throw new Error('Campaign 成员 plan_id 无效');
+  const items = list(source, 'items').map((item) => {
+    const row = obj(item);
+    const itemPlanID = requiredText(row, 'plan_id');
+    if (!/^ctp_[0-9a-f]{64}$/.test(itemPlanID) || planID && itemPlanID !== planID) throw new Error('Campaign 成员计划范围不匹配');
+    return { planID: itemPlanID, customerID: requiredPositive(row, 'customer_id'), status: campaignMemberStatus(row.status) };
+  });
+  if (items.length > responseLimit || items.length > 100) throw new Error('Campaign 成员响应超出分页上限');
+  return { items, total, limit: responseLimit, offset: responseOffset, planID };
+}
 
 export async function listCampaignsDto(filter: CampaignFilter = {}): Promise<CampaignListItem[]> {
   const source = obj(await call(listCloudCampaigns({ approval_status: filter.approvalStatus, runtime_status: filter.runtimeStatus }, apiRequestOptions())));

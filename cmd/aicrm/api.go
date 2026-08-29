@@ -746,6 +746,9 @@ func (handler *candidateHandler) MutateCloudCampaignTouchPlanReview(writer http.
 func (handler *candidateHandler) GetCloudCampaignTouchPlanRecipientReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64) {
 	handler.serveCampaignRecipientReview(writer, request)
 }
+func (handler *candidateHandler) ListCloudCampaignMembers(writer http.ResponseWriter, request *http.Request, _ string, _ api.ListCloudCampaignMembersParams) {
+	handler.serveCampaignRecipientReview(writer, request)
+}
 func (handler *candidateHandler) MutateCloudCampaignTouchPlanRecipientReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64, _ string, _ api.MutateCloudCampaignTouchPlanRecipientReviewParams) {
 	handler.serveCampaignRecipientReview(writer, request)
 }
@@ -2835,6 +2838,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodDelete, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ArchiveStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
 		{http.MethodGet, campaign.TouchPlanIndexPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignPlans)},
+		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/members", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignMembers)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlans)},
 		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CreateCloudCampaignTouchPlan)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlan)},

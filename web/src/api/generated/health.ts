@@ -6805,6 +6805,57 @@ export interface CloudCampaignTouchPlanReviewMutationResponse {
   delivery_proven: boolean;
 }
 
+export type CloudCampaignMemberStatusStatus =
+  (typeof CloudCampaignMemberStatusStatus)[keyof typeof CloudCampaignMemberStatusStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignMemberStatusStatus = {
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export interface CloudCampaignMemberStatus {
+  /**
+   * @minLength 68
+   * @maxLength 68
+   * @pattern ^ctp_[0-9a-f]{64}$
+   */
+  plan_id: string;
+  /** @minimum 1 */
+  customer_id: number;
+  status: CloudCampaignMemberStatusStatus;
+}
+
+export interface CloudCampaignMemberSafety {
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  runtime_executed: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
+export interface CloudCampaignMemberStatusPage {
+  /**
+   * @minLength 68
+   * @maxLength 68
+   * @pattern ^ctp_[0-9a-f]{64}$
+   */
+  plan_id?: string;
+  /** @maxItems 100 */
+  items: CloudCampaignMemberStatus[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  safety: CloudCampaignMemberSafety;
+}
+
 export interface CloudCampaignTouchPlanRecipient {
   /** @minimum 1 */
   canonical_customer_id: number;
@@ -6883,6 +6934,184 @@ export interface CloudCampaignTouchPlanRecipientReviewMutationResponse {
 }
 
 export interface AIAudienceProjection {
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudienceTemplateParameterKey =
+  (typeof AIAudienceTemplateParameterKey)[keyof typeof AIAudienceTemplateParameterKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateParameterKey = {
+  stage_ids: "stage_ids",
+  tag_ids: "tag_ids",
+  owner_staff_ids: "owner_staff_ids",
+  channel_ids: "channel_ids",
+} as const;
+
+export interface AIAudienceTemplateParameter {
+  key: AIAudienceTemplateParameterKey;
+  required: boolean;
+}
+
+export type AIAudienceTemplateKey =
+  (typeof AIAudienceTemplateKey)[keyof typeof AIAudienceTemplateKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateKey = {
+  active_contacts: "active_contacts",
+  stage_any: "stage_any",
+  tag_any: "tag_any",
+  owner_any: "owner_any",
+  channel_any: "channel_any",
+} as const;
+
+export type AIAudienceTemplateVersion =
+  (typeof AIAudienceTemplateVersion)[keyof typeof AIAudienceTemplateVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export interface AIAudienceTemplate {
+  key: AIAudienceTemplateKey;
+  version: AIAudienceTemplateVersion;
+  /** @maxItems 1 */
+  parameters: AIAudienceTemplateParameter[];
+}
+
+export interface AIAudienceTemplateCatalogResponse {
+  /**
+   * @minItems 5
+   * @maxItems 5
+   */
+  items: AIAudienceTemplate[];
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceTemplateParameters {
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  stage_ids?: number[];
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  tag_ids?: number[];
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  owner_staff_ids?: number[];
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  channel_ids?: number[];
+}
+
+export type AIAudienceTemplateSelectionKey =
+  (typeof AIAudienceTemplateSelectionKey)[keyof typeof AIAudienceTemplateSelectionKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateSelectionKey = {
+  active_contacts: "active_contacts",
+  stage_any: "stage_any",
+  tag_any: "tag_any",
+  owner_any: "owner_any",
+  channel_any: "channel_any",
+} as const;
+
+export type AIAudienceTemplateSelectionVersion =
+  (typeof AIAudienceTemplateSelectionVersion)[keyof typeof AIAudienceTemplateSelectionVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateSelectionVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export interface AIAudienceTemplateSelection {
+  key: AIAudienceTemplateSelectionKey;
+  version: AIAudienceTemplateSelectionVersion;
+  parameters: AIAudienceTemplateParameters;
+}
+
+export type AIAudienceTemplatePreviewRequestTemplateKey =
+  (typeof AIAudienceTemplatePreviewRequestTemplateKey)[keyof typeof AIAudienceTemplatePreviewRequestTemplateKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplatePreviewRequestTemplateKey = {
+  active_contacts: "active_contacts",
+  stage_any: "stage_any",
+  tag_any: "tag_any",
+  owner_any: "owner_any",
+  channel_any: "channel_any",
+} as const;
+
+export type AIAudienceTemplatePreviewRequestTemplateVersion =
+  (typeof AIAudienceTemplatePreviewRequestTemplateVersion)[keyof typeof AIAudienceTemplatePreviewRequestTemplateVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplatePreviewRequestTemplateVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export interface AIAudienceTemplatePreviewRequest {
+  template_key: AIAudienceTemplatePreviewRequestTemplateKey;
+  template_version: AIAudienceTemplatePreviewRequestTemplateVersion;
+  parameters: AIAudienceTemplateParameters;
+  evaluated_at?: string;
+}
+
+export type AIAudienceTemplateSaveRequestTemplateKey =
+  (typeof AIAudienceTemplateSaveRequestTemplateKey)[keyof typeof AIAudienceTemplateSaveRequestTemplateKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateSaveRequestTemplateKey = {
+  active_contacts: "active_contacts",
+  stage_any: "stage_any",
+  tag_any: "tag_any",
+  owner_any: "owner_any",
+  channel_any: "channel_any",
+} as const;
+
+export type AIAudienceTemplateSaveRequestTemplateVersion =
+  (typeof AIAudienceTemplateSaveRequestTemplateVersion)[keyof typeof AIAudienceTemplateSaveRequestTemplateVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceTemplateSaveRequestTemplateVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export interface AIAudienceTemplateSaveRequest {
+  template_key: AIAudienceTemplateSaveRequestTemplateKey;
+  template_version: AIAudienceTemplateSaveRequestTemplateVersion;
+  parameters: AIAudienceTemplateParameters;
+  /** @minimum 1 */
+  expected_package_version: number;
+  /** @minimum 0 */
+  expected_configuration_version: number;
+}
+
+export interface AIAudienceTemplateEvaluationResponse {
+  /** @minimum 1 */
+  package_id: number;
+  /** @minimum 1 */
+  package_version: number;
+  /** @minimum 0 */
+  configuration_version: number;
+  selection: AIAudienceTemplateSelection;
+  definition: SegmentDefinition;
+  /** @minimum 0 */
+  member_count: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  member_digest: string;
+  evaluated_at: string;
+  saved: boolean;
   local_projection: boolean;
   real_external_call_executed: boolean;
 }
@@ -24682,6 +24911,29 @@ export const ListCloudCampaignsRuntimeStatus = {
   idle: "idle",
   planned: "planned",
   paused: "paused",
+} as const;
+
+export type ListCloudCampaignMembersParams = {
+  status?: ListCloudCampaignMembersStatus;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListCloudCampaignMembersStatus =
+  (typeof ListCloudCampaignMembersStatus)[keyof typeof ListCloudCampaignMembersStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCloudCampaignMembersStatus = {
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
 } as const;
 
 export type ListCloudCampaignTouchPlansParams = {
@@ -68735,6 +68987,287 @@ export const replaceAIAudiencePackageSenders = async (
 };
 
 /**
+ * Templates compile only into the canonical Segment DSL. They contain no SQL or Provider behavior.
+ * @summary List the fixed V2-local Audience template catalog
+ */
+export type listAIAudienceTemplatesResponse200 = {
+  data: AIAudienceTemplateCatalogResponse;
+  status: 200;
+};
+
+export type listAIAudienceTemplatesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAIAudienceTemplatesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudienceTemplatesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudienceTemplatesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudienceTemplatesResponseSuccess =
+  listAIAudienceTemplatesResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudienceTemplatesResponseError = (
+  | listAIAudienceTemplatesResponse400
+  | listAIAudienceTemplatesResponse401
+  | listAIAudienceTemplatesResponse403
+  | listAIAudienceTemplatesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudienceTemplatesResponse =
+  listAIAudienceTemplatesResponseSuccess | listAIAudienceTemplatesResponseError;
+
+export const getListAIAudienceTemplatesUrl = () => {
+  return `/api/admin/ai-audience/templates`;
+};
+
+export const listAIAudienceTemplates = async (
+  options?: RequestInit,
+): Promise<listAIAudienceTemplatesResponse> => {
+  const res = await fetch(getListAIAudienceTemplatesUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudienceTemplatesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudienceTemplatesResponse;
+};
+
+/**
+ * @summary Preview one fixed local template without saving or materializing members
+ */
+export type previewAIAudienceTemplateResponse200 = {
+  data: AIAudienceTemplateEvaluationResponse;
+  status: 200;
+};
+
+export type previewAIAudienceTemplateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type previewAIAudienceTemplateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewAIAudienceTemplateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewAIAudienceTemplateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type previewAIAudienceTemplateResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type previewAIAudienceTemplateResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type previewAIAudienceTemplateResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type previewAIAudienceTemplateResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type previewAIAudienceTemplateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type previewAIAudienceTemplateResponseSuccess =
+  previewAIAudienceTemplateResponse200 & {
+    headers: Headers;
+  };
+export type previewAIAudienceTemplateResponseError = (
+  | previewAIAudienceTemplateResponse400
+  | previewAIAudienceTemplateResponse401
+  | previewAIAudienceTemplateResponse403
+  | previewAIAudienceTemplateResponse404
+  | previewAIAudienceTemplateResponse409
+  | previewAIAudienceTemplateResponse413
+  | previewAIAudienceTemplateResponse415
+  | previewAIAudienceTemplateResponse422
+  | previewAIAudienceTemplateResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewAIAudienceTemplateResponse =
+  | previewAIAudienceTemplateResponseSuccess
+  | previewAIAudienceTemplateResponseError;
+
+export const getPreviewAIAudienceTemplateUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/template-preview`;
+};
+
+export const previewAIAudienceTemplate = async (
+  packageId: number,
+  aIAudienceTemplatePreviewRequest: AIAudienceTemplatePreviewRequest,
+  options?: RequestInit,
+): Promise<previewAIAudienceTemplateResponse> => {
+  const res = await fetch(getPreviewAIAudienceTemplateUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceTemplatePreviewRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewAIAudienceTemplateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewAIAudienceTemplateResponse;
+};
+
+/**
+ * Uses package and configuration CAS, keeps the package paused, previews locally, and creates no outbound effect.
+ * @summary Save one fixed template as the stopped package definition and immutable local configuration
+ */
+export type saveAIAudienceTemplateConfigurationResponse200 = {
+  data: AIAudienceTemplateEvaluationResponse;
+  status: 200;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type saveAIAudienceTemplateConfigurationResponseSuccess =
+  saveAIAudienceTemplateConfigurationResponse200 & {
+    headers: Headers;
+  };
+export type saveAIAudienceTemplateConfigurationResponseError = (
+  | saveAIAudienceTemplateConfigurationResponse400
+  | saveAIAudienceTemplateConfigurationResponse401
+  | saveAIAudienceTemplateConfigurationResponse403
+  | saveAIAudienceTemplateConfigurationResponse404
+  | saveAIAudienceTemplateConfigurationResponse409
+  | saveAIAudienceTemplateConfigurationResponse413
+  | saveAIAudienceTemplateConfigurationResponse415
+  | saveAIAudienceTemplateConfigurationResponse422
+  | saveAIAudienceTemplateConfigurationResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveAIAudienceTemplateConfigurationResponse =
+  | saveAIAudienceTemplateConfigurationResponseSuccess
+  | saveAIAudienceTemplateConfigurationResponseError;
+
+export const getSaveAIAudienceTemplateConfigurationUrl = (
+  packageId: number,
+) => {
+  return `/api/admin/ai-audience/packages/${packageId}/template-config`;
+};
+
+export const saveAIAudienceTemplateConfiguration = async (
+  packageId: number,
+  aIAudienceTemplateSaveRequest: AIAudienceTemplateSaveRequest,
+  options?: RequestInit,
+): Promise<saveAIAudienceTemplateConfigurationResponse> => {
+  const res = await fetch(
+    getSaveAIAudienceTemplateConfigurationUrl(packageId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(aIAudienceTemplateSaveRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveAIAudienceTemplateConfigurationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveAIAudienceTemplateConfigurationResponse;
+};
+
+/**
  * This is a V2-native typed snapshot of the canonical Segment definition, not the legacy template catalogue.
  * @summary Read the current immutable CRM-local AI Audience configuration snapshot
  */
@@ -70089,6 +70622,102 @@ export const listCloudCampaigns = async (
     status: res.status,
     headers: res.headers,
   } as listCloudCampaignsResponse;
+};
+
+/**
+ * Missing recipient-review sidecars project as pending_review. This read creates no send, delivery, or Provider fact.
+ * @summary List the latest immutable touch-plan members by local review status
+ */
+export type listCloudCampaignMembersResponse200 = {
+  data: CloudCampaignMemberStatusPage;
+  status: 200;
+};
+
+export type listCloudCampaignMembersResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type listCloudCampaignMembersResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type listCloudCampaignMembersResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type listCloudCampaignMembersResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type listCloudCampaignMembersResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type listCloudCampaignMembersResponseSuccess =
+  listCloudCampaignMembersResponse200 & {
+    headers: Headers;
+  };
+export type listCloudCampaignMembersResponseError = (
+  | listCloudCampaignMembersResponse400
+  | listCloudCampaignMembersResponse401
+  | listCloudCampaignMembersResponse403
+  | listCloudCampaignMembersResponse404
+  | listCloudCampaignMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCloudCampaignMembersResponse =
+  | listCloudCampaignMembersResponseSuccess
+  | listCloudCampaignMembersResponseError;
+
+export const getListCloudCampaignMembersUrl = (
+  campaignCode: string,
+  params?: ListCloudCampaignMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/members?${stringifiedParams}`
+    : `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/members`;
+};
+
+export const listCloudCampaignMembers = async (
+  campaignCode: string,
+  params?: ListCloudCampaignMembersParams,
+  options?: RequestInit,
+): Promise<listCloudCampaignMembersResponse> => {
+  const res = await fetch(
+    getListCloudCampaignMembersUrl(campaignCode, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCloudCampaignMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCloudCampaignMembersResponse;
 };
 
 /**

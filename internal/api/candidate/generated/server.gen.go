@@ -1900,6 +1900,102 @@ func (e ChannelHistoryResponseSource) Valid() bool {
 	}
 }
 
+// Defines values for CloudCampaignMemberSafetyDeliveryProven.
+const (
+	CloudCampaignMemberSafetyDeliveryProvenFalse CloudCampaignMemberSafetyDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignMemberSafetyDeliveryProven enum.
+func (e CloudCampaignMemberSafetyDeliveryProven) Valid() bool {
+	switch e {
+	case CloudCampaignMemberSafetyDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignMemberSafetyLocalOnly.
+const (
+	CloudCampaignMemberSafetyLocalOnlyTrue CloudCampaignMemberSafetyLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignMemberSafetyLocalOnly enum.
+func (e CloudCampaignMemberSafetyLocalOnly) Valid() bool {
+	switch e {
+	case CloudCampaignMemberSafetyLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignMemberSafetyProviderExecutionEligible.
+const (
+	CloudCampaignMemberSafetyProviderExecutionEligibleFalse CloudCampaignMemberSafetyProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignMemberSafetyProviderExecutionEligible enum.
+func (e CloudCampaignMemberSafetyProviderExecutionEligible) Valid() bool {
+	switch e {
+	case CloudCampaignMemberSafetyProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignMemberSafetyRealExternalCallExecuted.
+const (
+	CloudCampaignMemberSafetyRealExternalCallExecutedFalse CloudCampaignMemberSafetyRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignMemberSafetyRealExternalCallExecuted enum.
+func (e CloudCampaignMemberSafetyRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CloudCampaignMemberSafetyRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignMemberSafetyRuntimeExecuted.
+const (
+	CloudCampaignMemberSafetyRuntimeExecutedFalse CloudCampaignMemberSafetyRuntimeExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignMemberSafetyRuntimeExecuted enum.
+func (e CloudCampaignMemberSafetyRuntimeExecuted) Valid() bool {
+	switch e {
+	case CloudCampaignMemberSafetyRuntimeExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignMemberStatusStatus.
+const (
+	CloudCampaignMemberStatusStatusApproved      CloudCampaignMemberStatusStatus = "approved"
+	CloudCampaignMemberStatusStatusPendingReview CloudCampaignMemberStatusStatus = "pending_review"
+	CloudCampaignMemberStatusStatusRejected      CloudCampaignMemberStatusStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignMemberStatusStatus enum.
+func (e CloudCampaignMemberStatusStatus) Valid() bool {
+	switch e {
+	case CloudCampaignMemberStatusStatusApproved:
+		return true
+	case CloudCampaignMemberStatusStatusPendingReview:
+		return true
+	case CloudCampaignMemberStatusStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CloudCampaignTouchPlanAudiencePackageMembersRequestKind.
 const (
 	CloudCampaignTouchPlanAudiencePackageMembersRequestKindAiAudiencePackageMembers CloudCampaignTouchPlanAudiencePackageMembersRequestKind = "ai_audience_package_members"
@@ -13230,19 +13326,19 @@ func (e SidebarChatActivityItemChatType) Valid() bool {
 
 // Defines values for SidebarContextResponseState.
 const (
-	SidebarContextResponseStateCustomerNotBound      SidebarContextResponseState = "customer_not_bound"
-	SidebarContextResponseStateReady                 SidebarContextResponseState = "ready"
-	SidebarContextResponseStateViewerSessionRequired SidebarContextResponseState = "viewer_session_required"
+	CustomerNotBound      SidebarContextResponseState = "customer_not_bound"
+	Ready                 SidebarContextResponseState = "ready"
+	ViewerSessionRequired SidebarContextResponseState = "viewer_session_required"
 )
 
 // Valid indicates whether the value is a known member of the SidebarContextResponseState enum.
 func (e SidebarContextResponseState) Valid() bool {
 	switch e {
-	case SidebarContextResponseStateCustomerNotBound:
+	case CustomerNotBound:
 		return true
-	case SidebarContextResponseStateReady:
+	case Ready:
 		return true
-	case SidebarContextResponseStateViewerSessionRequired:
+	case ViewerSessionRequired:
 		return true
 	default:
 		return false
@@ -14664,13 +14760,13 @@ func (e WeComContactHistoryRelationDetailSource) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageReadOnly.
 const (
-	True WeComContactHistoryRelationPageReadOnly = true
+	WeComContactHistoryRelationPageReadOnlyTrue WeComContactHistoryRelationPageReadOnly = true
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageReadOnly enum.
 func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
 	switch e {
-	case True:
+	case WeComContactHistoryRelationPageReadOnlyTrue:
 		return true
 	default:
 		return false
@@ -15031,6 +15127,27 @@ func (e ListLegacyChannelsParamsStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListCloudCampaignMembersParamsStatus.
+const (
+	ListCloudCampaignMembersParamsStatusApproved      ListCloudCampaignMembersParamsStatus = "approved"
+	ListCloudCampaignMembersParamsStatusPendingReview ListCloudCampaignMembersParamsStatus = "pending_review"
+	ListCloudCampaignMembersParamsStatusRejected      ListCloudCampaignMembersParamsStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the ListCloudCampaignMembersParamsStatus enum.
+func (e ListCloudCampaignMembersParamsStatus) Valid() bool {
+	switch e {
+	case ListCloudCampaignMembersParamsStatusApproved:
+		return true
+	case ListCloudCampaignMembersParamsStatusPendingReview:
+		return true
+	case ListCloudCampaignMembersParamsStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListCloudCampaignPlansParamsReviewStatus.
 const (
 	ListCloudCampaignPlansParamsReviewStatusApproved      ListCloudCampaignPlansParamsReviewStatus = "approved"
@@ -15093,31 +15210,31 @@ func (e ListMessageHistoryParamsChatType) Valid() bool {
 
 // Defines values for ListLegacyOutboundJobsParamsStatus.
 const (
-	Cancelled       ListLegacyOutboundJobsParamsStatus = "cancelled"
-	FinalFailed     ListLegacyOutboundJobsParamsStatus = "final_failed"
-	OutcomeUnknown  ListLegacyOutboundJobsParamsStatus = "outcome_unknown"
-	Pending         ListLegacyOutboundJobsParamsStatus = "pending"
-	RetryableFailed ListLegacyOutboundJobsParamsStatus = "retryable_failed"
-	Sending         ListLegacyOutboundJobsParamsStatus = "sending"
-	Sent            ListLegacyOutboundJobsParamsStatus = "sent"
+	ListLegacyOutboundJobsParamsStatusCancelled       ListLegacyOutboundJobsParamsStatus = "cancelled"
+	ListLegacyOutboundJobsParamsStatusFinalFailed     ListLegacyOutboundJobsParamsStatus = "final_failed"
+	ListLegacyOutboundJobsParamsStatusOutcomeUnknown  ListLegacyOutboundJobsParamsStatus = "outcome_unknown"
+	ListLegacyOutboundJobsParamsStatusPending         ListLegacyOutboundJobsParamsStatus = "pending"
+	ListLegacyOutboundJobsParamsStatusRetryableFailed ListLegacyOutboundJobsParamsStatus = "retryable_failed"
+	ListLegacyOutboundJobsParamsStatusSending         ListLegacyOutboundJobsParamsStatus = "sending"
+	ListLegacyOutboundJobsParamsStatusSent            ListLegacyOutboundJobsParamsStatus = "sent"
 )
 
 // Valid indicates whether the value is a known member of the ListLegacyOutboundJobsParamsStatus enum.
 func (e ListLegacyOutboundJobsParamsStatus) Valid() bool {
 	switch e {
-	case Cancelled:
+	case ListLegacyOutboundJobsParamsStatusCancelled:
 		return true
-	case FinalFailed:
+	case ListLegacyOutboundJobsParamsStatusFinalFailed:
 		return true
-	case OutcomeUnknown:
+	case ListLegacyOutboundJobsParamsStatusOutcomeUnknown:
 		return true
-	case Pending:
+	case ListLegacyOutboundJobsParamsStatusPending:
 		return true
-	case RetryableFailed:
+	case ListLegacyOutboundJobsParamsStatusRetryableFailed:
 		return true
-	case Sending:
+	case ListLegacyOutboundJobsParamsStatusSending:
 		return true
-	case Sent:
+	case ListLegacyOutboundJobsParamsStatusSent:
 		return true
 	default:
 		return false
@@ -16491,6 +16608,50 @@ type ClearCustomerContactPolicyRequest struct {
 // CloudCampaignError defines model for CloudCampaignError.
 type CloudCampaignError struct {
 	Code string `json:"code"`
+}
+
+// CloudCampaignMemberSafety defines model for CloudCampaignMemberSafety.
+type CloudCampaignMemberSafety struct {
+	DeliveryProven            CloudCampaignMemberSafetyDeliveryProven            `json:"delivery_proven"`
+	LocalOnly                 CloudCampaignMemberSafetyLocalOnly                 `json:"local_only"`
+	ProviderExecutionEligible CloudCampaignMemberSafetyProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  CloudCampaignMemberSafetyRealExternalCallExecuted  `json:"real_external_call_executed"`
+	RuntimeExecuted           CloudCampaignMemberSafetyRuntimeExecuted           `json:"runtime_executed"`
+}
+
+// CloudCampaignMemberSafetyDeliveryProven defines model for CloudCampaignMemberSafety.DeliveryProven.
+type CloudCampaignMemberSafetyDeliveryProven bool
+
+// CloudCampaignMemberSafetyLocalOnly defines model for CloudCampaignMemberSafety.LocalOnly.
+type CloudCampaignMemberSafetyLocalOnly bool
+
+// CloudCampaignMemberSafetyProviderExecutionEligible defines model for CloudCampaignMemberSafety.ProviderExecutionEligible.
+type CloudCampaignMemberSafetyProviderExecutionEligible bool
+
+// CloudCampaignMemberSafetyRealExternalCallExecuted defines model for CloudCampaignMemberSafety.RealExternalCallExecuted.
+type CloudCampaignMemberSafetyRealExternalCallExecuted bool
+
+// CloudCampaignMemberSafetyRuntimeExecuted defines model for CloudCampaignMemberSafety.RuntimeExecuted.
+type CloudCampaignMemberSafetyRuntimeExecuted bool
+
+// CloudCampaignMemberStatus defines model for CloudCampaignMemberStatus.
+type CloudCampaignMemberStatus struct {
+	CustomerId int64                           `json:"customer_id"`
+	PlanId     string                          `json:"plan_id"`
+	Status     CloudCampaignMemberStatusStatus `json:"status"`
+}
+
+// CloudCampaignMemberStatusStatus defines model for CloudCampaignMemberStatus.Status.
+type CloudCampaignMemberStatusStatus string
+
+// CloudCampaignMemberStatusPage defines model for CloudCampaignMemberStatusPage.
+type CloudCampaignMemberStatusPage struct {
+	Items  []CloudCampaignMemberStatus `json:"items"`
+	Limit  int32                       `json:"limit"`
+	Offset int32                       `json:"offset"`
+	PlanId *string                     `json:"plan_id,omitempty"`
+	Safety CloudCampaignMemberSafety   `json:"safety"`
+	Total  int64                       `json:"total"`
 }
 
 // CloudCampaignStep defines model for CloudCampaignStep.
@@ -24905,6 +25066,16 @@ type GetChannelHistoryParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListCloudCampaignMembersParams defines parameters for ListCloudCampaignMembers.
+type ListCloudCampaignMembersParams struct {
+	Status *ListCloudCampaignMembersParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	Limit  *int32                                `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32                                `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListCloudCampaignMembersParamsStatus defines parameters for ListCloudCampaignMembers.
+type ListCloudCampaignMembersParamsStatus string
+
 // ListCloudCampaignTouchPlansParams defines parameters for ListCloudCampaignTouchPlans.
 type ListCloudCampaignTouchPlansParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -28274,6 +28445,9 @@ type ServerInterface interface {
 	// Read V1 channel entry and assignment facts without current attribution or permissions
 	// (GET /api/admin/channels/{channel_id}/history)
 	GetChannelHistory(w http.ResponseWriter, r *http.Request, channelId int64, params GetChannelHistoryParams)
+	// List the latest immutable touch-plan members by local review status
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members)
+	ListCloudCampaignMembers(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignMembersParams)
 	// List recipient-safe immutable local Campaign touch-plan snapshots
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans)
 	ListCloudCampaignTouchPlans(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignTouchPlansParams)
@@ -29651,6 +29825,12 @@ func (_ Unimplemented) ListLegacyChannelEntrants(w http.ResponseWriter, r *http.
 // Read V1 channel entry and assignment facts without current attribution or permissions
 // (GET /api/admin/channels/{channel_id}/history)
 func (_ Unimplemented) GetChannelHistory(w http.ResponseWriter, r *http.Request, channelId int64, params GetChannelHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the latest immutable touch-plan members by local review status
+// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members)
+func (_ Unimplemented) ListCloudCampaignMembers(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignMembersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -34692,6 +34872,64 @@ func (siw *ServerInterfaceWrapper) GetChannelHistory(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetChannelHistory(w, r, channelId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCloudCampaignMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListCloudCampaignMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCloudCampaignMembersParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCloudCampaignMembers(w, r, campaignCode, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -52426,6 +52664,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}/history", wrapper.GetChannelHistory)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/members", wrapper.ListCloudCampaignMembers)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", wrapper.ListCloudCampaignTouchPlans)
 	})
 	r.Group(func(r chi.Router) {
@@ -57082,6 +57323,69 @@ func (response GetChannelHistory404JSONResponse) VisitGetChannelHistoryResponse(
 type GetChannelHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetChannelHistory503JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignMembersRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	Params       ListCloudCampaignMembersParams
+}
+
+type ListCloudCampaignMembersResponseObject interface {
+	VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error
+}
+
+type ListCloudCampaignMembers200JSONResponse CloudCampaignMemberStatusPage
+
+func (response ListCloudCampaignMembers200JSONResponse) VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignMembers400JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignMembers400JSONResponse) VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignMembers401JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignMembers401JSONResponse) VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignMembers403JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignMembers403JSONResponse) VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignMembers404JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignMembers404JSONResponse) VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignMembers503JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignMembers503JSONResponse) VisitListCloudCampaignMembersResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -77132,6 +77436,9 @@ type StrictServerInterface interface {
 	// Read V1 channel entry and assignment facts without current attribution or permissions
 	// (GET /api/admin/channels/{channel_id}/history)
 	GetChannelHistory(ctx context.Context, request GetChannelHistoryRequestObject) (GetChannelHistoryResponseObject, error)
+	// List the latest immutable touch-plan members by local review status
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members)
+	ListCloudCampaignMembers(ctx context.Context, request ListCloudCampaignMembersRequestObject) (ListCloudCampaignMembersResponseObject, error)
 	// List recipient-safe immutable local Campaign touch-plan snapshots
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans)
 	ListCloudCampaignTouchPlans(ctx context.Context, request ListCloudCampaignTouchPlansRequestObject) (ListCloudCampaignTouchPlansResponseObject, error)
@@ -79919,6 +80226,33 @@ func (sh *strictHandler) GetChannelHistory(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetChannelHistoryResponseObject); ok {
 		if err := validResponse.VisitGetChannelHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCloudCampaignMembers operation middleware
+func (sh *strictHandler) ListCloudCampaignMembers(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignMembersParams) {
+	var request ListCloudCampaignMembersRequestObject
+
+	request.CampaignCode = campaignCode
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCloudCampaignMembers(ctx, request.(ListCloudCampaignMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCloudCampaignMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCloudCampaignMembersResponseObject); ok {
+		if err := validResponse.VisitListCloudCampaignMembersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

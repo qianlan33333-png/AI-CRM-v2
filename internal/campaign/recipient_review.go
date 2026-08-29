@@ -13,6 +13,7 @@ const (
 	RecipientReviewAuditMessageOverridden = "recipient_message_overridden"
 	RecipientReviewAuditApproved          = "recipient_approved"
 	RecipientReviewAuditRejected          = "recipient_rejected"
+	MaximumCampaignMemberPage             = 100
 )
 
 type TouchPlanRecipientReviewStatus string
@@ -40,6 +41,30 @@ type TouchPlanRecipientReview struct {
 	UpdatedByActorID int64
 	UpdatedAt        time.Time
 	Safety           InitiationSafety
+}
+
+// CampaignMemberStatus is a Campaign-owned projection over the newest
+// immutable touch plan. CustomerID remains a canonical local OneID snapshot;
+// it is not a Customer, Identity, send, or delivery fact.
+type CampaignMemberStatus struct {
+	PlanID     string                         `json:"plan_id"`
+	CustomerID int64                          `json:"customer_id"`
+	Status     TouchPlanRecipientReviewStatus `json:"status"`
+}
+
+type CampaignMemberStatusSnapshot struct {
+	PlanID string
+	Items  []CampaignMemberStatus
+	Total  int64
+}
+
+type CampaignMemberStatusPage struct {
+	PlanID string                 `json:"plan_id,omitempty"`
+	Items  []CampaignMemberStatus `json:"items"`
+	Total  int64                  `json:"total"`
+	Limit  int32                  `json:"limit"`
+	Offset int32                  `json:"offset"`
+	Safety InitiationSafety       `json:"safety"`
 }
 
 type SaveTouchPlanRecipientMessageOverrideCommand struct {

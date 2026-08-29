@@ -14,7 +14,7 @@ import type { AdminApi } from '../shared/api/client';
 import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelEntrant, ChannelHistoryPage, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
-import { buildChannelFinalUrl, channelAcquisitionAssetReady } from '../api/admin';
+import { buildChannelFinalUrl, channelAcquisitionAssetReady, listAudienceTemplatesDto, previewAudienceTemplateDto, saveAudienceTemplateConfigurationDto, type AudienceTemplate, type AudienceTemplateEvaluation, type AudienceTemplateKey, type AudienceTemplateParameters } from '../api/admin';
 import type { AdminDbWithMiniProgramList, AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, MiniProgramListPage, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
@@ -40,6 +40,11 @@ type AdminState = {
   /* ---- 人群包编辑器 ---- */
   apanel: number;
   audiencePreview: { configurationVersion: number; memberCount: number; emptyConfirmed: boolean } | null;
+  audienceTemplates: AudienceTemplate[];
+  audienceTemplateError: string;
+  audienceTemplateKey: AudienceTemplateKey;
+  audienceTemplateParametersText: string;
+  audienceTemplatePreview: AudienceTemplateEvaluation | null;
   /* ---- 企微标签 ---- */
   tagGroupId: number;
   tagMode: '' | 'create-group' | 'create-tag' | 'edit-group' | 'edit-tag';
@@ -144,6 +149,11 @@ export class AdminController extends PageBase {
     editingGroupId: 0,
     apanel: 1,
     audiencePreview: null,
+    audienceTemplates: [],
+    audienceTemplateError: '',
+    audienceTemplateKey: 'active_contacts',
+    audienceTemplateParametersText: '{}',
+    audienceTemplatePreview: null,
     tagGroupId: 1,
     tagMode: '',
     editingTagId: 0,
@@ -240,6 +250,19 @@ export class AdminController extends PageBase {
       if (this.page !== 'mpLib') throw error;
       this.db = emptyAdminDb();
       this.state.miniProgramError = error instanceof Error ? error.message : '小程序素材读取失败';
+    }
+    if (this.page === 'audienceEdit') {
+      this.state.audienceTemplateError = '';
+      this.state.audienceTemplatePreview = null;
+      this.state.audienceTemplates = [];
+      if (this.api.mode === 'http') {
+        try {
+          this.state.audienceTemplates = await listAudienceTemplatesDto();
+          if (!this.state.audienceTemplates.some((template) => template.key === this.state.audienceTemplateKey)) this.state.audienceTemplateKey = this.state.audienceTemplates[0]?.key || 'active_contacts';
+        } catch (error) {
+          this.state.audienceTemplateError = error instanceof Error ? error.message : 'Audience 模板目录读取失败';
+        }
+      }
     }
     if (this.page === 'channelForm') {
       this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
@@ -686,6 +709,57 @@ export class AdminController extends PageBase {
       .then(() => this.api.previewAudienceConfiguration(pkg.id))
       .then((result) => this.showAudiencePreview(pkg, result, '已保存新配置版本并预览'))
       .catch((error) => toast(error instanceof Error ? error.message : '保存并预览失败', true));
+  }
+
+  private audienceTemplateInput(): { templateKey: AudienceTemplateKey; parameters: AudienceTemplateParameters } | null {
+    const key = (document.getElementById('aeTemplateKey') as HTMLSelectElement | null)?.value as AudienceTemplateKey | undefined;
+    if (!key || !this.state.audienceTemplates.some((template) => template.key === key)) {
+      toast('请选择当前 V2 模板目录中的模板', true);
+      return null;
+    }
+    const raw = (document.getElementById('aeTemplateParams') as HTMLTextAreaElement | null)?.value || '{}';
+    let parsed: unknown;
+    try { parsed = JSON.parse(raw); } catch { toast('模板参数不是有效 JSON', true); return null; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) { toast('模板参数必须是 JSON 对象', true); return null; }
+    const parameters = parsed as AudienceTemplateParameters;
+    const template = this.state.audienceTemplates.find((item) => item.key === key);
+    if (template?.parameters.some((parameter) => parameter.required && !Array.isArray((parameters as Record<string, unknown>)[parameter.key]))) {
+      toast('当前模板的必填参数必须填写正整数数组', true);
+      return null;
+    }
+    return { templateKey: key, parameters };
+  }
+
+  private previewAudienceTemplate(): void {
+    const pkg = this.audiencePkg();
+    const input = this.audienceTemplateInput();
+    if (!pkg || !input || this.api.mode !== 'http' || !this.audienceConfigurationAllowed()) return;
+    void previewAudienceTemplateDto(pkg.id, input)
+      .then((result) => {
+        this.setState({ audienceTemplateKey: input.templateKey, audienceTemplateParametersText: JSON.stringify(input.parameters, null, 2), audienceTemplatePreview: result });
+        toast(`模板预览完成：${result.memberCount} 人`);
+      })
+      .catch((error) => toast(error instanceof Error ? error.message : 'Audience 模板预览失败', true));
+  }
+
+  private saveAudienceTemplate(): void {
+    const pkg = this.audiencePkg();
+    const input = this.audienceTemplateInput();
+    if (!pkg || !input || this.api.mode !== 'http' || !this.audienceConfigurationAllowed()) return;
+    const expectedPackageVersion = pkg.packageVersion;
+    if (typeof expectedPackageVersion !== 'number' || !Number.isSafeInteger(expectedPackageVersion) || expectedPackageVersion < 1) { toast('当前人群包缺少有效包版本，已拒绝保存模板', true); return; }
+    void saveAudienceTemplateConfigurationDto(pkg.id, {
+      ...input,
+      expectedPackageVersion,
+      expectedConfigurationVersion: pkg.configurationVersion || 0,
+    }).then((result) => {
+      pkg.packageVersion = result.packageVersion;
+      pkg.version = `v${result.packageVersion}`;
+      pkg.configurationVersion = result.configurationVersion;
+      pkg.definition = JSON.stringify(result.definition, null, 2);
+      this.setState({ audienceTemplateKey: input.templateKey, audienceTemplateParametersText: JSON.stringify(input.parameters, null, 2), audienceTemplatePreview: result });
+      toast(`模板配置已保存：${result.memberCount} 人；仅本地配置`);
+    }).catch((error) => toast(error instanceof Error ? error.message : 'Audience 模板保存失败', true));
   }
 
   private previewAudience(): void {
@@ -1671,7 +1745,16 @@ export class AdminController extends PageBase {
           message: this.state.audiencePreview.memberCount === 0
             ? (this.state.audiencePreview.emptyConfirmed ? '空人群已明确确认；仍需单独确认物化。' : '空人群尚未确认，物化已拒绝。')
             : '预览已完成；物化仍只写本地成员事实。',
-        }
+      }
+      : null;
+    const aeTemplateOpts = this.state.audienceTemplates.map((template) => ({
+      v: template.key,
+      t: `${template.key} · v${template.version}`,
+      sel: template.key === this.state.audienceTemplateKey,
+      not: template.key !== this.state.audienceTemplateKey,
+    }));
+    const aeTemplatePreview = this.state.audienceTemplatePreview
+      ? { ...this.state.audienceTemplatePreview, savedText: this.state.audienceTemplatePreview.saved ? '已保存' : '仅预览' }
       : null;
     const aeRecordRows = aeRecords.map((r) => ({ ...r, cs: mk(r.tone) }));
     const aeAgents = rows.agents.map((a) => ({
@@ -2421,6 +2504,12 @@ export class AdminController extends PageBase {
         records: aeRecordRows,
         recordTotal: aeRecords.length ? '共 ' + aeRecords.length + ' 条' : '暂无发送记录',
         preview: aePreview,
+        templates: this.state.audienceTemplates,
+        templateOpts: aeTemplateOpts,
+        templateReady: this.state.audienceTemplates.length > 0,
+        templateError: this.state.audienceTemplateError,
+        templateParamsText: this.state.audienceTemplateParametersText,
+        templatePreview: aeTemplatePreview,
         agents: aeAgents,
         saveBasic: () => this.saveAudienceBasic(),
         saveBinding: () => this.saveAudienceBinding(),
@@ -2431,6 +2520,8 @@ export class AdminController extends PageBase {
         snapshot: () => this.snapshotAudience(),
         previewConfiguration: () => this.previewAudience(),
         savePreview: () => this.saveAndPreviewAudience(),
+        previewTemplate: () => this.previewAudienceTemplate(),
+        saveTemplate: () => this.saveAudienceTemplate(),
         materialize: () => this.materializeAudience(),
       },
 

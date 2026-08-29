@@ -66,6 +66,7 @@ func RouteSpecs() []RouteSpec {
 		{http.MethodPatch, RoutePrefix + "/package-groups/{group_id}", CapabilitySegmentsWrite, true},
 		{http.MethodDelete, RoutePrefix + "/package-groups/{group_id}", CapabilitySegmentsWrite, true},
 		{http.MethodGet, RoutePrefix + "/packages", CapabilitySegmentsRead, false},
+		{http.MethodGet, RoutePrefix + "/templates", CapabilitySegmentsRead, false},
 		{http.MethodGet, RoutePrefix + "/packages/{package_id}", CapabilitySegmentsRead, false},
 		{http.MethodPatch, RoutePrefix + "/packages/{package_id}", CapabilitySegmentsWrite, true},
 		{http.MethodPost, RoutePrefix + "/packages/{package_id}/copy", CapabilitySegmentsWrite, true},

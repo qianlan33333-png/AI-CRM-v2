@@ -1061,6 +1061,88 @@ func (q *Queries) ListCampaignTouchPlanTargets(ctx context.Context, planID strin
 	return items, nil
 }
 
+const listLatestCampaignMemberStatuses = `-- name: ListLatestCampaignMemberStatuses :many
+WITH selected AS (
+  SELECT (
+    SELECT plan.id
+    FROM public.cloud_campaign_touch_plans AS plan
+    WHERE plan.campaign_code = campaign.campaign_code
+    ORDER BY plan.created_at DESC, plan.id DESC
+    LIMIT 1
+  ) AS plan_id
+  FROM public.cloud_campaigns AS campaign
+  WHERE campaign.campaign_code = $1
+), projected AS (
+  SELECT selected.plan_id,
+         target.customer_id,
+         COALESCE(review.status, 'pending_review') AS status
+  FROM selected
+  JOIN public.cloud_campaign_touch_plan_targets AS target
+    ON target.plan_id = selected.plan_id
+  LEFT JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = target.plan_id
+   AND review.customer_id = target.customer_id
+  WHERE $2::text IS NULL
+     OR COALESCE(review.status, 'pending_review') = $2
+), page AS (
+  SELECT plan_id, customer_id, status
+  FROM projected
+  ORDER BY customer_id
+  LIMIT $4 OFFSET $3
+)
+SELECT COALESCE(selected.plan_id, '') AS plan_id,
+       (SELECT count(*) FROM projected) AS total,
+       page.customer_id,
+       page.status
+FROM selected
+LEFT JOIN page ON TRUE
+ORDER BY page.customer_id
+`
+
+type ListLatestCampaignMemberStatusesParams struct {
+	CampaignCode string      `json:"campaign_code"`
+	StatusFilter pgtype.Text `json:"status_filter"`
+	PageOffset   int32       `json:"page_offset"`
+	PageLimit    int32       `json:"page_limit"`
+}
+
+type ListLatestCampaignMemberStatusesRow struct {
+	PlanID     string      `json:"plan_id"`
+	Total      int64       `json:"total"`
+	CustomerID pgtype.Int8 `json:"customer_id"`
+	Status     pgtype.Text `json:"status"`
+}
+
+func (q *Queries) ListLatestCampaignMemberStatuses(ctx context.Context, arg ListLatestCampaignMemberStatusesParams) ([]ListLatestCampaignMemberStatusesRow, error) {
+	rows, err := q.db.Query(ctx, listLatestCampaignMemberStatuses,
+		arg.CampaignCode,
+		arg.StatusFilter,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLatestCampaignMemberStatusesRow{}
+	for rows.Next() {
+		var i ListLatestCampaignMemberStatusesRow
+		if err := rows.Scan(
+			&i.PlanID,
+			&i.Total,
+			&i.CustomerID,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockApprovedCampaignTouchPlanHandoff = `-- name: LockApprovedCampaignTouchPlanHandoff :one
 SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
        plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,
