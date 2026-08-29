@@ -45,7 +45,7 @@ func TestFinalMigrationManifestRegistersExactlyFortyDomains(t *testing.T) {
 			t.Fatalf("non-shared reconciliation scope %s covers %#v", version, domains)
 		}
 	}
-	if finalVerificationModel != "36_fresh_domain_reconciliations_then_read_only_aggregate" {
+	if finalVerificationModel != "36_current_domain_reconciliations_then_read_only_aggregate" {
 		t.Fatalf("unexpected verification model %q", finalVerificationModel)
 	}
 	short := manifest
@@ -115,6 +115,38 @@ func TestFinalReconciliationGroupsFailClosedWhenMissingOrIncomplete(t *testing.T
 	reconciled[domainImportVersion] = reconciliationCounts{Selected: 5, Receipts: 5, Imported: 5, Verified: 5}
 	if err := validateFinalReconciliationGroups(scopes, actual, reconciled); err == nil || !strings.Contains(err.Error(), "does not cover") {
 		t.Fatalf("incomplete shared reconciliation group accepted: %v", err)
+	}
+}
+
+func TestFinalPreflightClassifiesOnlyWholeUnsealedScopes(t *testing.T) {
+	manifest, err := loadFinalMigrationManifest("../../docs/release/final-v1-domain-migration-manifest.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	scopes := finalDomainsByReconciliationScope(manifest)
+	sealed := make(map[string]bool, len(scopes))
+	receipts := make(map[string]int64, len(scopes))
+	for version := range scopes {
+		sealed[version] = true
+	}
+	for _, domain := range []string{"hxc-chat-job-history", "hxc-member-usage-history", "cycle-observation-history", "customer-timeline-history", "audience-activity-history"} {
+		sealed[finalDomainSpecs[domain].ImportVersion] = false
+	}
+	missing, err := classifyFinalPreflightScopes(scopes, sealed, receipts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"audience-activity-history", "customer-timeline-history", "cycle-observation-history", "hxc-chat-job-history", "hxc-member-usage-history"}
+	if !slices.Equal(missing, want) {
+		t.Fatalf("missing domains = %#v, want %#v", missing, want)
+	}
+	receipts[domainImportVersion] = 1
+	sealed[domainImportVersion] = false
+	if _, err = classifyFinalPreflightScopes(scopes, sealed, receipts); err == nil || !strings.Contains(err.Error(), "receipts without reconciliation") {
+		t.Fatalf("partial shared scope was accepted: %v", err)
+	}
+	if err = validateFinalPreflightVersionSet(scopes, []string{staticImportVersion, "unknown-import-version"}); err == nil || !strings.Contains(err.Error(), "unknown import version") {
+		t.Fatalf("unknown journal version was accepted: %v", err)
 	}
 }
 

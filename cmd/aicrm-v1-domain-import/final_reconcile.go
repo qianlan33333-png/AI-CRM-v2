@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,13 +17,14 @@ import (
 )
 
 const (
+	finalPreflightMode         = "final-preflight"
 	finalReconcileMode         = "final-reconcile"
 	finalReconcileDomain       = "final"
 	finalMigrationManifestPath = "docs/release/final-v1-domain-migration-manifest.json"
 	finalManifestDomainCount   = 40
 	finalManifestSchemaFrom    = 132
 	finalManifestSchemaTo      = 142
-	finalVerificationModel     = "36_fresh_domain_reconciliations_then_read_only_aggregate"
+	finalVerificationModel     = "36_current_domain_reconciliations_then_read_only_aggregate"
 )
 
 type finalMigrationManifest struct {
@@ -111,6 +113,13 @@ type finalReconciliationResult struct {
 	ReconciliationGroups []finalReconciliationGroup `json:"reconciliation_groups"`
 	IdentityMapping      finalIdentityProof         `json:"identity_mapping"`
 	ExternalEffects      int64                      `json:"external_effects"`
+}
+
+// finalPreflightResult is deliberately limited to the manifest domains that
+// still need their first import. It never exposes receipt details or runtime
+// configuration.
+type finalPreflightResult struct {
+	MissingDomains []string `json:"missing_domains"`
 }
 
 type finalDomainProof struct {
@@ -300,6 +309,126 @@ func reconcileFinalMigration(ctx context.Context, pool *pgxpool.Pool, archiveRun
 		return finalReconciliationResult{}, err
 	}
 	return result, nil
+}
+
+// preflightFinalMigration classifies every manifest reconciliation scope in a
+// repeatable-read, read-only transaction. A scope is either already sealed by
+// a valid reconciliation receipt or entirely absent; journal rows without a
+// seal (including a partial shared v1-domain-a1 scope) are rejected.
+func preflightFinalMigration(ctx context.Context, pool *pgxpool.Pool, archiveRunID string, manifest finalMigrationManifest) (finalPreflightResult, error) {
+	if ctx == nil || pool == nil || archiveRunID == "" {
+		return finalPreflightResult{}, fmt.Errorf("invalid final preflight scope")
+	}
+	if err := validateFinalMigrationManifest(manifest); err != nil {
+		return finalPreflightResult{}, err
+	}
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return finalPreflightResult{}, err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+	if err = verifyReconciledArchive(ctx, tx, archiveRunID); err != nil {
+		return finalPreflightResult{}, err
+	}
+	scopes := finalDomainsByReconciliationScope(manifest)
+	if err = validateFinalPreflightVersions(ctx, tx, archiveRunID, scopes); err != nil {
+		return finalPreflightResult{}, err
+	}
+	sealed := make(map[string]bool, len(scopes))
+	receiptCounts := make(map[string]int64, len(scopes))
+	for version, domains := range scopes {
+		var reconciled reconciliationCounts
+		reconciled, err = loadReconciliationCounts(ctx, tx, archiveRunID, version)
+		if err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return finalPreflightResult{}, fmt.Errorf("final preflight reconciliation receipt %s: %w", version, err)
+			}
+			if receiptCounts[version], err = countFinalPreflightReceipts(ctx, tx, archiveRunID, version); err != nil {
+				return finalPreflightResult{}, err
+			}
+			continue
+		}
+		sealed[version] = true
+		actual := reconciliationCounts{}
+		for _, domain := range domains {
+			spec := finalDomainSpecs[domain]
+			_, counts, domainErr := reconcileFinalDomain(ctx, tx, archiveRunID, spec, len(domains) > 1)
+			if domainErr != nil {
+				return finalPreflightResult{}, fmt.Errorf("final preflight %s: %w", domain, domainErr)
+			}
+			actual.Selected += counts.Selected
+			actual.Receipts += counts.Receipts
+			actual.Imported += counts.Imported
+			actual.Archived += counts.Archived
+			actual.Quarantined += counts.Quarantined
+			actual.Verified += counts.Verified
+		}
+		if !sameCounts(actual, reconciled) {
+			return finalPreflightResult{}, fmt.Errorf("final preflight reconciliation receipt %s does not cover exactly its manifest domains", version)
+		}
+	}
+	missing, err := classifyFinalPreflightScopes(scopes, sealed, receiptCounts)
+	if err != nil {
+		return finalPreflightResult{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return finalPreflightResult{}, err
+	}
+	return finalPreflightResult{MissingDomains: missing}, nil
+}
+
+func validateFinalPreflightVersions(ctx context.Context, tx pgx.Tx, archiveRunID string, scopes map[string][]string) error {
+	rows, err := tx.Query(ctx, `SELECT import_version FROM public.v1_domain_import_receipts WHERE archive_run_id=$1
+UNION
+SELECT import_version FROM public.v1_domain_import_reconciliation_receipts WHERE archive_run_id=$1`, archiveRunID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	versions := make([]string, 0, len(scopes))
+	for rows.Next() {
+		var version string
+		if err = rows.Scan(&version); err != nil {
+			return err
+		}
+		versions = append(versions, version)
+	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
+	return validateFinalPreflightVersionSet(scopes, versions)
+}
+
+func validateFinalPreflightVersionSet(scopes map[string][]string, versions []string) error {
+	for _, version := range versions {
+		if _, found := scopes[version]; !found {
+			return fmt.Errorf("final preflight found an unknown import version")
+		}
+	}
+	return nil
+}
+
+func countFinalPreflightReceipts(ctx context.Context, tx pgx.Tx, archiveRunID, importVersion string) (int64, error) {
+	var count int64
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts WHERE archive_run_id=$1 AND import_version=$2`, archiveRunID, importVersion).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func classifyFinalPreflightScopes(scopes map[string][]string, sealed map[string]bool, receiptCounts map[string]int64) ([]string, error) {
+	missing := make([]string, 0)
+	for version, domains := range scopes {
+		if sealed[version] {
+			continue
+		}
+		if receiptCounts[version] != 0 {
+			return nil, fmt.Errorf("final preflight scope %s has receipts without reconciliation", version)
+		}
+		missing = append(missing, domains...)
+	}
+	sort.Strings(missing)
+	return missing, nil
 }
 
 func verifyReconciledArchive(ctx context.Context, tx pgx.Tx, archiveRunID string) error {

@@ -137,7 +137,30 @@ go_command="$(resolve_command go)"
 "$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect="$expected_start_schema" --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_STATUS_COMMAND" --check=external-effects --expect=0 --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_STATUS_COMMAND" --check=archive --archive-run-id="$archive_run_id" --expected-sha="$expected_archive_source_sha" --source-slice="$source_slice" --source-seal-sha256="$source_seal_sha256" --runtime-env-file="$runtime_env_file"
-"$AICRM_FINAL_STATUS_COMMAND" --check=journals-empty --archive-run-id="$archive_run_id" --runtime-env-file="$runtime_env_file"
+run_final_preflight() {
+  if [[ -n "${AICRM_FINAL_IMPORT_COMMAND:-}" ]]; then
+    require_command AICRM_FINAL_IMPORT_COMMAND
+    "$AICRM_FINAL_IMPORT_COMMAND" --mode=final-preflight --domain=final --archive-run-id="$archive_run_id" --preflight-output=lines
+  else
+    (cd "$repository_root"; GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" run ./cmd/aicrm-v1-domain-import --mode=final-preflight --domain=final --archive-run-id="$archive_run_id" --preflight-output=lines)
+  fi
+}
+
+# The preflight uses the importer's 40-domain/36-scope registry in a read-only
+# transaction. Its output is data, so validate every line before allowing it
+# to select the bounded import loop.
+preflight_output="$(run_final_preflight)" || fail 'final preflight rejected the existing import baseline'
+manifest_domains="$(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "$repository_root/docs/release/final-v1-domain-migration-manifest.json")"
+pending_domains=''
+if [[ -n "$preflight_output" ]]; then
+  while IFS= read -r pending_domain; do
+    [[ "$pending_domain" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail 'final preflight returned an invalid domain'
+    printf '%s\n' "$manifest_domains" | grep -Fxq "$pending_domain" || fail 'final preflight returned a domain outside the manifest'
+    case " $pending_domains " in *" $pending_domain "*) fail 'final preflight returned a duplicate domain' ;; esac
+    pending_domains="${pending_domains:+$pending_domains }$pending_domain"
+  done <<<"$preflight_output"
+fi
+[[ -n "$pending_domains" ]] || fail 'final preflight found no missing domains; refusing replay'
 # The injected commands must use the restricted env file themselves and fail
 # closed: status verifies the named checks, runtime verifies stopped services,
 # Goose performs its one bounded migration, and reconcile seals all imports.
@@ -150,6 +173,7 @@ fi
 "$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect=142 --runtime-env-file="$runtime_env_file"
 while IFS= read -r domain; do
   [[ -n "$domain" ]] || continue
+  case " $pending_domains " in *" $domain "*) ;; *) continue ;; esac
   if [[ -n "${AICRM_FINAL_IMPORT_COMMAND:-}" ]]; then
     require_command AICRM_FINAL_IMPORT_COMMAND
     "$AICRM_FINAL_IMPORT_COMMAND" --mode=import --domain="$domain" --archive-run-id="$archive_run_id" --campaign-actors="$campaign_actors" --migration-actor="$migration_actor" --dm01-run-id="$dm01_run_id" --reference-corp-id="$reference_corp_id" --usage-recovery-file="$usage_recovery_file"
@@ -185,4 +209,4 @@ fi
 "$AICRM_FINAL_STATUS_COMMAND" --check=external-effects --expect=0 --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_RUNTIME_COMMAND" --start=api,worker --web=api --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_RUNTIME_COMMAND" --check=release --expected-sha="$expected_sha" --runtime-env-file="$runtime_env_file"
-printf 'final-v1-domain-migration-apply: PASS (schema=%s->142 domains=40; split api+worker started)\n' "$expected_start_schema"
+printf 'final-v1-domain-migration-apply: PASS (schema=%s->142 imported-domains=%s; reconciled-scopes=36; split api+worker started)\n' "$expected_start_schema" "$(printf '%s\n' "$pending_domains" | tr ' ' '\n' | wc -l | tr -d ' ')"

@@ -56,7 +56,10 @@ case "${1:-}" in
   --check=schema) [[ "$*" = *--expect=135* || "$*" = *--expect=142* ]] ;;
   --check=external-effects) [[ "$*" = *--expect=0* ]] ;;
   --check=archive) [[ "$*" = *"--expected-sha=${AICRM_FINAL_TEST_ARCHIVE_SHA:?}"* ]] ;;
-  --check=journals-empty) [[ "${AICRM_FINAL_TEST_FAIL_CHECK:-}" != journals-empty ]] ;;
+  --mode=final-preflight)
+    [[ "${AICRM_FINAL_TEST_FAIL_CHECK:-}" != final-preflight ]] || exit 96
+    printf '%s\n' "${AICRM_FINAL_TEST_PREFLIGHT_DOMAINS:?}"
+    ;;
   --check=stopped) [[ "$*" = *--services=app,api,worker* ]] ;;
   --from=135) [[ "$*" = *--to=142* ]] ;;
   --mode=import) [[ "${AICRM_FINAL_TEST_FAIL_DOMAIN:-}" = '' || "$*" != *"--domain=$AICRM_FINAL_TEST_FAIL_DOMAIN"* ]] ;;
@@ -68,7 +71,11 @@ esac
 EOF
 chmod 700 "$fake"
 run_apply() {
-  AICRM_FINAL_TEST_LOG="$log" AICRM_FINAL_TEST_SHA="$sha" AICRM_FINAL_TEST_ARCHIVE_SHA="$archive_source_sha" AICRM_FINAL_PLAN_COMMAND="$fake" AICRM_FINAL_GIT_COMMAND="$fake" AICRM_FINAL_STATUS_COMMAND="$fake" AICRM_FINAL_RUNTIME_COMMAND="$fake" AICRM_FINAL_GOOSE_COMMAND="$fake" AICRM_FINAL_IMPORT_COMMAND="$fake" AICRM_FINAL_RECONCILE_COMMAND="$fake" "$apply" "$@"
+  AICRM_FINAL_TEST_LOG="$log" AICRM_FINAL_TEST_SHA="$sha" AICRM_FINAL_TEST_ARCHIVE_SHA="$archive_source_sha" AICRM_FINAL_TEST_PREFLIGHT_DOMAINS="${AICRM_FINAL_TEST_PREFLIGHT_DOMAINS:-hxc-chat-job-history
+hxc-member-usage-history
+cycle-observation-history
+customer-timeline-history
+audience-activity-history}" AICRM_FINAL_PLAN_COMMAND="$fake" AICRM_FINAL_GIT_COMMAND="$fake" AICRM_FINAL_STATUS_COMMAND="$fake" AICRM_FINAL_RUNTIME_COMMAND="$fake" AICRM_FINAL_GOOSE_COMMAND="$fake" AICRM_FINAL_IMPORT_COMMAND="$fake" AICRM_FINAL_RECONCILE_COMMAND="$fake" "$apply" "$@"
 }
 arguments=(--apply --runtime-env-file="$runtime_env" --expected-sha="$sha" --expected-archive-source-sha="$archive_source_sha" --expected-start-schema=135 --source-slice="$source_slice" --source-seal-sha256="$source_seal" --archive-run-id=archive-final --campaign-actors=owner=1 --migration-actor=1 --dm01-run-id=1 --reference-corp-id=corp --usage-recovery-file="$usage_recovery" --usage-recovery-sha256="$usage_recovery_seal")
 if run_apply "${arguments[@]:1}" >"$fixture/no-apply.log" 2>&1; then fail 'execution without explicit --apply was accepted'; fi
@@ -87,8 +94,8 @@ if run_apply "${arguments[@]}" >"$fixture/compose-control.log" 2>&1; then fail '
 grep -Fq 'runtime environment must not set COMPOSE_*' "$fixture/compose-control.log" || fail 'runtime COMPOSE_* rejection changed'
 sed -i.bak '$d' "$runtime_env" && rm -f "$runtime_env.bak"
 AICRM_WECOM_OUTBOUND_ENABLED=true run_apply "${arguments[@]}" >"$fixture/success.log"
-grep -Fq 'PASS (schema=135->142 domains=40; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
-[[ "$(grep -c '^--mode=import ' "$log")" = 40 ]] || fail 'did not import exactly 40 domains'
+grep -Fq 'PASS (schema=135->142 imported-domains=5; reconciled-scopes=36; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
+[[ "$(grep -c '^--mode=import ' "$log")" = 5 ]] || fail 'did not import exactly the pending domains'
 [[ "$(grep -c '^--mode=reconcile ' "$log")" = 36 ]] || fail 'did not reconcile every manifest package'
 [[ "$(grep -c '^--mode=final-reconcile ' "$log")" = 1 ]] || fail 'final reconcile was not invoked exactly once'
 [[ "$(grep -c '^--start=api,worker ' "$log")" = 1 ]] || fail 'split runtime was not started once'
@@ -101,27 +108,41 @@ start_line="$(grep -n '^--start=api,worker ' "$log" | cut -d: -f1)"
 [[ "$final_line" -lt "$last_effect_line" && "$last_effect_line" -lt "$start_line" ]] || fail 'post-reconcile effects gate must precede startup'
 grep -Fqx -- "--from=135 --to=142 --runtime-env-file=$runtime_env" "$log" || fail 'Goose was not one bounded 135->142 command'
 grep -Fqx -- "--check=schema --expect=142 --runtime-env-file=$runtime_env" "$log" || fail 'post-Goose schema gate is missing'
-grep -Fqx -- "--check=journals-empty --archive-run-id=archive-final --runtime-env-file=$runtime_env" "$log" || fail 'fresh journal gate is missing'
+grep -Fqx -- "--mode=final-preflight --domain=final --archive-run-id=archive-final --preflight-output=lines" "$log" || fail 'formal baseline preflight is missing'
+preflight_line="$(grep -n '^--mode=final-preflight ' "$log" | cut -d: -f1)"
+goose_line="$(grep -n '^--from=135 ' "$log" | cut -d: -f1)"
+[[ "$preflight_line" -lt "$goose_line" ]] || fail 'formal baseline preflight must precede Goose'
 if grep -Fq 'target-not-live' "$log"; then fail 'a command argument leaked the target DSN'; fi
 if grep -Fq 'env-outbound=true' "$log"; then fail 'generated external switch did not override parent environment'; fi
 stop_line="$(grep -n '^--stop=app,api,worker ' "$log" | cut -d: -f1)"
 schema_line="$(grep -n '^--check=schema ' "$log" | head -n1 | cut -d: -f1)"
 [[ "$stop_line" -lt "$schema_line" ]] || fail 'runtime stop must precede database checks'
-expected_domains="$(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "$root/docs/release/final-v1-domain-migration-manifest.json")"
+expected_domains="hxc-chat-job-history
+hxc-member-usage-history
+cycle-observation-history
+customer-timeline-history
+audience-activity-history"
 actual_domains="$(grep '^--mode=import ' "$log" | sed -n 's/.*--domain=\([^ ]*\).*/\1/p')"
-[[ "$actual_domains" = "$expected_domains" ]] || fail 'domain import order differs from the manifest'
+[[ "$actual_domains" = "$expected_domains" ]] || fail 'domain import order differs from the manifest preflight selection'
+all_manifest_domains="$(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "$root/docs/release/final-v1-domain-migration-manifest.json")"
 expected_reconciliations="all
-$(printf '%s\n' "$expected_domains" | awk '!/^(campaign|survey|media|radar|shop)$/')"
+$(printf '%s\n' "$all_manifest_domains" | awk '!/^(campaign|survey|media|radar|shop)$/')"
 actual_reconciliations="$(grep '^--mode=reconcile ' "$log" | sed -n 's/.*--domain=\([^ ]*\).*/\1/p')"
 [[ "$actual_reconciliations" = "$expected_reconciliations" ]] || fail 'reconciliation sequence does not match real importer semantics'
 grep '^--mode=final-reconcile ' "$log" | grep -Fq -- '--campaign-actors=owner=1' || fail 'final reconcile does not bind campaign actors'
 : >"$log"
-if AICRM_FINAL_TEST_FAIL_CHECK=journals-empty run_apply "${arguments[@]}" >"$fixture/journals.log" 2>&1; then fail 'non-empty journal gate was accepted'; fi
-[[ "$(grep -c '^--from=135 ' "$log")" = 0 ]] || fail 'journal rejection reached Goose'
-[[ "$(grep -c '^--mode=import ' "$log")" = 0 ]] || fail 'journal rejection reached import'
+if AICRM_FINAL_TEST_FAIL_CHECK=final-preflight run_apply "${arguments[@]}" >"$fixture/preflight.log" 2>&1; then fail 'invalid formal baseline was accepted'; fi
+[[ "$(grep -c '^--from=135 ' "$log")" = 0 ]] || fail 'preflight rejection reached Goose'
+[[ "$(grep -c '^--mode=import ' "$log")" = 0 ]] || fail 'preflight rejection reached import'
 : >"$log"
-if AICRM_FINAL_TEST_FAIL_DOMAIN=media run_apply "${arguments[@]}" >"$fixture/failure.log" 2>&1; then fail 'a failed domain import was accepted'; fi
-[[ "$(grep -c '^--mode=import .*--domain=media' "$log")" = 1 ]] || fail 'failed import was retried'
+if AICRM_FINAL_TEST_PREFLIGHT_DOMAINS=$'hxc-chat-job-history\nhxc-chat-job-history' run_apply "${arguments[@]}" >"$fixture/duplicate-preflight.log" 2>&1; then fail 'duplicate preflight domain was accepted'; fi
+[[ "$(grep -c '^--from=135 ' "$log")" = 0 ]] || fail 'duplicate preflight output reached Goose'
+: >"$log"
+if AICRM_FINAL_TEST_PREFLIGHT_DOMAINS='not-in-manifest' run_apply "${arguments[@]}" >"$fixture/unknown-preflight.log" 2>&1; then fail 'unknown preflight domain was accepted'; fi
+[[ "$(grep -c '^--mode=import ' "$log")" = 0 ]] || fail 'unknown preflight output reached import'
+: >"$log"
+if AICRM_FINAL_TEST_FAIL_DOMAIN=hxc-member-usage-history run_apply "${arguments[@]}" >"$fixture/failure.log" 2>&1; then fail 'a failed domain import was accepted'; fi
+[[ "$(grep -c '^--mode=import .*--domain=hxc-member-usage-history' "$log")" = 1 ]] || fail 'failed import was retried'
 [[ "$(grep -c '^--mode=final-reconcile ' "$log")" = 0 ]] || fail 'failure continued to final reconciliation'
 [[ "$(grep -c '^--mode=reconcile ' "$log")" = 0 ]] || fail 'failure continued to domain reconciliation'
 [[ "$(grep -c '^--start=api,worker ' "$log")" = 0 ]] || fail 'failure started the runtime'

@@ -24,7 +24,7 @@ func main() {
 
 func run(args []string) error {
 	flags := flag.NewFlagSet("final-v1-domain-migration-status", flag.ContinueOnError)
-	check := flags.String("check", "", "schema|external-effects|archive|journals-empty")
+	check := flags.String("check", "", "schema|external-effects|archive")
 	expect := flags.String("expect", "", "expected scalar")
 	archiveRunID := flags.String("archive-run-id", "", "archive run")
 	expectedSHA := flags.String("expected-sha", "", "archive source SHA")
@@ -97,22 +97,8 @@ func run(args []string) error {
 		if phase != "reconciled" || sourceSHA != *expectedSHA || snapshotDigest != *sourceSeal || !reconciled {
 			return fmt.Errorf("archive run is not reconciled and sealed for the expected SHA")
 		}
-	case "journals-empty":
-		if *archiveRunID == "" {
-			return fmt.Errorf("journals-empty check requires archive-run-id")
-		}
-		var receipts, reconciliations int64
-		if err := pool.QueryRow(ctx, `SELECT
-			(SELECT count(*) FROM public.v1_domain_import_receipts WHERE archive_run_id=$1),
-			(SELECT count(*) FROM public.v1_domain_import_reconciliation_receipts WHERE archive_run_id=$1)`,
-			*archiveRunID).Scan(&receipts, &reconciliations); err != nil {
-			return fmt.Errorf("target database journal query failed")
-		}
-		if receipts != 0 || reconciliations != 0 {
-			return fmt.Errorf("domain import journals must be empty for archive run")
-		}
 	default:
-		return fmt.Errorf("check must be schema, external-effects, archive, or journals-empty")
+		return fmt.Errorf("check must be schema, external-effects, or archive")
 	}
 	return nil
 }
