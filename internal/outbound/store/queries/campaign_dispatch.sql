@@ -16,6 +16,21 @@ JOIN public.outbound_campaign_handoff_steps AS step ON step.handoff_id = link.ha
 WHERE link.handoff_id = $1
 ORDER BY link.customer_id, step.step_index;
 
+-- name: IsOutboundCampaignDispatchRecipientApproved :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.outbound_campaign_handoffs AS handoff
+  JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = handoff.plan_id
+   AND review.campaign_code = handoff.campaign_code
+  JOIN public.outbound_campaign_handoff_customer_tasks AS task
+    ON task.handoff_id = handoff.id
+   AND task.customer_id = review.customer_id
+  WHERE handoff.id = sqlc.arg(handoff_id)
+    AND review.customer_id = sqlc.arg(customer_id)
+    AND review.status = 'approved'
+);
+
 -- name: InsertOutboundCampaignDispatch :one
 INSERT INTO public.outbound_campaign_dispatches(handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason)
 VALUES($1,$2,$3,$4,$5,$6,$7,$8)

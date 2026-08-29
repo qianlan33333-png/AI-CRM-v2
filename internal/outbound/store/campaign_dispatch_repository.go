@@ -111,25 +111,11 @@ func (repository *CampaignDispatchRepository) IsCampaignDispatchRecipientApprove
 	if repository == nil || handoffID < 1 || customerID < 1 {
 		return false, outbound.ErrCampaignDispatchInvalid
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := dispatchQueries(ctx)
 	if err != nil {
 		return false, err
 	}
-	var approved bool
-	err = tx.QueryRow(ctx, `
-SELECT EXISTS (
-  SELECT 1
-  FROM public.outbound_campaign_handoffs AS handoff
-  JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
-    ON review.plan_id = handoff.plan_id
-   AND review.campaign_code = handoff.campaign_code
-  JOIN public.outbound_campaign_handoff_customer_tasks AS task
-    ON task.handoff_id = handoff.id
-   AND task.customer_id = review.customer_id
-  WHERE handoff.id = $1
-    AND review.customer_id = $2
-    AND review.status = 'approved'
-)`, handoffID, customerID).Scan(&approved)
+	approved, err := queries.IsOutboundCampaignDispatchRecipientApproved(ctx, outbounddb.IsOutboundCampaignDispatchRecipientApprovedParams{HandoffID: handoffID, CustomerID: customerID})
 	if err != nil {
 		return false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}

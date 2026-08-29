@@ -10165,6 +10165,49 @@ export interface OutboundCampaignHandoffReconciliation {
   safety: OutboundCampaignHandoffSafety;
 }
 
+export interface CloudOrchestratorAuditFilter {
+  /** @maxLength 200 */
+  trace_id: string;
+  /** @maxLength 200 */
+  session_id: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+}
+
+export interface CloudOrchestratorAuditFact {
+  /** @minimum 1 */
+  event_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  occurred_at: string;
+  dispatched: boolean;
+  /** @minimum 0 */
+  pending: number;
+  /** @minimum 0 */
+  processing: number;
+  /** @minimum 0 */
+  completed: number;
+  /** @minimum 0 */
+  final_failed: number;
+  /** @minimum 0 */
+  outcome_unknown: number;
+}
+
+export interface CloudOrchestratorAuditResponse {
+  filter: CloudOrchestratorAuditFilter;
+  items: CloudOrchestratorAuditFact[];
+  observed_at: string;
+  local_facts_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
 export interface OutboundCampaignDispatchRequest {
   /** Creates local EER work only; the production Provider adapter remains disabled by default. */
   external_gate: boolean;
@@ -25203,6 +25246,24 @@ export const ListCloudCampaignPlansReviewStatus = {
   approved: "approved",
   rejected: "rejected",
 } as const;
+
+export type ListCloudOrchestratorAuditParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  trace_id?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  session_id?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
 
 export type ListCloudCampaignsParams = {
   approval_status?: ListCloudCampaignsApprovalStatus;
@@ -63160,6 +63221,101 @@ export const dispatchOutboundCampaignHandoff = async (
 };
 
 /**
+ * The recipient must have an approved local review. Provider calls remain disabled in the default runtime, and the response never proves delivery.
+ * @summary Queue gated local dispatch work for one approved Campaign recipient
+ */
+export type dispatchOutboundCampaignRecipientResponse200 = {
+  data: OutboundCampaignDispatchReconciliation;
+  status: 200;
+};
+
+export type dispatchOutboundCampaignRecipientResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type dispatchOutboundCampaignRecipientResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type dispatchOutboundCampaignRecipientResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type dispatchOutboundCampaignRecipientResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type dispatchOutboundCampaignRecipientResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type dispatchOutboundCampaignRecipientResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type dispatchOutboundCampaignRecipientResponseSuccess =
+  dispatchOutboundCampaignRecipientResponse200 & {
+    headers: Headers;
+  };
+export type dispatchOutboundCampaignRecipientResponseError = (
+  | dispatchOutboundCampaignRecipientResponse400
+  | dispatchOutboundCampaignRecipientResponse401
+  | dispatchOutboundCampaignRecipientResponse403
+  | dispatchOutboundCampaignRecipientResponse404
+  | dispatchOutboundCampaignRecipientResponse409
+  | dispatchOutboundCampaignRecipientResponse503
+) & {
+  headers: Headers;
+};
+
+export type dispatchOutboundCampaignRecipientResponse =
+  | dispatchOutboundCampaignRecipientResponseSuccess
+  | dispatchOutboundCampaignRecipientResponseError;
+
+export const getDispatchOutboundCampaignRecipientUrl = (
+  campaignCode: string,
+  planId: string,
+  customerId: number,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}/recipients/${customerId}/dispatch`;
+};
+
+export const dispatchOutboundCampaignRecipient = async (
+  campaignCode: string,
+  planId: string,
+  customerId: number,
+  outboundCampaignDispatchRequest: OutboundCampaignDispatchRequest,
+  options?: RequestInit,
+): Promise<dispatchOutboundCampaignRecipientResponse> => {
+  const res = await fetch(
+    getDispatchOutboundCampaignRecipientUrl(campaignCode, planId, customerId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(outboundCampaignDispatchRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: dispatchOutboundCampaignRecipientResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as dispatchOutboundCampaignRecipientResponse;
+};
+
+/**
  * This is a local projection. It does not disclose recipients or Provider receipts and never proves delivery.
  * @summary Read the count-only C01 dispatch/EER reconciliation projection
  */
@@ -71609,6 +71765,91 @@ export const listCloudCampaignPlans = async (
     status: res.status,
     headers: res.headers,
   } as listCloudCampaignPlansResponse;
+};
+
+/**
+ * Returns local count-only facts and never claims a real Provider call or delivery.
+ * @summary Read local event and delivery facts by exact trace or session identifier
+ */
+export type listCloudOrchestratorAuditResponse200 = {
+  data: CloudOrchestratorAuditResponse;
+  status: 200;
+};
+
+export type listCloudOrchestratorAuditResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCloudOrchestratorAuditResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCloudOrchestratorAuditResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCloudOrchestratorAuditResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCloudOrchestratorAuditResponseSuccess =
+  listCloudOrchestratorAuditResponse200 & {
+    headers: Headers;
+  };
+export type listCloudOrchestratorAuditResponseError = (
+  | listCloudOrchestratorAuditResponse400
+  | listCloudOrchestratorAuditResponse401
+  | listCloudOrchestratorAuditResponse403
+  | listCloudOrchestratorAuditResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCloudOrchestratorAuditResponse =
+  | listCloudOrchestratorAuditResponseSuccess
+  | listCloudOrchestratorAuditResponseError;
+
+export const getListCloudOrchestratorAuditUrl = (
+  params?: ListCloudOrchestratorAuditParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/cloud-orchestrator/audit?${stringifiedParams}`
+    : `/api/admin/cloud-orchestrator/audit`;
+};
+
+export const listCloudOrchestratorAudit = async (
+  params?: ListCloudOrchestratorAuditParams,
+  options?: RequestInit,
+): Promise<listCloudOrchestratorAuditResponse> => {
+  const res = await fetch(getListCloudOrchestratorAuditUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCloudOrchestratorAuditResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCloudOrchestratorAuditResponse;
 };
 
 export type listCloudCampaignsResponse200 = {

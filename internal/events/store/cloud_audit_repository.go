@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	eventdb "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/generated"
 )
 
 type CloudAuditRepository struct{ db adminReadTxBeginner }
@@ -29,34 +30,22 @@ func (repository *CloudAuditRepository) ListCloudAudit(ctx context.Context, filt
 			_ = tx.Rollback(context.WithoutCancel(ctx))
 		}
 	}()
-	rows, err := tx.Query(ctx, `
-SELECT event.id, event.event_type, event.occurred_at, event.dispatched,
-       count(delivery.event_id) FILTER (WHERE delivery.status = 'pending')::bigint,
-       count(delivery.event_id) FILTER (WHERE delivery.status = 'processing')::bigint,
-       count(delivery.event_id) FILTER (WHERE delivery.status = 'completed')::bigint,
-       count(delivery.event_id) FILTER (WHERE delivery.status = 'final_failed')::bigint,
-       count(delivery.event_id) FILTER (WHERE delivery.status = 'outcome_unknown')::bigint
-FROM public.event_log AS event
-LEFT JOIN public.event_deliveries AS delivery ON delivery.event_id = event.id
-WHERE ($1::text = '' OR event.payload ->> 'trace_id' = $1::text)
-  AND ($2::text = '' OR event.payload ->> 'session_id' = $2::text)
-GROUP BY event.id, event.event_type, event.occurred_at, event.dispatched
-ORDER BY event.occurred_at DESC, event.id DESC
-LIMIT $3`, filter.TraceID, filter.SessionID, filter.Limit)
+	rows, err := eventdb.New(tx).ListCloudAuditFacts(ctx, eventdb.ListCloudAuditFactsParams{
+		TraceID: filter.TraceID, SessionID: filter.SessionID, RowLimit: filter.Limit,
+	})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	result := make([]eventport.CloudAuditFact, 0)
-	for rows.Next() {
-		var item eventport.CloudAuditFact
-		if err = rows.Scan(&item.EventID, &item.EventType, &item.OccurredAt, &item.Dispatched, &item.Pending, &item.Processing, &item.Completed, &item.FinalFailed, &item.OutcomeUnknown); err != nil {
-			return nil, err
+	result := make([]eventport.CloudAuditFact, len(rows))
+	for index, row := range rows {
+		if !row.OccurredAt.Valid {
+			return nil, errors.New("cloud audit event timestamp unavailable")
 		}
-		result = append(result, item)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
+		result[index] = eventport.CloudAuditFact{
+			EventID: eventport.EventID(row.ID), EventType: row.EventType, OccurredAt: row.OccurredAt.Time.UTC(), Dispatched: row.Dispatched,
+			Pending: row.Pending, Processing: row.Processing, Completed: row.Completed,
+			FinalFailed: row.FinalFailed, OutcomeUnknown: row.OutcomeUnknown,
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return nil, err

@@ -93,6 +93,7 @@ const (
 	p4ExternalEffectsRuntimeEvidence           = "P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25"
 	p4SurveyIdentityExternalPushEvidence       = "P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25"
 	p4OutboundCampaignDispatchEvidence         = "P4-C01-OUTBOUND-DISPATCH-2026-08-25"
+	p4CloudCampaignControlEvidence             = "P4-CLOUD-CAMPAIGN-CONTROL-2026-08-29"
 	p4PE01WeChatPaySettlementEvidence          = "PE01-WECHAT-PAY-SETTLEMENT-2026-08-25"
 	p4AutomationRulesRuntimeEvidence           = "P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25"
 	p4MediaContentDeliveryEvidence             = "P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25"
@@ -117,6 +118,8 @@ const (
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
 	c01DispatchReconcileOperationID            = "reconcileOutboundCampaignDispatch"
+	c01RecipientDispatchOperationID            = "dispatchOutboundCampaignRecipient"
+	cloudOrchestratorAuditOperationID          = "listCloudOrchestratorAudit"
 	campaignRecipientReviewReadID              = "getCloudCampaignTouchPlanRecipientReview"
 	campaignRecipientReviewMutateID            = "mutateCloudCampaignTouchPlanRecipientReview"
 	ch03UnassignedListID                       = "listUnassignedChannelAcquisitionEntrantReceipts"
@@ -388,6 +391,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"acceptOutboundCampaignHandoff":             {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", "POST", p4OutboundCampaignHandoffEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"reconcileOutboundCampaignHandoff":          {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", "GET", p4OutboundCampaignHandoffEvidence, "operations.read", "human_session", "internal", "outbound_campaign_handoffs.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	c01DispatchOperationID:                      {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch", "POST", p4OutboundCampaignDispatchEvidence, "operations.manage", "human_session", "internal", "outbound_campaign_dispatches.local_control_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	c01RecipientDispatchOperationID:             {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch", "POST", p4CloudCampaignControlEvidence, "operations.manage", "human_session", "internal", "outbound_campaign_dispatches.recipient_local_control_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	cloudOrchestratorAuditOperationID:           {"/api/admin/cloud-orchestrator/audit", "GET", p4CloudCampaignControlEvidence, "admin.read", "human_session", "internal", "event_log_and_event_deliveries.local_audit_projection", "none", map[string]string{"admin": "global"}},
 	c01DispatchReadOperationID:                  {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation", "GET", p4OutboundCampaignDispatchEvidence, "operations.read", "human_session", "internal", "outbound_campaign_dispatches.local_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	c01DispatchReconcileOperationID:             {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}", "POST", p4OutboundCampaignDispatchEvidence, "operations.manage", "human_session", "internal", "outbound_campaign_dispatches.manual_reconcile_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"reorderStages":                             {"/api/v1/stages/reorder", "PUT", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
@@ -1322,6 +1327,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"listRadarLinkEvents":                        {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
 	"exportRadarLinkEvents":                      {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listCloudCampaigns":                         {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
+	cloudOrchestratorAuditOperationID:            {"admin.read", map[string]string{"admin": "global"}},
+	c01RecipientDispatchOperationID:              {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"getCloudCampaign":                           {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
 	"batchStartCloudCampaigns":                   {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteCloudCampaign":                        {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
@@ -1999,6 +2006,8 @@ func validateOutboundCampaignHandoffContract(doc *openapi3.T) error {
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept":         {"POST", "OutboundCampaignHandoffReconciliation", "200"},
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation": {"GET", "OutboundCampaignHandoffReconciliation", "200"},
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch":       {"POST", "OutboundCampaignDispatchReconciliation", "200"},
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch": {
+			"POST", "OutboundCampaignDispatchReconciliation", "200"},
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation": {
 			"GET", "OutboundCampaignDispatchReconciliation", "200"},
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}": {

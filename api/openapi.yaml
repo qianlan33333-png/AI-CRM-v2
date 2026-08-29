@@ -11283,6 +11283,35 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+      - { name: customer_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    post:
+      tags: [p4-outbound-operations]
+      operationId: dispatchOutboundCampaignRecipient
+      summary: Queue gated local dispatch work for one approved Campaign recipient
+      description: The recipient must have an approved local review. Provider calls remain disabled in the default runtime, and the response never proves delivery.
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-CONTROL-2026-08-29
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_campaign_dispatches.recipient_local_control_transaction
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchRequest" } } } }
+      responses:
+        "200": { description: Handoff-level local reconciliation after the recipient-scoped action; queued or accepted is not delivery., content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchReconciliation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation:
     parameters:
       - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
@@ -13701,6 +13730,31 @@ paths:
         "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "403": { description: Forbidden, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/audit:
+    get:
+      tags: [p4-cloud-campaign, p4-internal-event-safe-export]
+      operationId: listCloudOrchestratorAudit
+      summary: Read local event and delivery facts by exact trace or session identifier
+      description: Returns local count-only facts and never claims a real Provider call or delivery.
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-CONTROL-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: event_log_and_event_deliveries.local_audit_projection
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters:
+        - { name: trace_id, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: session_id, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Exact-scope local audit facts, content: { application/json: { schema: { $ref: "#/components/schemas/CloudOrchestratorAuditResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/cloud-orchestrator/campaigns:
     get:
       tags: [p4-cloud-campaign]
@@ -22382,6 +22436,39 @@ components:
         contact_policy_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
         accepted_at: { type: string, format: date-time }
         safety: { $ref: "#/components/schemas/OutboundCampaignHandoffSafety" }
+    CloudOrchestratorAuditFilter:
+      type: object
+      additionalProperties: false
+      required: [trace_id, session_id, limit]
+      properties:
+        trace_id: { type: string, maxLength: 200 }
+        session_id: { type: string, maxLength: 200 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+    CloudOrchestratorAuditFact:
+      type: object
+      additionalProperties: false
+      required: [event_id, event_type, occurred_at, dispatched, pending, processing, completed, final_failed, outcome_unknown]
+      properties:
+        event_id: { type: integer, format: int64, minimum: 1 }
+        event_type: { type: string, minLength: 1, maxLength: 200 }
+        occurred_at: { type: string, format: date-time }
+        dispatched: { type: boolean }
+        pending: { type: integer, format: int64, minimum: 0 }
+        processing: { type: integer, format: int64, minimum: 0 }
+        completed: { type: integer, format: int64, minimum: 0 }
+        final_failed: { type: integer, format: int64, minimum: 0 }
+        outcome_unknown: { type: integer, format: int64, minimum: 0 }
+    CloudOrchestratorAuditResponse:
+      type: object
+      additionalProperties: false
+      required: [filter, items, observed_at, local_facts_only, real_external_call_executed, delivery_proven]
+      properties:
+        filter: { $ref: "#/components/schemas/CloudOrchestratorAuditFilter" }
+        items: { type: array, items: { $ref: "#/components/schemas/CloudOrchestratorAuditFact" } }
+        observed_at: { type: string, format: date-time }
+        local_facts_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
     OutboundCampaignDispatchRequest:
       type: object
       additionalProperties: false

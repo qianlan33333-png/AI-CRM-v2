@@ -219,6 +219,34 @@ func (q *Queries) InsertOutboundCampaignProviderAttemptReceipt(ctx context.Conte
 	return i, err
 }
 
+const isOutboundCampaignDispatchRecipientApproved = `-- name: IsOutboundCampaignDispatchRecipientApproved :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.outbound_campaign_handoffs AS handoff
+  JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = handoff.plan_id
+   AND review.campaign_code = handoff.campaign_code
+  JOIN public.outbound_campaign_handoff_customer_tasks AS task
+    ON task.handoff_id = handoff.id
+   AND task.customer_id = review.customer_id
+  WHERE handoff.id = $1
+    AND review.customer_id = $2
+    AND review.status = 'approved'
+)
+`
+
+type IsOutboundCampaignDispatchRecipientApprovedParams struct {
+	HandoffID  int64 `json:"handoff_id"`
+	CustomerID int64 `json:"customer_id"`
+}
+
+func (q *Queries) IsOutboundCampaignDispatchRecipientApproved(ctx context.Context, arg IsOutboundCampaignDispatchRecipientApprovedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isOutboundCampaignDispatchRecipientApproved, arg.HandoffID, arg.CustomerID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listOutboundCampaignDispatchCandidates = `-- name: ListOutboundCampaignDispatchCandidates :many
 SELECT link.customer_id, step.step_index, step.content
 FROM public.outbound_campaign_handoff_customer_tasks AS link

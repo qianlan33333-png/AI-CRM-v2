@@ -205,6 +205,7 @@ type candidateHandler struct {
 	campaignRecipientReview  http.Handler
 	outboundCampaignHandoff  *outboundhttp.CampaignHandoffHandler
 	outboundCampaignDispatch *outboundhttp.CampaignDispatchHandler
+	cloudAudit               *eventhttp.CloudAuditHandler
 	externalEffectsRuntime   *externaleffectshttp.Handler
 	release                  *releasehttp.Handler
 	adminOps                 http.Handler
@@ -802,6 +803,22 @@ func (handler *candidateHandler) DispatchOutboundCampaignHandoff(writer http.Res
 	handler.outboundCampaignDispatch.Dispatch(writer, request, campaignCode, planID)
 }
 
+func (handler *candidateHandler) DispatchOutboundCampaignRecipient(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string, customerID int64, _ api.DispatchOutboundCampaignRecipientParams) {
+	if handler == nil || handler.outboundCampaignDispatch == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignDispatch.DispatchRecipient(writer, request, campaignCode, planID, customerID)
+}
+
+func (handler *candidateHandler) ListCloudOrchestratorAudit(writer http.ResponseWriter, request *http.Request, _ api.ListCloudOrchestratorAuditParams) {
+	if handler == nil || handler.cloudAudit == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.cloudAudit.List(writer, request)
+}
+
 func (handler *candidateHandler) GetOutboundCampaignDispatchReconciliation(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string) {
 	if handler == nil || handler.outboundCampaignDispatch == nil {
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
@@ -831,6 +848,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	uow := platformstore.NewUnitOfWork(pool)
 	identityRepository := identitystore.NewRepository()
 	deliveryProducer, err := eventstore.NewProducerDeliveryRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	cloudAuditHandler, err := eventhttp.NewCloudAuditHandler(eventapp.NewCloudAuditService(eventstore.NewCloudAuditRepository(pool), nil))
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1934,6 +1956,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		campaignRecipientReview:  campaignRecipientReviewFragment,
 		outboundCampaignHandoff:  outboundCampaignHandler,
 		outboundCampaignDispatch: campaignDispatchHandler,
+		cloudAudit:               cloudAuditHandler,
 		externalEffectsRuntime:   externalEffectsRuntimeHandler,
 		release:                  releaseHandler,
 	}
@@ -2888,8 +2911,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.AcceptOutboundCampaignHandoff)},
 		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ReconcileOutboundCampaignHandoff)},
 		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.DispatchOutboundCampaignHandoff)},
+		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.DispatchOutboundCampaignRecipient)},
 		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetOutboundCampaignDispatchReconciliation)},
 		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.ReconcileOutboundCampaignDispatch)},
+		{http.MethodGet, "/api/admin/cloud-orchestrator/audit", authport.CapabilityAdminRead, false, http.HandlerFunc(wrapper.ListCloudOrchestratorAudit)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},

@@ -42,6 +42,7 @@ type Querier interface {
 	InsertOutboundCampaignHandoffCustomerLinks(ctx context.Context, arg InsertOutboundCampaignHandoffCustomerLinksParams) error
 	InsertOutboundCampaignHandoffStep(ctx context.Context, arg InsertOutboundCampaignHandoffStepParams) error
 	InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) (InsertOutboundCampaignProviderAttemptReceiptRow, error)
+	IsOutboundCampaignDispatchRecipientApproved(ctx context.Context, arg IsOutboundCampaignDispatchRecipientApprovedParams) (bool, error)
 	ListAudienceSendRecords(ctx context.Context, arg ListAudienceSendRecordsParams) ([]ListAudienceSendRecordsRow, error)
 	ListHistoricalBroadcastJobs(ctx context.Context, arg ListHistoricalBroadcastJobsParams) ([]OutboundV1BroadcastJobHistory, error)
 	ListHistoricalOutboundTasks(ctx context.Context, arg ListHistoricalOutboundTasksParams) ([]OutboundV1TaskHistory, error)
