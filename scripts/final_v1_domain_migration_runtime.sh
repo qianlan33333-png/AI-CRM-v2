@@ -207,6 +207,7 @@ manual_validate_post_switch_caddy() {
   manual_tail_bounds "$caddy_file" "$host" >/dev/null
   manual_tail_contains "$caddy_file" "$host" "reverse_proxy 127.0.0.1:$new_port" || fail 'manual post-switch Caddy tail does not reference the new API port'
   manual_tail_contains "$caddy_file" "$host" "root * $new_web" || fail 'manual post-switch Caddy tail does not reference the staged web release'
+  manual_validate_caddy_service
 }
 
 manual_switch_caddy_tail() {
