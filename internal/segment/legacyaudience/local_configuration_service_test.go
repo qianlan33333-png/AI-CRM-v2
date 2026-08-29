@@ -44,6 +44,9 @@ func (world *localConfigurationWorld) GetPackageMetadata(ctx context.Context, id
 func (world *localConfigurationWorld) LockPackage(ctx context.Context, id int64) (PackageWriteModel, error) {
 	return world.base.LockPackage(ctx, id)
 }
+func (world *localConfigurationWorld) SavePackage(ctx context.Context, current, next PackageWriteModel, expectedVersion, actor int64, now time.Time) (PackageWriteModel, error) {
+	return world.base.SavePackage(ctx, current, next, expectedVersion, actor, now)
+}
 func (world *localConfigurationWorld) GetAutomationBinding(ctx context.Context, id int64) (*AutomationBinding, error) {
 	if err := requireTransaction(ctx); err != nil {
 		return nil, err
@@ -402,5 +405,38 @@ func TestLocalConfigurationServiceRejectsActivePackageConfigurationActions(t *te
 	}
 	if current := world.configs[101]; current.Version != 1 || len(world.base.events) != 1 {
 		t.Fatalf("active configuration changed snapshot=%+v events=%d", current, len(world.base.events))
+	}
+}
+
+func TestLocalConfigurationServicePreviewsAndSavesClosedTemplateWhilePaused(t *testing.T) {
+	world := newLocalConfigurationWorld()
+	paused := world.base.packages[101]
+	paused.Metadata.Lifecycle = PackagePaused
+	world.base.packages[101] = paused
+	service := newLocalConfigurationService(t, world)
+
+	preview, err := service.PreviewTemplate(context.Background(), PreviewTemplateInput{
+		PackageID: 101,
+		Selection: TemplateSelection{Key: TemplateActiveContacts, Version: 1, Parameters: map[string][]int64{}},
+	})
+	if err != nil || preview.Saved || preview.PackageVersion != 1 || preview.MemberCount != 2 || preview.RealExternalCallExecuted {
+		t.Fatalf("preview=%+v err=%v", preview, err)
+	}
+
+	input := SaveTemplateConfigurationInput{
+		PackageID: 101, Selection: TemplateSelection{Key: TemplateTagAny, Version: 1, Parameters: map[string][]int64{"tag_ids": {3, 2}}},
+		ExpectedPackageVersion: 1, ExpectedConfigurationVersion: 0,
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "template-configuration-save-01",
+	}
+	first, err := service.SaveTemplateConfiguration(context.Background(), input)
+	if err != nil || !first.Saved || first.PackageVersion != 2 || first.ConfigurationVersion != 1 || first.MemberCount != 2 || first.RealExternalCallExecuted {
+		t.Fatalf("save=%+v err=%v", first, err)
+	}
+	if got := string(world.base.packages[101].Definition); got != `{"and":[{"field":"is_deleted","op":"eq","value":false},{"field":"tag_id","op":"has_any","value":[2,3]}]}` {
+		t.Fatalf("saved definition=%s", got)
+	}
+	replayed, err := service.SaveTemplateConfiguration(context.Background(), input)
+	if err != nil || !reflect.DeepEqual(replayed, first) || world.base.packages[101].Metadata.Version != 2 || len(world.base.events) != 1 {
+		t.Fatalf("replay=%+v err=%v package_version=%d events=%d", replayed, err, world.base.packages[101].Metadata.Version, len(world.base.events))
 	}
 }

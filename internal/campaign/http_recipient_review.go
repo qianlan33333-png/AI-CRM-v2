@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	stdhttp "net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type RecipientReviewApplication interface {
+	ListCampaignMembers(context.Context, string, TouchPlanRecipientReviewStatus, int32, int32) (CampaignMemberStatusPage, error)
 	Get(context.Context, string, string, int64) (TouchPlanRecipientReview, error)
 	SaveMessageOverride(context.Context, SaveTouchPlanRecipientMessageOverrideCommand) (TouchPlanRecipientReviewResult, error)
 	Approve(context.Context, DecideTouchPlanRecipientCommand) (TouchPlanRecipientReviewResult, error)
@@ -31,6 +33,7 @@ func NewRecipientReviewRouteFragment(application RecipientReviewApplication, aut
 func (h *RecipientReviewRouteFragment) Routes() []Route {
 	base := RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review"
 	return []Route{
+		{Method: stdhttp.MethodGet, Pattern: RoutePrefix + "/{campaign_code}/members", Capability: CapabilityOperationsRead},
 		{Method: stdhttp.MethodGet, Pattern: base, Capability: CapabilityOperationsRead},
 		{Method: stdhttp.MethodPost, Pattern: base + "/{operation}", Capability: CapabilityManageAutomation, RequiresCSRF: true},
 	}
@@ -46,6 +49,10 @@ func (h *RecipientReviewRouteFragment) ServeHTTP(w stdhttp.ResponseWriter, r *st
 		return
 	}
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, RoutePrefix+"/"), "/")
+	if len(parts) == 2 && validCode(parts[0]) && parts[1] == "members" && r.Method == stdhttp.MethodGet {
+		h.listCampaignMembers(w, r, parts[0])
+		return
+	}
 	if len(parts) < 6 || len(parts) > 7 || !validCode(parts[0]) || parts[1] != "touch-plans" || !ValidTouchPlanReviewID(parts[2]) || parts[3] != "recipients" || parts[5] != "review" {
 		writeHTTPError(w, stdhttp.StatusNotFound, "NOT_FOUND")
 		return
@@ -64,6 +71,64 @@ func (h *RecipientReviewRouteFragment) ServeHTTP(w stdhttp.ResponseWriter, r *st
 		return
 	}
 	writeHTTPError(w, stdhttp.StatusNotFound, "NOT_FOUND")
+}
+
+func (h *RecipientReviewRouteFragment) listCampaignMembers(w stdhttp.ResponseWriter, r *stdhttp.Request, campaignCode string) {
+	if !emptyBody(r) {
+		writeHTTPError(w, stdhttp.StatusBadRequest, "MALFORMED_REQUEST")
+		return
+	}
+	if _, ok := h.authorize(w, r, CapabilityOperationsRead); !ok {
+		return
+	}
+	status, limit, offset, ok := campaignMemberListQuery(r.URL.RawQuery)
+	if !ok {
+		writeHTTPError(w, stdhttp.StatusBadRequest, "MALFORMED_REQUEST")
+		return
+	}
+	page, err := h.application.ListCampaignMembers(r.Context(), campaignCode, status, limit, offset)
+	if err != nil {
+		mapInitiationError(w, err)
+		return
+	}
+	if page.Limit != limit || page.Offset != offset || page.Total < 0 || page.Safety != LocalInitiationSafety() {
+		writeHTTPError(w, stdhttp.StatusServiceUnavailable, "UNAVAILABLE")
+		return
+	}
+	writeJSON(w, stdhttp.StatusOK, page)
+}
+
+func campaignMemberListQuery(raw string) (TouchPlanRecipientReviewStatus, int32, int32, bool) {
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return "", 0, 0, false
+	}
+	for key, items := range values {
+		if key != "status" && key != "limit" && key != "offset" || len(items) != 1 || items[0] == "" {
+			return "", 0, 0, false
+		}
+	}
+	status := TouchPlanRecipientReviewStatus("")
+	if items, exists := values["status"]; exists {
+		status = TouchPlanRecipientReviewStatus(items[0])
+		if !status.Valid() {
+			return "", 0, 0, false
+		}
+	}
+	limit, offset := int64(50), int64(0)
+	if items, exists := values["limit"]; exists {
+		limit, err = strconv.ParseInt(items[0], 10, 32)
+		if err != nil || limit < 1 || limit > MaximumCampaignMemberPage {
+			return "", 0, 0, false
+		}
+	}
+	if items, exists := values["offset"]; exists {
+		offset, err = strconv.ParseInt(items[0], 10, 32)
+		if err != nil || offset < 0 {
+			return "", 0, 0, false
+		}
+	}
+	return status, int32(limit), int32(offset), true
 }
 
 func (h *RecipientReviewRouteFragment) authorize(w stdhttp.ResponseWriter, r *stdhttp.Request, capability string) (Actor, bool) {

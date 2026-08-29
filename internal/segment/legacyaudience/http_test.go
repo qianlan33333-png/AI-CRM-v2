@@ -71,7 +71,7 @@ func decodeBody(t *testing.T, response *httptest.ResponseRecorder) map[string]an
 
 func TestRouteSpecsExposeOnlyFrozenRoutes(t *testing.T) {
 	specs := RouteSpecs()
-	if len(specs) != 11 {
+	if len(specs) != 12 {
 		t.Fatalf("route count = %d", len(specs))
 	}
 	for _, spec := range specs {
@@ -103,6 +103,7 @@ func TestHTTPAllFrozenRoutesDispatch(t *testing.T) {
 		{http.MethodPatch, RoutePrefix + "/package-groups/3", `{"name":"临时分组二","expected_version":1}`, "all-routes-group-patch-", http.StatusOK},
 		{http.MethodDelete, RoutePrefix + "/package-groups/3", `{"expected_version":2}`, "all-routes-group-delete", http.StatusOK},
 		{http.MethodGet, RoutePrefix + "/packages?limit=10&offset=0", "", "", http.StatusOK},
+		{http.MethodGet, RoutePrefix + "/templates", "", "", http.StatusOK},
 		{http.MethodGet, RoutePrefix + "/packages/101", "", "", http.StatusOK},
 		{http.MethodPatch, RoutePrefix + "/packages/101", `{"name":"完整路由套餐","expected_version":1}`, "all-routes-package-pat", http.StatusOK},
 		{http.MethodPost, RoutePrefix + "/packages/101/copy", `{"expected_version":2}`, "all-routes-package-copy", http.StatusCreated},

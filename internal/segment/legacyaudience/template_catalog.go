@@ -24,6 +24,11 @@ type AudienceTemplate struct {
 	Parameters []TemplateParameter `json:"parameters"`
 }
 
+type AudienceTemplateCatalogResponse struct {
+	Items []AudienceTemplate `json:"items"`
+	Projection
+}
+
 // TemplateSelection contains one catalog key, its fixed version, and typed
 // positive-ID-list parameters. JSON decoding and CSRF/idempotency belong to a
 // later HTTP adapter; this leaf only validates local selection semantics.
@@ -135,4 +140,12 @@ func templateParameterValues(template AudienceTemplate, parameters map[string][]
 
 func predicate(field dsl.Field, operator dsl.Operator, values []int64) map[string]any {
 	return map[string]any{"field": string(field), "op": string(operator), "value": values}
+}
+
+func cloneTemplateSelection(value TemplateSelection) TemplateSelection {
+	result := TemplateSelection{Key: value.Key, Version: value.Version, Parameters: make(map[string][]int64, len(value.Parameters))}
+	for key, items := range value.Parameters {
+		result.Parameters[key] = append([]int64(nil), items...)
+	}
+	return result
 }

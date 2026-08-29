@@ -394,6 +394,133 @@ func (service *LocalConfigurationService) PreviewConfiguration(ctx context.Conte
 	return response, nil
 }
 
+func (service *LocalConfigurationService) PreviewTemplate(ctx context.Context, input PreviewTemplateInput) (TemplateEvaluationResponse, error) {
+	if !service.ready(ctx) || input.PackageID < 1 {
+		return TemplateEvaluationResponse{}, service.invalidOrUnavailable(ctx)
+	}
+	definition, err := BuildAudienceTemplateDefinition(input.Selection)
+	if err != nil {
+		return TemplateEvaluationResponse{}, err
+	}
+	reference := input.EvaluatedAt.UTC()
+	if input.EvaluatedAt.IsZero() {
+		reference = service.now().UTC()
+	}
+	var response TemplateEvaluationResponse
+	err = service.uow.Within(ctx, func(tx context.Context) error {
+		packageModel, lockErr := service.repo.LockPackage(tx, input.PackageID)
+		if lockErr != nil {
+			return lockErr
+		}
+		if validateErr := validateWriteModel(packageModel); validateErr != nil {
+			return validateErr
+		}
+		if packageModel.Metadata.Lifecycle != PackagePaused {
+			return ErrConflict
+		}
+		evaluation, previewErr := service.engine.Preview(tx, definition, reference)
+		if previewErr != nil {
+			return previewErr
+		}
+		response = templateEvaluation(packageModel.Metadata.Version, 0, input.PackageID, input.Selection, definition, evaluation, false)
+		return nil
+	})
+	if err != nil {
+		return TemplateEvaluationResponse{}, classifyServiceError(err)
+	}
+	return response, nil
+}
+
+func (service *LocalConfigurationService) SaveTemplateConfiguration(ctx context.Context, input SaveTemplateConfigurationInput) (TemplateEvaluationResponse, error) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ExpectedPackageVersion < 1 || input.ExpectedConfigurationVersion < 0 ||
+		!validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+		return TemplateEvaluationResponse{}, ErrInvalidInput
+	}
+	definition, err := BuildAudienceTemplateDefinition(input.Selection)
+	if err != nil {
+		return TemplateEvaluationResponse{}, err
+	}
+	payload, err := digestJSON(struct {
+		PackageID                    int64             `json:"package_id"`
+		Selection                    TemplateSelection `json:"selection"`
+		ExpectedPackageVersion       int64             `json:"expected_package_version"`
+		ExpectedConfigurationVersion int64             `json:"expected_configuration_version"`
+	}{input.PackageID, cloneTemplateSelection(input.Selection), input.ExpectedPackageVersion, input.ExpectedConfigurationVersion})
+	if err != nil {
+		return TemplateEvaluationResponse{}, ErrUnavailable
+	}
+	raw, err := service.execute(ctx, ReceiptOperation("template_configuration_put"), input.Actor, input.IdempotencyKey, payload,
+		func(tx context.Context, now time.Time) (any, *LocalEvent, error) {
+			current, lockErr := service.repo.LockPackage(tx, input.PackageID)
+			if lockErr != nil {
+				return nil, nil, lockErr
+			}
+			if validateErr := validateWriteModel(current); validateErr != nil {
+				return nil, nil, validateErr
+			}
+			if current.Metadata.Lifecycle != PackagePaused {
+				return nil, nil, ErrConflict
+			}
+			if current.Metadata.Version != input.ExpectedPackageVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			currentConfiguration, readErr := service.repo.GetCurrentConfiguration(tx, input.PackageID)
+			if readErr != nil {
+				return nil, nil, readErr
+			}
+			currentConfigurationVersion := int64(0)
+			if currentConfiguration != nil {
+				if !validConfigurationVersion(*currentConfiguration) {
+					return nil, nil, ErrUnavailable
+				}
+				currentConfigurationVersion = currentConfiguration.Version
+			}
+			if currentConfigurationVersion != input.ExpectedConfigurationVersion {
+				return nil, nil, ErrVersionConflict
+			}
+
+			next := cloneWriteModel(current)
+			next.Definition = cloneDefinition(definition)
+			next.Metadata.Version = current.Metadata.Version + 1
+			next.Metadata.UpdatedBy = input.Actor.AdminUserID
+			next.Metadata.UpdatedAt = now
+			storedPackage, saveErr := service.repo.SavePackage(tx, current, next, input.ExpectedPackageVersion, input.Actor.AdminUserID, now)
+			if saveErr != nil {
+				return nil, nil, saveErr
+			}
+			if validateErr := validateWriteModel(storedPackage); validateErr != nil || storedPackage.Metadata.Version != next.Metadata.Version || !equalJSON(storedPackage.Definition, definition) {
+				return nil, nil, ErrUnavailable
+			}
+			cron, cronErr := canonicalRefreshCron(storedPackage.RefreshMode, storedPackage.RefreshCron)
+			if cronErr != nil {
+				return nil, nil, cronErr
+			}
+			definitionDigest := sha256.Sum256(definition)
+			configuration, insertErr := service.repo.InsertConfigurationVersion(tx, ConfigurationVersion{
+				PackageID: input.PackageID, Version: currentConfigurationVersion + 1, SchemaVersion: ConfigurationSchemaVersion,
+				PackageVersion: storedPackage.Metadata.Version, Definition: definition, DefinitionDigest: hex.EncodeToString(definitionDigest[:]),
+				RefreshMode: storedPackage.RefreshMode, RefreshCron: cron, CreatedBy: input.Actor.AdminUserID, CreatedAt: now,
+			})
+			if insertErr != nil || !validConfigurationVersion(configuration) || configuration.Version != currentConfigurationVersion+1 {
+				if insertErr != nil {
+					return nil, nil, insertErr
+				}
+				return nil, nil, ErrUnavailable
+			}
+			evaluation, previewErr := service.engine.Preview(tx, definition, now)
+			if previewErr != nil {
+				return nil, nil, previewErr
+			}
+			response := templateEvaluation(storedPackage.Metadata.Version, configuration.Version, input.PackageID, input.Selection, definition, evaluation, true)
+			event, eventErr := mutationEvent("ai_audience.package.template_configuration.saved", input.PackageID, input.Actor, input.IdempotencyKey, now)
+			return response, event, eventErr
+		})
+	if err != nil {
+		return TemplateEvaluationResponse{}, err
+	}
+	return decodeMutation[TemplateEvaluationResponse](raw)
+}
+
 func (service *LocalConfigurationService) MaterializeConfiguration(ctx context.Context, input MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error) {
 	if !service.ready(ctx) || input.PackageID < 1 || input.ConfigurationVersion < 1 || input.ExpectedPackageVersion < 1 ||
 		!validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
@@ -456,6 +583,15 @@ func configurationEvaluation(configuration ConfigurationVersion, evaluation segm
 		DefinitionDigest: configuration.DefinitionDigest, MemberCount: evaluation.MemberCount,
 		MemberDigest: hex.EncodeToString(evaluation.MemberDigest[:]), EvaluatedAt: evaluation.EvaluatedAt.UTC(),
 		Materialized: materialized, Projection: localProjection(),
+	}
+}
+
+func templateEvaluation(packageVersion, configurationVersion, packageID int64, selection TemplateSelection, definition segmentport.Definition, evaluation segmentport.DefinitionEvaluation, saved bool) TemplateEvaluationResponse {
+	return TemplateEvaluationResponse{
+		PackageID: packageID, PackageVersion: packageVersion, ConfigurationVersion: configurationVersion,
+		Selection: cloneTemplateSelection(selection), Definition: cloneDefinition(definition), MemberCount: evaluation.MemberCount,
+		MemberDigest: hex.EncodeToString(evaluation.MemberDigest[:]), EvaluatedAt: evaluation.EvaluatedAt.UTC(), Saved: saved,
+		Projection: localProjection(),
 	}
 }
 

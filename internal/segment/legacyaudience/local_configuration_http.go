@@ -54,7 +54,8 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 	}
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders" &&
-		segments[2] != "configuration" && segments[2] != "configuration-preview" && segments[2] != "configuration-materialize") {
+		segments[2] != "configuration" && segments[2] != "configuration-preview" && segments[2] != "configuration-materialize" &&
+		segments[2] != "template-preview" && segments[2] != "template-config") {
 		writeHTTPError(writer, request, http.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 		return
 	}
@@ -71,6 +72,10 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		fragment.handler.previewConfiguration(writer, request, segments[1])
 	case "configuration-materialize":
 		fragment.handler.materializeConfiguration(writer, request, segments[1])
+	case "template-preview":
+		fragment.handler.previewTemplate(writer, request, segments[1])
+	case "template-config":
+		fragment.handler.saveTemplateConfiguration(writer, request, segments[1])
 	}
 }
 
@@ -348,6 +353,69 @@ func (handler *LocalConfigurationHandler) materializeConfiguration(writer http.R
 	writeJSON(writer, http.StatusOK, response)
 }
 
+func (handler *LocalConfigurationHandler) previewTemplate(writer http.ResponseWriter, request *http.Request, rawID string) {
+	if request.Method != http.MethodPost {
+		writeMethodNotAllowed(writer, request, http.MethodPost)
+		return
+	}
+	if !requireNoQuery(writer, request) || !handler.authorize(writer, request, false, nil) {
+		return
+	}
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	input, decodeProblem := decodePreviewTemplate(writer, request)
+	if decodeProblem != nil {
+		writeProblem(writer, request, decodeProblem)
+		return
+	}
+	input.PackageID = packageID
+	response, err := handler.application.PreviewTemplate(request.Context(), input)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
+}
+
+func (handler *LocalConfigurationHandler) saveTemplateConfiguration(writer http.ResponseWriter, request *http.Request, rawID string) {
+	if request.Method != http.MethodPut {
+		writeMethodNotAllowed(writer, request, http.MethodPut)
+		return
+	}
+	if !requireNoQuery(writer, request) {
+		return
+	}
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	var actor Actor
+	if !handler.authorize(writer, request, true, &actor) {
+		return
+	}
+	key, keyProblem := idempotencyKey(request)
+	if keyProblem != nil {
+		writeProblem(writer, request, keyProblem)
+		return
+	}
+	input, decodeProblem := decodeSaveTemplateConfiguration(writer, request)
+	if decodeProblem != nil {
+		writeProblem(writer, request, decodeProblem)
+		return
+	}
+	input.PackageID, input.Actor, input.IdempotencyKey = packageID, actor, key
+	response, err := handler.application.SaveTemplateConfiguration(request.Context(), input)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
+}
+
 func (handler *LocalConfigurationHandler) senders(writer http.ResponseWriter, request *http.Request, rawID string) {
 	packageID, problem := parseID(rawID, "package_id")
 	if problem != nil {
@@ -504,6 +572,74 @@ func decodeMaterializeConfiguration(writer http.ResponseWriter, request *http.Re
 		return MaterializeConfigurationInput{}, problem
 	}
 	return MaterializeConfigurationInput{ConfigurationVersion: version, ExpectedPackageVersion: packageVersion}, nil
+}
+
+func decodePreviewTemplate(writer http.ResponseWriter, request *http.Request) (PreviewTemplateInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"template_key": true, "template_version": true, "parameters": true, "evaluated_at": true})
+	if problem != nil {
+		return PreviewTemplateInput{}, problem
+	}
+	selection, problem := decodeTemplateSelection(fields)
+	if problem != nil {
+		return PreviewTemplateInput{}, problem
+	}
+	input := PreviewTemplateInput{Selection: selection}
+	if raw, ok := fields["evaluated_at"]; ok {
+		var value string
+		if json.Unmarshal(raw, &value) != nil || value == "" {
+			return PreviewTemplateInput{}, validation("evaluated_at", "invalid")
+		}
+		parsed, err := time.Parse(time.RFC3339, value)
+		if err != nil {
+			return PreviewTemplateInput{}, validation("evaluated_at", "invalid")
+		}
+		input.EvaluatedAt = parsed
+	}
+	return input, nil
+}
+
+func decodeSaveTemplateConfiguration(writer http.ResponseWriter, request *http.Request) (SaveTemplateConfigurationInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"template_key": true, "template_version": true, "parameters": true, "expected_package_version": true, "expected_configuration_version": true})
+	if problem != nil {
+		return SaveTemplateConfigurationInput{}, problem
+	}
+	selection, problem := decodeTemplateSelection(fields)
+	if problem != nil {
+		return SaveTemplateConfigurationInput{}, problem
+	}
+	packageVersion, problem := requiredInteger(fields, "expected_package_version", 1, 1<<62)
+	if problem != nil {
+		return SaveTemplateConfigurationInput{}, problem
+	}
+	configurationVersion, problem := requiredInteger(fields, "expected_configuration_version", 0, 1<<62)
+	if problem != nil {
+		return SaveTemplateConfigurationInput{}, problem
+	}
+	return SaveTemplateConfigurationInput{Selection: selection, ExpectedPackageVersion: packageVersion, ExpectedConfigurationVersion: configurationVersion}, nil
+}
+
+func decodeTemplateSelection(fields map[string]json.RawMessage) (TemplateSelection, *requestProblem) {
+	key, problem := requiredString(fields, "template_key")
+	if problem != nil {
+		return TemplateSelection{}, problem
+	}
+	version, problem := requiredInteger(fields, "template_version", 1, 1<<62)
+	if problem != nil {
+		return TemplateSelection{}, problem
+	}
+	raw, ok := fields["parameters"]
+	if !ok {
+		return TemplateSelection{}, validation("parameters", "required")
+	}
+	parameters := map[string][]int64{}
+	if json.Unmarshal(raw, &parameters) != nil || parameters == nil {
+		return TemplateSelection{}, validation("parameters", "invalid")
+	}
+	selection := TemplateSelection{Key: key, Version: version, Parameters: parameters}
+	if _, err := BuildAudienceTemplateDefinition(selection); err != nil {
+		return TemplateSelection{}, validation("parameters", "invalid")
+	}
+	return selection, nil
 }
 
 func parsePreviewConfigurationQuery(raw string) (PreviewConfigurationInput, *requestProblem) {

@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || campaignHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (hxcHistoryHttp) {
         window.Headers = Headers;
         const test = window.__hxcHistoryHttpTest = { calls: [], fail: hxcHistoryHttp.fail || false };
@@ -515,6 +515,51 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         window.fetch = async (input, init = {}) => {
           const url = new URL(String(input), window.location.origin);
           calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? JSON.parse(String(init.body)) : null });
+          if (url.pathname === '/api/admin/ai-audience/templates') return json({
+            items: [
+              { key: 'active_contacts', version: 1, parameters: [] },
+              { key: 'stage_any', version: 1, parameters: [{ key: 'stage_ids', required: true }] },
+              { key: 'tag_any', version: 1, parameters: [{ key: 'tag_ids', required: true }] },
+              { key: 'owner_any', version: 1, parameters: [{ key: 'owner_staff_ids', required: true }] },
+              { key: 'channel_any', version: 1, parameters: [{ key: 'channel_ids', required: true }] },
+            ],
+            local_projection: true,
+            real_external_call_executed: false,
+          });
+          if (url.pathname.endsWith('/template-preview')) {
+            const body = JSON.parse(String(init.body || '{}'));
+            return json({
+              package_id: 6,
+              package_version: packageVersion,
+              configuration_version: configurationVersion,
+              selection: { key: body.template_key, version: body.template_version, parameters: body.parameters },
+              definition: { field: 'is_deleted', op: 'eq', value: false },
+              member_count: audienceEmpty ? 0 : 2,
+              member_digest: 'a'.repeat(64),
+              evaluated_at: '2026-08-27T00:00:00Z',
+              saved: false,
+              local_projection: true,
+              real_external_call_executed: false,
+            });
+          }
+          if (url.pathname.endsWith('/template-config')) {
+            const body = JSON.parse(String(init.body || '{}'));
+            packageVersion += 1;
+            configurationVersion += 1;
+            return json({
+              package_id: 6,
+              package_version: packageVersion,
+              configuration_version: configurationVersion,
+              selection: { key: body.template_key, version: body.template_version, parameters: body.parameters },
+              definition: { field: 'is_deleted', op: 'eq', value: false },
+              member_count: audienceEmpty ? 0 : 2,
+              member_digest: 'a'.repeat(64),
+              evaluated_at: '2026-08-27T00:00:00Z',
+              saved: true,
+              local_projection: true,
+              real_external_call_executed: false,
+            });
+          }
           if (url.pathname === '/api/admin/ai-audience/package-groups') return json({ items: [{ group_id: 2, name: 'W4' }] });
           if (url.pathname === '/api/admin/ai-audience/packages') return json({ items: [packageDto()] });
           if (url.pathname === '/api/admin/ai-audience/packages/6') {
@@ -576,6 +621,38 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
           if (url.pathname === '/api/admin/service-period-products') return json({ items: [product] });
           if (url.pathname === '/api/admin/service-period-products/8/share') return json({ ok: true, service_product_id: 8, public_path: '/p/service_period/8', local_only: true, real_external_call_executed: false });
           return json({ code: 'unexpected_service_product_request' }, 500);
+        };
+        return;
+      }
+      if (campaignHttp) {
+        const calls = [];
+        const planID = 'ctp_' + 'a'.repeat(64);
+        const campaignPrefix = '/api/admin/cloud-orchestrator/campaigns/spring-campaign';
+        const localCampaign = { local_projection: true, real_external_call_executed: false, real_send: false, runtime_executed: false };
+        const localTouchPlan = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
+        const campaign = { campaign_code: 'spring-campaign', name: '春季激活', approval_status: 'draft', runtime_status: 'idle', version: 3, updated_at: '2026-08-27T00:00:00Z' };
+        const plan = { id: planID, campaign_code: 'spring-campaign', campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 3, content_step_count: 1, created_at: '2026-08-27T00:00:00Z' };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data });
+        window.__campaignHttpTest = { calls };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? JSON.parse(String(init.body)) : null });
+          if (url.pathname === `${campaignPrefix}/members`) {
+            if (campaignHttp.failMembers) return json({ code: 'members_unavailable' }, 503);
+            const offset = Number(url.searchParams.get('offset'));
+            const limit = Number(url.searchParams.get('limit'));
+            const items = offset === 0
+              ? [
+                { plan_id: planID, customer_id: 7, status: 'pending_review' },
+                { plan_id: planID, customer_id: 8, status: 'approved' },
+                { plan_id: planID, customer_id: 9, status: 'rejected' },
+              ]
+              : [{ plan_id: planID, customer_id: 51, status: 'approved' }];
+            return json({ plan_id: planID, items, total: 51, limit, offset, safety: localTouchPlan });
+          }
+          if (url.pathname === `${campaignPrefix}/touch-plans`) return json({ items: [plan], ...localTouchPlan });
+          if (url.pathname === campaignPrefix) return json({ campaign, steps: [], ...localCampaign });
+          return json({ code: 'unexpected_campaign_request' }, 500);
         };
         return;
       }
@@ -1393,7 +1470,7 @@ console.log('admin/audienceEdit.html?id={package_id}（真实配置与发送人 
   click(dom, nav3);
   await sleep(30);
   ok('发送人使用 sender_userid 明文 DTO', !!d.querySelector('#aeSenders') && d.body.textContent.includes('最多 5 位'));
-  ok('模板目录缺契约明确标为 backend_blocked', d.querySelector('[data-template-contract="backend_blocked"]')?.textContent.includes('不会把 SegmentDefinition 伪装成可选模板'));
+  ok('Mock 模式不伪造 Audience 模板目录', !d.querySelector('[data-template-contract="backend_blocked"]') && !d.querySelector('[data-template-contract="v2-local"]'));
   d.querySelector('#aeSenders').value = 'a\nb\nc\nd\ne\nf';
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存发送人白名单'));
   await sleep(30);
@@ -1419,6 +1496,35 @@ console.log('admin/audienceEdit.html（HTTP 保存→配置快照→预览）');
     d.querySelector('[data-audience-preview="ready"]')?.textContent.includes('配置 v3 预览：2 人'));
   ok('Audience 预览结果明确不创建群发或调用 Provider',
     d.body.textContent.includes('不会创建群发或调用企微') && !calls.some((call) => call.path.includes('materialize')));
+  dom.window.close();
+}
+
+console.log('admin/audienceEdit.html（HTTP V2 模板目录/预览/保存）');
+{
+  const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true });
+  const d = dom.window.document;
+  await sleep(40);
+  const templateKey = d.querySelector('#aeTemplateKey');
+  const templateParams = d.querySelector('#aeTemplateParams');
+  ok('Audience 编辑页读取真实 V2 固定模板目录',
+    dom.window.__AICRM_TEST_MOCK__ === false &&
+    templateKey?.options.length === 5 &&
+    d.querySelector('[data-template-contract="v2-local"]')?.textContent.includes('只编译为当前 V2 SegmentDefinition'));
+  if (templateParams) templateParams.value = '{}';
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '预览模板'));
+  await sleep(60);
+  const calls = dom.window.__audienceHttpTest.calls;
+  const preview = calls.find((call) => call.path.endsWith('/template-preview'));
+  ok('Audience 模板预览调用真实契约且只返回本地成员摘要',
+    preview?.method === 'POST' && preview.body?.template_key === 'active_contacts' &&
+    d.querySelector('[data-template-preview="仅预览"]')?.textContent.includes('2 人') &&
+    !calls.some((call) => call.path.includes('materialize') || call.path.includes('broadcast')));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存模板配置'));
+  await sleep(60);
+  const save = calls.find((call) => call.path.endsWith('/template-config'));
+  ok('Audience 模板保存调用真实配置契约并展示保存结果',
+    save?.method === 'PUT' && save.body?.expected_package_version === 3 && save.body?.expected_configuration_version === 2 &&
+    d.querySelector('[data-template-preview="已保存"]')?.textContent.includes('包 v4'));
   dom.window.close();
 }
 
@@ -2520,6 +2626,40 @@ console.log('admin/campaigns.html（目标人员 Customer360 链接）');
     !doc.querySelector('[data-recipient-status]') &&
     recipient.window.__recipientCalls.every((url) => !url.includes('status=')));
   recipient.window.close();
+}
+
+console.log('admin/campaigns.html（Campaign 成员状态本地投影）');
+{
+  const members = await loadPage('admin/campaigns.html', { q: 'campaign=spring-campaign', campaignHttp: {} });
+  await sleep(40);
+  const doc = members.window.document;
+  click(members, doc.querySelector('#campaign-members-open'));
+  await sleep(40);
+  let text = doc.querySelector('#campaign-members-drawer')?.textContent || '';
+  ok('成员抽屉读取真实本地状态与总数，不宣称发送结果',
+    doc.querySelector('[data-campaign-members="ready"]') &&
+    text.includes('共 51 人') && text.includes('pending_review') && text.includes('approved') && text.includes('rejected') &&
+    text.includes('不代表 Provider 调用、发送或送达') &&
+    members.window.__campaignHttpTest.calls.some((call) => call.path.endsWith('/members') && call.query === '?limit=50&offset=0' && call.method === 'GET'));
+  click(members, doc.querySelector('#campaign-members-next'));
+  await sleep(40);
+  text = doc.querySelector('#campaign-members-drawer')?.textContent || '';
+  ok('成员抽屉使用真实 offset 分页读取下一页',
+    text.includes('51-51') && text.includes('51') &&
+    members.window.__campaignHttpTest.calls.some((call) => call.path.endsWith('/members') && call.query === '?limit=50&offset=50'));
+  members.window.close();
+
+  const failed = await loadPage('admin/campaigns.html', { q: 'campaign=spring-campaign', campaignHttp: { failMembers: true } });
+  await sleep(40);
+  const failedDoc = failed.window.document;
+  click(failed, failedDoc.querySelector('#campaign-members-open'));
+  await sleep(40);
+  const failedText = failedDoc.querySelector('#campaign-members-drawer')?.textContent || '';
+  ok('成员读取失败时 fail closed 且不回退 Mock 或 Seed',
+    failedDoc.querySelector('[data-campaign-members="error"]') &&
+    failedText.includes('不会使用 Mock 或 Seed 补齐') &&
+    !failedText.includes('pending_review'));
+  failed.window.close();
 }
 
 console.log('admin/campaigns.html（trace_id 可观察性边界）');

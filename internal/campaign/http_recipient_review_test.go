@@ -10,10 +10,19 @@ import (
 )
 
 type recipientReviewHTTPStub struct {
-	value   TouchPlanRecipientReview
-	result  TouchPlanRecipientReviewResult
-	saved   SaveTouchPlanRecipientMessageOverrideCommand
-	decided DecideTouchPlanRecipientCommand
+	value                 TouchPlanRecipientReview
+	result                TouchPlanRecipientReviewResult
+	page                  CampaignMemberStatusPage
+	listCode              string
+	listStatus            TouchPlanRecipientReviewStatus
+	listLimit, listOffset int32
+	saved                 SaveTouchPlanRecipientMessageOverrideCommand
+	decided               DecideTouchPlanRecipientCommand
+}
+
+func (s *recipientReviewHTTPStub) ListCampaignMembers(_ context.Context, code string, status TouchPlanRecipientReviewStatus, limit, offset int32) (CampaignMemberStatusPage, error) {
+	s.listCode, s.listStatus, s.listLimit, s.listOffset = code, status, limit, offset
+	return s.page, nil
 }
 
 func (s *recipientReviewHTTPStub) Get(context.Context, string, string, int64) (TouchPlanRecipientReview, error) {
@@ -107,5 +116,27 @@ func TestRecipientReviewRouteRejectsCrossScopeProjection(t *testing.T) {
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestRecipientReviewRouteListsLatestCampaignMemberStatuses(t *testing.T) {
+	planID := DraftTouchPlanID(3, "spring-campaign", "member-list-http")
+	stub := &recipientReviewHTTPStub{page: CampaignMemberStatusPage{
+		PlanID: planID, Items: []CampaignMemberStatus{{PlanID: planID, CustomerID: 19, Status: TouchPlanRecipientReviewApproved}},
+		Total: 1, Limit: 25, Offset: 5, Safety: LocalInitiationSafety(),
+	}}
+	handler, err := NewRecipientReviewRouteFragment(stub, &initiationHTTPAuthorizerStub{actor: Actor{ID: 7}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, RoutePrefix+"/spring-campaign/members?status=approved&limit=25&offset=5", nil))
+	if response.Code != http.StatusOK || stub.listCode != "spring-campaign" || stub.listStatus != TouchPlanRecipientReviewApproved || stub.listLimit != 25 || stub.listOffset != 5 {
+		t.Fatalf("status=%d list=%q/%q/%d/%d body=%s", response.Code, stub.listCode, stub.listStatus, stub.listLimit, stub.listOffset, response.Body.String())
+	}
+	for _, expected := range []string{`"customer_id":19`, `"status":"approved"`, `"local_only":true`, `"real_external_call_executed":false`} {
+		if !strings.Contains(response.Body.String(), expected) {
+			t.Fatalf("missing %s in %s", expected, response.Body.String())
+		}
 	}
 }

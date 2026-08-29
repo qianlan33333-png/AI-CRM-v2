@@ -127,6 +127,21 @@ type ConfigurationEvaluationResponse struct {
 	Projection
 }
 
+// TemplateEvaluationResponse is a local-only preview or saved configuration
+// result. It does not create an audience run or any outbound effect.
+type TemplateEvaluationResponse struct {
+	PackageID            int64                  `json:"package_id"`
+	PackageVersion       int64                  `json:"package_version"`
+	ConfigurationVersion int64                  `json:"configuration_version"`
+	Selection            TemplateSelection      `json:"selection"`
+	Definition           segmentport.Definition `json:"definition"`
+	MemberCount          int64                  `json:"member_count"`
+	MemberDigest         string                 `json:"member_digest"`
+	EvaluatedAt          time.Time              `json:"evaluated_at"`
+	Saved                bool                   `json:"saved"`
+	Projection
+}
+
 type PutAutomationBindingInput struct {
 	PackageID         int64
 	AutomationAgentID int64
@@ -171,11 +186,27 @@ type MaterializeConfigurationInput struct {
 	IdempotencyKey         string
 }
 
+type PreviewTemplateInput struct {
+	PackageID   int64
+	Selection   TemplateSelection
+	EvaluatedAt time.Time
+}
+
+type SaveTemplateConfigurationInput struct {
+	PackageID                    int64
+	Selection                    TemplateSelection
+	ExpectedPackageVersion       int64
+	ExpectedConfigurationVersion int64
+	Actor                        Actor
+	IdempotencyKey               string
+}
+
 // LocalConfigurationRepository owns only AI Audience-local references and
 // receipts. It cannot write Automation or Contact/Staff state.
 type LocalConfigurationRepository interface {
 	GetPackageMetadata(context.Context, int64) (PackageMetadata, error)
 	LockPackage(context.Context, int64) (PackageWriteModel, error)
+	SavePackage(context.Context, PackageWriteModel, PackageWriteModel, int64, int64, time.Time) (PackageWriteModel, error)
 	GetAutomationBinding(context.Context, int64) (*AutomationBinding, error)
 	SaveAutomationBinding(context.Context, AutomationBinding, int64, int64, time.Time) (AutomationBinding, error)
 	DeleteAutomationBinding(context.Context, int64, int64) (bool, error)
@@ -202,6 +233,8 @@ type LocalConfigurationApplication interface {
 	PutConfiguration(context.Context, PutConfigurationInput) (ConfigurationResponse, error)
 	PreviewConfiguration(context.Context, PreviewConfigurationInput) (ConfigurationEvaluationResponse, error)
 	MaterializeConfiguration(context.Context, MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error)
+	PreviewTemplate(context.Context, PreviewTemplateInput) (TemplateEvaluationResponse, error)
+	SaveTemplateConfiguration(context.Context, SaveTemplateConfigurationInput) (TemplateEvaluationResponse, error)
 }
 
 type GroupOpsOperationMemberApplication interface {
@@ -229,5 +262,7 @@ func LocalConfigurationRouteSpecs() []LocalConfigurationRouteSpec {
 		{Method: "PUT", Pattern: RoutePrefix + "/packages/{package_id}/configuration", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
 		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/configuration-preview", Capability: CapabilitySegmentsRead},
 		{Method: "POST", Pattern: RoutePrefix + "/packages/{package_id}/configuration-materialize", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
+		{Method: "POST", Pattern: RoutePrefix + "/packages/{package_id}/template-preview", Capability: CapabilitySegmentsRead},
+		{Method: "PUT", Pattern: RoutePrefix + "/packages/{package_id}/template-config", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
 	}
 }

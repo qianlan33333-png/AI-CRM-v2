@@ -13063,6 +13063,80 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/templates:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listAIAudienceTemplates
+      summary: List the fixed V2-local Audience template catalog
+      description: Templates compile only into the canonical Segment DSL. They contain no SQL or Provider behavior.
+      x-p4-decision-evidence: LEGACY-S06-022-MINIMAL-A-2026-08-29
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: ai_audience.local_template_catalog
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Fixed local template catalog, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceTemplateCatalogResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/template-preview:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    post:
+      tags: [p4-ai-audience]
+      operationId: previewAIAudienceTemplate
+      summary: Preview one fixed local template without saving or materializing members
+      x-p4-decision-evidence: LEGACY-S06-022-MINIMAL-A-2026-08-29
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: ai_audience.local_template_preview
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceTemplatePreviewRequest" } } } }
+      responses:
+        "200": { description: PII-free local preview, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceTemplateEvaluationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/template-config:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    put:
+      tags: [p4-ai-audience]
+      operationId: saveAIAudienceTemplateConfiguration
+      summary: Save one fixed template as the stopped package definition and immutable local configuration
+      description: Uses package and configuration CAS, keeps the package paused, previews locally, and creates no outbound effect.
+      x-p4-decision-evidence: LEGACY-S06-022-MINIMAL-A-2026-08-29
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: ai_audience.local_template_transaction
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceTemplateSaveRequest" } } } }
+      responses:
+        "200": { description: Saved immutable local configuration and local preview, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceTemplateEvaluationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/ai-audience/packages/{package_id}/configuration:
     parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
     get:
@@ -13440,6 +13514,33 @@ paths:
         "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+    get:
+      tags: [p4-campaign-initiation]
+      operationId: listCloudCampaignMembers
+      summary: List the latest immutable touch-plan members by local review status
+      description: Missing recipient-review sidecars project as pending_review. This read creates no send, delivery, or Provider fact.
+      x-p4-decision-evidence: LEGACY-S07-082-MINIMAL-A-2026-08-29
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: campaign.latest_touch_plan_member_status.local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [pending_review, approved, rejected] } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Latest plan member-status page, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMemberStatusPage" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
   /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans:
     parameters:
@@ -20425,6 +20526,35 @@ components:
         provider_execution_eligible: { type: boolean, enum: [false], x-enum-varnames: [C01OutboundCampaignDispatchReconciliationProviderExecutionEligibleFalse] }
         real_external_call_executed: { type: boolean, enum: [false], x-enum-varnames: [C01OutboundCampaignDispatchReconciliationRealExternalCallExecutedFalse] }
         delivery_proven: { type: boolean, enum: [false], x-enum-varnames: [C01OutboundCampaignDispatchReconciliationDeliveryProvenFalse] }
+    CloudCampaignMemberStatus:
+      type: object
+      additionalProperties: false
+      required: [plan_id, customer_id, status]
+      properties:
+        plan_id: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [pending_review, approved, rejected] }
+    CloudCampaignMemberSafety:
+      type: object
+      additionalProperties: false
+      required: [local_only, provider_execution_eligible, runtime_executed, real_external_call_executed, delivery_proven]
+      properties:
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    CloudCampaignMemberStatusPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, offset, safety]
+      properties:
+        plan_id: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignMemberStatus" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+        safety: { $ref: "#/components/schemas/CloudCampaignMemberSafety" }
     CloudCampaignTouchPlanRecipient:
       type: object
       additionalProperties: false
@@ -20487,6 +20617,83 @@ components:
       additionalProperties: false
       required: [local_projection, real_external_call_executed]
       properties:
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceTemplateParameterKey:
+      type: string
+      enum: [stage_ids, tag_ids, owner_staff_ids, channel_ids]
+    AIAudienceTemplateParameter:
+      type: object
+      additionalProperties: false
+      required: [key, required]
+      properties:
+        key: { $ref: "#/components/schemas/AIAudienceTemplateParameterKey" }
+        required: { type: boolean }
+    AIAudienceTemplate:
+      type: object
+      additionalProperties: false
+      required: [key, version, parameters]
+      properties:
+        key: { type: string, enum: [active_contacts, stage_any, tag_any, owner_any, channel_any] }
+        version: { type: integer, format: int64, enum: [1] }
+        parameters: { type: array, maxItems: 1, items: { $ref: "#/components/schemas/AIAudienceTemplateParameter" } }
+    AIAudienceTemplateCatalogResponse:
+      type: object
+      additionalProperties: false
+      required: [items, local_projection, real_external_call_executed]
+      properties:
+        items: { type: array, minItems: 5, maxItems: 5, items: { $ref: "#/components/schemas/AIAudienceTemplate" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceTemplateParameters:
+      type: object
+      additionalProperties: false
+      properties:
+        stage_ids: { type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        tag_ids: { type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        owner_staff_ids: { type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+        channel_ids: { type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+    AIAudienceTemplateSelection:
+      type: object
+      additionalProperties: false
+      required: [key, version, parameters]
+      properties:
+        key: { type: string, enum: [active_contacts, stage_any, tag_any, owner_any, channel_any] }
+        version: { type: integer, format: int64, enum: [1] }
+        parameters: { $ref: "#/components/schemas/AIAudienceTemplateParameters" }
+    AIAudienceTemplatePreviewRequest:
+      type: object
+      additionalProperties: false
+      required: [template_key, template_version, parameters]
+      properties:
+        template_key: { type: string, enum: [active_contacts, stage_any, tag_any, owner_any, channel_any] }
+        template_version: { type: integer, format: int64, enum: [1] }
+        parameters: { $ref: "#/components/schemas/AIAudienceTemplateParameters" }
+        evaluated_at: { type: string, format: date-time }
+    AIAudienceTemplateSaveRequest:
+      type: object
+      additionalProperties: false
+      required: [template_key, template_version, parameters, expected_package_version, expected_configuration_version]
+      properties:
+        template_key: { type: string, enum: [active_contacts, stage_any, tag_any, owner_any, channel_any] }
+        template_version: { type: integer, format: int64, enum: [1] }
+        parameters: { $ref: "#/components/schemas/AIAudienceTemplateParameters" }
+        expected_package_version: { type: integer, format: int64, minimum: 1 }
+        expected_configuration_version: { type: integer, format: int64, minimum: 0 }
+    AIAudienceTemplateEvaluationResponse:
+      type: object
+      additionalProperties: false
+      required: [package_id, package_version, configuration_version, selection, definition, member_count, member_digest, evaluated_at, saved, local_projection, real_external_call_executed]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        package_version: { type: integer, format: int64, minimum: 1 }
+        configuration_version: { type: integer, format: int64, minimum: 0 }
+        selection: { $ref: "#/components/schemas/AIAudienceTemplateSelection" }
+        definition: { $ref: "#/components/schemas/SegmentDefinition" }
+        member_count: { type: integer, format: int64, minimum: 0 }
+        member_digest: { type: string, pattern: '^[0-9a-f]{64}$' }
+        evaluated_at: { type: string, format: date-time }
+        saved: { type: boolean }
         local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     AIAudienceOperationMember:

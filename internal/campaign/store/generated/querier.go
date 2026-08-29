@@ -65,6 +65,7 @@ type Querier interface {
 	ListHistoricalCampaignDefinitions(ctx context.Context, arg ListHistoricalCampaignDefinitionsParams) ([]CampaignV1DefinitionHistory, error)
 	ListHistoricalCampaignMembers(ctx context.Context, arg ListHistoricalCampaignMembersParams) ([]CampaignV1HistoryMember, error)
 	ListHistoricalCampaignSegments(ctx context.Context, arg ListHistoricalCampaignSegmentsParams) ([]CampaignV1HistorySegment, error)
+	ListLatestCampaignMemberStatuses(ctx context.Context, arg ListLatestCampaignMemberStatusesParams) ([]ListLatestCampaignMemberStatusesRow, error)
 	LockApprovedCampaignTouchPlanHandoff(ctx context.Context, arg LockApprovedCampaignTouchPlanHandoffParams) (LockApprovedCampaignTouchPlanHandoffRow, error)
 	LockCampaignDraftForTouchPlan(ctx context.Context, campaignCode string) (LockCampaignDraftForTouchPlanRow, error)
 	LockCampaignTouchPlanRecipientReview(ctx context.Context, arg LockCampaignTouchPlanRecipientReviewParams) (LockCampaignTouchPlanRecipientReviewRow, error)

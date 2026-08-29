@@ -9,6 +9,7 @@ import {
   getCampaignTouchPlanRecipientDto,
   getCampaignTouchPlanRecipientReviewDto,
   getCampaignTouchPlanReviewDto,
+  listCampaignMembersDto,
   listCampaignPlanIndexDto,
   listCampaignsDto,
   listCampaignTouchPlanRecipientsDto,
@@ -19,6 +20,7 @@ import {
   dispatchCampaignOutboundHandoffDto,
   type CampaignDetail,
   type CampaignFilter,
+  type CampaignMemberStatusPage,
   type CampaignOutboundDispatchReconciliation,
   type CampaignOutboundHandoff,
   type CampaignOutboundHandoffReconciliation,
@@ -85,7 +87,7 @@ function shell(title: string, body: string): string {
 
 function listHtml(rows: CampaignDetail[], filter: CampaignFilter): string {
   const rowHtml = rows.map((item) => `<tr><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3"><button data-campaign="${esc(item.code)}" style="border:0;background:transparent;color:#1849A9;cursor:pointer;font-weight:600">${esc(item.name)}</button><div style="margin-top:3px;color:#8F959E;font-family:ui-monospace,Menlo,monospace;font-size:12px">${esc(item.code)}</div></td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${status(item.approvalStatus)}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${status(item.runtimeStatus)}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">v${item.version}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${esc(item.updatedAt)}</td></tr>`).join('') || '<tr><td colspan="5" style="padding:24px;text-align:center;color:#8F959E">当前筛选下没有 Campaign</td></tr>';
-  return shell('Campaign 本地生命周期', `<div style="display:flex;gap:10px;flex-wrap:wrap"><label>审核状态 <select id="campaign-approval"><option value="">全部</option>${['draft', 'approved', 'rejected'].map((value) => `<option value="${value}"${filter.approvalStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><label>运行状态 <select id="campaign-runtime"><option value="">全部</option>${['idle', 'planned', 'paused'].map((value) => `<option value="${value}"${filter.runtimeStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="campaign-refresh" style="${button}">刷新</button><button id="external-effects-open" style="${button}">外部效果与 Push Center</button><button id="observability-open" style="${button}">可观察性</button></div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;color:#667085;text-align:left"><th style="padding:10px 12px">Campaign</th><th style="padding:10px 12px">审核</th><th style="padding:10px 12px">运行</th><th style="padding:10px 12px">版本</th><th style="padding:10px 12px">更新时间</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div style="display:grid;gap:10px"><div><h2 style="margin:0 0 6px;font-size:15px">Campaign 命中成员</h2>${blocked.replace('该读取契约', '按成员状态读取 Campaign 成员与总数的')}</div><div><h2 style="margin:0 0 6px;font-size:15px">可观察性与审计筛选</h2>${blocked.replace('该读取契约', '按 trace_id/session_id 刷新 observability 与 audit 的 JSON')}</div></div>`);
+  return shell('Campaign 本地生命周期', `<div style="display:flex;gap:10px;flex-wrap:wrap"><label>审核状态 <select id="campaign-approval"><option value="">全部</option>${['draft', 'approved', 'rejected'].map((value) => `<option value="${value}"${filter.approvalStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><label>运行状态 <select id="campaign-runtime"><option value="">全部</option>${['idle', 'planned', 'paused'].map((value) => `<option value="${value}"${filter.runtimeStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="campaign-refresh" style="${button}">刷新</button><button id="external-effects-open" style="${button}">外部效果与 Push Center</button><button id="observability-open" style="${button}">可观察性</button></div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;color:#667085;text-align:left"><th style="padding:10px 12px">Campaign</th><th style="padding:10px 12px">审核</th><th style="padding:10px 12px">运行</th><th style="padding:10px 12px">版本</th><th style="padding:10px 12px">更新时间</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div style="display:grid;gap:10px"><div><h2 style="margin:0 0 6px;font-size:15px">Campaign 命中成员</h2><p style="margin:0;color:#667085;font-size:13px">进入 Campaign 详情后，可按真实本地状态查看成员与总数。</p></div><div><h2 style="margin:0 0 6px;font-size:15px">可观察性与审计筛选</h2>${blocked.replace('该读取契约', '按 trace_id/session_id 刷新 observability 与 audit 的 JSON')}</div></div>`);
 }
 
 function planRows(plans: CampaignTouchPlan[]): string {
@@ -101,7 +103,45 @@ function planIndexHtml(page: CampaignTouchPlanIndexPage, reviewStatus: CampaignT
 function campaignHtml(page: CampaignPage): string {
   const campaign = page.campaign;
   const steps = campaign.steps.map((step) => `<li style="margin:5px 0"><strong>第 ${step.index} 步 · 延迟 ${step.delayMinutes} 分钟</strong><div style="margin-top:3px;white-space:pre-wrap">${esc(step.content)}</div></li>`).join('') || '<li>无步骤</li>';
-  return shell(esc(campaign.name), `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="campaign-back" style="${button}">返回列表</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(campaign.code)}</span>${status(campaign.approvalStatus)}${status(campaign.runtimeStatus)}<span>v${campaign.version}</span><button id="campaign-delete" style="${button};border-color:#F5B7B1;color:#B42318">删除本地 Campaign</button></div><div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">Campaign 详情</h2><ol style="margin:0;padding-left:20px">${steps}</ol>${safety}</section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">运营计划（已冻结 touch plan）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="color:#667085;text-align:left"><th>计划</th><th>来源</th><th>目标</th><th>步骤</th><th>创建时间</th></tr></thead><tbody>${planRows(page.plans)}</tbody></table>${safety}</section></div>`);
+  return shell(esc(campaign.name), `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="campaign-back" style="${button}">返回列表</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(campaign.code)}</span>${status(campaign.approvalStatus)}${status(campaign.runtimeStatus)}<span>v${campaign.version}</span><button id="campaign-delete" style="${button};border-color:#F5B7B1;color:#B42318">删除本地 Campaign</button></div><div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">Campaign 详情</h2><ol style="margin:0;padding-left:20px">${steps}</ol><button id="campaign-members-open" style="${button};margin-top:12px">查看成员状态</button>${safety}</section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">运营计划（已冻结 touch plan）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="color:#667085;text-align:left"><th>计划</th><th>来源</th><th>目标</th><th>步骤</th><th>创建时间</th></tr></thead><tbody>${planRows(page.plans)}</tbody></table>${safety}</section></div><aside id="campaign-members-drawer" hidden></aside>`);
+}
+
+function campaignMembersHtml(page: CampaignMemberStatusPage): string {
+  const rows = page.items.map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${item.customerID}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${status(item.status)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${esc(item.planID)}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:16px;color:#8F959E">当前页没有 Campaign 成员</td></tr>';
+  const previous = page.offset > 0 ? `<button id="campaign-members-prev" style="${button}">上一页</button>` : '';
+  const next = page.offset + page.limit < page.total ? `<button id="campaign-members-next" style="${button}">下一页</button>` : '';
+  const first = page.items.length === 0 ? 0 : page.offset + 1;
+  return `<aside id="campaign-members-drawer" data-campaign-members="ready" style="padding:14px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;display:grid;gap:10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><h2 style="margin:0;font-size:15px">Campaign 成员状态</h2><p style="margin:4px 0 0;color:#667085;font-size:12px">本地最新 touch-plan 状态 · 共 ${page.total} 人 · ${first}-${Math.min(page.offset + page.items.length, page.total)}</p></div><button id="campaign-members-close" style="${button}">关闭</button></div><table style="width:100%;border-collapse:collapse;background:#fff"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">Customer ID</th><th style="padding:8px">状态</th><th style="padding:8px">Touch plan</th></tr></thead><tbody>${rows}</tbody></table><div style="display:flex;justify-content:flex-end;gap:8px">${previous}${next}</div><p style="margin:0;color:#8F5A16;font-size:12px">状态仅来自 V2 本地成员投影，不代表 Provider 调用、发送或送达。</p></aside>`;
+}
+
+function renderCampaignMembers(stage: HTMLElement, campaignCode: string, page: CampaignMemberStatusPage): void {
+  const drawer = stage.querySelector<HTMLElement>('#campaign-members-drawer');
+  if (!drawer) return;
+  drawer.outerHTML = campaignMembersHtml(page);
+  stage.querySelector<HTMLButtonElement>('#campaign-members-close')?.addEventListener('click', () => {
+    const current = stage.querySelector<HTMLElement>('#campaign-members-drawer');
+    if (current) current.hidden = true;
+  });
+  stage.querySelector<HTMLButtonElement>('#campaign-members-prev')?.addEventListener('click', () => void loadCampaignMembers(stage, campaignCode, page.offset - page.limit));
+  stage.querySelector<HTMLButtonElement>('#campaign-members-next')?.addEventListener('click', () => void loadCampaignMembers(stage, campaignCode, page.offset + page.limit));
+}
+
+async function loadCampaignMembers(stage: HTMLElement, campaignCode: string, offset: number): Promise<void> {
+  const drawer = stage.querySelector<HTMLElement>('#campaign-members-drawer');
+  if (!drawer) return;
+  drawer.hidden = false;
+  drawer.innerHTML = '<p data-campaign-members="loading" style="margin:0;color:#667085">正在读取真实 Campaign 成员状态…</p>';
+  try {
+    renderCampaignMembers(stage, campaignCode, await listCampaignMembersDto(campaignCode, { limit: 50, offset }));
+  } catch (error) {
+    const current = stage.querySelector<HTMLElement>('#campaign-members-drawer');
+    if (!current) return;
+    current.outerHTML = `<aside id="campaign-members-drawer" data-campaign-members="error" style="padding:14px;border:1px solid #F2B8B5;border-radius:8px;background:#FFF1F0;color:#B42318;display:grid;gap:8px"><strong>Campaign 成员状态读取失败</strong><span>${esc(error instanceof Error ? error.message : '请求失败')}；不会使用 Mock 或 Seed 补齐。</span><button id="campaign-members-close" style="${button};justify-self:start">关闭</button></aside>`;
+    stage.querySelector<HTMLButtonElement>('#campaign-members-close')?.addEventListener('click', () => {
+      const failed = stage.querySelector<HTMLElement>('#campaign-members-drawer');
+      if (failed) failed.hidden = true;
+    });
+  }
 }
 
 const count = (label: string, value: number): string => `<div style="display:flex;justify-content:space-between;gap:12px"><span>${label}</span><strong>${value}</strong></div>`;
@@ -228,6 +268,7 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
     stage.innerHTML = campaignHtml({ campaign, plans });
     stage.querySelector<HTMLButtonElement>('#campaign-back')?.addEventListener('click', () => goto());
     stage.querySelectorAll<HTMLButtonElement>('[data-plan]').forEach((element) => element.addEventListener('click', () => goto(campaignCode, element.dataset.plan)));
+    stage.querySelector<HTMLButtonElement>('#campaign-members-open')?.addEventListener('click', () => void loadCampaignMembers(stage, campaignCode, 0));
     stage.querySelector<HTMLButtonElement>('#campaign-delete')?.addEventListener('click', () => confirmBox('删除本地 Campaign', `确认删除「${campaign.name}」？仅当服务端允许草稿且空闲时才会删除；不会清除任何外部历史任务。`, '确认删除', true, () => {
       void deleteCampaignDto(campaignCode).then(() => { toast('本地 Campaign 已删除'); goto(); }).catch((error) => toast(error instanceof Error ? error.message : 'Campaign 删除失败', true));
     }));
