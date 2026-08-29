@@ -380,14 +380,18 @@ func validCustomerTimelineTerminal(value CustomerTimelineTerminal) bool {
 	if value.Version != customerTimelineHistoryVersion || value.ArchiveRunID == "" || value.TableID != timeline.TableID || value.Kind != customerTimelineHistoryKind || value.SourceKeyHMAC == ([sha256.Size]byte{}) || value.PayloadHMAC == ([sha256.Size]byte{}) || value.FieldHMAC == ([sha256.Size]byte{}) {
 		return false
 	}
-	if value.Disposition == timeline.DispositionCandidate {
+	if value.Disposition == "import" {
 		return value.Reason == "" && value.TargetID > 0 && value.TargetDigest != ([sha256.Size]byte{})
 	}
 	return value.Disposition == timeline.DispositionQuarantine && value.Reason != "" && value.TargetID == 0 && value.TargetDigest == ([sha256.Size]byte{})
 }
 
 func customerTimelineTerminalMatchesRow(value CustomerTimelineTerminal, archiveRunID string, row timeline.Result) bool {
-	return validCustomerTimelineTerminal(value) && value.ArchiveRunID == archiveRunID && value.SourceKeyHMAC == row.Source.SourceKeyHMAC && value.PayloadHMAC == row.Source.PayloadHMAC && value.FieldHMAC == row.Source.FieldHMAC && value.Disposition == row.Disposition && value.Reason == row.Reason
+	disposition := row.Disposition
+	if disposition == timeline.DispositionCandidate {
+		disposition = "import"
+	}
+	return validCustomerTimelineTerminal(value) && value.ArchiveRunID == archiveRunID && value.SourceKeyHMAC == row.Source.SourceKeyHMAC && value.PayloadHMAC == row.Source.PayloadHMAC && value.FieldHMAC == row.Source.FieldHMAC && value.Disposition == disposition && value.Reason == row.Reason
 }
 
 func boolCustomerTimelineTerminalEqual(left, right CustomerTimelineTerminal) error {
