@@ -75,7 +75,7 @@ func TestAccessServiceScopesCollaboratorsToCurrentActiveProduct(t *testing.T) {
 	if _, err = service.MemberViews(readContext, 71); err != nil {
 		t.Fatalf("views error=%v", err)
 	}
-	if _, err = service.Query(readContext, QueryInput{ProductID: 71, State: StateAll, Limit: 1}); err != nil {
+	if _, err = service.query(readContext, QueryInput{ProductID: 71, State: StateAll, Limit: 1}); err != nil {
 		t.Fatalf("query error=%v", err)
 	}
 

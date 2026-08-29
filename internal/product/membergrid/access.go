@@ -63,10 +63,14 @@ func (service *AccessService) MemberViews(ctx context.Context, productID int64) 
 }
 
 func (service *AccessService) Query(ctx context.Context, input QueryInput) (QueryResponse, error) {
+	return service.query(ctx, input)
+}
+
+func (service *AccessService) query(ctx context.Context, input QueryInput) (QueryResponse, error) {
 	if _, err := service.authorize(ctx, input.ProductID, false); err != nil {
 		return QueryResponse{}, err
 	}
-	return service.grid.Query(ctx, input)
+	return service.grid.query(ctx, input)
 }
 
 func (service *AccessService) UpdateFields(ctx context.Context, command UpdateFieldsCommand) (memberdomain.Member, error) {

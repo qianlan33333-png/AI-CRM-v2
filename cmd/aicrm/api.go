@@ -1252,12 +1252,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	memberGridRepository := membergrid.NewRepository()
-	memberGridService, err := membergrid.NewService(uow, memberGridRepository, memberGridCursor)
+	memberGridService, err := membergrid.NewService(uow, membergrid.NewDataStore(memberGridRepository), memberGridCursor)
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
-	memberGridAccessService, err := membergrid.NewAccessService(memberGridService, uow, memberGridRepository, servicePeriodMemberService)
+	memberGridAccessService, err := membergrid.NewAccessService(memberGridService, uow, membergrid.NewAccessRepository(), servicePeriodMemberService)
 	if err != nil {
 		pool.Close()
 		return nil, err

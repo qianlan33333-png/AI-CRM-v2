@@ -19,13 +19,6 @@ const activeStaffExistsSQL = `SELECT COALESCE((
 ), FALSE)`
 
 var _ ManagementStore = (*Repository)(nil)
-var _ AccessStore = (*Repository)(nil)
-
-const collaboratorPermissionSQL = `SELECT c.permission
-FROM public.service_period_member_grid_collaborators AS c
-JOIN public.staff AS s ON s.id = c.staff_id AND s.is_active = TRUE
-WHERE c.service_product_id = $1
-  AND c.staff_id = $2`
 
 const listSavedViewsSQL = `SELECT
   v.id,
@@ -195,27 +188,6 @@ func (repository *Repository) ActiveStaffExists(ctx context.Context, staffID int
 		return false, managementRepositoryError(err, false)
 	}
 	return exists, nil
-}
-
-func (repository *Repository) CollaboratorPermission(ctx context.Context, serviceProductID, staffID int64) (CollaboratorPermission, bool, error) {
-	if repository == nil || repository.executor == nil || ctx == nil || serviceProductID < 1 || staffID < 1 {
-		return "", false, ErrUnavailable
-	}
-	executor, err := repository.executor(ctx)
-	if err != nil {
-		return "", false, errors.Join(ErrUnavailable, err)
-	}
-	var raw string
-	if err = executor.QueryRow(ctx, collaboratorPermissionSQL, serviceProductID, staffID).Scan(&raw); errors.Is(err, pgx.ErrNoRows) {
-		return "", false, nil
-	} else if err != nil {
-		return "", false, errors.Join(ErrUnavailable, err)
-	}
-	permission := CollaboratorPermission(raw)
-	if !permission.valid() {
-		return "", false, ErrUnavailable
-	}
-	return permission, true, nil
 }
 
 func (repository *Repository) ListSavedViews(ctx context.Context, serviceProductID int64) ([]SavedView, error) {

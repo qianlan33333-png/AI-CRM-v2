@@ -50,6 +50,10 @@ func (service *Service) MemberViews(ctx context.Context, productID int64) (Membe
 }
 
 func (service *Service) Query(ctx context.Context, input QueryInput) (QueryResponse, error) {
+	return service.query(ctx, input)
+}
+
+func (service *Service) query(ctx context.Context, input QueryInput) (QueryResponse, error) {
 	selection, err := normalizeQuerySelection(querySelection{
 		Sort: querySort(input.Sort), GroupBy: queryGroupBy(input.GroupBy), ViewID: input.ViewID,
 	}, input)
