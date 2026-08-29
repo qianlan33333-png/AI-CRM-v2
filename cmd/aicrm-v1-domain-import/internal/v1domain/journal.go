@@ -153,6 +153,11 @@ func RunHXCMemberUsageHistory(ctx context.Context, pool *pgxpool.Pool, archive m
 					imported++
 				}
 			}
+			// Refresh empty-table plans once, before later batches accumulate.
+			if result.Imported+result.Replayed == 0 {
+				_, err = tx.Exec(bound, "ANALYZE public.v1_domain_import_receipts, public.hxc_v1_member_usage_history")
+				return err
+			}
 			return nil
 		})
 		if batchCause == nil {
