@@ -304,7 +304,7 @@ manual_validate_current() {
   manual_container_network "$manual_current_worker" "$manual_network"
   manual_container_hardened "$manual_current_api"
   manual_container_hardened "$manual_current_worker"
-  [[ "$("$docker_command" port "$manual_current_api" 8080/tcp)" = "127.0.0.1:$manual_current_port" ]] || fail 'manual current API port does not match the declared loopback port'
+  [[ "$("$docker_command" inspect --format '{{range (index .HostConfig.PortBindings "8080/tcp")}}{{.HostIp}}:{{.HostPort}}{{end}}' "$manual_current_api")" = "127.0.0.1:$manual_current_port" ]] || fail 'manual current API port does not match the declared loopback port'
   manual_image_matches "$manual_rollback_image" "$manual_rollback_image_id" "$manual_rollback_sha" 'manual rollback'
   [[ "$("$docker_command" inspect --format '{{.Image}}' "$manual_current_api")" = "$manual_rollback_image_id" ]] || fail 'manual current API does not use the rollback image ID'
   [[ "$("$docker_command" inspect --format '{{.Image}}' "$manual_current_worker")" = "$manual_rollback_image_id" ]] || fail 'manual current worker does not use the rollback image ID'
