@@ -710,7 +710,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
           const url = String(input);
           window.__recipientCalls.push(url);
           if (url.endsWith('/recipients/7/review')) return json({ review: { canonical_customer_id: 7, status: 'pending_review', version: 1, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, ...local });
-          if (url.endsWith(`/touch-plans/${planID}/review`)) return json({ review: { status: 'pending_review', version: 2 }, handoff: null, ...local });
+          if (url.endsWith(`/touch-plans/${planID}/review`)) return json({ review: { status: 'pending_review', version: 2, submitted_by_actor_id: 81, submitted_at: '2026-08-27T00:00:00Z', reviewed_by_actor_id: null, reviewed_at: null }, handoff: null, ...local });
           if (url.endsWith('/recipients/7')) return json({ canonical_customer_id: 7, ...local });
           if (url.endsWith('/recipients?limit=50')) return json({ items: [{ canonical_customer_id: 7 }], next_cursor: null, ...local });
           if (url.endsWith(`/touch-plans/${planID}`)) return json({ ...plan, content: { steps: [{ step_index: 1, delay_minutes: 0, content: '本地审核内容' }] }, ...local });
@@ -2701,6 +2701,12 @@ console.log('admin/campaigns.html（目标人员 Customer360 链接）');
   ok('已验证的 plan 目标只用 canonical OneID 链接既有 Customer360 档案',
     customer360?.textContent === '在 Customer360 查看档案' &&
     recipient.window.__recipientCalls.some((url) => url.endsWith('/recipients/7')));
+  ok('计划与单客户审核展示真实本地 actor/time 审计且保持外部效果边界',
+    doc.querySelector('[data-campaign-review-audit]')?.textContent.includes('actor #81') &&
+    doc.querySelector('[data-campaign-review-audit]')?.textContent.includes('2026-08-27T00:00:00Z') &&
+    doc.querySelector('[data-campaign-recipient-review-audit]')?.textContent.includes('actor #1') &&
+    text.includes('不代表 Provider 发送、回执或送达') &&
+    text.includes('trace/session 审计 JSON 仍为 backend_blocked'));
   ok('目标人员列表没有可信状态投影时保持无成员状态筛选',
     text.includes('当前契约不含昵称、成员状态或消息任务') &&
     !doc.querySelector('[data-recipient-status]') &&

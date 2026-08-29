@@ -40,7 +40,7 @@ export async function runGroupOpsDirectoryAdapterTests(): Promise<void> {
     status = 403; await rejects(() => refreshGroupOpsDirectory(7, 'directory-retry-stable-key'), 403);
     status = 200;
 
-    const detail = { plan: { plan_id: '10', name: '计划', revision: 1, status: 'draft' }, members: [{ staff_id: 7 }], nodes: [], group_assets: [{ group_asset_id: '1', asset_reference: 'group-old' }, { group_asset_id: '2', asset_reference: 'unknown-old' }], webhook_descriptor: {} };
+    const detail = { plan: { plan_id: '10', name: '计划', revision: 1, status: 'draft' }, members: [{ staff_id: 7 }], nodes: [], group_assets: [{ group_asset_id: '1', asset_reference: 'group-old' }, { group_asset_id: '2', asset_reference: 'unknown-old' }], webhook_descriptor: {}, provider_execution_eligible: false, real_external_call_executed: false };
     calls.length = 0;
     globalThis.fetch = async (input, init = {}) => {
       const url = String(input); calls.push({ url, init });
@@ -132,7 +132,7 @@ export async function runGroupOpsDirectoryAdapterTests(): Promise<void> {
       await rejects(run, 409); await run();
       assert(calls.length === 4 && calls[2].init.method === 'GET' && calls[1].init.body !== calls[3].init.body && new Headers(calls[1].init.headers).get('Idempotency-Key') !== new Headers(calls[3].init.headers).get('Idempotency-Key'), 'definitive CAS 409 clears stale intent; next explicit retry reads new revision and key');
     }
-    const nodeDetail = { plan: { plan_id: 'node-10', name: '节点计划', revision: 1, status: 'draft' }, members: [], group_assets: [], webhook_descriptor: {}, nodes: [{ node_id: '51', position: 1, kind: 'message', message_text: 'before', material_plan: { references: [{ kind: 'image', id: 7 }] } }] };
+    const nodeDetail = { plan: { plan_id: 'node-10', name: '节点计划', revision: 1, status: 'draft' }, members: [], group_assets: [], webhook_descriptor: {}, nodes: [{ node_id: '51', position: 1, kind: 'message', message_text: 'before', material_plan: { references: [{ kind: 'image', id: 7 }] } }], provider_execution_eligible: false, real_external_call_executed: false };
     const nodeInput: Parameters<typeof saveGroupOpsPlanDto>[0] = { id: 'node-10', name: '节点计划', staffIds: [], assetReferences: [], nodes: [{ id: '51', position: 1, kind: 'message', messageText: '\u0085 after \n', materialPlan: { references: [{ kind: 'image', id: 8 }] } }] };
     calls.length = 0; let loseNodeResponse = true;
     globalThis.fetch = async (input, init = {}) => {
@@ -179,7 +179,7 @@ export async function runGroupOpsDirectoryAdapterTests(): Promise<void> {
     await saveGroupOpsPlanDto(nodeInput);
     assert(nodeDetail.nodes.length === 1 && nodeDetail.nodes[0].node_id === '51' && calls.filter((call) => call.init.method === 'DELETE').length === 1, 'explicit retained node survives intentional deletion of the other node');
 
-    const created = { plan: { plan_id: 'created-10', name: '新建回放测试', revision: 1, status: 'draft' }, members: [], nodes: [], group_assets: [] as Array<{ group_asset_id: string; asset_reference: string }>, webhook_descriptor: {} };
+    const created = { plan: { plan_id: 'created-10', name: '新建回放测试', revision: 1, status: 'draft' }, members: [], nodes: [], group_assets: [] as Array<{ group_asset_id: string; asset_reference: string }>, webhook_descriptor: {}, provider_execution_eligible: false, real_external_call_executed: false };
     const creationSnapshot = JSON.stringify(created);
     const createInput = { name: '新建回放测试', staffIds: [], assetReferences: ['group-a', 'group-b'], nodes: [] };
     calls.length = 0; let createKey = '', lostSecondAsset = false;
