@@ -22,9 +22,11 @@ var customerTimelineHistoryTestKey = bytes.Repeat([]byte{0x71}, sha256.Size)
 func TestCustomerTimelineHistoryImportReplayAndReconcile(t *testing.T) {
 	state := newCustomerTimelineHistoryState()
 	ready := &customerTimelineHistoryReady{}
+	redactedPayload := customerTimelineHistoryPayload(4, "[REDACTED]")
 	archive := &customerTimelineHistoryArchive{rows: []v1archive.ArchivedRow{
 		customerTimelineHistoryRow(t, 9, 1, "verified"),
 		customerTimelineHistoryRow(t, -3, 2, "unresolved"),
+		customerTimelineHistoryRedactedRow(t, 4, 3, redactedPayload, "unionid"),
 	}}
 	resolver := customerTimelineHistoryResolver{"verified": customerTimelineHistoryInt64Pointer(17)}
 	importer := customerTimelineHistoryImporter(t, ready, archive, state, resolver)
@@ -33,7 +35,7 @@ func TestCustomerTimelineHistoryImportReplayAndReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first != (CustomerTimelineHistoryImportResult{Imported: 2}) || ready.calls != 1 || state.uow.commits != 1 || len(state.targets) != 2 || len(state.terminals) != 2 {
+	if first != (CustomerTimelineHistoryImportResult{Imported: 2, Quarantined: 1}) || ready.calls != 1 || state.uow.commits != 1 || len(state.targets) != 2 || len(state.terminals) != 3 {
 		t.Fatalf("first import=%#v ready=%d state=%#v", first, ready.calls, state)
 	}
 	if got := state.targets[1].CustomerID; got == nil || *got != 17 {
@@ -47,7 +49,7 @@ func TestCustomerTimelineHistoryImportReplayAndReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if replay != (CustomerTimelineHistoryImportResult{Imported: 2, Replayed: 2}) || len(state.targets) != 2 || len(state.terminals) != 2 {
+	if replay != (CustomerTimelineHistoryImportResult{Replayed: 3}) || len(state.targets) != 2 || len(state.terminals) != 3 {
 		t.Fatalf("replay=%#v targets=%d terminal=%d", replay, len(state.targets), len(state.terminals))
 	}
 
@@ -55,7 +57,7 @@ func TestCustomerTimelineHistoryImportReplayAndReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reconciled.SelectedSourceCount != 2 || reconciled.ReceiptCount != 2 || reconciled.ImportedCount != 2 || reconciled.QuarantinedCount != 0 || reconciled.VerifiedCount != 2 || reconciled.Replayed || reconciled.ComparisonDigest == ([sha256.Size]byte{}) || state.reconciliation == nil || state.sealRecords != 1 {
+	if reconciled.SelectedSourceCount != 3 || reconciled.ReceiptCount != 3 || reconciled.ImportedCount != 2 || reconciled.QuarantinedCount != 1 || reconciled.VerifiedCount != 3 || reconciled.Replayed || reconciled.ComparisonDigest == ([sha256.Size]byte{}) || state.reconciliation == nil || state.sealRecords != 1 {
 		t.Fatalf("first reconcile=%#v seal=%#v", reconciled, state.reconciliation)
 	}
 	reconciledReplay, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
@@ -88,9 +90,10 @@ func TestCustomerTimelineHistoryQuarantineAndBatchRollback(t *testing.T) {
 
 	t.Run("receipt conflict rolls the whole source batch back", func(t *testing.T) {
 		state := newCustomerTimelineHistoryState()
-		state.failTerminalAt = 2
+		state.failTerminalAt = 1
+		redacted := customerTimelineHistoryPayload(2, "[REDACTED]")
 		archive := &customerTimelineHistoryArchive{rows: []v1archive.ArchivedRow{
-			customerTimelineHistoryRow(t, 1, 1, ""), customerTimelineHistoryRow(t, 2, 2, ""),
+			customerTimelineHistoryRow(t, 1, 1, ""), customerTimelineHistoryRedactedRow(t, 2, 2, redacted, "unionid"),
 		}}
 		importer := customerTimelineHistoryImporter(t, &customerTimelineHistoryReady{}, archive, state, customerTimelineHistoryResolver{})
 		result, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
@@ -251,6 +254,11 @@ func (state *customerTimelineHistoryState) ImportHistoricalCustomerTimelineEvent
 	state.targets[value.ID] = value
 	receipt := contact.CustomerTimelineHistoryReceipt{Kind: customerTimelineHistoryKind, SourceIdentifier: source, PayloadDigest: value.SourcePayloadDigest, TargetDigest: digest, TargetID: value.ID}
 	state.writerReceipts[source] = receipt
+	state.terminals[value.SourceKeyDigest] = CustomerTimelineTerminal{
+		Version: customerTimelineHistoryVersion, ArchiveRunID: "timeline-run", TableID: timeline.TableID, Kind: customerTimelineHistoryKind,
+		SourceKeyHMAC: value.SourceKeyDigest, PayloadHMAC: value.SourcePayloadDigest, FieldHMAC: value.SourceFieldDigest,
+		Disposition: timeline.DispositionCandidate, TargetID: value.ID, TargetDigest: digest,
+	}
 	return receipt, nil
 }
 

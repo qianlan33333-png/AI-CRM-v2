@@ -153,9 +153,10 @@ func (consumer *customerTimelineImportConsumer) ConsumeCustomerTimelineBatch(ctx
 				if err != nil {
 					return err
 				}
-				quarantined++
 				if wasReplayed {
 					replayed++
+				} else {
+					quarantined++
 				}
 				continue
 			}
@@ -170,17 +171,20 @@ func (consumer *customerTimelineImportConsumer) ConsumeCustomerTimelineBatch(ctx
 			if err != nil {
 				return err
 			}
-			terminal := CustomerTimelineTerminal{Disposition: timeline.DispositionCandidate, TargetID: receipt.TargetID, TargetDigest: receipt.TargetDigest}
-			if err := validateCustomerTimelineWriterReceipt(receipt, value, terminal); err != nil {
+			if err := validateCustomerTimelineWriterReceipt(receipt, value); err != nil {
 				return err
 			}
-			wasReplayed, err := consumer.importer.recordTerminal(tx, consumer.archiveRunID, row, terminal)
+			terminal, found, err := consumer.importer.journal.LoadCustomerTimelineTerminal(tx, customerTimelineHistoryVersion, row.Source.SourceKeyHMAC)
 			if err != nil {
 				return err
 			}
-			imported++
-			if receipt.Replayed || wasReplayed {
+			if !found || !customerTimelineTerminalMatchesRow(terminal, consumer.archiveRunID, row) || terminal.TargetID != receipt.TargetID || terminal.TargetDigest != receipt.TargetDigest {
+				return ErrConflict
+			}
+			if receipt.Replayed {
 				replayed++
+			} else {
+				imported++
 			}
 		}
 		return nil
@@ -364,8 +368,8 @@ func validCustomerTimelineReconciliationSeal(value CustomerTimelineReconciliatio
 		value.ComparisonDigest != ([sha256.Size]byte{})
 }
 
-func validateCustomerTimelineWriterReceipt(receipt contact.CustomerTimelineHistoryReceipt, value contact.HistoricalCustomerTimelineEvent, terminal CustomerTimelineTerminal) error {
-	if receipt.Kind != customerTimelineHistoryKind || receipt.SourceIdentifier != hex.EncodeToString(value.SourceKeyDigest[:]) || receipt.PayloadDigest != value.SourcePayloadDigest || receipt.TargetID < 1 || receipt.TargetDigest == ([sha256.Size]byte{}) || terminal.TargetID != receipt.TargetID || terminal.TargetDigest != receipt.TargetDigest {
+func validateCustomerTimelineWriterReceipt(receipt contact.CustomerTimelineHistoryReceipt, value contact.HistoricalCustomerTimelineEvent) error {
+	if receipt.Kind != customerTimelineHistoryKind || receipt.SourceIdentifier != hex.EncodeToString(value.SourceKeyDigest[:]) || receipt.PayloadDigest != value.SourcePayloadDigest || receipt.TargetID < 1 || receipt.TargetDigest == ([sha256.Size]byte{}) {
 		return ErrConflict
 	}
 	return nil
