@@ -110,6 +110,14 @@ func TestCreateReplayAndDescriptorAreOpaqueOnly(t *testing.T) {
 	if err != nil || detail.WebhookDescriptor.Reference != "local-webhook-7" || detail.WebhookDescriptor.Description != "local opaque reference only" {
 		t.Fatalf("descriptor=%#v err=%v", detail.WebhookDescriptor, err)
 	}
+	read, err := service.GetWebhookDescriptor(context.Background(), first.Plan.ID)
+	if err != nil || read != detail.WebhookDescriptor {
+		t.Fatalf("read descriptor=%#v err=%v", read, err)
+	}
+	encoded, err := json.Marshal(read)
+	if err != nil || strings.Contains(string(encoded), "url") || strings.Contains(string(encoded), "signature") || strings.Contains(string(encoded), "receipt") {
+		t.Fatalf("descriptor JSON=%s err=%v", encoded, err)
+	}
 }
 
 func TestListsAreDeterministicAndBounded(t *testing.T) {
