@@ -312,7 +312,7 @@ func (state *customerTimelineHistoryState) ImportHistoricalCustomerTimelineEvent
 	state.terminals[value.SourceKeyDigest] = CustomerTimelineTerminal{
 		Version: customerTimelineHistoryVersion, ArchiveRunID: "timeline-run", TableID: timeline.TableID, Kind: customerTimelineHistoryKind,
 		SourceKeyHMAC: value.SourceKeyDigest, PayloadHMAC: value.SourcePayloadDigest, FieldHMAC: value.SourceFieldDigest,
-		Disposition: timeline.DispositionCandidate, TargetID: value.ID, TargetDigest: digest,
+		Disposition: "import", TargetID: value.ID, TargetDigest: digest,
 	}
 	return receipt, nil
 }
