@@ -21,7 +21,7 @@ const (
 	finalMigrationManifestPath = "docs/release/final-v1-domain-migration-manifest.json"
 	finalManifestDomainCount   = 40
 	finalManifestSchemaFrom    = 132
-	finalManifestSchemaTo      = 141
+	finalManifestSchemaTo      = 142
 	finalVerificationModel     = "36_fresh_domain_reconciliations_then_read_only_aggregate"
 )
 
