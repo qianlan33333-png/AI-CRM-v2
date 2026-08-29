@@ -77,6 +77,7 @@ case "$1" in
     ;;
   port)
     [[ "$3" = 8080/tcp ]] || exit 90
+    [[ "$(state_value "$2")" = true ]] || exit 89
     if [[ "$2" = "$old_api" ]]; then printf '127.0.0.1:18123\n'; else printf '127.0.0.1:18124\n'; fi
     ;;
   inspect)
@@ -87,6 +88,9 @@ case "$1" in
     if [[ -z "$format" ]]; then exit 0; fi
     case "$format" in
       '{{.HostConfig.ReadonlyRootfs}}|'*) printf 'true|true|unless-stopped|["ALL"]|["no-new-privileges:true"]|{"/tmp":"size=64m,mode=1777"}\n' ;;
+      '{{range (index .HostConfig.PortBindings "8080/tcp")}}'*)
+        if [[ "$container" = "$old_api" ]]; then printf '127.0.0.1:18123\n'; else printf '127.0.0.1:18124\n'; fi
+        ;;
       '{{range $name, $_ := .NetworkSettings.Networks}}'* ) printf 'aicrm-prod_default\n' ;;
       '{{.Image}}')
         if [[ "$container" = "$old_api" || "$container" = "$old_worker" ]]; then printf '%s\n' "$old_id"
