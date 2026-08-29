@@ -173,6 +173,16 @@ manual_pre_tail_contains() {
   sed -n "${begin_line},${end_line}p" "$file" | grep -F -q "$needle"
 }
 
+manual_validate_caddy_service() {
+  local main_pid exec_start exec_path
+  "$manual_systemctl_command" is-active --quiet "$manual_caddy_service"
+  main_pid="$("$manual_systemctl_command" show --property=MainPID --value "$manual_caddy_service")"
+  [[ "$main_pid" =~ ^[1-9][0-9]*$ ]] || fail 'manual Caddy service MainPID is invalid'
+  exec_start="$("$manual_systemctl_command" show --property=ExecStart --value "$manual_caddy_service")"
+  exec_path="$(grep -o 'path=[^ ;}]*' <<<"$exec_start" || true)"
+  [[ "$exec_path" = "path=$manual_caddy_command" ]] || fail 'manual Caddy service ExecStart path does not match the declared executable'
+}
+
 manual_validate_caddy() {
   local caddy_file="$1" caddy_sha="$2" host="$3" old_port="$4" old_web="$5" tail_file="$6" new_port="$7" new_web="$8"
   [[ "$caddy_file" = /* && -f "$caddy_file" && ! -L "$caddy_file" ]] || fail 'manual Caddy file is invalid'
@@ -186,6 +196,7 @@ manual_validate_caddy() {
   manual_tail_bounds "$tail_file" "$host" >/dev/null
   manual_tail_contains "$tail_file" "$host" "reverse_proxy 127.0.0.1:$new_port" || fail 'staged id-dev Caddy tail does not reference the new API port'
   manual_tail_contains "$tail_file" "$host" "root * $new_web" || fail 'staged id-dev Caddy tail does not reference the staged web release'
+  manual_validate_caddy_service
 }
 
 manual_validate_post_switch_caddy() {
@@ -213,7 +224,7 @@ manual_switch_caddy_tail() {
   "$caddy_command" validate --config "$tmp" --adapter caddyfile
   chmod "$(file_mode "$caddy_file")" "$tmp"
   mv -f "$tmp" "$caddy_file"
-  "$caddy_command" reload --config "$caddy_file" --adapter caddyfile --force
+  "$manual_systemctl_command" kill --kill-who=main --signal=USR1 "$manual_caddy_service"
 }
 
 manual_check_unused_port() {
@@ -248,6 +259,8 @@ manual_load() {
   manual_caddy_host="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_HOST)"
   manual_caddy_tail="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_TAIL_FILE)"
   manual_caddy_command="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_COMMAND)"
+  manual_caddy_service="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_SERVICE)"
+  manual_systemctl_command="$(require_manual_value AICRM_FINAL_MANUAL_CADDY_SYSTEMCTL_COMMAND)"
   manual_generated_env="$(require_manual_value AICRM_GENERATED_ENV_FILE)"
   for pair in \
     "$manual_release_sha:release SHA" "$manual_rollback_sha:rollback SHA" "$manual_current_sha:current SHA"; do
@@ -275,6 +288,8 @@ manual_load() {
   [[ "$manual_new_web" = /* && -d "$manual_new_web" && ! -L "$manual_new_web" && "$(basename -- "$manual_new_web")" = "$manual_release_sha" ]] || fail 'manual staged web release must be the exact SHA directory'
   [[ "$manual_generated_env" = /* && -f "$manual_generated_env" && ! -L "$manual_generated_env" ]] || fail 'manual generated environment is invalid'
   [[ "$manual_caddy_command" = /* && -f "$manual_caddy_command" && ! -L "$manual_caddy_command" && -x "$manual_caddy_command" ]] || fail 'manual Caddy command is invalid'
+  [[ "$manual_caddy_service" = 'aicrm-edge.service' ]] || fail 'manual Caddy service must be aicrm-edge.service'
+  [[ "$manual_systemctl_command" = /* && -f "$manual_systemctl_command" && ! -L "$manual_systemctl_command" && -x "$manual_systemctl_command" ]] || fail 'manual Caddy systemctl command is invalid'
 }
 
 manual_validate_current() {

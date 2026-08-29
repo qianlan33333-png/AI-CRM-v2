@@ -28,7 +28,7 @@ generated="$fixture/generated.env"
 printf 'AICRM_WECOM_OUTBOUND_ENABLED=false\n' >"$generated"
 chmod 600 "$generated"
 
-caddy="$fixture/Caddyfile"; tail_file="$fixture/id-dev.tail"; caddy_log="$fixture/caddy.log"
+caddy="$fixture/Caddyfile"; tail_file="$fixture/id-dev.tail"; caddy_log="$fixture/caddy.log"; systemctl_log="$fixture/systemctl.log"
 cat >"$caddy" <<EOF
 aa.youcangogogo.com {
 \treverse_proxy 127.0.0.1:8080
@@ -128,6 +128,34 @@ set -euo pipefail
 printf '%s\n' "$*" >>"${AICRM_FINAL_MANUAL_TEST_CADDY_LOG:?}"
 EOF
 chmod 700 "$fixture/caddy"
+cat >"$fixture/systemctl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >>"${AICRM_FINAL_MANUAL_TEST_SYSTEMCTL_LOG:?}"
+service='aicrm-edge.service'
+case "$1" in
+  is-active)
+    [[ "$2" = --quiet && "$3" = "$service" ]]
+    ;;
+  show)
+    [[ "$3" = --value && "$4" = "$service" ]]
+    case "$2" in
+      --property=MainPID)
+        if [[ "${AICRM_FINAL_MANUAL_TEST_BAD_PID:-}" = 1 ]]; then printf '0\n'; else printf '4321\n'; fi
+        ;;
+      --property=ExecStart)
+        if [[ "${AICRM_FINAL_MANUAL_TEST_BAD_EXEC:-}" = 1 ]]; then printf '{ path=/wrong/caddy ; argv[]=/wrong/caddy run ; }\n'; else printf '{ path=%s ; argv[]=%s run --environ --config /etc/aicrm-edge/Caddyfile --adapter caddyfile ; }\n' "${AICRM_FINAL_MANUAL_TEST_CADDY_COMMAND:?}" "${AICRM_FINAL_MANUAL_TEST_CADDY_COMMAND:?}"; fi
+        ;;
+      *) exit 94 ;;
+    esac
+    ;;
+  kill)
+    [[ "$2" = --kill-who=main && "$3" = --signal=USR1 && "$4" = "$service" ]]
+    ;;
+  *) exit 95 ;;
+esac
+EOF
+chmod 700 "$fixture/systemctl"
 cat >"$fixture/curl" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -161,6 +189,8 @@ AICRM_FINAL_MANUAL_POST_SWITCH_CADDY_SHA256=$(sha256_file "$post_caddy")
 AICRM_FINAL_MANUAL_CADDY_HOST=id-dev.example.test
 AICRM_FINAL_MANUAL_CADDY_TAIL_FILE=$tail_file
 AICRM_FINAL_MANUAL_CADDY_COMMAND=$fixture/caddy
+AICRM_FINAL_MANUAL_CADDY_SERVICE=aicrm-edge.service
+AICRM_FINAL_MANUAL_CADDY_SYSTEMCTL_COMMAND=$fixture/systemctl
 AICRM_GENERATED_ENV_FILE=$generated
 AICRM_DATABASE_URL=postgres://target-not-printed
 AICRM_ENV=production
@@ -172,6 +202,10 @@ run_runtime() {
   PATH="$fixture:$PATH" \
     AICRM_FINAL_MANUAL_TEST_DOCKER_LOG="$docker_log" \
     AICRM_FINAL_MANUAL_TEST_CADDY_LOG="$caddy_log" \
+    AICRM_FINAL_MANUAL_TEST_SYSTEMCTL_LOG="$systemctl_log" \
+    AICRM_FINAL_MANUAL_TEST_CADDY_COMMAND="$fixture/caddy" \
+    AICRM_FINAL_MANUAL_TEST_BAD_PID="${AICRM_FINAL_MANUAL_TEST_BAD_PID:-}" \
+    AICRM_FINAL_MANUAL_TEST_BAD_EXEC="${AICRM_FINAL_MANUAL_TEST_BAD_EXEC:-}" \
     AICRM_FINAL_MANUAL_TEST_STATE="$state" \
     AICRM_FINAL_MANUAL_TEST_NEW_SHA="$new_sha" \
     AICRM_FINAL_MANUAL_TEST_OLD_SHA="$old_sha" \
@@ -180,6 +214,15 @@ run_runtime() {
     AICRM_FINAL_MANUAL_TEST_TAMPER_NEW_CONTAINER="$fixture/tamper-new-container" \
     "$runtime" "$@"
 }
+
+bad_service_env="$fixture/bad-service.env"
+sed 's/AICRM_FINAL_MANUAL_CADDY_SERVICE=aicrm-edge.service/AICRM_FINAL_MANUAL_CADDY_SERVICE=aicrm-wrong.service/' "$env_file" >"$bad_service_env"
+if run_runtime --check=compose-config --runtime-env-file="$bad_service_env" >"$fixture/bad-service.log" 2>&1; then fail 'wrong Caddy service was accepted'; fi
+grep -Fq 'manual Caddy service must be aicrm-edge.service' "$fixture/bad-service.log" || fail 'wrong Caddy service rejection changed'
+if AICRM_FINAL_MANUAL_TEST_BAD_PID=1 run_runtime --check=compose-config --runtime-env-file="$env_file" >"$fixture/bad-pid.log" 2>&1; then fail 'invalid Caddy MainPID was accepted'; fi
+grep -Fq 'manual Caddy service MainPID is invalid' "$fixture/bad-pid.log" || fail 'invalid Caddy MainPID rejection changed'
+if AICRM_FINAL_MANUAL_TEST_BAD_EXEC=1 run_runtime --check=compose-config --runtime-env-file="$env_file" >"$fixture/bad-exec.log" 2>&1; then fail 'wrong Caddy ExecStart path was accepted'; fi
+grep -Fq 'manual Caddy service ExecStart path does not match the declared executable' "$fixture/bad-exec.log" || fail 'wrong Caddy ExecStart rejection changed'
 
 run_runtime --check=compose-config --runtime-env-file="$env_file"
 run_runtime --check=release --expected-sha="$new_sha" --runtime-env-file="$env_file"
@@ -201,7 +244,10 @@ grep '^run ' "$docker_log" | grep -Fq -- "--env-file $generated" || fail 'restri
 [[ "$(head -n 3 "$caddy" | sha256sum | awk '{print $1}')" = "$prefix_before" ]] || fail 'protected aa prefix changed'
 grep -Fq 'reverse_proxy 127.0.0.1:18124' "$caddy" || fail 'id-dev tail did not switch to new API'
 grep -Fq "root * $new_web" "$caddy" || fail 'id-dev tail did not switch to staged exact-SHA web'
-[[ "$(grep -c '^validate ' "$caddy_log")" = 1 && "$(grep -c '^reload ' "$caddy_log")" = 1 ]] || fail 'Caddy tail was not validated and gracefully reloaded'
+[[ "$(grep -c '^validate ' "$caddy_log")" = 1 ]] || fail 'Caddy tail was not validated exactly once'
+! grep -Fq 'reload ' "$caddy_log" || fail 'manual runtime invoked the Caddy reload API'
+[[ "$(grep -c '^kill ' "$systemctl_log")" = 1 ]] || fail 'Caddy service was not signaled exactly once'
+grep -Fq 'kill --kill-who=main --signal=USR1 aicrm-edge.service' "$systemctl_log" || fail 'Caddy service main process was not sent USR1'
 run_runtime --check=release --expected-sha="$new_sha" --runtime-env-file="$env_file"
 
 before_runs="$(grep -c '^run ' "$docker_log")"
