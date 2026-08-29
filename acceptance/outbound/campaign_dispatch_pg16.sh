@@ -37,9 +37,9 @@ WITH handoff AS (
   ) RETURNING id
 )
 INSERT INTO public.outbound_campaign_dispatches(
-  handoff_id,customer_id,step_index,recipient_digest,payload_digest,state,block_reason
+  handoff_id,customer_id,step_index,recipient_digest,payload_digest,content_snapshot,state,block_reason
 )
-SELECT id,customer_id,1,'sha256:' || repeat('1',64),'sha256:' || repeat('2',64),'blocked',reason
+SELECT id,customer_id,1,'sha256:' || repeat('1',64),'sha256:' || repeat('2',64),'blocked fixture content','blocked',reason
 FROM handoff
 CROSS JOIN (VALUES (1::bigint,'sender_not_allowed'),(2::bigint,'target_unresolved')) AS blocked(customer_id,reason);
 ROLLBACK;
