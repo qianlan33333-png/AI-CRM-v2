@@ -13,7 +13,7 @@ import (
 )
 
 func TestDesktopOAuthHandlerUsesDesktopURLAndCompletesCallback(t *testing.T) {
-	now := time.Date(2026, time.August, 29, 9, 0, 0, 0, time.UTC)
+	now := time.Now().UTC().Truncate(time.Second)
 	state := browserToken(0x61)
 	application := &humanAuthStub{
 		attempt: authport.OAuthAttempt{State: authport.OAuthState(state), ExpiresAt: now.Add(5 * time.Minute)},
