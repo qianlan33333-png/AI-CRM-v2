@@ -510,7 +510,7 @@ func equalAudienceActivityTerminal(a, b AudienceActivityTerminal) error {
 	return ErrConflict
 }
 func validAudienceActivitySeal(v AudienceActivitySeal) bool {
-	return v.Version == AudienceActivityHistoryImportVersion && v.ArchiveRunID != "" && v.SelectedSourceCount > 0 && v.ReceiptCount == v.SelectedSourceCount && v.VerifiedCount == v.ReceiptCount && v.ImportedCount+v.ArchivedCount+v.QuarantinedCount == v.ReceiptCount && v.ComparisonDigest != ([32]byte{})
+	return v.Version == AudienceActivityHistoryImportVersion && v.ArchiveRunID != "" && v.SelectedSourceCount >= 0 && v.ReceiptCount == v.SelectedSourceCount && v.VerifiedCount == v.ReceiptCount && v.ImportedCount+v.ArchivedCount+v.QuarantinedCount == v.ReceiptCount && v.ComparisonDigest != ([32]byte{})
 }
 func withAudienceActivityRunID(v segment.HistoricalAudienceActivityRun, id int64) segment.HistoricalAudienceActivityRun {
 	v.ID = id

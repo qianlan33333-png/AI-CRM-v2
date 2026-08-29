@@ -50,6 +50,7 @@ const definitionFields: Field[] = [
   ['源 SQL dialect（不执行）', 'sql_dialect'], status, ['源版本', 'version'], ['源缓存人数', 'cached_headcount'],
   ['源最后记录时间', 'last_refreshed_at'], ['源使用次数', 'usage_count'], ...timestamps, ['定义摘要', 'definition_digest', 'digest'],
 ];
+const activityIdentity: Field[] = [['V2 历史 ID', 'id']];
 
 function rows(kind: string, items: object[]): string {
   return items.map((row) => {
@@ -63,6 +64,8 @@ function rows(kind: string, items: object[]): string {
       case 'rule_versions': return article(fields(row, [...identity, ['历史规则 ID', 'rule_history_id'], ['源版本', 'version'], ['源执行器类型（不执行）', 'executor_type'], status, ['原发布时间', 'published_at'], ['创建时间', 'created_at'], ['定义摘要', 'definition_digest', 'digest']]));
       case 'definitions': return article(historyLink('history_definition_id', r.id, r.display_name) + fields(row, [...identity, ['源 code', 'code'], status, ['源版本', 'version'], ['源缓存人数', 'cached_headcount'], ['源使用次数', 'usage_count'], ...timestamps]));
       case 'members': return article(fields(row, [...identity, ['历史包 ID', 'package_history_id'], ['历史 CustomerID', 'customer_id', 'relation'], ['原身份类型（非外部身份）', 'identity_kind'], status, ['原首次进入时间', 'first_entered_at'], ['原最后出现时间', 'last_seen_at'], ['原最后变更时间', 'last_updated_at'], ['原退出时间', 'exited_at'], ...timestamps, ['原载荷摘要', 'payload_digest', 'digest']]));
+      case 'activity_runs': return article(fields(row, [...activityIdentity, ['历史包 ID', 'package_history_id'], ['历史版本 ID', 'version_history_id', 'relation'], ['原运行类型', 'run_type'], status, ['原开始时间', 'refresh_started_at'], ['原结束时间', 'refresh_finished_at'], ['原上次水位', 'last_watermark_at'], ['原下次水位', 'next_watermark_at'], ['原返回人数', 'returned_count'], ['原进入人数', 'entered_count'], ['原更新人数', 'updated_count'], ['原退出人数', 'exited_count'], ['原成员事件数', 'member_event_count'], ['原耗时毫秒', 'duration_ms'], ['创建时间', 'created_at']]));
+      case 'activity_member_events': return article(fields(row, [...activityIdentity, ['历史包 ID', 'package_history_id'], ['历史运行 ID', 'run_history_id', 'relation'], ['历史成员 ID', 'member_history_id', 'relation'], ['原事件类型', 'event_type'], ['原发生时间', 'occurred_at'], ['创建时间', 'created_at']]));
       default: throw new Error('未知历史分区');
     }
   }).join('');
