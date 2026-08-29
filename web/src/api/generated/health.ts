@@ -5,6 +5,7 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+import { orvalBlobFetch } from "../orvalBlobFetch";
 export type UnboundTagHistoryQuarantineReason =
   (typeof UnboundTagHistoryQuarantineReason)[keyof typeof UnboundTagHistoryQuarantineReason];
 
@@ -5554,13 +5555,62 @@ export interface GroupOpsMaterialPlan {
   references: GroupOpsMaterialReference[];
 }
 
+export type GroupOpsWebhookDescriptorSignatureAlgorithm =
+  (typeof GroupOpsWebhookDescriptorSignatureAlgorithm)[keyof typeof GroupOpsWebhookDescriptorSignatureAlgorithm];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorSignatureAlgorithm = {
+  "HMAC-SHA256": "HMAC-SHA256",
+} as const;
+
+export type GroupOpsWebhookDescriptorSignatureHeader =
+  (typeof GroupOpsWebhookDescriptorSignatureHeader)[keyof typeof GroupOpsWebhookDescriptorSignatureHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorSignatureHeader = {
+  "X-AICRM-Signature": "X-AICRM-Signature",
+} as const;
+
+export type GroupOpsWebhookDescriptorTimestampHeader =
+  (typeof GroupOpsWebhookDescriptorTimestampHeader)[keyof typeof GroupOpsWebhookDescriptorTimestampHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorTimestampHeader = {
+  "X-AICRM-Timestamp": "X-AICRM-Timestamp",
+} as const;
+
+export type GroupOpsWebhookDescriptorNonceHeader =
+  (typeof GroupOpsWebhookDescriptorNonceHeader)[keyof typeof GroupOpsWebhookDescriptorNonceHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorNonceHeader = {
+  "X-AICRM-Event-Id": "X-AICRM-Event-Id",
+} as const;
+
+export type GroupOpsWebhookDescriptorClientIdHeader =
+  (typeof GroupOpsWebhookDescriptorClientIdHeader)[keyof typeof GroupOpsWebhookDescriptorClientIdHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorClientIdHeader = {
+  "X-AICRM-Client-Id": "X-AICRM-Client-Id",
+} as const;
+
+export type GroupOpsWebhookDescriptorClientId =
+  (typeof GroupOpsWebhookDescriptorClientId)[keyof typeof GroupOpsWebhookDescriptorClientId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorClientId = {
+  "aicrm-webhook-group-ops": "aicrm-webhook-group-ops",
+} as const;
+
 export type GroupOpsWebhookDescriptorDescription =
   (typeof GroupOpsWebhookDescriptorDescription)[keyof typeof GroupOpsWebhookDescriptorDescription];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const GroupOpsWebhookDescriptorDescription = {
   not_configured: "not configured",
-  local_opaque_reference_only: "local opaque reference only",
+  "same-origin_webhook_endpoint;_signing_credentials_are_withheld":
+    "same-origin webhook endpoint; signing credentials are withheld",
 } as const;
 
 export interface GroupOpsWebhookDescriptor {
@@ -5570,6 +5620,23 @@ export interface GroupOpsWebhookDescriptor {
    * @pattern ^[A-Za-z0-9._:-]{1,128}$
    */
   reference?: string;
+  /**
+   * @maxLength 256
+   * @pattern ^/api/automation/group-ops/webhooks/[A-Za-z0-9._:-]{1,128}$
+   */
+  path?: string;
+  /**
+   * Same-origin URL only; it contains no credential.
+   * @maxLength 256
+   * @pattern ^/api/automation/group-ops/webhooks/[A-Za-z0-9._:-]{1,128}$
+   */
+  url?: string;
+  signature_algorithm?: GroupOpsWebhookDescriptorSignatureAlgorithm;
+  signature_header?: GroupOpsWebhookDescriptorSignatureHeader;
+  timestamp_header?: GroupOpsWebhookDescriptorTimestampHeader;
+  nonce_header?: GroupOpsWebhookDescriptorNonceHeader;
+  client_id_header?: GroupOpsWebhookDescriptorClientIdHeader;
+  client_id?: GroupOpsWebhookDescriptorClientId;
   description: GroupOpsWebhookDescriptorDescription;
 }
 
@@ -6007,13 +6074,62 @@ export interface GroupOpsNodePage {
   real_external_call_executed: boolean;
 }
 
+export type GroupOpsWebhookDescriptorResponseSignatureAlgorithm =
+  (typeof GroupOpsWebhookDescriptorResponseSignatureAlgorithm)[keyof typeof GroupOpsWebhookDescriptorResponseSignatureAlgorithm];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseSignatureAlgorithm = {
+  "HMAC-SHA256": "HMAC-SHA256",
+} as const;
+
+export type GroupOpsWebhookDescriptorResponseSignatureHeader =
+  (typeof GroupOpsWebhookDescriptorResponseSignatureHeader)[keyof typeof GroupOpsWebhookDescriptorResponseSignatureHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseSignatureHeader = {
+  "X-AICRM-Signature": "X-AICRM-Signature",
+} as const;
+
+export type GroupOpsWebhookDescriptorResponseTimestampHeader =
+  (typeof GroupOpsWebhookDescriptorResponseTimestampHeader)[keyof typeof GroupOpsWebhookDescriptorResponseTimestampHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseTimestampHeader = {
+  "X-AICRM-Timestamp": "X-AICRM-Timestamp",
+} as const;
+
+export type GroupOpsWebhookDescriptorResponseNonceHeader =
+  (typeof GroupOpsWebhookDescriptorResponseNonceHeader)[keyof typeof GroupOpsWebhookDescriptorResponseNonceHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseNonceHeader = {
+  "X-AICRM-Event-Id": "X-AICRM-Event-Id",
+} as const;
+
+export type GroupOpsWebhookDescriptorResponseClientIdHeader =
+  (typeof GroupOpsWebhookDescriptorResponseClientIdHeader)[keyof typeof GroupOpsWebhookDescriptorResponseClientIdHeader];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseClientIdHeader = {
+  "X-AICRM-Client-Id": "X-AICRM-Client-Id",
+} as const;
+
+export type GroupOpsWebhookDescriptorResponseClientId =
+  (typeof GroupOpsWebhookDescriptorResponseClientId)[keyof typeof GroupOpsWebhookDescriptorResponseClientId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseClientId = {
+  "aicrm-webhook-group-ops": "aicrm-webhook-group-ops",
+} as const;
+
 export type GroupOpsWebhookDescriptorResponseDescription =
   (typeof GroupOpsWebhookDescriptorResponseDescription)[keyof typeof GroupOpsWebhookDescriptorResponseDescription];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const GroupOpsWebhookDescriptorResponseDescription = {
   not_configured: "not configured",
-  local_opaque_reference_only: "local opaque reference only",
+  "same-origin_webhook_endpoint;_signing_credentials_are_withheld":
+    "same-origin webhook endpoint; signing credentials are withheld",
 } as const;
 
 export interface GroupOpsWebhookDescriptorResponse {
@@ -6023,6 +6139,23 @@ export interface GroupOpsWebhookDescriptorResponse {
    * @pattern ^[A-Za-z0-9._:-]{1,128}$
    */
   reference?: string;
+  /**
+   * @maxLength 256
+   * @pattern ^/api/automation/group-ops/webhooks/[A-Za-z0-9._:-]{1,128}$
+   */
+  path?: string;
+  /**
+   * Same-origin URL only; it contains no credential.
+   * @maxLength 256
+   * @pattern ^/api/automation/group-ops/webhooks/[A-Za-z0-9._:-]{1,128}$
+   */
+  url?: string;
+  signature_algorithm?: GroupOpsWebhookDescriptorResponseSignatureAlgorithm;
+  signature_header?: GroupOpsWebhookDescriptorResponseSignatureHeader;
+  timestamp_header?: GroupOpsWebhookDescriptorResponseTimestampHeader;
+  nonce_header?: GroupOpsWebhookDescriptorResponseNonceHeader;
+  client_id_header?: GroupOpsWebhookDescriptorResponseClientIdHeader;
+  client_id?: GroupOpsWebhookDescriptorResponseClientId;
   description: GroupOpsWebhookDescriptorResponseDescription;
   provider_execution_eligible: boolean;
   real_external_call_executed: boolean;
@@ -12571,6 +12704,12 @@ export interface ChannelAcquisitionAsset {
    * @pattern ^https://
    */
   asset_url?: string;
+  /**
+   * Same-origin controlled JPEG download for an executed QR code; browsers must not fetch asset_url directly.
+   * @maxLength 256
+   * @pattern ^/api/admin/channels/[1-9][0-9]*\/qrcode/download$
+   */
+  download_url?: string;
   entrant_ready: boolean;
   created_at: string;
   updated_at: string;
@@ -12616,6 +12755,116 @@ export interface ChannelAcquisitionAssetReconciliation {
   receipt_id: string;
   replacement?: ChannelAcquisitionAssetAcceptance;
   entrant_ready: boolean;
+}
+
+export interface CustomerAcquisitionLinkInput {
+  /**
+   * @minLength 1
+   * @maxLength 30
+   */
+  link_name: string;
+  /** @maxItems 500 */
+  user_ids: string[];
+  /** @maxItems 500 */
+  department_ids: number[];
+  skip_verify: boolean;
+}
+
+export interface CustomerAcquisitionLink {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  link_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 30
+   */
+  link_name: string;
+  /**
+   * @maxLength 10000
+   * @pattern ^https://
+   */
+  url: string;
+  /** @maxItems 500 */
+  user_ids: string[];
+  /** @maxItems 500 */
+  department_ids: number[];
+  skip_verify: boolean;
+}
+
+export interface CustomerAcquisitionLinkPage {
+  /** @maxItems 100 */
+  items: CustomerAcquisitionLinkSummary[];
+  /** @maxLength 1024 */
+  next_cursor: string;
+}
+
+export interface CustomerAcquisitionLinkSummary {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  link_id: string;
+}
+
+export type CustomerAcquisitionLinkReceiptState =
+  (typeof CustomerAcquisitionLinkReceiptState)[keyof typeof CustomerAcquisitionLinkReceiptState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerAcquisitionLinkReceiptState = {
+  accepted: "accepted",
+  attempted: "attempted",
+  executed: "executed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  reconciled: "reconciled",
+} as const;
+
+/**
+ * @nullable
+ */
+export type CustomerAcquisitionLinkReceiptResolution =
+  | (typeof CustomerAcquisitionLinkReceiptResolution)[keyof typeof CustomerAcquisitionLinkReceiptResolution]
+  | null;
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerAcquisitionLinkReceiptResolution = {
+  provider_applied: "provider_applied",
+  provider_not_applied: "provider_not_applied",
+} as const;
+
+export interface CustomerAcquisitionLinkReceipt {
+  /** @minimum 1 */
+  receipt_id: number;
+  state: CustomerAcquisitionLinkReceiptState;
+  link?: CustomerAcquisitionLink;
+  business_endpoint_dispatched: boolean;
+  real_external_call_executed: boolean;
+  /** @nullable */
+  resolution?: CustomerAcquisitionLinkReceiptResolution;
+  /**
+   * Local command outcome correlation digest, not Provider receipt or delivery evidence.
+   * @pattern ^[a-f0-9]{64}$
+   */
+  outcome_digest?: string;
+}
+
+export type CustomerAcquisitionLinkReconcileRequestResolution =
+  (typeof CustomerAcquisitionLinkReconcileRequestResolution)[keyof typeof CustomerAcquisitionLinkReconcileRequestResolution];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerAcquisitionLinkReconcileRequestResolution = {
+  provider_applied: "provider_applied",
+  provider_not_applied: "provider_not_applied",
+} as const;
+
+export interface CustomerAcquisitionLinkReconcileRequest {
+  /** @minimum 1 */
+  receipt_id: number;
+  resolution: CustomerAcquisitionLinkReconcileRequestResolution;
+  /** @pattern ^[a-f0-9]{64}$ */
+  evidence_digest: string;
 }
 
 /**
@@ -16718,6 +16967,24 @@ export interface LegacyHXCSenderReadResponse {
   warnings: LegacyHXCSenderReadResponseWarningsItem[];
   degraded: boolean;
   empty_state: boolean;
+}
+
+export interface LegacyHXCDirectoryRefreshProjection {
+  send_configs: LegacyHXCSenderConfig[];
+  directory: LegacyHXCDirectoryCandidate[];
+  /** @minimum 0 */
+  active_sender_count: number;
+  last_synced_at: string;
+}
+
+export interface LegacyHXCDirectoryRefreshResponse {
+  /**
+   * Count of the eligible operation-member and existing local staff intersection; it is not a newly synchronized staff total.
+   * @minimum 0
+   */
+  synced_count: number;
+  provider_read_executed: boolean;
+  projection: LegacyHXCDirectoryRefreshProjection;
 }
 
 export interface LegacyHXCSenderSaveRequest {
@@ -23619,6 +23886,24 @@ export type ListChannelAcquisitionAssetsParams = {
   cursor?: string;
 };
 
+export type GenerateChannelQRCodeBody = { [key: string]: unknown };
+
+export type ListWeComCustomerAcquisitionLinksParams = {
+  /**
+   * @maxLength 1024
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type RejectLegacyWeComAcquisitionLinkActionBody = {
+  [key: string]: unknown;
+};
+
 export type ListChannelAcquisitionEntrantReceiptsParams = {
   /**
    * @minimum 1
@@ -24435,6 +24720,8 @@ export type ListLegacyGroupInvitesParams = {
    */
   q?: string;
 };
+
+export type RefreshLegacyHXCDirectoryBody = { [key: string]: unknown };
 
 export type GetLegacyDeliveryLineageParams = {
   /**
@@ -47540,6 +47827,693 @@ export const reconcileChannelAcquisitionAsset = async (
 };
 
 /**
+ * @summary Accept and queue the current channel QR code through the existing CH02 asset EER
+ */
+export type generateChannelQRCodeResponse202 = {
+  data: ChannelAcquisitionAssetAcceptance;
+  status: 202;
+};
+
+export type generateChannelQRCodeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type generateChannelQRCodeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type generateChannelQRCodeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type generateChannelQRCodeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type generateChannelQRCodeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type generateChannelQRCodeResponseSuccess =
+  generateChannelQRCodeResponse202 & {
+    headers: Headers;
+  };
+export type generateChannelQRCodeResponseError = (
+  | generateChannelQRCodeResponse400
+  | generateChannelQRCodeResponse401
+  | generateChannelQRCodeResponse403
+  | generateChannelQRCodeResponse404
+  | generateChannelQRCodeResponse503
+) & {
+  headers: Headers;
+};
+
+export type generateChannelQRCodeResponse =
+  generateChannelQRCodeResponseSuccess | generateChannelQRCodeResponseError;
+
+export const getGenerateChannelQRCodeUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}/qrcode/generate`;
+};
+
+export const generateChannelQRCode = async (
+  channelId: number,
+  generateChannelQRCodeBody: GenerateChannelQRCodeBody,
+  options?: RequestInit,
+): Promise<generateChannelQRCodeResponse> => {
+  const res = await fetch(getGenerateChannelQRCodeUrl(channelId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateChannelQRCodeBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: generateChannelQRCodeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as generateChannelQRCodeResponse;
+};
+
+/**
+ * @summary Fetch one executed CH02 QR image server-side and return a same-origin JPEG download
+ */
+export type downloadChannelQRCodeResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type downloadChannelQRCodeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadChannelQRCodeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadChannelQRCodeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type downloadChannelQRCodeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type downloadChannelQRCodeResponseSuccess =
+  downloadChannelQRCodeResponse200 & {
+    headers: Headers;
+  };
+export type downloadChannelQRCodeResponseError = (
+  | downloadChannelQRCodeResponse401
+  | downloadChannelQRCodeResponse403
+  | downloadChannelQRCodeResponse404
+  | downloadChannelQRCodeResponse503
+) & {
+  headers: Headers;
+};
+
+export type downloadChannelQRCodeResponse =
+  downloadChannelQRCodeResponseSuccess | downloadChannelQRCodeResponseError;
+
+export const getDownloadChannelQRCodeUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}/qrcode/download`;
+};
+
+export const downloadChannelQRCode = async (
+  channelId: number,
+  options?: RequestInit,
+): Promise<downloadChannelQRCodeResponse> => {
+  return orvalBlobFetch<downloadChannelQRCodeResponse>(
+    getDownloadChannelQRCodeUrl(channelId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+/**
+ * @summary Read current WeCom customer-acquisition links only when the Provider read configuration is enabled
+ */
+export type listWeComCustomerAcquisitionLinksResponse200 = {
+  data: CustomerAcquisitionLinkPage;
+  status: 200;
+};
+
+export type listWeComCustomerAcquisitionLinksResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listWeComCustomerAcquisitionLinksResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listWeComCustomerAcquisitionLinksResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listWeComCustomerAcquisitionLinksResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listWeComCustomerAcquisitionLinksResponseSuccess =
+  listWeComCustomerAcquisitionLinksResponse200 & {
+    headers: Headers;
+  };
+export type listWeComCustomerAcquisitionLinksResponseError = (
+  | listWeComCustomerAcquisitionLinksResponse400
+  | listWeComCustomerAcquisitionLinksResponse401
+  | listWeComCustomerAcquisitionLinksResponse403
+  | listWeComCustomerAcquisitionLinksResponse503
+) & {
+  headers: Headers;
+};
+
+export type listWeComCustomerAcquisitionLinksResponse =
+  | listWeComCustomerAcquisitionLinksResponseSuccess
+  | listWeComCustomerAcquisitionLinksResponseError;
+
+export const getListWeComCustomerAcquisitionLinksUrl = (
+  params?: ListWeComCustomerAcquisitionLinksParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/wecom-customer-acquisition-links?${stringifiedParams}`
+    : `/api/admin/wecom-customer-acquisition-links`;
+};
+
+export const listWeComCustomerAcquisitionLinks = async (
+  params?: ListWeComCustomerAcquisitionLinksParams,
+  options?: RequestInit,
+): Promise<listWeComCustomerAcquisitionLinksResponse> => {
+  const res = await fetch(getListWeComCustomerAcquisitionLinksUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWeComCustomerAcquisitionLinksResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listWeComCustomerAcquisitionLinksResponse;
+};
+
+/**
+ * @summary Create one customer-acquisition link with a durable receipt when the explicitly enabled Provider write boundary permits it
+ */
+export type createWeComCustomerAcquisitionLinkResponse202 = {
+  data: CustomerAcquisitionLinkReceipt;
+  status: 202;
+};
+
+export type createWeComCustomerAcquisitionLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createWeComCustomerAcquisitionLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createWeComCustomerAcquisitionLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createWeComCustomerAcquisitionLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createWeComCustomerAcquisitionLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createWeComCustomerAcquisitionLinkResponseSuccess =
+  createWeComCustomerAcquisitionLinkResponse202 & {
+    headers: Headers;
+  };
+export type createWeComCustomerAcquisitionLinkResponseError = (
+  | createWeComCustomerAcquisitionLinkResponse400
+  | createWeComCustomerAcquisitionLinkResponse401
+  | createWeComCustomerAcquisitionLinkResponse403
+  | createWeComCustomerAcquisitionLinkResponse409
+  | createWeComCustomerAcquisitionLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type createWeComCustomerAcquisitionLinkResponse =
+  | createWeComCustomerAcquisitionLinkResponseSuccess
+  | createWeComCustomerAcquisitionLinkResponseError;
+
+export const getCreateWeComCustomerAcquisitionLinkUrl = () => {
+  return `/api/admin/wecom-customer-acquisition-links`;
+};
+
+export const createWeComCustomerAcquisitionLink = async (
+  customerAcquisitionLinkInput: CustomerAcquisitionLinkInput,
+  options?: RequestInit,
+): Promise<createWeComCustomerAcquisitionLinkResponse> => {
+  const res = await fetch(getCreateWeComCustomerAcquisitionLinkUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerAcquisitionLinkInput),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createWeComCustomerAcquisitionLinkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createWeComCustomerAcquisitionLinkResponse;
+};
+
+/**
+ * @summary Read one current WeCom customer-acquisition link
+ */
+export type getWeComCustomerAcquisitionLinkResponse200 = {
+  data: CustomerAcquisitionLink;
+  status: 200;
+};
+
+export type getWeComCustomerAcquisitionLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getWeComCustomerAcquisitionLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWeComCustomerAcquisitionLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWeComCustomerAcquisitionLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWeComCustomerAcquisitionLinkResponseSuccess =
+  getWeComCustomerAcquisitionLinkResponse200 & {
+    headers: Headers;
+  };
+export type getWeComCustomerAcquisitionLinkResponseError = (
+  | getWeComCustomerAcquisitionLinkResponse400
+  | getWeComCustomerAcquisitionLinkResponse401
+  | getWeComCustomerAcquisitionLinkResponse403
+  | getWeComCustomerAcquisitionLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWeComCustomerAcquisitionLinkResponse =
+  | getWeComCustomerAcquisitionLinkResponseSuccess
+  | getWeComCustomerAcquisitionLinkResponseError;
+
+export const getGetWeComCustomerAcquisitionLinkUrl = (linkId: string) => {
+  return `/api/admin/wecom-customer-acquisition-links/${linkId}`;
+};
+
+export const getWeComCustomerAcquisitionLink = async (
+  linkId: string,
+  options?: RequestInit,
+): Promise<getWeComCustomerAcquisitionLinkResponse> => {
+  const res = await fetch(getGetWeComCustomerAcquisitionLinkUrl(linkId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWeComCustomerAcquisitionLinkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWeComCustomerAcquisitionLinkResponse;
+};
+
+/**
+ * @summary Update one customer-acquisition link with a durable Provider outcome receipt
+ */
+export type updateWeComCustomerAcquisitionLinkResponse200 = {
+  data: CustomerAcquisitionLinkReceipt;
+  status: 200;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponseSuccess =
+  updateWeComCustomerAcquisitionLinkResponse200 & {
+    headers: Headers;
+  };
+export type updateWeComCustomerAcquisitionLinkResponseError = (
+  | updateWeComCustomerAcquisitionLinkResponse400
+  | updateWeComCustomerAcquisitionLinkResponse401
+  | updateWeComCustomerAcquisitionLinkResponse403
+  | updateWeComCustomerAcquisitionLinkResponse409
+  | updateWeComCustomerAcquisitionLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateWeComCustomerAcquisitionLinkResponse =
+  | updateWeComCustomerAcquisitionLinkResponseSuccess
+  | updateWeComCustomerAcquisitionLinkResponseError;
+
+export const getUpdateWeComCustomerAcquisitionLinkUrl = (linkId: string) => {
+  return `/api/admin/wecom-customer-acquisition-links/${linkId}`;
+};
+
+export const updateWeComCustomerAcquisitionLink = async (
+  linkId: string,
+  customerAcquisitionLinkInput: CustomerAcquisitionLinkInput,
+  options?: RequestInit,
+): Promise<updateWeComCustomerAcquisitionLinkResponse> => {
+  const res = await fetch(getUpdateWeComCustomerAcquisitionLinkUrl(linkId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerAcquisitionLinkInput),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateWeComCustomerAcquisitionLinkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateWeComCustomerAcquisitionLinkResponse;
+};
+
+/**
+ * @summary Delete one customer-acquisition link with a durable Provider outcome receipt
+ */
+export type deleteWeComCustomerAcquisitionLinkResponse200 = {
+  data: CustomerAcquisitionLinkReceipt;
+  status: 200;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponseSuccess =
+  deleteWeComCustomerAcquisitionLinkResponse200 & {
+    headers: Headers;
+  };
+export type deleteWeComCustomerAcquisitionLinkResponseError = (
+  | deleteWeComCustomerAcquisitionLinkResponse400
+  | deleteWeComCustomerAcquisitionLinkResponse401
+  | deleteWeComCustomerAcquisitionLinkResponse403
+  | deleteWeComCustomerAcquisitionLinkResponse409
+  | deleteWeComCustomerAcquisitionLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteWeComCustomerAcquisitionLinkResponse =
+  | deleteWeComCustomerAcquisitionLinkResponseSuccess
+  | deleteWeComCustomerAcquisitionLinkResponseError;
+
+export const getDeleteWeComCustomerAcquisitionLinkUrl = (linkId: string) => {
+  return `/api/admin/wecom-customer-acquisition-links/${linkId}`;
+};
+
+export const deleteWeComCustomerAcquisitionLink = async (
+  linkId: string,
+  options?: RequestInit,
+): Promise<deleteWeComCustomerAcquisitionLinkResponse> => {
+  const res = await fetch(getDeleteWeComCustomerAcquisitionLinkUrl(linkId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteWeComCustomerAcquisitionLinkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteWeComCustomerAcquisitionLinkResponse;
+};
+
+/**
+ * @summary Fail closed for legacy enable or disable because the official Provider exposes no equivalent transition
+ */
+export type rejectLegacyWeComAcquisitionLinkActionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponse422 = {
+  data: void;
+  status: 422;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponseError = (
+  | rejectLegacyWeComAcquisitionLinkActionResponse400
+  | rejectLegacyWeComAcquisitionLinkActionResponse401
+  | rejectLegacyWeComAcquisitionLinkActionResponse403
+  | rejectLegacyWeComAcquisitionLinkActionResponse404
+  | rejectLegacyWeComAcquisitionLinkActionResponse422
+  | rejectLegacyWeComAcquisitionLinkActionResponse503
+) & {
+  headers: Headers;
+};
+
+export type rejectLegacyWeComAcquisitionLinkActionResponse =
+  rejectLegacyWeComAcquisitionLinkActionResponseError;
+
+export const getRejectLegacyWeComAcquisitionLinkActionUrl = (
+  linkId: string,
+  action: "enable" | "disable",
+) => {
+  return `/api/admin/wecom-customer-acquisition-links/${linkId}/${action}`;
+};
+
+export const rejectLegacyWeComAcquisitionLinkAction = async (
+  linkId: string,
+  action: "enable" | "disable",
+  rejectLegacyWeComAcquisitionLinkActionBody: RejectLegacyWeComAcquisitionLinkActionBody,
+  options?: RequestInit,
+): Promise<rejectLegacyWeComAcquisitionLinkActionResponse> => {
+  const res = await fetch(
+    getRejectLegacyWeComAcquisitionLinkActionUrl(linkId, action),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(rejectLegacyWeComAcquisitionLinkActionBody),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: rejectLegacyWeComAcquisitionLinkActionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as rejectLegacyWeComAcquisitionLinkActionResponse;
+};
+
+/**
+ * @summary Reconcile only an outcome-unknown customer-acquisition link receipt by explicit Provider readback
+ */
+export type reconcileWeComCustomerAcquisitionLinkResponse200 = {
+  data: CustomerAcquisitionLinkReceipt;
+  status: 200;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponseSuccess =
+  reconcileWeComCustomerAcquisitionLinkResponse200 & {
+    headers: Headers;
+  };
+export type reconcileWeComCustomerAcquisitionLinkResponseError = (
+  | reconcileWeComCustomerAcquisitionLinkResponse400
+  | reconcileWeComCustomerAcquisitionLinkResponse401
+  | reconcileWeComCustomerAcquisitionLinkResponse403
+  | reconcileWeComCustomerAcquisitionLinkResponse409
+  | reconcileWeComCustomerAcquisitionLinkResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileWeComCustomerAcquisitionLinkResponse =
+  | reconcileWeComCustomerAcquisitionLinkResponseSuccess
+  | reconcileWeComCustomerAcquisitionLinkResponseError;
+
+export const getReconcileWeComCustomerAcquisitionLinkUrl = (linkId: string) => {
+  return `/api/admin/wecom-customer-acquisition-links/${linkId}/reconcile`;
+};
+
+export const reconcileWeComCustomerAcquisitionLink = async (
+  linkId: string,
+  customerAcquisitionLinkReconcileRequest: CustomerAcquisitionLinkReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileWeComCustomerAcquisitionLinkResponse> => {
+  const res = await fetch(getReconcileWeComCustomerAcquisitionLinkUrl(linkId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerAcquisitionLinkReconcileRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileWeComCustomerAcquisitionLinkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileWeComCustomerAcquisitionLinkResponse;
+};
+
+/**
  * @summary List safe local acquisition entrant receipts for one channel and administrator CorpID
  */
 export type listChannelAcquisitionEntrantReceiptsResponse200 = {
@@ -55729,7 +56703,7 @@ export const removeGroupOpsPlanNode = async (
 };
 
 /**
- * @summary Read a safe opaque local Webhook descriptor without URL or secret material
+ * @summary Read a safe same-origin Webhook URL and signing-header descriptor without credential material
  */
 export type getGroupOpsWebhookDescriptorResponse200 = {
   data: GroupOpsWebhookDescriptorResponse;
@@ -56401,7 +57375,7 @@ export const removeGroupOpsPlanGroup = async (
 };
 
 /**
- * @summary Read the opaque webhook descriptor without URL or secret material
+ * @summary Read the same-origin webhook descriptor without secret material
  */
 export type getGroupOpsWebhookResponse200 = {
   data: GroupOpsWebhookDescriptorResponse;
@@ -60071,6 +61045,78 @@ export const upsertLegacyHXCSendConfig = async (
     status: res.status,
     headers: res.headers,
   } as upsertLegacyHXCSendConfigResponse;
+};
+
+/**
+ * @summary Verify active local sender eligibility through the existing read-only operation-member refresh
+ */
+export type refreshLegacyHXCDirectoryResponse200 = {
+  data: LegacyHXCDirectoryRefreshResponse;
+  status: 200;
+};
+
+export type refreshLegacyHXCDirectoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type refreshLegacyHXCDirectoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type refreshLegacyHXCDirectoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type refreshLegacyHXCDirectoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type refreshLegacyHXCDirectoryResponseSuccess =
+  refreshLegacyHXCDirectoryResponse200 & {
+    headers: Headers;
+  };
+export type refreshLegacyHXCDirectoryResponseError = (
+  | refreshLegacyHXCDirectoryResponse400
+  | refreshLegacyHXCDirectoryResponse401
+  | refreshLegacyHXCDirectoryResponse403
+  | refreshLegacyHXCDirectoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type refreshLegacyHXCDirectoryResponse =
+  | refreshLegacyHXCDirectoryResponseSuccess
+  | refreshLegacyHXCDirectoryResponseError;
+
+export const getRefreshLegacyHXCDirectoryUrl = () => {
+  return `/api/admin/hxc-dashboard/refresh-directory`;
+};
+
+export const refreshLegacyHXCDirectory = async (
+  refreshLegacyHXCDirectoryBody: RefreshLegacyHXCDirectoryBody,
+  options?: RequestInit,
+): Promise<refreshLegacyHXCDirectoryResponse> => {
+  const res = await fetch(getRefreshLegacyHXCDirectoryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(refreshLegacyHXCDirectoryBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: refreshLegacyHXCDirectoryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as refreshLegacyHXCDirectoryResponse;
 };
 
 /**

@@ -232,6 +232,8 @@ type Handler struct {
 	channelEntrants             http.Handler
 	channelAcquisition          http.Handler
 	channelAcquisitionAsset     http.Handler
+	channelQRDownload           http.Handler
+	custAcqLinks                http.Handler
 	entrantReceipts             http.Handler
 	media                       legacyMediaApplication
 	imageDeletes                legacyImageDeleteApplication
@@ -282,6 +284,7 @@ type Handler struct {
 	operationAuth               operationServiceAuthenticator
 	systemHealth                http.Handler
 	hxcSender                   *hxcSenderHandler
+	hxcDirRefresh               http.Handler
 	deliveryLineage             legacyDeliveryLineageReaders
 	externalCustomerRead        *legacyExternalCustomerReadHandler
 	campaignDefinitionHistory   campaignport.CampaignDefinitionHistoryReader

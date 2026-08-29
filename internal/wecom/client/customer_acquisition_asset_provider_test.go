@@ -33,7 +33,7 @@ func TestCustomerAcquisitionAssetProviderUsesOpaqueCorrelationAndRejectsLinkConf
 			if _, leaked := body["customer_channel"]; leaked {
 				t.Fatal("customer_channel must not be sent in create_link JSON")
 			}
-			_, _ = writer.Write([]byte(`{"errcode":0,"link_id":"link-safe","url":"https://work.weixin.qq.com/ca/link-safe?customer_channel=conflict"}`))
+			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-safe","link_name":"asset","url":"https://work.weixin.qq.com/ca/link-safe?customer_channel=conflict","create_time":1720000000}}`))
 		default:
 			t.Fatalf("unexpected path %q", request.URL.Path)
 		}
@@ -100,7 +100,7 @@ func TestCustomerAcquisitionAssetProviderPublishesOnlyFrozenContactShapes(t *tes
 		case "/cgi-bin/externalcontact/add_contact_way":
 			_, _ = writer.Write([]byte(`{"errcode":0,"config_id":"config-safe","qr_code":"https://work.weixin.qq.com/q/config-safe"}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/create_link":
-			_, _ = writer.Write([]byte(`{"errcode":0,"link_id":"link-safe","url":"https://work.weixin.qq.com/ca/link-safe"}`))
+			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-safe","link_name":"asset","url":"https://work.weixin.qq.com/ca/link-safe","create_time":1720000000}}`))
 		default:
 			t.Fatalf("unexpected provider path %q", request.URL.Path)
 		}

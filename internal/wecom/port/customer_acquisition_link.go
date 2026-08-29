@@ -5,7 +5,13 @@ import (
 	"errors"
 )
 
-var ErrCustomerAcquisitionLinkNotDispatched = errors.New("customer acquisition link provider call not dispatched")
+var (
+	ErrCustomerAcquisitionLinkNotDispatched = errors.New("customer acquisition link provider call not dispatched")
+	// ErrCustomerAcquisitionLinkNotFound is returned only when the Provider
+	// explicitly reports that a link is absent. Transport and malformed
+	// responses deliberately remain unknown outcomes.
+	ErrCustomerAcquisitionLinkNotFound = errors.New("customer acquisition link provider link not found")
+)
 
 type CustomerAcquisitionLinkInput struct {
 	LinkName      string
@@ -36,13 +42,14 @@ const (
 	CustomerAcquisitionLinkOutcomeUnknown CustomerAcquisitionLinkWriteOutcome = "outcome_unknown"
 )
 
-// CustomerAcquisitionLinkWriteResult is provider evidence, not a delivery
+// CustomerAcquisitionLinkWriteResult records a bounded command outcome. Its
+// digest is a local correlation value, never a Provider receipt or delivery
 // claim. OutcomeUnknown must be reconciled and must never be retried
 // automatically with the same business command.
 type CustomerAcquisitionLinkWriteResult struct {
 	Outcome                    CustomerAcquisitionLinkWriteOutcome
 	Link                       *CustomerAcquisitionLink
-	ReceiptDigest              [32]byte
+	OutcomeDigest              [32]byte
 	BusinessEndpointDispatched bool
 	RealExternalCallExecuted   bool
 }

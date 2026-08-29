@@ -65,7 +65,7 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 			if string(body) != want {
 				t.Fatalf("create link body=%s want=%s", body, want)
 			}
-			_, _ = writer.Write([]byte(`{"errcode":0,"link_id":"link-1","url":"https://work.weixin.qq.com/ca/link-1"}`))
+			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"CH02 landing","url":"https://work.weixin.qq.com/ca/link-1","create_time":1720000000}}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/get":
 			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
 				t.Fatalf("get link request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
@@ -75,10 +75,10 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 			}
 			acquisitionLinkGetCalls.Add(1)
 			if acquisitionLinkUpdated {
-				_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"CH02 updated","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":false,"range":{"user_list":["staff-b"],"department_list":[34]}}}`))
+				_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_name":"CH02 updated","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":false,"create_time":1720000001},"range":{"user_list":["staff-b"],"department_list":[34]}}`))
 				return
 			}
-			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"CH02 landing","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":true,"range":{"user_list":["staff-a"],"department_list":[12]}}}`))
+			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_name":"CH02 landing","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":true,"create_time":1720000000},"range":{"user_list":["staff-a"],"department_list":[12]}}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/update_link":
 			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
 				t.Fatalf("update link request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
@@ -101,7 +101,7 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 			if string(body) != `{"cursor":"prior","limit":2}` {
 				t.Fatalf("list links body=%s", body)
 			}
-			_, _ = writer.Write([]byte(`{"errcode":0,"link":[{"link_id":"link-1"},{"link_id":"link-2"}],"next_cursor":"next"}`))
+			_, _ = writer.Write([]byte(`{"errcode":0,"link_id_list":["link-1","link-2"],"next_cursor":"next"}`))
 		default:
 			t.Fatalf("unexpected path=%s", request.URL.Path)
 		}
@@ -194,8 +194,18 @@ func TestCustomerAcquisitionUpdateRefusesSuccessWithoutReadback(t *testing.T) {
 	defer server.Close()
 	client := testCustomerAcquisitionClient(t, server.URL, server.Client(), staticTokenProvider{token: AccessToken{value: "token-safe"}})
 	_, err := client.UpdateCustomerAcquisitionLink(context.Background(), "link-1", CustomerAcquisitionLinkRequest{LinkName: "known", UserIDs: []string{"staff-a"}})
-	if !errors.Is(err, ErrUnexpectedResponse) || calls.Load() != 2 {
+	if !errors.Is(err, ErrWriteOutcomeUnknown) || calls.Load() != 2 {
 		t.Fatalf("err=%v calls=%d, want accepted update followed by failed readback", err, calls.Load())
+	}
+}
+
+func TestCustomerAcquisitionLinkUsesOfficialProviderShapesAndBounds(t *testing.T) {
+	if validCustomerAcquisitionLinkRequest(CustomerAcquisitionLinkRequest{LinkName: strings.Repeat("测", 31), UserIDs: []string{"staff-a"}}) {
+		t.Fatal("31-rune link name must be rejected before provider dispatch")
+	}
+	client := &CustomerAcquisitionClient{}
+	if _, err := client.ListCustomerAcquisitionLinks(context.Background(), "", 101); !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("limit over official maximum err=%v", err)
 	}
 }
 
@@ -220,7 +230,7 @@ func TestCustomerAcquisitionWritesBecomeUnknownAfterDispatch(t *testing.T) {
 				case "invalid-json":
 					_, _ = writer.Write([]byte(`not-json`))
 				case "trailing-json":
-					_, _ = writer.Write([]byte(`{"errcode":0,"link_id":"link-1","url":"https://work.weixin.qq.com/ca/link-1"} {}`))
+					_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","url":"https://work.weixin.qq.com/ca/link-1"}} {}`))
 				case "non-200":
 					writer.WriteHeader(http.StatusBadGateway)
 				case "oversized":
@@ -291,7 +301,7 @@ func TestCustomerAcquisitionWriteTokenExpiryIsUnknownWithoutRetry(t *testing.T) 
 func TestCustomerAcquisitionReadsFailClosedAndDoNotLeakToken(t *testing.T) {
 	secret := "token-must-not-leak"
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"bad","url":"http://unsafe.example.test","range":{"user_list":[]}}}`))
+		_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_name":"bad","url":"http://unsafe.example.test","skip_verify":false},"range":{"user_list":[]}}`))
 	}))
 	defer server.Close()
 	client := testCustomerAcquisitionClient(t, server.URL, server.Client(), staticTokenProvider{token: AccessToken{value: secret}})

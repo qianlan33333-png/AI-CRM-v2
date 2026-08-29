@@ -12,6 +12,10 @@ import (
 
 type CustomerAcquisitionLinkProvider struct{ client *CustomerAcquisitionClient }
 
+// 2400003 is WeCom's documented "resource does not exist" response. It is
+// only translated on the link-id-bound customer_acquisition/get endpoint.
+const weComCustomerAcquisitionLinkNotFoundCode = 2400003
+
 var _ wecomport.CustomerAcquisitionLinkProvider = (*CustomerAcquisitionLinkProvider)(nil)
 
 func NewCustomerAcquisitionLinkProvider(client *CustomerAcquisitionClient) (*CustomerAcquisitionLinkProvider, error) {
@@ -42,6 +46,10 @@ func (provider *CustomerAcquisitionLinkProvider) GetCustomerAcquisitionLink(ctx 
 	}
 	link, err := provider.client.GetCustomerAcquisitionLink(ctx, linkID)
 	if err != nil {
+		var providerError *APIError
+		if errors.As(err, &providerError) && providerError.Code == weComCustomerAcquisitionLinkNotFoundCode {
+			return wecomport.CustomerAcquisitionLink{}, wecomport.ErrCustomerAcquisitionLinkNotFound
+		}
 		return wecomport.CustomerAcquisitionLink{}, err
 	}
 	return customerAcquisitionLinkPortValue(link), nil
@@ -78,7 +86,7 @@ func customerAcquisitionLinkWriteResult(operation, linkID string, input Customer
 	switch {
 	case err == nil:
 		result := wecomport.CustomerAcquisitionLinkWriteResult{
-			Outcome: wecomport.CustomerAcquisitionLinkExecuted, ReceiptDigest: customerAcquisitionLinkReceiptDigest("executed", requestDigest, 0),
+			Outcome: wecomport.CustomerAcquisitionLinkExecuted, OutcomeDigest: customerAcquisitionLinkOutcomeDigest("executed", requestDigest, 0),
 			BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
 		}
 		if operation != "delete" {
@@ -88,8 +96,8 @@ func customerAcquisitionLinkWriteResult(operation, linkID string, input Customer
 		return result, nil
 	case errors.Is(err, ErrWriteOutcomeUnknown):
 		return wecomport.CustomerAcquisitionLinkWriteResult{
-			Outcome: wecomport.CustomerAcquisitionLinkOutcomeUnknown, ReceiptDigest: customerAcquisitionLinkReceiptDigest("outcome_unknown", requestDigest, 0),
-			BusinessEndpointDispatched: true,
+			Outcome: wecomport.CustomerAcquisitionLinkOutcomeUnknown, OutcomeDigest: customerAcquisitionLinkOutcomeDigest("outcome_unknown", requestDigest, 0),
+			BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
 		}, nil
 	case errors.Is(err, ErrUpstream):
 		var providerError *APIError
@@ -97,7 +105,7 @@ func customerAcquisitionLinkWriteResult(operation, linkID string, input Customer
 			return wecomport.CustomerAcquisitionLinkWriteResult{}, err
 		}
 		return wecomport.CustomerAcquisitionLinkWriteResult{
-			Outcome: wecomport.CustomerAcquisitionLinkFinalFailed, ReceiptDigest: customerAcquisitionLinkReceiptDigest("final_failed", requestDigest, providerError.Code),
+			Outcome: wecomport.CustomerAcquisitionLinkFinalFailed, OutcomeDigest: customerAcquisitionLinkOutcomeDigest("final_failed", requestDigest, providerError.Code),
 			BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
 		}, nil
 	case errors.Is(err, ErrBusinessWriteNotDispatched):
@@ -119,8 +127,8 @@ func customerAcquisitionLinkProviderDigest(operation, linkID string, input Custo
 	return sha256.Sum256([]byte("wecom.customer_acquisition.link.provider.v1\x00" + operation + "\x00" + linkID + "\x00" + input.LinkName + "\x00" + stringsJoin(input.UserIDs) + "\x00" + int64sJoin(input.DepartmentIDs) + "\x00" + strconv.FormatBool(input.SkipVerify)))
 }
 
-func customerAcquisitionLinkReceiptDigest(state string, request [32]byte, providerCode int) [32]byte {
-	return sha256.Sum256([]byte("wecom.customer_acquisition.link.receipt.v1\x00" + state + "\x00" + hex.EncodeToString(request[:]) + "\x00" + strconv.Itoa(providerCode)))
+func customerAcquisitionLinkOutcomeDigest(state string, request [32]byte, providerCode int) [32]byte {
+	return sha256.Sum256([]byte("wecom.customer_acquisition.link.outcome.v1\x00" + state + "\x00" + hex.EncodeToString(request[:]) + "\x00" + strconv.Itoa(providerCode)))
 }
 
 func stringsJoin(values []string) string {

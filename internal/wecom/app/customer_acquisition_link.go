@@ -34,7 +34,7 @@ const (
 type CustomerAcquisitionLinkReceiptState string
 
 const (
-	CustomerAcquisitionLinkReserved       CustomerAcquisitionLinkReceiptState = "reserved"
+	CustomerAcquisitionLinkReserved       CustomerAcquisitionLinkReceiptState = "accepted"
 	CustomerAcquisitionLinkAttempted      CustomerAcquisitionLinkReceiptState = "attempted"
 	CustomerAcquisitionLinkExecuted       CustomerAcquisitionLinkReceiptState = "executed"
 	CustomerAcquisitionLinkFinalFailed    CustomerAcquisitionLinkReceiptState = "final_failed"
@@ -56,7 +56,7 @@ type CustomerAcquisitionLinkReceipt struct {
 	RequestDigest              [32]byte
 	State                      CustomerAcquisitionLinkReceiptState
 	Link                       *wecomport.CustomerAcquisitionLink
-	ProviderReceiptDigest      [32]byte
+	OutcomeDigest              [32]byte
 	BusinessEndpointDispatched bool
 	RealExternalCallExecuted   bool
 	ReconcileKeyDigest         [32]byte
@@ -68,7 +68,7 @@ type CustomerAcquisitionLinkCompletion struct {
 	ReceiptID                  int64
 	State                      CustomerAcquisitionLinkReceiptState
 	Link                       *wecomport.CustomerAcquisitionLink
-	ProviderReceiptDigest      [32]byte
+	OutcomeDigest              [32]byte
 	BusinessEndpointDispatched bool
 	RealExternalCallExecuted   bool
 	ReconcileActor             int64
@@ -112,7 +112,7 @@ func NewCustomerAcquisitionLinkService(receipts CustomerAcquisitionLinkReceiptSt
 }
 
 func (service *CustomerAcquisitionLinkService) List(ctx context.Context, cursor string, limit int) (wecomport.CustomerAcquisitionLinkPage, error) {
-	if !service.ready(ctx) || !validCustomerAcquisitionLinkText(cursor, 0, 1024) || limit < 1 || limit > 1000 {
+	if !service.ready(ctx) || !validCustomerAcquisitionLinkText(cursor, 0, 1024) || limit < 1 || limit > 100 {
 		return wecomport.CustomerAcquisitionLinkPage{}, ErrInvalidCustomerAcquisitionLinkCommand
 	}
 	page, err := service.provider.ListCustomerAcquisitionLinks(ctx, cursor, limit)
@@ -169,7 +169,7 @@ func (service *CustomerAcquisitionLinkService) mutate(ctx context.Context, opera
 	case CustomerAcquisitionLinkAttempted:
 		return service.complete(ctx, CustomerAcquisitionLinkCompletion{
 			ReceiptID: receipt.ID, State: CustomerAcquisitionLinkOutcomeUnknown, BusinessEndpointDispatched: true,
-			ProviderReceiptDigest: sha256.Sum256([]byte("wecom.customer_acquisition.link.interrupted.v1\x00" + strconv.FormatInt(receipt.ID, 10))),
+			OutcomeDigest: sha256.Sum256([]byte("wecom.customer_acquisition.link.outcome.interrupted.v1\x00" + strconv.FormatInt(receipt.ID, 10))),
 		})
 	case CustomerAcquisitionLinkReserved:
 	default:
@@ -193,6 +193,9 @@ func (service *CustomerAcquisitionLinkService) Reconcile(ctx context.Context, co
 	if err != nil {
 		return CustomerAcquisitionLinkReceipt{}, errors.Join(ErrCustomerAcquisitionLinkUnavailable, err)
 	}
+	if (receipt.Operation == CustomerAcquisitionLinkUpdate || receipt.Operation == CustomerAcquisitionLinkDelete) && command.LinkID != receipt.Command.LinkID {
+		return CustomerAcquisitionLinkReceipt{}, ErrCustomerAcquisitionLinkReconcile
+	}
 	if receipt.State == CustomerAcquisitionLinkReconciled {
 		if receipt.ReconcileKeyDigest != sha256.Sum256([]byte(command.IdempotencyKey)) || receipt.EvidenceDigest != command.EvidenceDigest || receipt.Resolution != command.Resolution {
 			return CustomerAcquisitionLinkReceipt{}, ErrCustomerAcquisitionLinkConflict
@@ -203,12 +206,21 @@ func (service *CustomerAcquisitionLinkService) Reconcile(ctx context.Context, co
 		return CustomerAcquisitionLinkReceipt{}, ErrCustomerAcquisitionLinkReconcile
 	}
 	observed, err := service.provider.GetCustomerAcquisitionLink(ctx, command.LinkID)
+	if receipt.Operation == CustomerAcquisitionLinkDelete && command.Resolution == CustomerAcquisitionLinkProviderNotApplied && errors.Is(err, wecomport.ErrCustomerAcquisitionLinkNotFound) {
+		return service.complete(ctx, CustomerAcquisitionLinkCompletion{
+			ReceiptID: receipt.ID, State: CustomerAcquisitionLinkReconciled,
+			OutcomeDigest:              sha256.Sum256([]byte("wecom.customer_acquisition.link.outcome.not_found.v1\x00" + command.LinkID)),
+			BusinessEndpointDispatched: true, RealExternalCallExecuted: true, ReconcileActor: command.Actor,
+			ReconcileKeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), EvidenceDigest: command.EvidenceDigest,
+			Resolution: command.Resolution,
+		})
+	}
 	if err != nil || !customerAcquisitionLinkReadbackProves(receipt, observed, command.Resolution) {
 		return CustomerAcquisitionLinkReceipt{}, errors.Join(ErrCustomerAcquisitionLinkReconcile, err)
 	}
 	return service.complete(ctx, CustomerAcquisitionLinkCompletion{
 		ReceiptID: receipt.ID, State: CustomerAcquisitionLinkReconciled, Link: &observed,
-		ProviderReceiptDigest:      sha256.Sum256([]byte("wecom.customer_acquisition.link.readback.v1\x00" + observed.LinkID)),
+		OutcomeDigest:              sha256.Sum256([]byte("wecom.customer_acquisition.link.outcome.readback.v1\x00" + observed.LinkID)),
 		BusinessEndpointDispatched: true, RealExternalCallExecuted: true, ReconcileActor: command.Actor,
 		ReconcileKeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), EvidenceDigest: command.EvidenceDigest,
 		Resolution: command.Resolution,
@@ -237,25 +249,25 @@ func (service *CustomerAcquisitionLinkService) complete(ctx context.Context, com
 }
 
 func customerAcquisitionLinkCompletion(operation CustomerAcquisitionLinkOperation, receiptID int64, result wecomport.CustomerAcquisitionLinkWriteResult, providerErr error) CustomerAcquisitionLinkCompletion {
-	completion := CustomerAcquisitionLinkCompletion{ReceiptID: receiptID, Link: result.Link, ProviderReceiptDigest: result.ReceiptDigest, BusinessEndpointDispatched: result.BusinessEndpointDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}
+	completion := CustomerAcquisitionLinkCompletion{ReceiptID: receiptID, Link: result.Link, OutcomeDigest: result.OutcomeDigest, BusinessEndpointDispatched: result.BusinessEndpointDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}
 	if providerErr != nil {
 		completion.State, completion.BusinessEndpointDispatched = CustomerAcquisitionLinkOutcomeUnknown, true
 		if errors.Is(providerErr, wecomport.ErrCustomerAcquisitionLinkNotDispatched) {
 			completion.State, completion.BusinessEndpointDispatched = CustomerAcquisitionLinkFinalFailed, false
 		}
-		completion.ProviderReceiptDigest = sha256.Sum256([]byte("wecom.customer_acquisition.link.local_failure.v1\x00" + strconv.FormatInt(receiptID, 10)))
+		completion.OutcomeDigest = sha256.Sum256([]byte("wecom.customer_acquisition.link.outcome.local_failure.v1\x00" + strconv.FormatInt(receiptID, 10)))
 		return completion
 	}
 	switch result.Outcome {
 	case wecomport.CustomerAcquisitionLinkExecuted:
 		completion.State = CustomerAcquisitionLinkExecuted
-		if result.ReceiptDigest == ([32]byte{}) || !result.BusinessEndpointDispatched || !result.RealExternalCallExecuted || operation != CustomerAcquisitionLinkDelete && result.Link == nil || operation == CustomerAcquisitionLinkDelete && result.Link != nil {
-			completion.State, completion.RealExternalCallExecuted = CustomerAcquisitionLinkOutcomeUnknown, false
+		if result.OutcomeDigest == ([32]byte{}) || !result.BusinessEndpointDispatched || !result.RealExternalCallExecuted || operation != CustomerAcquisitionLinkDelete && result.Link == nil || operation == CustomerAcquisitionLinkDelete && result.Link != nil {
+			completion.State = CustomerAcquisitionLinkOutcomeUnknown
 		}
 	case wecomport.CustomerAcquisitionLinkFinalFailed:
 		completion.State = CustomerAcquisitionLinkFinalFailed
 	case wecomport.CustomerAcquisitionLinkOutcomeUnknown:
-		completion.State, completion.RealExternalCallExecuted = CustomerAcquisitionLinkOutcomeUnknown, false
+		completion.State = CustomerAcquisitionLinkOutcomeUnknown
 	default:
 		completion.State = CustomerAcquisitionLinkOutcomeUnknown
 	}
@@ -279,7 +291,11 @@ func validCustomerAcquisitionLinkCommand(operation CustomerAcquisitionLinkOperat
 }
 
 func validCustomerAcquisitionLinkInput(input wecomport.CustomerAcquisitionLinkInput) bool {
-	return validCustomerAcquisitionLinkText(input.LinkName, 1, 120) && validCustomerAcquisitionLinkStrings(input.UserIDs, 500) && validCustomerAcquisitionLinkInt64s(input.DepartmentIDs, 500) && len(input.UserIDs)+len(input.DepartmentIDs) > 0
+	return validCustomerAcquisitionLinkName(input.LinkName) && validCustomerAcquisitionLinkStrings(input.UserIDs, 500) && validCustomerAcquisitionLinkInt64s(input.DepartmentIDs, 500) && len(input.UserIDs)+len(input.DepartmentIDs) > 0
+}
+
+func validCustomerAcquisitionLinkName(value string) bool {
+	return validCustomerAcquisitionLinkText(value, 1, 120) && utf8.RuneCountInString(value) <= 30
 }
 
 func customerAcquisitionLinkReadbackProves(receipt CustomerAcquisitionLinkReceipt, observed wecomport.CustomerAcquisitionLink, resolution CustomerAcquisitionLinkResolution) bool {

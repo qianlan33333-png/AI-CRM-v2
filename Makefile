@@ -101,8 +101,7 @@ orval-tool-check:
 
 generate-orval: orval-tool-check
 	@PATH="$(dir $(abspath $(ORVAL))):$$PATH" $(ORVAL) \
-		--input api/openapi.yaml --output web/src/api/generated/health.ts \
-		--client fetch --mode single --clean web/src/api/generated --prettier
+		--config orval.config.mjs
 
 orval-check:
 	@$(MAKE) --no-print-directory generate-orval

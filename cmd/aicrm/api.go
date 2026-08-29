@@ -52,6 +52,7 @@ import (
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
 	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
+	hxchttp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/http"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/http"
@@ -108,6 +109,7 @@ import (
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 	groupopsdirectory "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/groupopsdirectory"
+	wecomhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/http"
 	wecomprofile "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/profile"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
@@ -1540,6 +1542,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	channelAcquisitionAssetsFragment := contacthttp.NewDisabledChannelAcquisitionAssetRouteFragment()
+	channelAcquisitionQRCodeDownload := contacthttp.NewDisabledChannelAcquisitionQRCodeDownloadHandler()
+	customerAcquisitionLinksFragment := wecomhttp.NewDisabledCustomerAcquisitionLinkHandler()
 	if config.WeCom.CustomerAcquisition.Enabled {
 		assetEffects, assetErr := contactapp.NewChannelAcquisitionAssetEERRuntime(externalEffectsRuntime, externalEffectsRuntimeRepository)
 		if assetErr != nil {
@@ -1579,6 +1583,29 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, assetErr
 		}
+		channelAcquisitionQRCodeDownload, assetErr = contacthttp.NewChannelAcquisitionQRCodeDownloadHandler(assetQueries, &http.Client{
+			Timeout: 5 * time.Second,
+			CheckRedirect: func(*http.Request, []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}, "work.weixin.qq.com")
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		linkClient, linkErr := newChannelAcquisitionClient(config.WeCom.CustomerAcquisition, &http.Client{Timeout: 5 * time.Second}, time.Now)
+		if linkErr != nil {
+			pool.Close()
+			return nil, linkErr
+		}
+		linkProvider, linkErr := wecomclient.NewCustomerAcquisitionLinkProvider(linkClient)
+		if linkErr != nil {
+			pool.Close()
+			return nil, linkErr
+		}
+		customerAcquisitionLinksFragment = wecomhttp.NewCustomerAcquisitionLinkHandler(
+			wecomapp.NewCustomerAcquisitionLinkService(wecomstore.NewCustomerAcquisitionLinkReceiptRepository(pool), linkProvider),
+		)
 	}
 	entrantReceiptCursor, err := contactapp.NewChannelAcquisitionEntrantReceiptCursorCodec(config.Identity.HMACKey.Value())
 	if err != nil {
@@ -2162,6 +2189,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.memberGridHistory = productstore.NewMemberGridHistoryReader(pool)
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
+	legacyHandler.channelQRDownload = channelAcquisitionQRCodeDownload
+	legacyHandler.custAcqLinks = customerAcquisitionLinksFragment
 	legacyHandler.entrantReceipts = channelAcquisitionEntrantReceiptsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
@@ -2216,6 +2245,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		reader:  hxcapp.Reader{Staff: hxcStaffDirectory, Configs: hxcSenderRepository},
 		manager: hxcapp.NewManager(uow, hxcSenderRepository, hxcStaffDirectory, eventstore.NewAppender()),
 	}
+	legacyHandler.hxcDirRefresh = hxchttp.DirectoryRefreshHandler{Application: hxcapp.NewDirectoryRefresher(
+		groupOpsRuntime,
+		hxcapp.Reader{Staff: hxcStaffDirectory, Configs: hxcSenderRepository},
+	)}
 	eventDeliveryLineage, err := eventapp.NewDeliveryLineageReader(uow, eventstore.NewDeliveryLineageRepository(), config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
@@ -3406,12 +3439,38 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				capability      authport.Capability
 				csrf            bool
 			}{
+				{http.MethodPost, "/api/admin/channels/{channel_id}/qrcode/generate", authport.CapabilityChannelsWrite, true},
 				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-assets", authport.CapabilityChannelsWrite, true},
 				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-assets", authport.CapabilityChannelsRead, false},
 				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}", authport.CapabilityChannelsRead, false},
 				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}/reconcile", authport.CapabilityChannelsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.channelAcquisitionAsset); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.channelQRDownload != nil {
+			if err = registerLegacy(http.MethodGet, contacthttp.ChannelAcquisitionQRCodeDownloadPath, authport.CapabilityChannelsRead, false, legacy.channelQRDownload); err != nil {
+				return nil, err
+			}
+		}
+		if legacy.custAcqLinks != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, wecomhttp.CustomerAcquisitionLinksPath, authport.CapabilityChannelsRead, false},
+				{http.MethodPost, wecomhttp.CustomerAcquisitionLinksPath, authport.CapabilityChannelsWrite, true},
+				{http.MethodGet, wecomhttp.CustomerAcquisitionLinksPath + "/{link_id}", authport.CapabilityChannelsRead, false},
+				{http.MethodPatch, wecomhttp.CustomerAcquisitionLinksPath + "/{link_id}", authport.CapabilityChannelsWrite, true},
+				{http.MethodDelete, wecomhttp.CustomerAcquisitionLinksPath + "/{link_id}", authport.CapabilityChannelsWrite, true},
+				{http.MethodPost, wecomhttp.CustomerAcquisitionLinksPath + "/{link_id}/reconcile", authport.CapabilityChannelsWrite, true},
+				{http.MethodPost, wecomhttp.CustomerAcquisitionLinksPath + "/{link_id}/enable", authport.CapabilityChannelsWrite, true},
+				{http.MethodPost, wecomhttp.CustomerAcquisitionLinksPath + "/{link_id}/disable", authport.CapabilityChannelsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.custAcqLinks); err != nil {
 					return nil, err
 				}
 			}
@@ -3870,6 +3929,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/operation-cycles/strategy-change-proposals/{proposal_id}/decision", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.DecideOperationCycleProposal)},
 		} {
 			if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
+				return nil, err
+			}
+		}
+		if legacy.hxcDirRefresh != nil {
+			if err = registerLegacy(http.MethodPost, hxchttp.RefreshDirectoryPath, authport.CapabilityOperationsManage, true, legacy.hxcDirRefresh); err != nil {
 				return nil, err
 			}
 		}

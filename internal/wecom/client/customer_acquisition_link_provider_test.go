@@ -20,7 +20,7 @@ func TestCustomerAcquisitionLinkProviderClassifiesWriteBoundary(t *testing.T) {
 	}{
 		{name: "executed", wantOutcome: wecomport.CustomerAcquisitionLinkExecuted, wantDispatched: true, wantReal: true},
 		{name: "provider rejected", err: apiError(40058, "rejected"), wantOutcome: wecomport.CustomerAcquisitionLinkFinalFailed, wantDispatched: true, wantReal: true},
-		{name: "outcome unknown", err: ErrWriteOutcomeUnknown, wantOutcome: wecomport.CustomerAcquisitionLinkOutcomeUnknown, wantDispatched: true},
+		{name: "outcome unknown", err: ErrWriteOutcomeUnknown, wantOutcome: wecomport.CustomerAcquisitionLinkOutcomeUnknown, wantDispatched: true, wantReal: true},
 		{name: "not dispatched", err: ErrBusinessWriteNotDispatched, wantError: wecomport.ErrCustomerAcquisitionLinkNotDispatched},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -28,8 +28,8 @@ func TestCustomerAcquisitionLinkProviderClassifiesWriteBoundary(t *testing.T) {
 			if !errors.Is(err, testCase.wantError) || result.Outcome != testCase.wantOutcome || result.BusinessEndpointDispatched != testCase.wantDispatched || result.RealExternalCallExecuted != testCase.wantReal {
 				t.Fatalf("result=%+v err=%v", result, err)
 			}
-			if testCase.wantError == nil && result.ReceiptDigest == ([32]byte{}) {
-				t.Fatal("classified provider result has no receipt digest")
+			if testCase.wantError == nil && result.OutcomeDigest == ([32]byte{}) {
+				t.Fatal("classified provider result has no outcome digest")
 			}
 		})
 	}

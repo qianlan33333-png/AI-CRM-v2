@@ -52,7 +52,7 @@ import { listGlobalQuestionnairePushLogsDto } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from '../../api/generated/health';
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
-import { archiveHxcSenderDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
+import { archiveHxcSenderDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';
 import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
 
@@ -80,6 +80,7 @@ export interface AdminApi {
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]>;
   reorderHxcSenders(ids: string[]): Promise<void>;
   archiveHxcSender(senderUserid: string): Promise<void>;
+  refreshHxcDirectory(): Promise<{ syncedCount: number }>;
 
   /* ---- 内容雷达 ---- */
   toggleRadarLink(id: number, enabled: boolean): Promise<void>;
@@ -358,6 +359,7 @@ export class MockApi implements AdminApi {
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { const item = this.db.rows.agents.find((row) => row.code === input.senderUserid) || { name: input.displayName, code: input.senderUserid, type: 'HXC 本地发送人', material: '', status: '', tone: 'gray' as const }; Object.assign(item, { senderId: input.id, priority: input.priority, isActive: input.active, name: input.displayName || input.senderUserid, material: `优先级 ${input.priority}`, status: input.active ? '启用中' : '已停用', tone: input.active ? 'ok' : 'gray' }); if (!this.db.rows.agents.includes(item)) this.db.rows.agents.push(item); this.persist(); return delay(item); }
   reorderHxcSenders(ids: string[]): Promise<void> { this.db.rows.agents.sort((a, b) => ids.indexOf(a.senderId || a.code) - ids.indexOf(b.senderId || b.code)); this.persist(); return delay(undefined); }
   archiveHxcSender(senderUserid: string): Promise<void> { const item = this.db.rows.agents.find((row) => row.code === senderUserid); if (item) { item.isActive = false; item.status = '已归档'; item.tone = 'gray'; this.persist(); } return delay(undefined); }
+  refreshHxcDirectory(): Promise<{ syncedCount: number }> { return Promise.reject(new Error('HXC 发送资格校验只支持当前 HTTP / OpenAPI 后端')); }
 
   /* ---------- 内容雷达 ---------- */
 
@@ -552,7 +554,7 @@ export class MockApi implements AdminApi {
   snapshotAudienceConfiguration(packageId: number): Promise<number> { const p = this.db.audiencePackages.find((x) => x.id === packageId)!; p.configurationVersion = (p.configurationVersion || 0) + 1; this.persist(); return delay(p.configurationVersion); }
   previewAudienceConfiguration(packageId: number): Promise<AudienceEvaluation> { const p = this.db.audiencePackages.find((x) => x.id === packageId)!; return delay({ configurationVersion: p.configurationVersion || 1, packageVersion: p.packageVersion || 1, memberCount: p.count, memberDigest: 'mock', evaluatedAt: '', materialized: false }); }
   materializeAudienceConfiguration(packageId: number): Promise<AudienceEvaluation> { return this.previewAudienceConfiguration(packageId).then((result) => ({ ...result, materialized: true })); }
-  saveGroupOpsPlan(input: GroupOpsWriteInput): Promise<GroupOpsPlanDetailItem> { const id = input.id || String(Date.now()); const plan = input.id ? this.db.groupOpsPlans.find((item) => item.id === input.id)! : { id, name: input.name, status: 'draft' as const, revision: 1, updatedAt: '' }; Object.assign(plan, { name: input.name, revision: plan.revision + 1 }); if (!input.id) this.db.groupOpsPlans.push(plan); const previous = this.db.groupOpsDetail; this.db.groupOpsDetail = { plan, staffIds: input.staffIds, assets: input.assetReferences.map((reference, index) => ({ id: previous?.assets.find((item) => item.reference === reference)?.id || String(index + 1), reference })), nodes: input.nodes, webhookReference: input.webhookReference || '', previewLines: input.nodes.map((node) => node.kind === 'message' ? node.messageText || '' : `等待 ${node.delayMinutes} 分钟`), previewIssues: [] }; this.persist(); return delay(this.db.groupOpsDetail); }
+  saveGroupOpsPlan(input: GroupOpsWriteInput): Promise<GroupOpsPlanDetailItem> { const id = input.id || String(Date.now()); const plan = input.id ? this.db.groupOpsPlans.find((item) => item.id === input.id)! : { id, name: input.name, status: 'draft' as const, revision: 1, updatedAt: '' }; Object.assign(plan, { name: input.name, revision: plan.revision + 1 }); if (!input.id) this.db.groupOpsPlans.push(plan); const previous = this.db.groupOpsDetail; this.db.groupOpsDetail = { plan, staffIds: input.staffIds, assets: input.assetReferences.map((reference, index) => ({ id: previous?.assets.find((item) => item.reference === reference)?.id || String(index + 1), reference })), nodes: input.nodes, webhookReference: input.webhookReference || '', webhookUrl: '', previewLines: input.nodes.map((node) => node.kind === 'message' ? node.messageText || '' : `等待 ${node.delayMinutes} 分钟`), previewIssues: [] }; this.persist(); return delay(this.db.groupOpsDetail!); }
   transitionGroupOpsPlan(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void> { const plan = this.db.groupOpsPlans.find((item) => item.id === planId); if (plan) { plan.status = action === 'activate' ? 'active' : action === 'pause' ? 'paused' : 'archived'; plan.revision += 1; this.persist(); } return delay(undefined); }
   deleteGroupOpsPlan(planId: string): Promise<void> { this.db.groupOpsPlans = this.db.groupOpsPlans.filter((item) => item.id !== planId); this.persist(); return delay(undefined); }
 
@@ -852,6 +854,7 @@ export class HttpApi implements AdminApi {
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { return saveHxcSenderDto(input); }
   reorderHxcSenders(ids: string[]): Promise<void> { return reorderHxcSendersDto(ids); }
   archiveHxcSender(senderUserid: string): Promise<void> { return archiveHxcSenderDto(senderUserid); }
+  refreshHxcDirectory(): Promise<{ syncedCount: number }> { return refreshHxcDirectoryDto(); }
 
   /* ---------- 内容雷达 ---------- */
 

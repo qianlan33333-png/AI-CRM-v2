@@ -40,6 +40,27 @@ type WecomContactProfileEffect struct {
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 }
 
+type WecomCustomerAcquisitionLinkReceipt struct {
+	ID                         int64              `json:"id"`
+	ActorID                    int64              `json:"actor_id"`
+	KeyDigest                  []byte             `json:"key_digest"`
+	RequestDigest              []byte             `json:"request_digest"`
+	Operation                  string             `json:"operation"`
+	LinkID                     string             `json:"link_id"`
+	CommandInput               []byte             `json:"command_input"`
+	State                      string             `json:"state"`
+	ProviderLink               []byte             `json:"provider_link"`
+	OutcomeDigest              []byte             `json:"outcome_digest"`
+	BusinessEndpointDispatched bool               `json:"business_endpoint_dispatched"`
+	RealExternalCallExecuted   bool               `json:"real_external_call_executed"`
+	ReconcileActorID           pgtype.Int8        `json:"reconcile_actor_id"`
+	ReconcileKeyDigest         []byte             `json:"reconcile_key_digest"`
+	EvidenceDigest             []byte             `json:"evidence_digest"`
+	Resolution                 pgtype.Text        `json:"resolution"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+}
+
 type WecomTagEffect struct {
 	EffectID                int64              `json:"effect_id"`
 	LegacyReceiptID         int64              `json:"legacy_receipt_id"`

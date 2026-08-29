@@ -27,13 +27,16 @@ type RefreshDirectoryCommand struct {
 }
 
 type RefreshDirectoryResult struct {
+	// SyncedCount is the eligible intersection of the existing canonical
+	// operation-members result and the persisted local staff projection. This
+	// endpoint does not create or mutate a second HXC staff projection.
 	SyncedCount          int        `json:"synced_count"`
 	ProviderReadExecuted bool       `json:"provider_read_executed"`
 	Projection           Projection `json:"projection"`
 }
 
 // DirectoryRefresher reuses the canonical operation-members Provider read and
-// only returns after the local staff projection can be read back.
+// only returns after the existing local staff projection can be read back.
 type DirectoryRefresher struct {
 	members    OperationMemberRefresher
 	projection SenderProjectionReader
@@ -57,5 +60,15 @@ func (service *DirectoryRefresher) Refresh(ctx context.Context, command RefreshD
 	if err != nil {
 		return RefreshDirectoryResult{}, errors.Join(ErrDirectoryRefreshUnavailable, err)
 	}
-	return RefreshDirectoryResult{SyncedCount: len(page.Items), ProviderReadExecuted: true, Projection: projection}, nil
+	eligible := make(map[string]struct{}, len(page.Items))
+	for _, member := range page.Items {
+		eligible[member.SenderUserID] = struct{}{}
+	}
+	count := 0
+	for _, candidate := range projection.Directory {
+		if _, ok := eligible[candidate.WeComUserID]; ok {
+			count++
+		}
+	}
+	return RefreshDirectoryResult{SyncedCount: count, ProviderReadExecuted: true, Projection: projection}, nil
 }

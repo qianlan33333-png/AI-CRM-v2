@@ -65,11 +65,15 @@ func (handler *ChannelAcquisitionAssetHandler) route(writer http.ResponseWriter,
 		return
 	}
 	segments := strings.Split(strings.Trim(request.URL.Path, "/"), "/")
-	if len(segments) < 5 || segments[0] != "api" || segments[1] != "admin" || segments[2] != "channels" || segments[4] != "acquisition-assets" {
+	if len(segments) < 5 || segments[0] != "api" || segments[1] != "admin" || segments[2] != "channels" {
 		channelAcquisitionAssetWriteError(writer, request, contactapp.ErrChannelAcquisitionAssetNotFound)
 		return
 	}
 	switch {
+	case len(segments) == 6 && segments[4] == "qrcode" && segments[5] == "generate" && request.Method == http.MethodPost:
+		handler.publishQRCode(writer, request, segments[3])
+	case segments[4] != "acquisition-assets":
+		channelAcquisitionAssetWriteError(writer, request, contactapp.ErrChannelAcquisitionAssetNotFound)
 	case len(segments) == 5 && request.Method == http.MethodPost:
 		handler.publish(writer, request, segments[3])
 	case len(segments) == 5 && request.Method == http.MethodGet:
@@ -81,6 +85,32 @@ func (handler *ChannelAcquisitionAssetHandler) route(writer http.ResponseWriter,
 	default:
 		channelAcquisitionAssetWriteError(writer, request, contactapp.ErrChannelAcquisitionAssetNotFound)
 	}
+}
+
+// publishQRCode keeps the old generate endpoint as a thin CH02 adapter. It
+// creates the same typed asset EER acceptance as the current asset endpoint;
+// it never invents a second QR-code state machine.
+func (handler *ChannelAcquisitionAssetHandler) publishQRCode(writer http.ResponseWriter, request *http.Request, rawChannelID string) {
+	actor, err := handler.authorize(request, authport.CapabilityChannelsWrite, true)
+	if err != nil {
+		channelAcquisitionAssetWriteError(writer, request, err)
+		return
+	}
+	channelID, key, ok := channelAcquisitionAssetMutationIdentity(writer, request, rawChannelID)
+	if !ok {
+		return
+	}
+	object, err := channelAcquisitionDecodeObject(writer, request)
+	if err != nil || len(object) != 0 {
+		channelAcquisitionWriteValidation(writer, request, "body", contactapp.ErrInvalidChannelAcquisitionAsset)
+		return
+	}
+	accepted, err := handler.commands.Publish(request.Context(), contactapp.PublishChannelAcquisitionAssetCommand{ChannelID: channelID, Actor: actor, IdempotencyKey: key, Kind: contactport.AcquisitionAssetQRCode})
+	if err != nil {
+		channelAcquisitionAssetWriteError(writer, request, err)
+		return
+	}
+	channelAcquisitionWriteJSON(writer, http.StatusAccepted, channelAcquisitionAssetAcceptanceResponse(accepted))
 }
 
 func (handler *ChannelAcquisitionAssetHandler) publish(writer http.ResponseWriter, request *http.Request, rawChannelID string) {
@@ -281,6 +311,7 @@ type channelAcquisitionAssetResponse struct {
 	AttemptReceiptDigest eer.Digest                       `json:"attempt_receipt_digest,omitempty"`
 	ReconcileReceiptID   string                           `json:"reconcile_receipt_id,omitempty"`
 	AssetURL             string                           `json:"asset_url,omitempty"`
+	DownloadURL          string                           `json:"download_url,omitempty"`
 	EntrantReady         bool                             `json:"entrant_ready"`
 	CreatedAt            string                           `json:"created_at"`
 	UpdatedAt            string                           `json:"updated_at"`
@@ -330,6 +361,9 @@ func channelAcquisitionAssetReconciliationResponse(value contactapp.ChannelAcqui
 
 func channelAcquisitionAssetItemResponse(item contactapp.ChannelAcquisitionAssetItem) channelAcquisitionAssetResponse {
 	response := channelAcquisitionAssetResponse{EffectID: item.EffectID, ChannelID: item.ChannelID, Kind: item.Kind, AssetVersion: item.AssetVersion, SupersedesVersion: item.SupersedesVersion, State: item.State, AcceptReceiptID: item.AcceptReceiptID, QueueReceiptID: item.QueueReceiptID, AttemptReceiptDigest: item.AttemptReceiptDigest, ReconcileReceiptID: item.ReconcileReceiptID, AssetURL: item.AssetURL, EntrantReady: item.EntrantReady, CreatedAt: item.CreatedAt.UTC().Format(time.RFC3339Nano), UpdatedAt: item.UpdatedAt.UTC().Format(time.RFC3339Nano)}
+	if item.Kind == contactport.AcquisitionAssetQRCode && item.State == eer.StateExecuted && item.AssetURL != "" {
+		response.DownloadURL = ChannelAcquisitionAssetsRoutePrefix + "/" + strconv.FormatInt(item.ChannelID, 10) + "/qrcode/download"
+	}
 	if item.ReconciledAt != nil {
 		response.ReconciledAt = item.ReconciledAt.UTC().Format(time.RFC3339Nano)
 	}
