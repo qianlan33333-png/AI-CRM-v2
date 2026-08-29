@@ -55,15 +55,15 @@ func TestCustomerTimelineHistoryImportReplayAndReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reconciled != (CustomerTimelineHistoryReconciliationResult{Verified: 2}) || len(state.reconciliations) != 2 {
-		t.Fatalf("first reconcile=%#v receipts=%d", reconciled, len(state.reconciliations))
+	if reconciled.SelectedSourceCount != 2 || reconciled.ReceiptCount != 2 || reconciled.ImportedCount != 2 || reconciled.QuarantinedCount != 0 || reconciled.VerifiedCount != 2 || reconciled.Replayed || reconciled.ComparisonDigest == ([sha256.Size]byte{}) || state.reconciliation == nil || state.sealRecords != 1 {
+		t.Fatalf("first reconcile=%#v seal=%#v", reconciled, state.reconciliation)
 	}
 	reconciledReplay, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reconciledReplay != (CustomerTimelineHistoryReconciliationResult{Verified: 2, Replayed: 2}) || len(state.reconciliations) != 2 {
-		t.Fatalf("reconcile replay=%#v receipts=%d", reconciledReplay, len(state.reconciliations))
+	if !reconciledReplay.Replayed || reconciledReplay.ComparisonDigest != reconciled.ComparisonDigest || state.reconciliation == nil || state.reconciliation.ComparisonDigest != reconciled.ComparisonDigest || state.sealRecords != 1 {
+		t.Fatalf("reconcile replay=%#v seal=%#v", reconciledReplay, state.reconciliation)
 	}
 }
 
@@ -113,11 +113,16 @@ func TestCustomerTimelineHistoryFailsClosedBeforeWriteAndOnTargetDrift(t *testin
 	if _, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey); err != nil {
 		t.Fatal(err)
 	}
+	first, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed := *state.reconciliation
 	tampered := state.targets[1]
 	tampered.Title = "tampered private title"
 	state.targets[1] = tampered
-	if _, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey); !errors.Is(err, ErrConflict) || len(state.reconciliations) != 0 || state.uow.rollbacks == 0 {
-		t.Fatalf("target drift accepted or reconciliation persisted: err=%v receipts=%d rollbacks=%d", err, len(state.reconciliations), state.uow.rollbacks)
+	if _, err := importer.Reconcile(context.Background(), "timeline-run", customerTimelineHistoryTestKey); !errors.Is(err, ErrConflict) || state.reconciliation == nil || *state.reconciliation != sealed || state.sealRecords != 1 || state.uow.rollbacks == 0 || first.Replayed {
+		t.Fatalf("target drift accepted or seal changed: err=%v seal=%#v records=%d rollbacks=%d", err, state.reconciliation, state.sealRecords, state.uow.rollbacks)
 	}
 }
 
@@ -165,18 +170,19 @@ func (resolver customerTimelineHistoryResolver) ResolveVerifiedCustomerTimelineU
 var errCustomerTimelineHistoryRecord = errors.New("timeline terminal record failed")
 
 type customerTimelineHistoryState struct {
-	nextID          int64
-	targets         map[int64]contact.HistoricalCustomerTimelineEvent
-	writerReceipts  map[string]contact.CustomerTimelineHistoryReceipt
-	terminals       map[[sha256.Size]byte]CustomerTimelineTerminal
-	reconciliations map[[sha256.Size]byte]CustomerTimelineReconciliationReceipt
-	failTerminalAt  int
-	terminalCalls   int
-	uow             customerTimelineHistoryUOW
+	nextID         int64
+	targets        map[int64]contact.HistoricalCustomerTimelineEvent
+	writerReceipts map[string]contact.CustomerTimelineHistoryReceipt
+	terminals      map[[sha256.Size]byte]CustomerTimelineTerminal
+	reconciliation *CustomerTimelineReconciliationSeal
+	failTerminalAt int
+	terminalCalls  int
+	sealRecords    int
+	uow            customerTimelineHistoryUOW
 }
 
 func newCustomerTimelineHistoryState() *customerTimelineHistoryState {
-	state := &customerTimelineHistoryState{nextID: 1, targets: map[int64]contact.HistoricalCustomerTimelineEvent{}, writerReceipts: map[string]contact.CustomerTimelineHistoryReceipt{}, terminals: map[[sha256.Size]byte]CustomerTimelineTerminal{}, reconciliations: map[[sha256.Size]byte]CustomerTimelineReconciliationReceipt{}}
+	state := &customerTimelineHistoryState{nextID: 1, targets: map[int64]contact.HistoricalCustomerTimelineEvent{}, writerReceipts: map[string]contact.CustomerTimelineHistoryReceipt{}, terminals: map[[sha256.Size]byte]CustomerTimelineTerminal{}}
 	state.uow.state = state
 	return state
 }
@@ -216,16 +222,16 @@ func (state *customerTimelineHistoryState) clone() customerTimelineHistoryState 
 	for key, value := range state.terminals {
 		copy.terminals[key] = value
 	}
-	copy.reconciliations = make(map[[sha256.Size]byte]CustomerTimelineReconciliationReceipt, len(state.reconciliations))
-	for key, value := range state.reconciliations {
-		copy.reconciliations[key] = value
+	if state.reconciliation != nil {
+		value := *state.reconciliation
+		copy.reconciliation = &value
 	}
 	return copy
 }
 
 func (state *customerTimelineHistoryState) restore(before customerTimelineHistoryState) {
-	next, targets, writerReceipts, terminals, reconciliations := before.nextID, before.targets, before.writerReceipts, before.terminals, before.reconciliations
-	state.nextID, state.targets, state.writerReceipts, state.terminals, state.reconciliations = next, targets, writerReceipts, terminals, reconciliations
+	next, targets, writerReceipts, terminals, reconciliation := before.nextID, before.targets, before.writerReceipts, before.terminals, before.reconciliation
+	state.nextID, state.targets, state.writerReceipts, state.terminals, state.reconciliation = next, targets, writerReceipts, terminals, reconciliation
 }
 
 func (state *customerTimelineHistoryState) ImportHistoricalCustomerTimelineEvent(_ context.Context, source string, value contact.HistoricalCustomerTimelineEvent) (contact.CustomerTimelineHistoryReceipt, error) {
@@ -273,16 +279,23 @@ func (state *customerTimelineHistoryState) RecordCustomerTimelineTerminal(_ cont
 	return nil
 }
 
-func (state *customerTimelineHistoryState) LoadCustomerTimelineReconciliation(_ context.Context, version string, key [sha256.Size]byte) (CustomerTimelineReconciliationReceipt, bool, error) {
-	if version != customerTimelineHistoryVersion {
-		return CustomerTimelineReconciliationReceipt{}, false, ErrConflict
+func (state *customerTimelineHistoryState) LoadCustomerTimelineReconciliationSeal(_ context.Context, version, run string) (CustomerTimelineReconciliationSeal, bool, error) {
+	if version != customerTimelineHistoryVersion || run != "timeline-run" {
+		return CustomerTimelineReconciliationSeal{}, false, ErrConflict
 	}
-	value, found := state.reconciliations[key]
-	return value, found, nil
+	if state.reconciliation == nil {
+		return CustomerTimelineReconciliationSeal{}, false, nil
+	}
+	return *state.reconciliation, true, nil
 }
 
-func (state *customerTimelineHistoryState) RecordCustomerTimelineReconciliation(_ context.Context, value CustomerTimelineReconciliationReceipt) error {
-	state.reconciliations[value.SourceKeyHMAC] = value
+func (state *customerTimelineHistoryState) RecordCustomerTimelineReconciliationSeal(_ context.Context, value CustomerTimelineReconciliationSeal) error {
+	if state.reconciliation != nil {
+		return ErrConflict
+	}
+	state.sealRecords++
+	copy := value
+	state.reconciliation = &copy
 	return nil
 }
 

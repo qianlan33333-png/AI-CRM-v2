@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"hash"
 	"reflect"
 
 	timeline "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1customertimelinehistory"
@@ -52,19 +54,18 @@ type CustomerTimelineImportJournal interface {
 	RecordCustomerTimelineTerminal(context.Context, CustomerTimelineTerminal) error
 }
 
-// CustomerTimelineReconciliationReceipt is the narrow reconciliation receipt
-// mapped later to v1_domain_import_reconciliation_receipts.
-type CustomerTimelineReconciliationReceipt struct {
-	Version, ArchiveRunID, TableID        string
-	SourceKeyHMAC, PayloadHMAC, FieldHMAC [sha256.Size]byte
-	Disposition                           string
-	TargetID                              int64
-	TargetDigest                          [sha256.Size]byte
+// CustomerTimelineReconciliationSeal maps to the one formal reconciliation
+// row for an import-version/archive-run pair. Per-source evidence remains in
+// immutable terminal receipts and is verified before this seal is made.
+type CustomerTimelineReconciliationSeal struct {
+	Version, ArchiveRunID                                                                            string
+	SelectedSourceCount, ReceiptCount, ImportedCount, ArchivedCount, QuarantinedCount, VerifiedCount int64
+	ComparisonDigest                                                                                 [sha256.Size]byte
 }
 
 type CustomerTimelineReconciliationJournal interface {
-	LoadCustomerTimelineReconciliation(context.Context, string, [sha256.Size]byte) (CustomerTimelineReconciliationReceipt, bool, error)
-	RecordCustomerTimelineReconciliation(context.Context, CustomerTimelineReconciliationReceipt) error
+	LoadCustomerTimelineReconciliationSeal(context.Context, string, string) (CustomerTimelineReconciliationSeal, bool, error)
+	RecordCustomerTimelineReconciliationSeal(context.Context, CustomerTimelineReconciliationSeal) error
 }
 
 type CustomerTimelineHistoryImporter struct {
@@ -83,7 +84,9 @@ type CustomerTimelineHistoryImportResult struct {
 }
 
 type CustomerTimelineHistoryReconciliationResult struct {
-	Verified, Replayed int
+	SelectedSourceCount, ReceiptCount, ImportedCount, ArchivedCount, QuarantinedCount, VerifiedCount int64
+	ComparisonDigest                                                                                 [sha256.Size]byte
+	Replayed                                                                                         bool
 }
 
 func NewCustomerTimelineHistoryImporter(ready CustomerTimelineArchiveReady, archive timeline.ArchiveSource, uow UnitOfWork, writer CustomerTimelineWriter, resolver CustomerTimelineResolver, targets CustomerTimelineTargetReader, journal CustomerTimelineImportJournal, reconciliation CustomerTimelineReconciliationJournal) (*CustomerTimelineHistoryImporter, error) {
@@ -119,11 +122,11 @@ func (importer *CustomerTimelineHistoryImporter) Reconcile(ctx context.Context, 
 	if err := importer.ready.VerifyCustomerTimelineArchiveReady(ctx, archiveRunID); err != nil {
 		return CustomerTimelineHistoryReconciliationResult{}, err
 	}
-	consumer := &customerTimelineReconcileConsumer{importer: importer, archiveRunID: archiveRunID}
+	consumer := &customerTimelineReconcileConsumer{importer: importer, archiveRunID: archiveRunID, hash: sha256.New()}
 	if _, err := timeline.Stream(ctx, importer.archive, archiveRunID, sourceHMACKey, customerTimelineNoopVerifier{}, consumer); err != nil {
 		return CustomerTimelineHistoryReconciliationResult{}, err
 	}
-	return consumer.result, nil
+	return consumer.seal(ctx)
 }
 
 func (importer *CustomerTimelineHistoryImporter) valid(ctx context.Context, run string, key []byte) bool {
@@ -237,23 +240,21 @@ type customerTimelineReconcileConsumer struct {
 	importer     *CustomerTimelineHistoryImporter
 	archiveRunID string
 	result       CustomerTimelineHistoryReconciliationResult
+	hash         hash.Hash
 }
 
 func (consumer *customerTimelineReconcileConsumer) ConsumeCustomerTimelineBatch(ctx context.Context, batch timeline.Batch) error {
 	if consumer == nil || consumer.importer == nil || len(batch.Rows) == 0 || len(batch.Rows) > timeline.FixedBatchSize {
 		return ErrInvalidScope
 	}
-	var verified, replayed int
+	var selected, imported, quarantined, verified int64
 	err := consumer.importer.uow.Within(ctx, func(tx context.Context) error {
-		verified, replayed = 0, 0
+		selected, imported, quarantined, verified = 0, 0, 0, 0
 		for _, row := range batch.Rows {
 			terminal, found, err := consumer.importer.journal.LoadCustomerTimelineTerminal(tx, customerTimelineHistoryVersion, row.Source.SourceKeyHMAC)
 			if err != nil || !found || !customerTimelineTerminalMatchesRow(terminal, consumer.archiveRunID, row) {
 				return ErrConflict
 			}
-			receipt := CustomerTimelineReconciliationReceipt{Version: customerTimelineHistoryVersion, ArchiveRunID: consumer.archiveRunID, TableID: timeline.TableID,
-				SourceKeyHMAC: row.Source.SourceKeyHMAC, PayloadHMAC: row.Source.PayloadHMAC, FieldHMAC: row.Source.FieldHMAC, Disposition: row.Disposition,
-				TargetID: terminal.TargetID, TargetDigest: terminal.TargetDigest}
 			if row.Disposition == timeline.DispositionCandidate {
 				if row.Fact == nil || terminal.TargetID < 1 || terminal.TargetDigest == ([sha256.Size]byte{}) {
 					return ErrConflict
@@ -272,25 +273,32 @@ func (consumer *customerTimelineReconcileConsumer) ConsumeCustomerTimelineBatch(
 				if actualErr != nil || expectedErr != nil || actualDigest != expectedDigest || actualDigest != terminal.TargetDigest {
 					return ErrConflict
 				}
+				imported++
 			} else if row.Disposition != timeline.DispositionQuarantine || terminal.TargetID != 0 || terminal.TargetDigest != ([sha256.Size]byte{}) {
 				return ErrConflict
+			} else {
+				quarantined++
 			}
-			wasReplayed, err := consumer.importer.recordReconciliation(tx, receipt)
-			if err != nil {
+			if err := json.NewEncoder(consumer.hash).Encode([]any{
+				timeline.TableID, row.Source.SourceOrdinal, hex.EncodeToString(row.Source.SourceKeyHMAC[:]),
+				hex.EncodeToString(row.Source.PayloadHMAC[:]), hex.EncodeToString(row.Source.FieldHMAC[:]),
+				row.Disposition, row.Reason, terminal.TargetID, hex.EncodeToString(terminal.TargetDigest[:]),
+			}); err != nil {
 				return err
 			}
+			selected++
 			verified++
-			if wasReplayed {
-				replayed++
-			}
 		}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	consumer.result.Verified += verified
-	consumer.result.Replayed += replayed
+	consumer.result.SelectedSourceCount += selected
+	consumer.result.ReceiptCount += selected
+	consumer.result.ImportedCount += imported
+	consumer.result.QuarantinedCount += quarantined
+	consumer.result.VerifiedCount += verified
 	return nil
 }
 
@@ -308,21 +316,52 @@ func (importer *CustomerTimelineHistoryImporter) targetValueWithoutResolve(fact 
 	return value, nil
 }
 
-func (importer *CustomerTimelineHistoryImporter) recordReconciliation(ctx context.Context, value CustomerTimelineReconciliationReceipt) (bool, error) {
-	if !validCustomerTimelineReconciliation(value) {
-		return false, ErrConflict
+func (consumer *customerTimelineReconcileConsumer) seal(ctx context.Context) (CustomerTimelineHistoryReconciliationResult, error) {
+	if consumer == nil || consumer.importer == nil || consumer.hash == nil {
+		return CustomerTimelineHistoryReconciliationResult{}, ErrConflict
 	}
-	existing, found, err := importer.reconciliation.LoadCustomerTimelineReconciliation(ctx, value.Version, value.SourceKeyHMAC)
-	if err != nil {
-		return false, err
+	seal := customerTimelineReconciliationSeal(consumer)
+	if !validCustomerTimelineReconciliationSeal(seal) {
+		return CustomerTimelineHistoryReconciliationResult{}, ErrConflict
 	}
-	if found {
-		return true, boolCustomerTimelineReconciliationEqual(existing, value)
+	if err := consumer.importer.uow.Within(ctx, func(tx context.Context) error {
+		existing, found, err := consumer.importer.reconciliation.LoadCustomerTimelineReconciliationSeal(tx, seal.Version, seal.ArchiveRunID)
+		if err != nil {
+			return err
+		}
+		if found {
+			if existing != seal {
+				return ErrConflict
+			}
+			consumer.result.Replayed = true
+			return nil
+		}
+		return consumer.importer.reconciliation.RecordCustomerTimelineReconciliationSeal(tx, seal)
+	}); err != nil {
+		return CustomerTimelineHistoryReconciliationResult{}, err
 	}
-	if err := importer.reconciliation.RecordCustomerTimelineReconciliation(ctx, value); err != nil {
-		return false, err
+	consumer.result.ComparisonDigest = seal.ComparisonDigest
+	return consumer.result, nil
+}
+
+func customerTimelineReconciliationSeal(consumer *customerTimelineReconcileConsumer) CustomerTimelineReconciliationSeal {
+	var digest [sha256.Size]byte
+	copy(digest[:], consumer.hash.Sum(nil))
+	return CustomerTimelineReconciliationSeal{
+		Version: customerTimelineHistoryVersion, ArchiveRunID: consumer.archiveRunID,
+		SelectedSourceCount: consumer.result.SelectedSourceCount, ReceiptCount: consumer.result.ReceiptCount,
+		ImportedCount: consumer.result.ImportedCount, ArchivedCount: consumer.result.ArchivedCount,
+		QuarantinedCount: consumer.result.QuarantinedCount, VerifiedCount: consumer.result.VerifiedCount,
+		ComparisonDigest: digest,
 	}
-	return false, nil
+}
+
+func validCustomerTimelineReconciliationSeal(value CustomerTimelineReconciliationSeal) bool {
+	return value.Version == customerTimelineHistoryVersion && value.ArchiveRunID != "" &&
+		value.SelectedSourceCount > 0 && value.ReceiptCount == value.SelectedSourceCount &&
+		value.VerifiedCount == value.ReceiptCount &&
+		value.ImportedCount+value.ArchivedCount+value.QuarantinedCount == value.ReceiptCount &&
+		value.ComparisonDigest != ([sha256.Size]byte{})
 }
 
 func validateCustomerTimelineWriterReceipt(receipt contact.CustomerTimelineHistoryReceipt, value contact.HistoricalCustomerTimelineEvent, terminal CustomerTimelineTerminal) error {
@@ -346,24 +385,7 @@ func customerTimelineTerminalMatchesRow(value CustomerTimelineTerminal, archiveR
 	return validCustomerTimelineTerminal(value) && value.ArchiveRunID == archiveRunID && value.SourceKeyHMAC == row.Source.SourceKeyHMAC && value.PayloadHMAC == row.Source.PayloadHMAC && value.FieldHMAC == row.Source.FieldHMAC && value.Disposition == row.Disposition && value.Reason == row.Reason
 }
 
-func validCustomerTimelineReconciliation(value CustomerTimelineReconciliationReceipt) bool {
-	if value.Version != customerTimelineHistoryVersion || value.ArchiveRunID == "" || value.TableID != timeline.TableID || value.SourceKeyHMAC == ([sha256.Size]byte{}) || value.PayloadHMAC == ([sha256.Size]byte{}) || value.FieldHMAC == ([sha256.Size]byte{}) {
-		return false
-	}
-	if value.Disposition == timeline.DispositionCandidate {
-		return value.TargetID > 0 && value.TargetDigest != ([sha256.Size]byte{})
-	}
-	return value.Disposition == timeline.DispositionQuarantine && value.TargetID == 0 && value.TargetDigest == ([sha256.Size]byte{})
-}
-
 func boolCustomerTimelineTerminalEqual(left, right CustomerTimelineTerminal) error {
-	if left == right {
-		return nil
-	}
-	return ErrConflict
-}
-
-func boolCustomerTimelineReconciliationEqual(left, right CustomerTimelineReconciliationReceipt) error {
 	if left == right {
 		return nil
 	}
