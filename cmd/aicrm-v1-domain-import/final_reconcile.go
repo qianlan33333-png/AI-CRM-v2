@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1domain"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
 
@@ -295,7 +296,7 @@ func reconcileFinalMigration(ctx context.Context, pool *pgxpool.Pool, archiveRun
 		return finalReconciliationResult{}, err
 	}
 	result.IdentityMapping = identity
-	if err = tx.QueryRow(ctx, "SELECT count(*) FROM public.external_effects").Scan(&result.ExternalEffects); err != nil {
+	if result.ExternalEffects, err = v1domain.FinalExternalEffectCount(ctx, tx); err != nil {
 		return finalReconciliationResult{}, err
 	}
 	if result.ExternalEffects != 0 {
@@ -378,22 +379,8 @@ func preflightFinalMigration(ctx context.Context, pool *pgxpool.Pool, archiveRun
 }
 
 func validateFinalPreflightVersions(ctx context.Context, tx pgx.Tx, archiveRunID string, scopes map[string][]string) error {
-	rows, err := tx.Query(ctx, `SELECT import_version FROM public.v1_domain_import_receipts WHERE archive_run_id=$1
-UNION
-SELECT import_version FROM public.v1_domain_import_reconciliation_receipts WHERE archive_run_id=$1`, archiveRunID)
+	versions, err := v1domain.FinalImportVersions(ctx, tx, archiveRunID)
 	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	versions := make([]string, 0, len(scopes))
-	for rows.Next() {
-		var version string
-		if err = rows.Scan(&version); err != nil {
-			return err
-		}
-		versions = append(versions, version)
-	}
-	if err = rows.Err(); err != nil {
 		return err
 	}
 	return validateFinalPreflightVersionSet(scopes, versions)
@@ -409,11 +396,7 @@ func validateFinalPreflightVersionSet(scopes map[string][]string, versions []str
 }
 
 func countFinalPreflightReceipts(ctx context.Context, tx pgx.Tx, archiveRunID, importVersion string) (int64, error) {
-	var count int64
-	if err := tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts WHERE archive_run_id=$1 AND import_version=$2`, archiveRunID, importVersion).Scan(&count); err != nil {
-		return 0, err
-	}
-	return count, nil
+	return v1domain.FinalImportReceiptCount(ctx, tx, archiveRunID, importVersion)
 }
 
 func classifyFinalPreflightScopes(scopes map[string][]string, sealed map[string]bool, receiptCounts map[string]int64) ([]string, error) {
@@ -432,15 +415,7 @@ func classifyFinalPreflightScopes(scopes map[string][]string, sealed map[string]
 }
 
 func verifyReconciledArchive(ctx context.Context, tx pgx.Tx, archiveRunID string) error {
-	var ready bool
-	err := tx.QueryRow(ctx, `SELECT EXISTS(
-SELECT 1 FROM public.v1_archive_reconciliation_receipts receipt
-JOIN public.data_migration_runs run USING (run_id)
-WHERE receipt.run_id=$1 AND run.phase='reconciled' AND run.adapter_id=$2
-AND receipt.source_row_count=receipt.archive_record_count
-AND receipt.source_row_count=receipt.terminal_disposition_count
-AND receipt.source_table_count=receipt.archived_table_count
-)`, archiveRunID, v1archive.DefaultAdapterID).Scan(&ready)
+	ready, err := v1domain.FinalArchiveReconciled(ctx, tx, archiveRunID, v1archive.DefaultAdapterID)
 	if err != nil {
 		return err
 	}
@@ -495,40 +470,24 @@ func reconcileFinalDomain(ctx context.Context, tx pgx.Tx, archiveRunID string, s
 }
 
 func loadCurrentReceiptCounts(ctx context.Context, tx pgx.Tx, archiveRunID string, spec finalDomainSpec) (reconciliationCounts, []byte, error) {
-	query := `SELECT table_id,source_key_digest,payload_digest,disposition,reason,target_domain,target_table,target_id,target_digest,verified
-FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2`
-	args := []any{spec.ImportVersion, archiveRunID}
-	if len(spec.SourceTables) > 0 {
-		query += " AND table_id=ANY($3::text[])"
-		args = append(args, spec.SourceTables)
-	}
-	query += " ORDER BY table_id,source_key_digest"
-	rows, err := tx.Query(ctx, query, args...)
+	rows, err := v1domain.FinalImportReceiptRows(ctx, tx, archiveRunID, spec.ImportVersion, spec.SourceTables)
 	if err != nil {
 		return reconciliationCounts{}, nil, err
 	}
-	defer rows.Close()
 	hash := sha256.New()
 	encoder := json.NewEncoder(hash)
 	var counts reconciliationCounts
-	for rows.Next() {
-		var tableID, disposition, reason string
-		var source, payload, targetDigest []byte
-		var targetDomain, targetTable, targetID *string
-		var verified bool
-		if err = rows.Scan(&tableID, &source, &payload, &disposition, &reason, &targetDomain, &targetTable, &targetID, &targetDigest, &verified); err != nil {
-			return reconciliationCounts{}, nil, err
-		}
-		if len(source) != sha256.Size || len(payload) != sha256.Size {
+	for _, row := range rows {
+		if len(row.SourceKeyDigest) != sha256.Size || len(row.PayloadDigest) != sha256.Size {
 			return reconciliationCounts{}, nil, fmt.Errorf("invalid receipt digest")
 		}
 		counts.Receipts++
-		if verified {
+		if row.Verified {
 			counts.Verified++
 		}
-		switch disposition {
+		switch row.Disposition {
 		case "import":
-			if targetDomain == nil || targetTable == nil || targetID == nil || len(targetDigest) != sha256.Size {
+			if row.TargetDomain == nil || row.TargetTable == nil || row.TargetID == nil || len(row.TargetDigest) != sha256.Size {
 				return reconciliationCounts{}, nil, fmt.Errorf("import receipt has no target proof")
 			}
 			counts.Imported++
@@ -537,42 +496,32 @@ FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id
 		case "quarantine":
 			counts.Quarantined++
 		default:
-			return reconciliationCounts{}, nil, fmt.Errorf("unknown receipt disposition %q", disposition)
+			return reconciliationCounts{}, nil, fmt.Errorf("unknown receipt disposition %q", row.Disposition)
 		}
-		if err = encoder.Encode([]any{tableID, hex.EncodeToString(source), hex.EncodeToString(payload), disposition, reason, stringValue(targetDomain), stringValue(targetTable), stringValue(targetID), hex.EncodeToString(targetDigest), verified}); err != nil {
+		if err = encoder.Encode([]any{row.TableID, hex.EncodeToString(row.SourceKeyDigest), hex.EncodeToString(row.PayloadDigest), row.Disposition, row.Reason, stringValue(row.TargetDomain), stringValue(row.TargetTable), stringValue(row.TargetID), hex.EncodeToString(row.TargetDigest), row.Verified}); err != nil {
 			return reconciliationCounts{}, nil, err
 		}
-	}
-	if err = rows.Err(); err != nil {
-		return reconciliationCounts{}, nil, err
 	}
 	return counts, hash.Sum(nil), nil
 }
 
 func sourceCounts(ctx context.Context, tx pgx.Tx, archiveRunID string, tables []string) (int64, int64, error) {
-	var tableCount int
-	var selected, sourceRows int64
-	err := tx.QueryRow(ctx, `SELECT count(*),COALESCE(sum(row_count),0)
-FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=ANY($2::text[])`, archiveRunID, tables).Scan(&tableCount, &selected)
+	tableCount, selected, sourceRows, err := v1domain.FinalArchiveSourceCounts(ctx, tx, archiveRunID, v1archive.DefaultAdapterID, tables)
 	if err != nil {
 		return 0, 0, err
 	}
 	if tableCount != len(tables) {
 		return 0, 0, fmt.Errorf("required archive source table is missing")
 	}
-	err = tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_archive_records
-WHERE run_id=$1 AND adapter_id=$2 AND table_id=ANY($3::text[])`, archiveRunID, v1archive.DefaultAdapterID, tables).Scan(&sourceRows)
-	return selected, sourceRows, err
+	return selected, sourceRows, nil
 }
 
 func loadReconciliationCounts(ctx context.Context, tx pgx.Tx, archiveRunID, importVersion string) (reconciliationCounts, error) {
-	var value reconciliationCounts
-	err := tx.QueryRow(ctx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
-FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, importVersion, archiveRunID).
-		Scan(&value.Selected, &value.Receipts, &value.Imported, &value.Archived, &value.Quarantined, &value.Verified, &value.Digest)
+	stored, err := v1domain.FinalReconciliationCounts(ctx, tx, archiveRunID, importVersion)
 	if err != nil {
 		return reconciliationCounts{}, err
 	}
+	value := reconciliationCounts{Selected: stored.Selected, Receipts: stored.Receipts, Imported: stored.Imported, Archived: stored.Archived, Quarantined: stored.Quarantined, Verified: stored.Verified, Digest: stored.Digest}
 	if value.Selected != value.Receipts || value.Receipts != value.Imported+value.Archived+value.Quarantined || value.Receipts != value.Verified || len(value.Digest) != sha256.Size {
 		return reconciliationCounts{}, fmt.Errorf("stored reconciliation receipt is invalid")
 	}
@@ -611,28 +560,18 @@ func validateFinalReconciliationGroups(scopes map[string][]string, actual, recon
 }
 
 func verifyFinalIdentityMapping(ctx context.Context, tx pgx.Tx, dm01RunID int64) (finalIdentityProof, error) {
-	var ready bool
-	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.legacy_contact_identity_import_runs
-WHERE id=$1 AND mode='full' AND state='imported')`, dm01RunID).Scan(&ready); err != nil {
+	ready, err := v1domain.FinalIdentityRunImported(ctx, tx, dm01RunID)
+	if err != nil {
 		return finalIdentityProof{}, err
 	}
 	if !ready {
 		return finalIdentityProof{}, fmt.Errorf("DM01 full import run is not imported")
 	}
-	result := finalIdentityProof{DM01RunID: dm01RunID}
-	err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER (WHERE
-EXISTS(SELECT 1 FROM public.legacy_contact_identity_import_row_receipts receipt
-WHERE receipt.run_id=$1 AND receipt.source_table=mapping.source_table
-AND receipt.source_key_hmac=mapping.source_key_hmac AND receipt.payload_hmac=mapping.payload_hmac
-AND receipt.disposition='imported')
-AND (mapping.staff_id IS NULL OR EXISTS(SELECT 1 FROM public.staff WHERE id=mapping.staff_id))
-AND (mapping.customer_id IS NULL OR EXISTS(SELECT 1 FROM public.customers WHERE id=mapping.customer_id AND NOT is_deleted))
-AND (mapping.identity_id IS NULL OR EXISTS(SELECT 1 FROM public.identities WHERE id=mapping.identity_id))
-) FROM public.legacy_contact_identity_source_mappings mapping
-WHERE mapping.last_run_id=$1`, dm01RunID).Scan(&result.MappingCount, &result.VerifiedMapping)
+	mappingCount, verifiedMapping, err := v1domain.FinalIdentityMappingCounts(ctx, tx, dm01RunID)
 	if err != nil {
 		return finalIdentityProof{}, err
 	}
+	result := finalIdentityProof{DM01RunID: dm01RunID, MappingCount: mappingCount, VerifiedMapping: verifiedMapping}
 	if err = validateFinalIdentityProof(result); err != nil {
 		return finalIdentityProof{}, err
 	}
