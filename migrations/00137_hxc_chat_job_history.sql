@@ -31,4 +31,3 @@ CREATE TABLE hxc_v1_chat_job_history (
 
 -- +goose Down
 DROP TABLE hxc_v1_chat_job_history;
-

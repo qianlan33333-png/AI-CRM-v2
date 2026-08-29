@@ -1918,6 +1918,72 @@ export interface StaticHistoryCycleDocumentDetail {
   item: StaticHistoryCycleDocument;
 }
 
+export interface HXCHistoryMemberUsage {
+  /** @minimum 1 */
+  id: number;
+  generation: number;
+  is_member: boolean;
+  is_registered: boolean;
+  has_real_usage: boolean;
+  /** @nullable */
+  registered_at: string | null;
+  /** @nullable */
+  first_used_at: string | null;
+  /** @nullable */
+  last_used_at: string | null;
+  /** @nullable */
+  member_since: string | null;
+  /** @nullable */
+  membership_expires_at: string | null;
+  /** @nullable */
+  updated_at: string | null;
+  membership_tier: string;
+  membership_status: string;
+  membership_source: string;
+  registration_source: string;
+  usage_source: string;
+  projected_at: string;
+}
+
+export type HXCHistoryMemberUsagePageSource =
+  (typeof HXCHistoryMemberUsagePageSource)[keyof typeof HXCHistoryMemberUsagePageSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryMemberUsagePageSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryMemberUsagePage {
+  source: HXCHistoryMemberUsagePageSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  items: HXCHistoryMemberUsage[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export type HXCHistoryMemberUsageDetailSource =
+  (typeof HXCHistoryMemberUsageDetailSource)[keyof typeof HXCHistoryMemberUsageDetailSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HXCHistoryMemberUsageDetailSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface HXCHistoryMemberUsageDetail {
+  source: HXCHistoryMemberUsageDetailSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  item: HXCHistoryMemberUsage;
+}
+
 export interface StaticHistoryCycleMetric {
   /** @minimum 1 */
   id: number;
@@ -22320,6 +22386,19 @@ export type ListHXCHistorySendRecordParams = {
   offset?: number;
 };
 
+export type ListHXCHistoryMemberUsageParams = {
+  generation?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
 export type ListHXCHistoryChatJobParams = {
   /**
    * @minimum 1
@@ -31014,6 +31093,160 @@ export const getHXCHistorySendRecord = async (
     status: res.status,
     headers: res.headers,
   } as getHXCHistorySendRecordResponse;
+};
+
+/**
+ * @summary Read immutable generation observations without deriving current membership or owner authority
+ */
+export type listHXCHistoryMemberUsageResponse200 = {
+  data: HXCHistoryMemberUsagePage;
+  status: 200;
+};
+
+export type listHXCHistoryMemberUsageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listHXCHistoryMemberUsageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listHXCHistoryMemberUsageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listHXCHistoryMemberUsageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listHXCHistoryMemberUsageResponseSuccess =
+  listHXCHistoryMemberUsageResponse200 & {
+    headers: Headers;
+  };
+export type listHXCHistoryMemberUsageResponseError = (
+  | listHXCHistoryMemberUsageResponse400
+  | listHXCHistoryMemberUsageResponse401
+  | listHXCHistoryMemberUsageResponse403
+  | listHXCHistoryMemberUsageResponse503
+) & {
+  headers: Headers;
+};
+
+export type listHXCHistoryMemberUsageResponse =
+  | listHXCHistoryMemberUsageResponseSuccess
+  | listHXCHistoryMemberUsageResponseError;
+
+export const getListHXCHistoryMemberUsageUrl = (
+  params?: ListHXCHistoryMemberUsageParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/hxc-history/member-usage?${stringifiedParams}`
+    : `/api/admin/hxc-history/member-usage`;
+};
+
+export const listHXCHistoryMemberUsage = async (
+  params?: ListHXCHistoryMemberUsageParams,
+  options?: RequestInit,
+): Promise<listHXCHistoryMemberUsageResponse> => {
+  const res = await fetch(getListHXCHistoryMemberUsageUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listHXCHistoryMemberUsageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listHXCHistoryMemberUsageResponse;
+};
+
+/**
+ * @summary Read immutable generation observations without deriving current membership or owner authority
+ */
+export type getHXCHistoryMemberUsageResponse200 = {
+  data: HXCHistoryMemberUsageDetail;
+  status: 200;
+};
+
+export type getHXCHistoryMemberUsageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getHXCHistoryMemberUsageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getHXCHistoryMemberUsageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getHXCHistoryMemberUsageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getHXCHistoryMemberUsageResponseSuccess =
+  getHXCHistoryMemberUsageResponse200 & {
+    headers: Headers;
+  };
+export type getHXCHistoryMemberUsageResponseError = (
+  | getHXCHistoryMemberUsageResponse400
+  | getHXCHistoryMemberUsageResponse401
+  | getHXCHistoryMemberUsageResponse403
+  | getHXCHistoryMemberUsageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getHXCHistoryMemberUsageResponse =
+  | getHXCHistoryMemberUsageResponseSuccess
+  | getHXCHistoryMemberUsageResponseError;
+
+export const getGetHXCHistoryMemberUsageUrl = (historyId: number) => {
+  return `/api/admin/hxc-history/member-usage/${historyId}`;
+};
+
+export const getHXCHistoryMemberUsage = async (
+  historyId: number,
+  options?: RequestInit,
+): Promise<getHXCHistoryMemberUsageResponse> => {
+  const res = await fetch(getGetHXCHistoryMemberUsageUrl(historyId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getHXCHistoryMemberUsageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getHXCHistoryMemberUsageResponse;
 };
 
 /**

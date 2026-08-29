@@ -20,6 +20,7 @@ import (
 	cyclehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1cycleobservationhistory"
 	deferredhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1deferredidentityhistory"
 	chatjobhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcchatjobhistory"
+	memberusage "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcmemberusagehistory"
 	runtimehistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1hxcruntimehistory"
 	invalidhistory "github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1invalidsourcehistory"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
@@ -29,6 +30,199 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+func (source hxcMemberUsageTerminalSQL) archiveRecords(ctx context.Context, run string, keys [][]byte) ([]hxcMemberUsageArchiveRecord, error) {
+	if source.db == nil {
+		return nil, ErrInvalidScope
+	}
+	rows, err := source.db.Query(ctx, `SELECT run_id,adapter_id,table_id,source_ordinal,source_key_digest,payload_digest,field_digest,schema_digest
+FROM public.v1_archive_records
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=ANY($4::bytea[])`, run, v1archive.DefaultAdapterID, memberusage.MemberUsageProjectionTableID, keys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]hxcMemberUsageArchiveRecord, 0, len(keys))
+	for rows.Next() {
+		var value hxcMemberUsageArchiveRecord
+		var sourceKey, payload, field, schema []byte
+		if err = rows.Scan(&value.RunID, &value.AdapterID, &value.TableID, &value.SourceOrdinal, &sourceKey, &payload, &field, &schema); err != nil || len(sourceKey) != sha256.Size || len(payload) != sha256.Size || len(field) != sha256.Size || len(schema) != sha256.Size {
+			return nil, ErrConflict
+		}
+		copy(value.SourceKeyDigest[:], sourceKey)
+		copy(value.PayloadDigest[:], payload)
+		copy(value.FieldDigest[:], field)
+		copy(value.SchemaDigest[:], schema)
+		result = append(result, value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (source hxcMemberUsageTerminalSQL) archiveReceipts(ctx context.Context, run string, keys [][]byte) ([]hxcMemberUsageArchiveReceipt, error) {
+	if source.db == nil {
+		return nil, ErrInvalidScope
+	}
+	rows, err := source.db.Query(ctx, `SELECT run_id,adapter_id,table_id,source_key_digest,payload_digest,field_digest,disposition,operation,mapping_digest,policy_digest,mutation_digest
+FROM public.data_migration_row_receipts
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=ANY($4::bytea[])`, run, v1archive.DefaultAdapterID, memberusage.MemberUsageProjectionTableID, keys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]hxcMemberUsageArchiveReceipt, 0, len(keys))
+	for rows.Next() {
+		var value hxcMemberUsageArchiveReceipt
+		var sourceKey, payload, field, mapping, policy, mutation []byte
+		if err = rows.Scan(&value.RunID, &value.AdapterID, &value.TableID, &sourceKey, &payload, &field, &value.Disposition, &value.Operation, &mapping, &policy, &mutation); err != nil || len(sourceKey) != sha256.Size || len(payload) != sha256.Size || len(field) != sha256.Size || len(mapping) != sha256.Size || len(policy) != sha256.Size || len(mutation) != sha256.Size {
+			return nil, ErrConflict
+		}
+		copy(value.SourceKeyDigest[:], sourceKey)
+		copy(value.PayloadDigest[:], payload)
+		copy(value.FieldDigest[:], field)
+		copy(value.MappingDigest[:], mapping)
+		copy(value.PolicyDigest[:], policy)
+		copy(value.MutationDigest[:], mutation)
+		result = append(result, value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// RunHXCMemberUsageHistory preflights the entire sealed source before writing.
+// Each 250-row batch commits its immutable targets and receipts together. A
+// failed run may leave completed batches; replay the same archive to resume.
+func RunHXCMemberUsageHistory(ctx context.Context, pool *pgxpool.Pool, archive memberusage.ArchiveSource, run string, key []byte, reconcile bool) (HXCMemberUsageHistoryResult, error) {
+	if ctx == nil || pool == nil || archive == nil || run == "" || len(key) < sha256.Size {
+		return HXCMemberUsageHistoryResult{}, ErrInvalidScope
+	}
+	expected, err := hxcMemberUsageSourceCount(ctx, pool, run)
+	if err != nil {
+		return HXCMemberUsageHistoryResult{}, err
+	}
+	streamer, err := memberusage.NewStreamer(archive, NewHXCMemberUsageTerminalReader(pool))
+	if err != nil {
+		return HXCMemberUsageHistoryResult{}, err
+	}
+	options := memberusage.StreamOptions{ArchiveRunID: run, SourceHMACKey: key}
+	preflight, err := streamer.Stream(ctx, options, nil)
+	if err != nil || preflight.SourceCount != expected {
+		return HXCMemberUsageHistoryResult{}, ErrConflict
+	}
+	if reconcile {
+		return reconcileHXCMemberUsageStream(ctx, pool, archive, options, preflight)
+	}
+	result := HXCMemberUsageHistoryResult{Selected: int(expected)}
+	uow := platformstore.NewUnitOfWork(externalIdentityGapSerializableBeginner{pool: pool})
+	var batchCause error
+	actual, err := streamer.Stream(ctx, options, func(ctx context.Context, batch []memberusage.MemberUsageObservationFact) error {
+		var imported, replayed int
+		batchCause = uow.Within(ctx, func(bound context.Context) error {
+			imported, replayed = 0, 0
+			tx, err := platformstore.TxFromContext(bound)
+			if err != nil {
+				return err
+			}
+			if _, err = tx.Exec(bound, "LOCK TABLE public.v1_domain_import_receipts, public.hxc_v1_member_usage_history IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+				return err
+			}
+			entries, err := hxcMemberUsageEntries(bound, batch, run, tx, hxcstore.NewHXCHistoryStore(), hxcstore.NewHXCHistoryReader(tx))
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				receipt, err := entry.write(bound)
+				if err != nil {
+					return err
+				}
+				if receipt.Kind != entry.kind || receipt.SourceIdentifier != entry.source || receipt.PayloadDigest != entry.payload || receipt.TargetID < 1 {
+					return ErrConflict
+				}
+				terminal, found, err := entry.journal.LoadTerminal(bound, entry.source)
+				if err != nil || !found {
+					return ErrConflict
+				}
+				digest, err := entry.verify(bound, receipt.TargetID)
+				if err != nil || receipt.TargetDigest != digest || terminal.TargetDigest != digest || terminal.SourceKeyDigest != entry.key || terminal.PayloadDigest != entry.payload || terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetID != strconv.FormatInt(receipt.TargetID, 10) || len(terminal.Metadata) != 0 {
+					return ErrConflict
+				}
+				if receipt.Replayed {
+					replayed++
+				} else {
+					imported++
+				}
+			}
+			// Refresh empty-table plans once, before later batches accumulate.
+			if result.Imported+result.Replayed == 0 {
+				_, err = tx.Exec(bound, "ANALYZE public.v1_domain_import_receipts, public.hxc_v1_member_usage_history")
+				return err
+			}
+			return nil
+		})
+		if batchCause == nil {
+			result.Imported += imported
+			result.Replayed += replayed
+		}
+		return batchCause
+	})
+	if err != nil {
+		if batchCause != nil {
+			err = batchCause
+		}
+		return HXCMemberUsageHistoryResult{}, fmt.Errorf("member usage import stopped after %d committed rows; replay the same archive: %w", result.Imported+result.Replayed, err)
+	}
+	if actual != preflight || int64(result.Imported+result.Replayed) != expected {
+		return HXCMemberUsageHistoryResult{}, ErrConflict
+	}
+	if err = hxcMemberUsageTargetCount(ctx, pool, run, expected); err != nil {
+		return HXCMemberUsageHistoryResult{}, err
+	}
+	return result, nil
+}
+
+type hxcMemberUsageQueryRower interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func hxcMemberUsageSourceCount(ctx context.Context, db hxcMemberUsageQueryRower, run string) (int64, error) {
+	var ready bool
+	if err := db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_reconciliation_receipts a
+JOIN public.data_migration_runs r USING(run_id) WHERE a.run_id=$1 AND r.phase='reconciled'
+AND a.source_row_count=a.archive_record_count AND a.source_row_count=a.terminal_disposition_count
+AND a.source_table_count=a.archived_table_count)`, run).Scan(&ready); err != nil {
+		return 0, err
+	}
+	if !ready {
+		return 0, ErrConflict
+	}
+	var expected int64
+	if err := db.QueryRow(ctx, "SELECT row_count FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=$2", run, memberusage.MemberUsageProjectionTableID).Scan(&expected); err != nil {
+		return 0, err
+	}
+	if expected <= 0 {
+		return 0, ErrConflict
+	}
+	return expected, nil
+}
+
+func hxcMemberUsageTargetCount(ctx context.Context, db hxcMemberUsageQueryRower, run string, expected int64) error {
+	var targets, receipts, distinctTargets int64
+	err := db.QueryRow(ctx, `SELECT
+(SELECT count(*) FROM public.hxc_v1_member_usage_history),
+count(*), count(DISTINCT target_id)
+FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2`, HXCMemberUsageHistoryVersion, run).Scan(&targets, &receipts, &distinctTargets)
+	if err != nil {
+		return err
+	}
+	if targets != expected || receipts != expected || distinctTargets != expected {
+		return ErrConflict
+	}
+	return nil
+}
 
 // RunHXCChatJobHistory materializes sealed source observations only.
 func RunHXCChatJobHistory(ctx context.Context, pool *pgxpool.Pool, archive chatjobhistory.ArchiveSource, run string, key []byte, reconcile bool) (HXCChatJobHistoryResult, error) {

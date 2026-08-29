@@ -1849,6 +1849,50 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/member-usage:
+    get:
+      tags: [p4-hxc-history]
+      operationId: listHXCHistoryMemberUsage
+      summary: Read immutable generation observations without deriving current membership or owner authority
+      x-p4-decision-evidence: P4-V1-HXC-MEMBER-USAGE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: generation, in: query, schema: { type: integer, format: int64 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryMemberUsagePage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/hxc-history/member-usage/{history_id}:
+    get:
+      tags: [p4-hxc-history]
+      operationId: getHXCHistoryMemberUsage
+      summary: Read immutable generation observations without deriving current membership or owner authority
+      x-p4-decision-evidence: P4-V1-HXC-MEMBER-USAGE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: hxc.read_only_v1_observations
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Immutable HXC observation, content: { application/json: { schema: { $ref: "#/components/schemas/HXCHistoryMemberUsageDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/hxc-history/chat-jobs:
     get:
       operationId: listHXCHistoryChatJob
@@ -17469,6 +17513,49 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/StaticHistoryCycleDocument" }
+    HXCHistoryMemberUsage:
+      type: object
+      additionalProperties: false
+      required: [id, generation, is_member, is_registered, has_real_usage, registered_at, first_used_at, last_used_at, member_since, membership_expires_at, updated_at, membership_tier, membership_status, membership_source, registration_source, usage_source, projected_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        generation: { type: integer, format: int64 }
+        is_member: { type: boolean }
+        is_registered: { type: boolean }
+        has_real_usage: { type: boolean }
+        registered_at: { type: string, format: date-time, nullable: true }
+        first_used_at: { type: string, format: date-time, nullable: true }
+        last_used_at: { type: string, format: date-time, nullable: true }
+        member_since: { type: string, format: date-time, nullable: true }
+        membership_expires_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time, nullable: true }
+        membership_tier: { type: string }
+        membership_status: { type: string }
+        membership_source: { type: string }
+        registration_source: { type: string }
+        usage_source: { type: string }
+        projected_at: { type: string, format: date-time }
+    HXCHistoryMemberUsagePage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/HXCHistoryMemberUsage" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    HXCHistoryMemberUsageDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/HXCHistoryMemberUsage" }
     StaticHistoryCycleMetric:
       type: object
       additionalProperties: false

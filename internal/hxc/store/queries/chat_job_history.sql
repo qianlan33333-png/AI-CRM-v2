@@ -9,4 +9,3 @@ SELECT id, source_id, source_key_digest, source_payload_digest, source_field_dig
 
 -- name: CountHistoricalHXCChatJob :one
 SELECT count(*)::bigint FROM hxc_v1_chat_job_history;
-

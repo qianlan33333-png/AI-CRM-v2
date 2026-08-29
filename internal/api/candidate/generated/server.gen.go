@@ -5092,6 +5092,96 @@ func (e HXCHistoryLeadPageSource) Valid() bool {
 	}
 }
 
+// Defines values for HXCHistoryMemberUsageDetailReadOnly.
+const (
+	HXCHistoryMemberUsageDetailReadOnlyTrue HXCHistoryMemberUsageDetailReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMemberUsageDetailReadOnly enum.
+func (e HXCHistoryMemberUsageDetailReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryMemberUsageDetailReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMemberUsageDetailRealExternalCallExecuted.
+const (
+	HXCHistoryMemberUsageDetailRealExternalCallExecutedFalse HXCHistoryMemberUsageDetailRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMemberUsageDetailRealExternalCallExecuted enum.
+func (e HXCHistoryMemberUsageDetailRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryMemberUsageDetailRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMemberUsageDetailSource.
+const (
+	HXCHistoryMemberUsageDetailSourceV1History HXCHistoryMemberUsageDetailSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMemberUsageDetailSource enum.
+func (e HXCHistoryMemberUsageDetailSource) Valid() bool {
+	switch e {
+	case HXCHistoryMemberUsageDetailSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMemberUsagePageReadOnly.
+const (
+	HXCHistoryMemberUsagePageReadOnlyTrue HXCHistoryMemberUsagePageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMemberUsagePageReadOnly enum.
+func (e HXCHistoryMemberUsagePageReadOnly) Valid() bool {
+	switch e {
+	case HXCHistoryMemberUsagePageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMemberUsagePageRealExternalCallExecuted.
+const (
+	HXCHistoryMemberUsagePageRealExternalCallExecutedFalse HXCHistoryMemberUsagePageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMemberUsagePageRealExternalCallExecuted enum.
+func (e HXCHistoryMemberUsagePageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case HXCHistoryMemberUsagePageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HXCHistoryMemberUsagePageSource.
+const (
+	HXCHistoryMemberUsagePageSourceV1History HXCHistoryMemberUsagePageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the HXCHistoryMemberUsagePageSource enum.
+func (e HXCHistoryMemberUsagePageSource) Valid() bool {
+	switch e {
+	case HXCHistoryMemberUsagePageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HXCHistoryMetaDetailReadOnly.
 const (
 	HXCHistoryMetaDetailReadOnlyTrue HXCHistoryMetaDetailReadOnly = true
@@ -18076,6 +18166,64 @@ type HXCHistoryLeadPageRealExternalCallExecuted bool
 // HXCHistoryLeadPageSource defines model for HXCHistoryLeadPage.Source.
 type HXCHistoryLeadPageSource string
 
+// HXCHistoryMemberUsage defines model for HXCHistoryMemberUsage.
+type HXCHistoryMemberUsage struct {
+	FirstUsedAt         *time.Time `json:"first_used_at"`
+	Generation          int64      `json:"generation"`
+	HasRealUsage        bool       `json:"has_real_usage"`
+	Id                  int64      `json:"id"`
+	IsMember            bool       `json:"is_member"`
+	IsRegistered        bool       `json:"is_registered"`
+	LastUsedAt          *time.Time `json:"last_used_at"`
+	MemberSince         *time.Time `json:"member_since"`
+	MembershipExpiresAt *time.Time `json:"membership_expires_at"`
+	MembershipSource    string     `json:"membership_source"`
+	MembershipStatus    string     `json:"membership_status"`
+	MembershipTier      string     `json:"membership_tier"`
+	ProjectedAt         time.Time  `json:"projected_at"`
+	RegisteredAt        *time.Time `json:"registered_at"`
+	RegistrationSource  string     `json:"registration_source"`
+	UpdatedAt           *time.Time `json:"updated_at"`
+	UsageSource         string     `json:"usage_source"`
+}
+
+// HXCHistoryMemberUsageDetail defines model for HXCHistoryMemberUsageDetail.
+type HXCHistoryMemberUsageDetail struct {
+	Item                     HXCHistoryMemberUsage                               `json:"item"`
+	ReadOnly                 HXCHistoryMemberUsageDetailReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryMemberUsageDetailRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryMemberUsageDetailSource                   `json:"source"`
+}
+
+// HXCHistoryMemberUsageDetailReadOnly defines model for HXCHistoryMemberUsageDetail.ReadOnly.
+type HXCHistoryMemberUsageDetailReadOnly bool
+
+// HXCHistoryMemberUsageDetailRealExternalCallExecuted defines model for HXCHistoryMemberUsageDetail.RealExternalCallExecuted.
+type HXCHistoryMemberUsageDetailRealExternalCallExecuted bool
+
+// HXCHistoryMemberUsageDetailSource defines model for HXCHistoryMemberUsageDetail.Source.
+type HXCHistoryMemberUsageDetailSource string
+
+// HXCHistoryMemberUsagePage defines model for HXCHistoryMemberUsagePage.
+type HXCHistoryMemberUsagePage struct {
+	Items                    []HXCHistoryMemberUsage                           `json:"items"`
+	Limit                    int                                               `json:"limit"`
+	Offset                   int                                               `json:"offset"`
+	ReadOnly                 HXCHistoryMemberUsagePageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted HXCHistoryMemberUsagePageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   HXCHistoryMemberUsagePageSource                   `json:"source"`
+	Total                    int64                                             `json:"total"`
+}
+
+// HXCHistoryMemberUsagePageReadOnly defines model for HXCHistoryMemberUsagePage.ReadOnly.
+type HXCHistoryMemberUsagePageReadOnly bool
+
+// HXCHistoryMemberUsagePageRealExternalCallExecuted defines model for HXCHistoryMemberUsagePage.RealExternalCallExecuted.
+type HXCHistoryMemberUsagePageRealExternalCallExecuted bool
+
+// HXCHistoryMemberUsagePageSource defines model for HXCHistoryMemberUsagePage.Source.
+type HXCHistoryMemberUsagePageSource string
+
 // HXCHistoryMeta defines model for HXCHistoryMeta.
 type HXCHistoryMeta struct {
 	FinishedAt          *time.Time       `json:"finished_at"`
@@ -24737,6 +24885,13 @@ type ListHXCHistoryLeadParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListHXCHistoryMemberUsageParams defines parameters for ListHXCHistoryMemberUsage.
+type ListHXCHistoryMemberUsageParams struct {
+	Generation *int64 `form:"generation,omitempty" json:"generation,omitempty"`
+	Limit      *int   `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset     *int   `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListHXCHistoryMetaParams defines parameters for ListHXCHistoryMeta.
 type ListHXCHistoryMetaParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -27995,6 +28150,12 @@ type ServerInterface interface {
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/leads/{history_id})
 	GetHXCHistoryLead(w http.ResponseWriter, r *http.Request, historyId int64)
+	// Read immutable generation observations without deriving current membership or owner authority
+	// (GET /api/admin/hxc-history/member-usage)
+	ListHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMemberUsageParams)
+	// Read immutable generation observations without deriving current membership or owner authority
+	// (GET /api/admin/hxc-history/member-usage/{history_id})
+	GetHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request, historyId int64)
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/refreshes)
 	ListHXCHistoryMeta(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMetaParams)
@@ -29549,6 +29710,18 @@ func (_ Unimplemented) ListHXCHistoryLead(w http.ResponseWriter, r *http.Request
 // Read immutable HXC observations without refreshing or executing tasks
 // (GET /api/admin/hxc-history/leads/{history_id})
 func (_ Unimplemented) GetHXCHistoryLead(w http.ResponseWriter, r *http.Request, historyId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable generation observations without deriving current membership or owner authority
+// (GET /api/admin/hxc-history/member-usage)
+func (_ Unimplemented) ListHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMemberUsageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read immutable generation observations without deriving current membership or owner authority
+// (GET /api/admin/hxc-history/member-usage/{history_id})
+func (_ Unimplemented) GetHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request, historyId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -37297,6 +37470,86 @@ func (siw *ServerInterfaceWrapper) GetHXCHistoryLead(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHXCHistoryLead(w, r, historyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListHXCHistoryMemberUsage operation middleware
+func (siw *ServerInterfaceWrapper) ListHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHXCHistoryMemberUsageParams
+
+	// ------------- Optional query parameter "generation" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "generation", r.URL.Query(), &params.Generation, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "generation", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListHXCHistoryMemberUsage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHXCHistoryMemberUsage operation middleware
+func (siw *ServerInterfaceWrapper) GetHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "history_id" -------------
+	var historyId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "history_id", chi.URLParam(r, "history_id"), &historyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "history_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHXCHistoryMemberUsage(w, r, historyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -51859,6 +52112,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/hxc-history/leads/{history_id}", wrapper.GetHXCHistoryLead)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/member-usage", wrapper.ListHXCHistoryMemberUsage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/hxc-history/member-usage/{history_id}", wrapper.GetHXCHistoryMemberUsage)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/hxc-history/refreshes", wrapper.ListHXCHistoryMeta)
 	})
 	r.Group(func(r chi.Router) {
@@ -60041,6 +60300,112 @@ func (response GetHXCHistoryLead403JSONResponse) VisitGetHXCHistoryLeadResponse(
 type GetHXCHistoryLead503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetHXCHistoryLead503JSONResponse) VisitGetHXCHistoryLeadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMemberUsageRequestObject struct {
+	Params ListHXCHistoryMemberUsageParams
+}
+
+type ListHXCHistoryMemberUsageResponseObject interface {
+	VisitListHXCHistoryMemberUsageResponse(w http.ResponseWriter) error
+}
+
+type ListHXCHistoryMemberUsage200JSONResponse HXCHistoryMemberUsagePage
+
+func (response ListHXCHistoryMemberUsage200JSONResponse) VisitListHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMemberUsage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListHXCHistoryMemberUsage400JSONResponse) VisitListHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMemberUsage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListHXCHistoryMemberUsage401JSONResponse) VisitListHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMemberUsage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListHXCHistoryMemberUsage403JSONResponse) VisitListHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListHXCHistoryMemberUsage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListHXCHistoryMemberUsage503JSONResponse) VisitListHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMemberUsageRequestObject struct {
+	HistoryId int64 `json:"history_id"`
+}
+
+type GetHXCHistoryMemberUsageResponseObject interface {
+	VisitGetHXCHistoryMemberUsageResponse(w http.ResponseWriter) error
+}
+
+type GetHXCHistoryMemberUsage200JSONResponse HXCHistoryMemberUsageDetail
+
+func (response GetHXCHistoryMemberUsage200JSONResponse) VisitGetHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMemberUsage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHXCHistoryMemberUsage400JSONResponse) VisitGetHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMemberUsage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHXCHistoryMemberUsage401JSONResponse) VisitGetHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMemberUsage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHXCHistoryMemberUsage403JSONResponse) VisitGetHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHXCHistoryMemberUsage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetHXCHistoryMemberUsage503JSONResponse) VisitGetHXCHistoryMemberUsageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -76229,6 +76594,12 @@ type StrictServerInterface interface {
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/leads/{history_id})
 	GetHXCHistoryLead(ctx context.Context, request GetHXCHistoryLeadRequestObject) (GetHXCHistoryLeadResponseObject, error)
+	// Read immutable generation observations without deriving current membership or owner authority
+	// (GET /api/admin/hxc-history/member-usage)
+	ListHXCHistoryMemberUsage(ctx context.Context, request ListHXCHistoryMemberUsageRequestObject) (ListHXCHistoryMemberUsageResponseObject, error)
+	// Read immutable generation observations without deriving current membership or owner authority
+	// (GET /api/admin/hxc-history/member-usage/{history_id})
+	GetHXCHistoryMemberUsage(ctx context.Context, request GetHXCHistoryMemberUsageRequestObject) (GetHXCHistoryMemberUsageResponseObject, error)
 	// Read immutable HXC observations without refreshing or executing tasks
 	// (GET /api/admin/hxc-history/refreshes)
 	ListHXCHistoryMeta(ctx context.Context, request ListHXCHistoryMetaRequestObject) (ListHXCHistoryMetaResponseObject, error)
@@ -80632,6 +81003,58 @@ func (sh *strictHandler) GetHXCHistoryLead(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHXCHistoryLeadResponseObject); ok {
 		if err := validResponse.VisitGetHXCHistoryLeadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListHXCHistoryMemberUsage operation middleware
+func (sh *strictHandler) ListHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request, params ListHXCHistoryMemberUsageParams) {
+	var request ListHXCHistoryMemberUsageRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListHXCHistoryMemberUsage(ctx, request.(ListHXCHistoryMemberUsageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListHXCHistoryMemberUsage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListHXCHistoryMemberUsageResponseObject); ok {
+		if err := validResponse.VisitListHXCHistoryMemberUsageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHXCHistoryMemberUsage operation middleware
+func (sh *strictHandler) GetHXCHistoryMemberUsage(w http.ResponseWriter, r *http.Request, historyId int64) {
+	var request GetHXCHistoryMemberUsageRequestObject
+
+	request.HistoryId = historyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHXCHistoryMemberUsage(ctx, request.(GetHXCHistoryMemberUsageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHXCHistoryMemberUsage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHXCHistoryMemberUsageResponseObject); ok {
+		if err := validResponse.VisitGetHXCHistoryMemberUsageResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
