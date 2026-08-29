@@ -2119,6 +2119,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.audienceHistory = segmentstore.NewAudienceHistoryReader(pool)
+	legacyHandler.audienceActivityHistory = segmentstore.NewAudienceActivityHistoryReader(pool)
 	legacyHandler.legacyMarketingHistory = segmentstore.NewLegacyMarketingHistoryReader(pool)
 	legacyHandler.broadcastJobHistory = outboundstore.NewBroadcastJobHistoryReader(pool)
 	legacyHandler.profileCatalogHistory = segmentstore.NewProfileCatalogHistoryReader(pool)
@@ -3274,6 +3275,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			handler http.HandlerFunc
 		}{
 			{"/api/admin/audience-history/groups", legacy.ListAudienceHistoryGroups},
+			{"/api/admin/audience-history/activity-runs", legacy.ListAudienceActivityHistoryRuns},
+			{"/api/admin/audience-history/activity-member-events", legacy.ListAudienceActivityHistoryMemberEvents},
 			{"/api/admin/profile-catalog-history/templates", legacy.ListProfileHistoryTemplates},
 			{"/api/admin/profile-catalog-history/templates/{template_id}", legacy.GetProfileHistoryTemplate},
 			{"/api/admin/profile-catalog-history/templates/{template_id}/categories", legacy.ListProfileHistoryCategories},

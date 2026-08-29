@@ -7,12 +7,14 @@ import {
   listAudienceHistoryRuleVersions, type AudienceHistoryRuleVersionPage,
   listAudienceHistoryDefinitions, type AudienceHistoryDefinitionPage,
   listAudienceHistoryMembers, type AudienceHistoryMemberPage,
+  listAudienceHistoryActivityRuns, type AudienceActivityRunPage,
+  listAudienceHistoryActivityMemberEvents, type AudienceActivityMemberEventPage,
   getAudienceHistoryPackage, getAudienceHistoryDefinition,
   type AudienceHistoryPackageDetail, type AudienceHistoryDefinitionDetail,
 } from './generated/health';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
-export type AudienceHistoryPage = AudienceHistoryGroupPage | AudienceHistoryPackagePage | AudienceHistoryVersionPage | AudienceHistorySenderPage | AudienceHistoryRulePage | AudienceHistoryRuleVersionPage | AudienceHistoryDefinitionPage | AudienceHistoryMemberPage;
+export type AudienceHistoryPage = AudienceHistoryGroupPage | AudienceHistoryPackagePage | AudienceHistoryVersionPage | AudienceHistorySenderPage | AudienceHistoryRulePage | AudienceHistoryRuleVersionPage | AudienceHistoryDefinitionPage | AudienceHistoryMemberPage | AudienceActivityRunPage | AudienceActivityMemberEventPage;
 
 export function requireAudienceHistoryID(value: string | number): number {
   if ((typeof value !== 'string' && typeof value !== 'number') || (typeof value === 'string' && !/^[1-9][0-9]*$/.test(value)) || !Number.isSafeInteger(Number(value)) || Number(value) < 1) throw new Error('历史 ID 无效');
@@ -33,10 +35,12 @@ export function audienceHistoryDigestHex(value: number[]): string {
   return value.map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
-function checkRow(row: { id: number; source_id: number }): void {
-  requireAudienceHistoryID(row.id);
-  requireAudienceHistoryID(row.source_id);
-  for (const [key, value] of Object.entries(row as unknown as Record<string, unknown>)) {
+function checkRow(row: unknown): void {
+  if (!row || typeof row !== 'object') throw new Error('历史记录格式无效');
+  const fields = row as Record<string, unknown>;
+  requireAudienceHistoryID(fields.id as number);
+  if ('source_id' in fields) requireAudienceHistoryID(fields.source_id as number);
+  for (const [key, value] of Object.entries(fields)) {
     if (['runtime_digest', 'definition_digest', 'payload_digest'].includes(key)) audienceHistoryDigestHex(value as number[]);
     if (['group_history_id', 'current_version_source_id', 'package_history_id', 'rule_history_id', 'staff_id', 'owner_staff_id', 'customer_id'].includes(key) && value !== null) requireAudienceHistoryID(value as number);
     if (typeof value === 'number' && !Number.isSafeInteger(value)) throw new Error('历史数值无法精确展示');
@@ -85,6 +89,28 @@ export async function readAudienceHistoryDefinitions(limit = 20, offset = 0): Pr
 export async function readAudienceHistoryMembers(parentID: string | number, limit = 20, offset = 0): Promise<AudienceHistoryMemberPage> {
   const id = requireAudienceHistoryID(parentID);
   return page(unwrapGenerated(await listAudienceHistoryMembers(id, pagination(limit, offset), apiRequestOptions())) as AudienceHistoryMemberPage, limit, offset, { id, field: 'package_id', rowField: 'package_history_id' });
+}
+
+export async function readAudienceHistoryActivityRuns(limit = 20, offset = 0): Promise<AudienceActivityRunPage> {
+  const value = page(unwrapGenerated(await listAudienceHistoryActivityRuns(pagination(limit, offset), apiRequestOptions())) as AudienceActivityRunPage, limit, offset);
+  value.items.forEach((row) => {
+    requireAudienceHistoryID(row.id);
+    requireAudienceHistoryID(row.package_history_id);
+    if (row.version_history_id !== null) requireAudienceHistoryID(row.version_history_id);
+    if (!Number.isSafeInteger(row.returned_count) || !Number.isSafeInteger(row.duration_ms)) throw new Error('活动历史数值无法精确展示');
+  });
+  return value;
+}
+
+export async function readAudienceHistoryActivityMemberEvents(limit = 20, offset = 0): Promise<AudienceActivityMemberEventPage> {
+  const value = page(unwrapGenerated(await listAudienceHistoryActivityMemberEvents(pagination(limit, offset), apiRequestOptions())) as AudienceActivityMemberEventPage, limit, offset);
+  value.items.forEach((row) => {
+    requireAudienceHistoryID(row.id);
+    requireAudienceHistoryID(row.package_history_id);
+    if (row.run_history_id !== null) requireAudienceHistoryID(row.run_history_id);
+    if (row.member_history_id !== null) requireAudienceHistoryID(row.member_history_id);
+  });
+  return value;
 }
 
 export async function readAudienceHistoryPackage(idValue: string | number): Promise<AudienceHistoryPackageDetail> {

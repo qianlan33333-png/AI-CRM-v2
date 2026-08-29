@@ -36,6 +36,53 @@ func (h *Handler) ListAudienceHistoryMembers(w http.ResponseWriter, r *http.Requ
 	h.listAudienceHistory(w, r, "Members", "package_id")
 }
 
+// ListAudienceActivityHistoryRuns exposes only immutable V1 activity facts;
+// it is deliberately distinct from current Audience execution state.
+func (h *Handler) ListAudienceActivityHistoryRuns(w http.ResponseWriter, r *http.Request) {
+	h.listAudienceActivityHistory(w, r, false)
+}
+
+// ListAudienceActivityHistoryMemberEvents exposes read-only historical event
+// observations, never current members or an executable queue.
+func (h *Handler) ListAudienceActivityHistoryMemberEvents(w http.ResponseWriter, r *http.Request) {
+	h.listAudienceActivityHistory(w, r, true)
+}
+
+func (h *Handler) listAudienceActivityHistory(w http.ResponseWriter, r *http.Request, events bool) {
+	w.Header().Set("Cache-Control", "no-store")
+	if h == nil || r == nil || nilLegacyDependency(h.audienceActivityHistory) {
+		audienceHistoryUnavailable(w)
+		return
+	}
+	limit, offset, ok := audienceHistoryPage(r.URL.RawQuery)
+	if !ok {
+		audienceHistoryInvalid(w)
+		return
+	}
+	var items any
+	var total int64
+	var count int
+	var err error
+	if events {
+		rows, found, readErr := h.audienceActivityHistory.ListAudienceActivityMemberEvents(r.Context(), 0, limit, offset)
+		if rows == nil {
+			rows = []segmentport.AudienceActivityMemberEventView{}
+		}
+		items, total, count, err = rows, found, len(rows), readErr
+	} else {
+		rows, found, readErr := h.audienceActivityHistory.ListAudienceActivityRuns(r.Context(), 0, limit, offset)
+		if rows == nil {
+			rows = []segmentport.AudienceActivityRunView{}
+		}
+		items, total, count, err = rows, found, len(rows), readErr
+	}
+	if err != nil || total < 0 || int64(count) != min(int64(limit), max(0, total-int64(offset))) {
+		audienceHistoryUnavailable(w)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"source": "v1_history", "read_only": true, "real_external_call_executed": false, "items": items, "total": total, "limit": limit, "offset": offset})
+}
+
 func (h *Handler) listAudienceHistory(w http.ResponseWriter, r *http.Request, kind, parent string) {
 	w.Header().Set("Cache-Control", "no-store")
 	if h == nil || r == nil || nilLegacyDependency(h.audienceHistory) {

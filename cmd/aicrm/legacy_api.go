@@ -206,6 +206,7 @@ type Handler struct {
 	campaign                    http.Handler
 	aiAudience                  http.Handler
 	audienceHistory             segmentport.AudienceHistoryReader
+	audienceActivityHistory     segmentport.AudienceActivityHistoryReader
 	legacyMarketingHistory      segmentport.LegacyMarketingHistoryReader
 	broadcastJobHistory         outboundport.BroadcastJobHistoryReader
 	profileCatalogHistory       segmentport.ProfileCatalogHistoryReader

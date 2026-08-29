@@ -1,6 +1,7 @@
 import {
   readAudienceHistoryGroups, readAudienceHistoryPackages, readAudienceHistoryVersions, readAudienceHistorySenders,
   readAudienceHistoryRules, readAudienceHistoryRuleVersions, readAudienceHistoryDefinitions, readAudienceHistoryMembers,
+  readAudienceHistoryActivityRuns, readAudienceHistoryActivityMemberEvents,
   readAudienceHistoryPackage, readAudienceHistoryDefinition, requireAudienceHistoryID, audienceHistoryDigestHex,
 } from '../../api/audienceHistory';
 import { esc } from './util';
@@ -131,5 +132,7 @@ export async function mountAudienceHistory(stage: HTMLElement, options: { packag
     section(host('groups'), '历史分组', 'groups', readAudienceHistoryGroups),
     section(host('rules'), '历史规则', 'rules', readAudienceHistoryRules),
     section(host('definitions'), '历史 Segment 定义', 'definitions', readAudienceHistoryDefinitions),
+    section(host('activity_runs'), '历史活动运行（不刷新当前人群）', 'activity_runs', readAudienceHistoryActivityRuns),
+    section(host('activity_member_events'), '历史成员事件（不是当前成员状态）', 'activity_member_events', readAudienceHistoryActivityMemberEvents),
   ]);
 }

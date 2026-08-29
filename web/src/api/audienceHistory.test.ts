@@ -1,6 +1,7 @@
 import {
   readAudienceHistoryGroups, readAudienceHistoryPackages, readAudienceHistoryVersions, readAudienceHistorySenders,
   readAudienceHistoryRules, readAudienceHistoryRuleVersions, readAudienceHistoryDefinitions, readAudienceHistoryMembers,
+  readAudienceHistoryActivityRuns, readAudienceHistoryActivityMemberEvents,
   readAudienceHistoryPackage, readAudienceHistoryDefinition, audienceHistoryDigestHex,
 } from './audienceHistory';
 import { ApiError } from './transport';
@@ -26,6 +27,8 @@ export async function runAudienceHistoryAdapterTests(): Promise<void> {
     'rule-versions': { ...common, rule_history_id: 8, version: 0, definition_digest: digest },
     definitions: { ...common, id: 9, cached_headcount: -4, usage_count: 0, last_refreshed_at: null, definition_digest: digest },
     members: { ...common, package_history_id: 42, customer_id: null, exited_at: null, payload_digest: digest },
+    'activity-runs': { id: 70, package_history_id: 42, version_history_id: null, run_type: 'refresh', original_status: 'done', refresh_started_at: date, refresh_finished_at: null, last_watermark_at: null, next_watermark_at: null, returned_count: -1, entered_count: 0, updated_count: 2, exited_count: 3, member_event_count: 4, duration_ms: -5, created_at: date },
+    'activity-member-events': { id: 71, package_history_id: 42, run_history_id: null, member_history_id: null, event_type: 'entered', occurred_at: date, created_at: date },
   };
   let patch: Record<string, unknown> = {};
   let status = 200;
@@ -46,6 +49,7 @@ export async function runAudienceHistoryAdapterTests(): Promise<void> {
     () => readAudienceHistoryVersions(42, 2, 3), () => readAudienceHistorySenders(42, 2, 3),
     () => readAudienceHistoryRules(2, 3), () => readAudienceHistoryRuleVersions(8, 2, 3),
     () => readAudienceHistoryDefinitions(2, 3), () => readAudienceHistoryMembers(42, 2, 3),
+    () => readAudienceHistoryActivityRuns(2, 3), () => readAudienceHistoryActivityMemberEvents(2, 3),
     () => readAudienceHistoryPackage(42), () => readAudienceHistoryDefinition(9),
   ];
   try {
@@ -62,13 +66,16 @@ export async function runAudienceHistoryAdapterTests(): Promise<void> {
       '/api/admin/audience-history/rules/8/versions?limit=2&offset=3',
       '/api/admin/audience-history/definitions?limit=2&offset=3',
       '/api/admin/audience-history/packages/42/members?limit=2&offset=3',
+      '/api/admin/audience-history/activity-runs?limit=2&offset=3',
+      '/api/admin/audience-history/activity-member-events?limit=2&offset=3',
       '/api/admin/audience-history/packages/42',
       '/api/admin/audience-history/definitions/9',
-    ].join('|'), 'ten generated GET routes with exact parent IDs and paging');
+    ].join('|'), 'twelve generated GET routes with exact parent IDs and paging');
     assert(calls.every((v) => v.init?.method === 'GET' && v.init.credentials === 'include' && v.init.body === undefined), 'only credentialed GET without write body');
     const pkg = (await readAudienceHistoryPackage('42')).item;
     assert(pkg.group_history_id === null && pkg.incremental_interval_seconds === -7 && pkg.lookback_seconds === 0 && pkg.incremental_enabled === true && pkg.daily_enabled === false, 'NULL, negative, zero and historical flags unchanged');
     assert((await readAudienceHistoryMembers(42)).items[0].customer_id === null, 'unconfirmed customer is not invented');
+    assert((await readAudienceHistoryActivityRuns()).items[0].returned_count === -1 && (await readAudienceHistoryActivityMemberEvents()).items[0].run_history_id === null, 'activity history keeps signed counts and unresolved parents');
     assert(audienceHistoryDigestHex(digest) === digest.map((n) => n.toString(16).padStart(2, '0')).join(''), '32-byte digest renders exact hex');
     const before = calls.length;
     for (const id of ['', '0', '01', '-1', '1.5', '1/activate', '9007199254740992']) await rejects(() => readAudienceHistoryPackage(id));
@@ -83,7 +90,7 @@ export async function runAudienceHistoryAdapterTests(): Promise<void> {
     patch = { items: [{ ...fixture.members, package_history_id: 43 }] };
     await rejects(reads[7]);
     patch = { item: { ...fixture.packages, id: 43 } };
-    await rejects(reads[8]);
+    await rejects(reads[10]);
     patch = { items: [{ ...fixture.definitions, definition_digest: [1, 2] }] };
     await rejects(reads[6]);
     patch = { items: [{ ...fixture.groups, id: 9007199254740992 }] };
