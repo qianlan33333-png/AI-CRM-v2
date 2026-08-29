@@ -22,8 +22,11 @@ type CampaignDispatchBinding struct {
 	ExternalEffectID string
 	RecipientDigest  string
 	PayloadDigest    string
-	State            outbound.CampaignDispatchState
-	BlockReason      string
+	// ContentSnapshot freezes the exact approved content before the effect is
+	// accepted. The worker must never reconstruct it from a mutable review.
+	ContentSnapshot string
+	State           outbound.CampaignDispatchState
+	BlockReason     string
 	// SenderUserIDSnapshot and ExternalUserIDSnapshot are private runtime
 	// facts. They are populated together only for audience-package dispatches
 	// and must never be exposed from a read API.
@@ -101,6 +104,18 @@ type CampaignDispatchRepository interface {
 	UpdateCampaignDispatchState(context.Context, string, outbound.CampaignDispatchState) error
 	ReadCampaignDispatchSummary(context.Context, int64) (outbound.CampaignDispatchSummary, error)
 	RecordCampaignProviderAttemptReceipt(context.Context, string, int32, CampaignDispatchProviderAttemptReceipt) error
+}
+
+// CampaignDispatchRecipientApprovalReader is the additional narrow fact
+// required by the legacy single-recipient approval action. A local approval is
+// only eligibility for a controlled dispatch; it is never a send receipt.
+type CampaignDispatchRecipientApproval struct {
+	Approved        bool
+	MessageOverride string
+}
+
+type CampaignDispatchRecipientApprovalReader interface {
+	ReadCampaignDispatchRecipientApproval(context.Context, int64, int64) (CampaignDispatchRecipientApproval, error)
 }
 
 // CampaignDispatchReconciliationEvidence contains only the private facts a

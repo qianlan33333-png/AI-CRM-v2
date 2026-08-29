@@ -1,4 +1,4 @@
-import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, groupOpsOperationMembersDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderDetailDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, setMemberGridExternalShareDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, dispatchCampaignOutboundRecipientDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getCampaignTouchPlanReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, groupOpsOperationMembersDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderDetailDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, setMemberGridExternalShareDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
 import { readRadarSharePath, readServiceProductSharePath } from './admin';
@@ -27,7 +27,7 @@ import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from '.
 import { getGetCustomerContextUrl, getListCustomerSurveyAnswersUrl, getListStagesUrl } from './generated/health';
 import { getDeleteCloudCampaignUrl, getGetCloudCampaignTouchPlanRecipientUrl, getGetCloudCampaignTouchPlanReviewUrl, getListCloudCampaignPlansUrl, getListCloudCampaignTouchPlanRecipientsUrl, getListCloudCampaignsUrl, getMutateCloudCampaignTouchPlanReviewUrl } from './generated/health';
 import { getGetCloudCampaignTouchPlanRecipientReviewUrl, getMutateCloudCampaignTouchPlanRecipientReviewUrl } from './generated/health';
-import { getAcceptOutboundCampaignHandoffUrl, getDispatchOutboundCampaignHandoffUrl, getGetOutboundCampaignDispatchReconciliationUrl, getGetOutboundCampaignHandoffSummaryUrl, getReconcileOutboundCampaignHandoffUrl } from './generated/health';
+import { getAcceptOutboundCampaignHandoffUrl, getDispatchOutboundCampaignHandoffUrl, getDispatchOutboundCampaignRecipientUrl, getGetOutboundCampaignDispatchReconciliationUrl, getGetOutboundCampaignHandoffSummaryUrl, getReconcileOutboundCampaignHandoffUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -213,7 +213,7 @@ export async function runAdminAdapterTests(): Promise<void> {
     campaignCalls.push({ input: url, init });
     if (url.includes('/cloud-orchestrator/plans')) return new Response(JSON.stringify({ items: [{ plan: { id: touchPlanID, campaign_code: campaignCode, campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 2, content_step_count: 1, created_at: '2026-08-27T00:00:00Z', ...localTouchPlan }, review_status: 'pending_review', review_version: 2 }], next_cursor: 'plan-next', ...localTouchPlan }), { status: 200 });
     if (url.includes('/recipients/7/review')) return new Response(JSON.stringify({ review: { canonical_customer_id: 7, message_override: url.endsWith('/message') ? '更新消息' : '原消息', status: url.endsWith('/approve') ? 'approved' : url.endsWith('/reject') ? 'rejected' : 'pending_review', version: init?.method === 'POST' ? 2 : 1, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, event_id: init?.method === 'POST' ? 41 : undefined, ...localTouchPlan }), { status: 200 });
-    if (url.includes('/review')) return new Response(JSON.stringify({ review: { status: init?.method === 'POST' ? 'approved' : 'pending_review', version: init?.method === 'POST' ? 3 : 2 }, ...localTouchPlan }), { status: 200 });
+    if (url.includes('/review')) return new Response(JSON.stringify({ review: { status: init?.method === 'POST' ? 'approved' : 'pending_review', version: init?.method === 'POST' ? 3 : 2, submitted_by_actor_id: 81, submitted_at: '2026-08-27T00:00:00Z', reviewed_by_actor_id: init?.method === 'POST' ? 82 : null, reviewed_at: init?.method === 'POST' ? '2026-08-27T00:01:00Z' : null }, ...localTouchPlan }), { status: 200 });
     if (url.includes('/recipients/7')) return new Response(JSON.stringify({ canonical_customer_id: 7, ...localTouchPlan }), { status: 200 });
     if (url.endsWith('/recipients?limit=50')) return new Response(JSON.stringify({ items: [{ canonical_customer_id: 7 }], next_cursor: 'opaque-next', ...localTouchPlan }), { status: 200 });
     if (init?.method === 'DELETE') return new Response(JSON.stringify({ campaign_code: campaignCode, deleted: true, ...localCampaign }), { status: 200 });
@@ -229,12 +229,12 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(campaignCalls.some((call) => call.init?.method === 'DELETE' && JSON.parse(String(call.init.body)).expected_version === 3 && Boolean(new Headers(call.init.headers).get('Idempotency-Key'))), 'Campaign delete reads current version and includes its required idempotency key');
     const decision = await decideCampaignTouchPlanReviewDto(campaignCode, touchPlanID, 'approve');
     const decisionCall = campaignCalls.find((call) => call.input.endsWith('/review/approve'));
-    assert(decision.status === 'approved' && decisionCall?.init?.method === 'POST' && JSON.parse(String(decisionCall.init.body)).confirmation === `APPROVE ${touchPlanID}` && Boolean(new Headers(decisionCall.init.headers).get('Idempotency-Key')), 'Campaign approval is local-review CAS with explicit confirmation and idempotency');
+    assert(decision.status === 'approved' && decision.submittedByActorID === 81 && decision.submittedAt === '2026-08-27T00:00:00Z' && decision.reviewedByActorID === 82 && decision.reviewedAt === '2026-08-27T00:01:00Z' && decisionCall?.init?.method === 'POST' && JSON.parse(String(decisionCall.init.body)).confirmation === `APPROVE ${touchPlanID}` && Boolean(new Headers(decisionCall.init.headers).get('Idempotency-Key')), 'Campaign approval preserves local review audit actor/time with explicit confirmation and idempotency');
     const recipients = await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID);
     const recipient = await getCampaignTouchPlanRecipientDto(campaignCode, touchPlanID, 7);
     assert(recipients.items.length === 1 && recipients.nextCursor === 'opaque-next' && recipient.customerID === 7, 'Campaign recipient reads remain touch-plan scoped and preserve opaque pagination');
     const recipientReview = await getCampaignTouchPlanRecipientReviewDto(campaignCode, touchPlanID, 7);
-    assert(recipientReview?.status === 'pending_review' && recipientReview.version === 1, 'Campaign recipient review reads scoped local state');
+    assert(recipientReview?.status === 'pending_review' && recipientReview.version === 1 && recipientReview.updatedByActorID === 1 && recipientReview.updatedAt === '2026-08-27T00:00:00Z', 'Campaign recipient review preserves scoped local audit actor/time');
     await saveCampaignTouchPlanRecipientMessageDto(campaignCode, touchPlanID, 7, '更新消息');
     await decideCampaignTouchPlanRecipientReviewDto(campaignCode, touchPlanID, 7, 'approve');
     const recipientMessageCall = campaignCalls.find((call) => call.input.endsWith('/recipients/7/review/message'));
@@ -242,6 +242,10 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(recipientMessageCall?.init?.method === 'POST' && JSON.parse(String(recipientMessageCall.init.body)).expected_plan_version === 2 && JSON.parse(String(recipientMessageCall.init.body)).expected_recipient_version === 1, 'Campaign recipient message uses plan and recipient CAS');
     assert(recipientApproveCall?.init?.method === 'POST' && JSON.parse(String(recipientApproveCall.init.body)).expected_recipient_version === 1 && !('message_override' in JSON.parse(String(recipientApproveCall.init.body))), 'Campaign recipient approval stays a local decision without message mutation');
   } finally { globalThis.fetch = savedCampaignFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ review: { status: 'pending_review', version: 2, submitted_by_actor_id: 81 }, handoff: null, ...localTouchPlan }), { status: 200 });
+  try { await getCampaignTouchPlanReviewDto(campaignCode, touchPlanID); assert(false, 'Campaign review partial audit must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('审计字段'), 'Campaign review partial audit fails closed'); }
+  finally { globalThis.fetch = savedCampaignFetch; }
   globalThis.fetch = async () => new Response(JSON.stringify({ items: [campaignResponse], local_projection: true, real_external_call_executed: true, real_send: false, runtime_executed: false }), { status: 200 });
   try { await listCampaignsDto(); assert(false, 'Campaign response with an external effect must fail closed'); }
   catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign external-effect response fails closed'); }
@@ -250,7 +254,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   try { await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID); assert(false, 'Executed touch plan response must fail closed'); }
   catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign executed touch plan response fails closed'); }
   finally { globalThis.fetch = savedCampaignFetch; }
-  assert(getGetOutboundCampaignHandoffSummaryUrl(campaignCode, touchPlanID).endsWith(`/campaign-handoffs/${campaignCode}/${touchPlanID}`) && getAcceptOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/accept') && getReconcileOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/reconciliation') && getDispatchOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/dispatch') && getGetOutboundCampaignDispatchReconciliationUrl(campaignCode, touchPlanID).endsWith('/dispatch-reconciliation'), 'Campaign handoff generated URLs remain scoped to campaign and touch plan');
+  assert(getGetOutboundCampaignHandoffSummaryUrl(campaignCode, touchPlanID).endsWith(`/campaign-handoffs/${campaignCode}/${touchPlanID}`) && getAcceptOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/accept') && getReconcileOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/reconciliation') && getDispatchOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/dispatch') && getDispatchOutboundCampaignRecipientUrl(campaignCode, touchPlanID, 7).endsWith('/recipients/7/dispatch') && getGetOutboundCampaignDispatchReconciliationUrl(campaignCode, touchPlanID).endsWith('/dispatch-reconciliation'), 'Campaign handoff generated URLs remain scoped to campaign, touch plan, and recipient');
   const handoffSafety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false, delivery_proven: false };
   const handoffSummary = { id: 31, campaign_code: campaignCode, plan_id: touchPlanID, review_version: 3, status: 'held', target_count: 2, step_count: 1, accepted_at: '2026-08-27T00:00:00Z', safety: handoffSafety };
   const handoffReconciliation = { ...handoffSummary, held_count: 2, blocked_count: 0, pending_count: 0, not_evaluated_count: 0, eligible_count: 2, inactive_count: 0, contact_policy_count: 0 };
@@ -265,10 +269,12 @@ export async function runAdminAdapterTests(): Promise<void> {
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     outboundCalls.push({ input: url, init });
-    if (url.endsWith('/touch-plans/' + touchPlanID + '/review')) return new Response(JSON.stringify({ review: { status: 'approved', version: 3 }, handoff: { status: 'pending_outbound_acceptance' }, ...localTouchPlan }), { status: 200 });
-    if (url.endsWith('/dispatch-reconciliation')) return dispatchBound ? new Response(JSON.stringify({ ...dispatchReconciliation, ...(unsafeDispatch ? { business_call_dispatched: true } : {}) }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
+    if (url.endsWith('/touch-plans/' + touchPlanID + '/review')) return new Response(JSON.stringify({ review: { status: 'approved', version: 3, submitted_by_actor_id: 81, submitted_at: '2026-08-27T00:00:00Z', reviewed_by_actor_id: 82, reviewed_at: '2026-08-27T00:01:00Z' }, handoff: { status: 'pending_outbound_acceptance' }, ...localTouchPlan }), { status: 200 });
+    if (url.endsWith('/recipients/7/review')) return new Response(JSON.stringify({ review: { canonical_customer_id: 7, status: 'approved', version: 2, updated_by_actor_id: 82, updated_at: '2026-08-27T00:01:00Z' }, ...localTouchPlan }), { status: 200 });
+    if (url.endsWith('/dispatch-reconciliation')) return dispatchBound ? new Response(JSON.stringify({ ...dispatchReconciliation, ...(unsafeDispatch ? { delivery_proven: true } : {}) }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
     if (url.endsWith('/reconciliation')) return new Response(JSON.stringify(handoffReconciliation), { status: 200 });
     if (url.endsWith('/accept')) { handoffAccepted = true; return new Response(JSON.stringify(handoffReconciliation), { status: 200 }); }
+    if (url.endsWith('/recipients/7/dispatch')) return new Response(JSON.stringify({ ...dispatchReconciliation, business_call_dispatched: true, real_external_call_executed: true }), { status: 200 });
     if (url.endsWith('/dispatch')) { dispatchBound = true; return new Response(JSON.stringify(dispatchReconciliation), { status: 200 }); }
     if (url.includes('/campaign-handoffs/')) return handoffAccepted ? new Response(JSON.stringify({ ...handoffSummary, campaign_code: wrongHandoffScope ? 'other-campaign' : campaignCode, safety: unsafeHandoff ? { ...handoffSafety, delivery_proven: true } : handoffSafety }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
     return new Response(JSON.stringify({ code: 'unexpected' }), { status: 500 });
@@ -285,6 +291,9 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(queued.queued === 2 && dispatchCall?.init?.method === 'POST' && JSON.parse(String(dispatchCall.init.body)).external_gate === true && Boolean(new Headers(dispatchCall.init.headers).get('Idempotency-Key')), 'Campaign handoff dispatch only creates explicit-gate local EER work');
     const dispatchRead = await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID);
     assert(dispatchRead.accepted === 2 && dispatchRead.queued === 2 && dispatchRead.outcomeUnknown === 1, 'Campaign dispatch reconciliation preserves count-only outcome_unknown without a send claim');
+    const recipientDispatch = await dispatchCampaignOutboundRecipientDto(campaignCode, touchPlanID, 7);
+    const recipientDispatchCall = outboundCalls.find((call) => call.input.endsWith('/recipients/7/dispatch'));
+    assert(recipientDispatch.customerID === 7 && recipientDispatch.businessCallDispatched && recipientDispatch.realExternalCallExecuted && !recipientDispatch.deliveryProven && recipientDispatchCall?.init?.method === 'POST' && JSON.parse(String(recipientDispatchCall.init.body)).external_gate === true && Boolean(new Headers(recipientDispatchCall.init.headers).get('Idempotency-Key')), 'recipient dispatch is review-gated, scoped, idempotent, and preserves handoff-level historical facts without claiming delivery');
     unsafeHandoff = true;
     try { await getCampaignOutboundHandoffDto(campaignCode, touchPlanID); assert(false, 'handoff delivery claim must fail closed'); }
     catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'handoff delivery claim fails closed'); }
@@ -294,8 +303,8 @@ export async function runAdminAdapterTests(): Promise<void> {
     catch (error) { assert(error instanceof Error && error.message.includes('范围不匹配'), 'handoff scope mismatch fails closed'); }
     wrongHandoffScope = false;
     unsafeDispatch = true;
-    try { await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID); assert(false, 'dispatch provider-boundary claim must fail closed'); }
-    catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'dispatch provider-boundary claim fails closed'); }
+    try { await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID); assert(false, 'dispatch delivery claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('事实边界'), 'dispatch delivery claim fails closed'); }
   } finally { globalThis.fetch = savedOutboundFetch; }
   assert(getListGroupOpsPlansUrl({ limit: 100, offset: 0 }).endsWith('/group-ops/plans?limit=100&offset=0') && getCreateGroupOpsPlanUrl().endsWith('/group-ops/plans'), 'group ops list/create URLs');
   assert(getGetGroupOpsPlanUrl('9').endsWith('/plans/9') && getUpdateGroupOpsPlanUrl('9').endsWith('/plans/9') && getDeleteGroupOpsPlanUrl('9').endsWith('/plans/9'), 'group ops detail CRUD URLs');
@@ -655,6 +664,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   const groupOpsExecution = { execution_id: '71', run_id: '61', plan_id: '9', plan_revision: 1, node_id: '51', node_position: 1, target_reference: 'group-opaque-1', target_digest: 'sha256:' + 'a'.repeat(64), content_digest: 'sha256:' + 'b'.repeat(64), material_digest: 'sha256:' + 'c'.repeat(64), external_effect_id: 'eer_71', state: 'outcome_unknown', provider_accepted: false, delivery_proven: false, attempt_count: 1, provider_receipt_present: false, reconciliation_evidence_present: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:01:00Z' };
   const groupOpsRuntimeCalls: Array<{ input: string; init?: RequestInit }> = [];
   let unsafeGroupOpsPreview = false;
+  let unsafeGroupOpsExecutionPage = false;
   const savedGroupOpsRuntimeFetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
     const url = String(input);
@@ -662,7 +672,7 @@ export async function runAdminAdapterTests(): Promise<void> {
     if (url.endsWith('/run-due/preview')) return new Response(JSON.stringify({ ...groupOpsRunDue, ...(unsafeGroupOpsPreview ? { delivery_proven: true } : {}) }), { status: 200 });
     if (url.endsWith('/webhook-descriptor')) return new Response(JSON.stringify(groupOpsWebhook), { status: 200 });
     if (url.endsWith('/content/preview')) return new Response(JSON.stringify(groupOpsContentPreview), { status: 200 });
-    if (url.endsWith('/executions?limit=100&offset=0')) return new Response(JSON.stringify({ items: [groupOpsExecution], total: 1, limit: 100, offset: 0, has_more: false, provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: false, delivery_proven: false }), { status: 200 });
+    if (url.endsWith('/executions?limit=100&offset=0')) return new Response(JSON.stringify({ items: [groupOpsExecution], total: 1, limit: 100, offset: 0, has_more: false, provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: unsafeGroupOpsExecutionPage, delivery_proven: false }), { status: 200 });
     if (url === '/api/admin/common/operation-members?scope=group_ops&page_size=100') return new Response(JSON.stringify(groupOpsMembers), { status: 200 });
     if (url.endsWith('/plans/9')) return new Response(JSON.stringify(groupOpsDetail), { status: 200 });
     if (url.includes('/group-ops/plans?')) return new Response(JSON.stringify({ items: [groupOpsDetail.plan], total: 1, limit: 100, offset: 0, has_more: false, provider_execution_eligible: false, real_external_call_executed: false }), { status: 200 });
@@ -670,13 +680,17 @@ export async function runAdminAdapterTests(): Promise<void> {
   };
   try {
     const runtimePage = await readAdminPage({ page: 'groupopsDetail', id: '9' });
-    assert(runtimePage.rows.orderKv.some((item) => item.k === '到期执行候选' && item.v === '2') && runtimePage.rows.orderKv.some((item) => item.k === 'Webhook URL（可复制）' && item.v === '/api/automation/group-ops/webhooks/hook-local-9'), 'group ops runtime preview and safe same-origin webhook descriptor stay local-only');
-    assert(runtimePage.rows.orderEvents[0].st.includes('结果未知') && runtimePage.rows.orderEvents[0].st.includes('禁止自动重试'), 'group ops outcome_unknown remains manual reconciliation only');
+    assert(runtimePage.rows.orderKv.some((item) => item.k === '到期执行候选' && item.v === '2') && runtimePage.rows.orderKv.some((item) => item.k === 'Webhook opaque reference' && item.v === 'hook-local-9') && runtimePage.rows.orderKv.some((item) => item.k === 'Webhook URL（可复制）' && item.v === '/api/automation/group-ops/webhooks/hook-local-9'), 'group ops runtime preview and safe same-origin webhook descriptor stay local-only');
+    assert(runtimePage.rows.orderEvents[0].st.includes('结果未知') && runtimePage.rows.orderEvents[0].st.includes('禁止自动重试') && runtimePage.rows.orderEvents[0].ev.includes('Provider receipt=absent') && runtimePage.rows.orderEvents[0].st.includes('reconciliation=pending'), 'group ops outcome_unknown keeps receipt and reconciliation evidence visible without claiming delivery');
     assert(runtimePage.staff[0]?.uid === '7' && runtimePage.staff[0]?.name.includes('staff-7'), 'group ops page loads trusted local operation-member options');
     assert(groupOpsRuntimeCalls.some((call) => call.input.endsWith('/run-due/preview') && call.init?.method === 'POST') && groupOpsRuntimeCalls.some((call) => call.input.endsWith('/webhook-descriptor') && call.init?.method === 'GET') && groupOpsRuntimeCalls.some((call) => call.input.endsWith('/executions?limit=100&offset=0') && call.init?.method === 'GET'), 'group ops detail uses generated preview, descriptor and execution reads without run acceptance');
     unsafeGroupOpsPreview = true;
     try { await readAdminPage({ page: 'groupopsDetail', id: '9' }); assert(false, 'run-due delivery claim must fail closed'); }
     catch (error) { assert(error instanceof Error && error.message.includes('本地读取边界'), 'run-due delivery claim fails closed'); }
+    unsafeGroupOpsPreview = false;
+    unsafeGroupOpsExecutionPage = true;
+    try { await readAdminPage({ page: 'groupopsDetail', id: '9' }); assert(false, 'execution page provider claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'execution page provider claim fails closed'); }
   } finally { globalThis.fetch = savedGroupOpsRuntimeFetch; }
   const attachmentReadCalls: Array<{ input: string; init?: RequestInit }> = [];
   globalThis.fetch = async (input, init) => { attachmentReadCalls.push({ input: String(input), init }); return new Response(JSON.stringify({ items: [{ id: 'att-9', file_name: '运营素材.pdf', mime_type: 'application/pdf', file_size: 1024, tags: ['group-ops'], created_at: '2026-08-27T00:00:00Z', enabled: true }] }), { status: 200 }); };

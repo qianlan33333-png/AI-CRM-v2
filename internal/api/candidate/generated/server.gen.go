@@ -2740,6 +2740,51 @@ func (e CloudCampaignTouchPlanSummaryRuntimeExecuted) Valid() bool {
 	}
 }
 
+// Defines values for CloudOrchestratorAuditResponseDeliveryProven.
+const (
+	CloudOrchestratorAuditResponseDeliveryProvenFalse CloudOrchestratorAuditResponseDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CloudOrchestratorAuditResponseDeliveryProven enum.
+func (e CloudOrchestratorAuditResponseDeliveryProven) Valid() bool {
+	switch e {
+	case CloudOrchestratorAuditResponseDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudOrchestratorAuditResponseLocalFactsOnly.
+const (
+	CloudOrchestratorAuditResponseLocalFactsOnlyTrue CloudOrchestratorAuditResponseLocalFactsOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CloudOrchestratorAuditResponseLocalFactsOnly enum.
+func (e CloudOrchestratorAuditResponseLocalFactsOnly) Valid() bool {
+	switch e {
+	case CloudOrchestratorAuditResponseLocalFactsOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudOrchestratorAuditResponseRealExternalCallExecuted.
+const (
+	CloudOrchestratorAuditResponseRealExternalCallExecutedFalse CloudOrchestratorAuditResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CloudOrchestratorAuditResponseRealExternalCallExecuted enum.
+func (e CloudOrchestratorAuditResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CloudOrchestratorAuditResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CommerceExternalPushConfigurationProductKind.
 const (
 	CommerceExternalPushConfigurationProductKindServicePeriod CommerceExternalPushConfigurationProductKind = "service_period"
@@ -10951,6 +10996,21 @@ func (e OutboundCampaignHandoffSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for OutboundCampaignRecipientDispatchRequestExternalGate.
+const (
+	OutboundCampaignRecipientDispatchRequestExternalGateTrue OutboundCampaignRecipientDispatchRequestExternalGate = true
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignRecipientDispatchRequestExternalGate enum.
+func (e OutboundCampaignRecipientDispatchRequestExternalGate) Valid() bool {
+	switch e {
+	case OutboundCampaignRecipientDispatchRequestExternalGateTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OutboundTaskHistoryDetailReadOnly.
 const (
 	OutboundTaskHistoryDetailReadOnlyTrue OutboundTaskHistoryDetailReadOnly = true
@@ -17093,6 +17153,45 @@ type CloudCampaignTouchPlanSummaryRealExternalCallExecuted bool
 // CloudCampaignTouchPlanSummaryRuntimeExecuted defines model for CloudCampaignTouchPlanSummary.RuntimeExecuted.
 type CloudCampaignTouchPlanSummaryRuntimeExecuted bool
 
+// CloudOrchestratorAuditFact defines model for CloudOrchestratorAuditFact.
+type CloudOrchestratorAuditFact struct {
+	Completed      int64     `json:"completed"`
+	Dispatched     bool      `json:"dispatched"`
+	EventId        int64     `json:"event_id"`
+	EventType      string    `json:"event_type"`
+	FinalFailed    int64     `json:"final_failed"`
+	OccurredAt     time.Time `json:"occurred_at"`
+	OutcomeUnknown int64     `json:"outcome_unknown"`
+	Pending        int64     `json:"pending"`
+	Processing     int64     `json:"processing"`
+}
+
+// CloudOrchestratorAuditFilter defines model for CloudOrchestratorAuditFilter.
+type CloudOrchestratorAuditFilter struct {
+	Limit     int32  `json:"limit"`
+	SessionId string `json:"session_id"`
+	TraceId   string `json:"trace_id"`
+}
+
+// CloudOrchestratorAuditResponse defines model for CloudOrchestratorAuditResponse.
+type CloudOrchestratorAuditResponse struct {
+	DeliveryProven           CloudOrchestratorAuditResponseDeliveryProven           `json:"delivery_proven"`
+	Filter                   CloudOrchestratorAuditFilter                           `json:"filter"`
+	Items                    []CloudOrchestratorAuditFact                           `json:"items"`
+	LocalFactsOnly           CloudOrchestratorAuditResponseLocalFactsOnly           `json:"local_facts_only"`
+	ObservedAt               time.Time                                              `json:"observed_at"`
+	RealExternalCallExecuted CloudOrchestratorAuditResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// CloudOrchestratorAuditResponseDeliveryProven defines model for CloudOrchestratorAuditResponse.DeliveryProven.
+type CloudOrchestratorAuditResponseDeliveryProven bool
+
+// CloudOrchestratorAuditResponseLocalFactsOnly defines model for CloudOrchestratorAuditResponse.LocalFactsOnly.
+type CloudOrchestratorAuditResponseLocalFactsOnly bool
+
+// CloudOrchestratorAuditResponseRealExternalCallExecuted defines model for CloudOrchestratorAuditResponse.RealExternalCallExecuted.
+type CloudOrchestratorAuditResponseRealExternalCallExecuted bool
+
 // CommerceExternalPushConfiguration defines model for CommerceExternalPushConfiguration.
 type CommerceExternalPushConfiguration struct {
 	ConfigurationReference *string                                      `json:"configuration_reference,omitempty"`
@@ -21662,6 +21761,15 @@ type OutboundCampaignHandoffSummary struct {
 // OutboundCampaignHandoffSummaryStatus defines model for OutboundCampaignHandoffSummary.Status.
 type OutboundCampaignHandoffSummaryStatus string
 
+// OutboundCampaignRecipientDispatchRequest defines model for OutboundCampaignRecipientDispatchRequest.
+type OutboundCampaignRecipientDispatchRequest struct {
+	// ExternalGate Explicitly requests gated local EER work for the approved recipient; Provider runtime switches remain independent and disabled by default.
+	ExternalGate OutboundCampaignRecipientDispatchRequestExternalGate `json:"external_gate"`
+}
+
+// OutboundCampaignRecipientDispatchRequestExternalGate Explicitly requests gated local EER work for the approved recipient; Provider runtime switches remain independent and disabled by default.
+type OutboundCampaignRecipientDispatchRequestExternalGate bool
+
 // OutboundMediaAcceptedRequest defines model for OutboundMediaAcceptedRequest.
 type OutboundMediaAcceptedRequest struct {
 	ContentPackageId int64 `json:"content_package_id"`
@@ -25127,6 +25235,13 @@ type GetChannelHistoryParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListCloudOrchestratorAuditParams defines parameters for ListCloudOrchestratorAudit.
+type ListCloudOrchestratorAuditParams struct {
+	TraceId   *string `form:"trace_id,omitempty" json:"trace_id,omitempty"`
+	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
+	Limit     *int32  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListCloudCampaignMembersParams defines parameters for ListCloudCampaignMembers.
 type ListCloudCampaignMembersParams struct {
 	Status *ListCloudCampaignMembersParamsStatus `form:"status,omitempty" json:"status,omitempty"`
@@ -25618,6 +25733,15 @@ type DispatchOutboundCampaignHandoffParams struct {
 
 // ReconcileOutboundCampaignDispatchParams defines parameters for ReconcileOutboundCampaignDispatch.
 type ReconcileOutboundCampaignDispatchParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DispatchOutboundCampaignRecipientParams defines parameters for DispatchOutboundCampaignRecipient.
+type DispatchOutboundCampaignRecipientParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
@@ -26968,6 +27092,9 @@ type DispatchOutboundCampaignHandoffJSONRequestBody = OutboundCampaignDispatchRe
 
 // ReconcileOutboundCampaignDispatchJSONRequestBody defines body for ReconcileOutboundCampaignDispatch for application/json ContentType.
 type ReconcileOutboundCampaignDispatchJSONRequestBody = OutboundCampaignDispatchReconcileRequest
+
+// DispatchOutboundCampaignRecipientJSONRequestBody defines body for DispatchOutboundCampaignRecipient for application/json ContentType.
+type DispatchOutboundCampaignRecipientJSONRequestBody = OutboundCampaignRecipientDispatchRequest
 
 // DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
 type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest
@@ -28506,6 +28633,9 @@ type ServerInterface interface {
 	// Read V1 channel entry and assignment facts without current attribution or permissions
 	// (GET /api/admin/channels/{channel_id}/history)
 	GetChannelHistory(w http.ResponseWriter, r *http.Request, channelId int64, params GetChannelHistoryParams)
+	// Read local event and delivery facts by exact trace or session identifier
+	// (GET /api/admin/cloud-orchestrator/audit)
+	ListCloudOrchestratorAudit(w http.ResponseWriter, r *http.Request, params ListCloudOrchestratorAuditParams)
 	// List the latest immutable touch-plan members by local review status
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members)
 	ListCloudCampaignMembers(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignMembersParams)
@@ -28884,6 +29014,9 @@ type ServerInterface interface {
 	// Manually reconcile one C01 outcome-unknown EER binding
 	// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id})
 	ReconcileOutboundCampaignDispatch(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, effectId string, params ReconcileOutboundCampaignDispatchParams)
+	// Queue gated local dispatch work for one approved Campaign recipient
+	// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch)
+	DispatchOutboundCampaignRecipient(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, customerId int64, params DispatchOutboundCampaignRecipientParams)
 	// Reconcile held local task-link counts without customer IDs or Provider fields
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
 	ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
@@ -29889,6 +30022,12 @@ func (_ Unimplemented) GetChannelHistory(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read local event and delivery facts by exact trace or session identifier
+// (GET /api/admin/cloud-orchestrator/audit)
+func (_ Unimplemented) ListCloudOrchestratorAudit(w http.ResponseWriter, r *http.Request, params ListCloudOrchestratorAuditParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List the latest immutable touch-plan members by local review status
 // (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members)
 func (_ Unimplemented) ListCloudCampaignMembers(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignMembersParams) {
@@ -30642,6 +30781,12 @@ func (_ Unimplemented) GetOutboundCampaignDispatchReconciliation(w http.Response
 // Manually reconcile one C01 outcome-unknown EER binding
 // (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id})
 func (_ Unimplemented) ReconcileOutboundCampaignDispatch(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, effectId string, params ReconcileOutboundCampaignDispatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Queue gated local dispatch work for one approved Campaign recipient
+// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch)
+func (_ Unimplemented) DispatchOutboundCampaignRecipient(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, customerId int64, params DispatchOutboundCampaignRecipientParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -34933,6 +35078,55 @@ func (siw *ServerInterfaceWrapper) GetChannelHistory(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetChannelHistory(w, r, channelId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCloudOrchestratorAudit operation middleware
+func (siw *ServerInterfaceWrapper) ListCloudOrchestratorAudit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCloudOrchestratorAuditParams
+
+	// ------------- Optional query parameter "trace_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "trace_id", r.URL.Query(), &params.TraceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "trace_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "session_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "session_id", r.URL.Query(), &params.SessionId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "session_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCloudOrchestratorAudit(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -40621,6 +40815,106 @@ func (siw *ServerInterfaceWrapper) ReconcileOutboundCampaignDispatch(w http.Resp
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReconcileOutboundCampaignDispatch(w, r, campaignCode, planId, effectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DispatchOutboundCampaignRecipient operation middleware
+func (siw *ServerInterfaceWrapper) DispatchOutboundCampaignRecipient(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DispatchOutboundCampaignRecipientParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DispatchOutboundCampaignRecipient(w, r, campaignCode, planId, customerId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -52725,6 +53019,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}/history", wrapper.GetChannelHistory)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/audit", wrapper.ListCloudOrchestratorAudit)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/members", wrapper.ListCloudCampaignMembers)
 	})
 	r.Group(func(r chi.Router) {
@@ -53101,6 +53398,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}", wrapper.ReconcileOutboundCampaignDispatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch", wrapper.DispatchOutboundCampaignRecipient)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", wrapper.ReconcileOutboundCampaignHandoff)
@@ -57384,6 +57684,59 @@ func (response GetChannelHistory404JSONResponse) VisitGetChannelHistoryResponse(
 type GetChannelHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetChannelHistory503JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudOrchestratorAuditRequestObject struct {
+	Params ListCloudOrchestratorAuditParams
+}
+
+type ListCloudOrchestratorAuditResponseObject interface {
+	VisitListCloudOrchestratorAuditResponse(w http.ResponseWriter) error
+}
+
+type ListCloudOrchestratorAudit200JSONResponse CloudOrchestratorAuditResponse
+
+func (response ListCloudOrchestratorAudit200JSONResponse) VisitListCloudOrchestratorAuditResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudOrchestratorAudit400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCloudOrchestratorAudit400JSONResponse) VisitListCloudOrchestratorAuditResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudOrchestratorAudit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCloudOrchestratorAudit401JSONResponse) VisitListCloudOrchestratorAuditResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudOrchestratorAudit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCloudOrchestratorAudit403JSONResponse) VisitListCloudOrchestratorAuditResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudOrchestratorAudit503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCloudOrchestratorAudit503JSONResponse) VisitListCloudOrchestratorAuditResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -64487,6 +64840,81 @@ func (response ReconcileOutboundCampaignDispatch409JSONResponse) VisitReconcileO
 type ReconcileOutboundCampaignDispatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ReconcileOutboundCampaignDispatch503JSONResponse) VisitReconcileOutboundCampaignDispatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipientRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+	CustomerId   int64  `json:"customer_id"`
+	Params       DispatchOutboundCampaignRecipientParams
+	Body         *DispatchOutboundCampaignRecipientJSONRequestBody
+}
+
+type DispatchOutboundCampaignRecipientResponseObject interface {
+	VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error
+}
+
+type DispatchOutboundCampaignRecipient200JSONResponse OutboundCampaignDispatchReconciliation
+
+func (response DispatchOutboundCampaignRecipient200JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipient400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DispatchOutboundCampaignRecipient400JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipient401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DispatchOutboundCampaignRecipient401JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipient403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DispatchOutboundCampaignRecipient403JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipient404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DispatchOutboundCampaignRecipient404JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipient409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DispatchOutboundCampaignRecipient409JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DispatchOutboundCampaignRecipient503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DispatchOutboundCampaignRecipient503JSONResponse) VisitDispatchOutboundCampaignRecipientResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -77497,6 +77925,9 @@ type StrictServerInterface interface {
 	// Read V1 channel entry and assignment facts without current attribution or permissions
 	// (GET /api/admin/channels/{channel_id}/history)
 	GetChannelHistory(ctx context.Context, request GetChannelHistoryRequestObject) (GetChannelHistoryResponseObject, error)
+	// Read local event and delivery facts by exact trace or session identifier
+	// (GET /api/admin/cloud-orchestrator/audit)
+	ListCloudOrchestratorAudit(ctx context.Context, request ListCloudOrchestratorAuditRequestObject) (ListCloudOrchestratorAuditResponseObject, error)
 	// List the latest immutable touch-plan members by local review status
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/members)
 	ListCloudCampaignMembers(ctx context.Context, request ListCloudCampaignMembersRequestObject) (ListCloudCampaignMembersResponseObject, error)
@@ -77875,6 +78306,9 @@ type StrictServerInterface interface {
 	// Manually reconcile one C01 outcome-unknown EER binding
 	// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id})
 	ReconcileOutboundCampaignDispatch(ctx context.Context, request ReconcileOutboundCampaignDispatchRequestObject) (ReconcileOutboundCampaignDispatchResponseObject, error)
+	// Queue gated local dispatch work for one approved Campaign recipient
+	// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/recipients/{customer_id}/dispatch)
+	DispatchOutboundCampaignRecipient(ctx context.Context, request DispatchOutboundCampaignRecipientRequestObject) (DispatchOutboundCampaignRecipientResponseObject, error)
 	// Reconcile held local task-link counts without customer IDs or Provider fields
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
 	ReconcileOutboundCampaignHandoff(ctx context.Context, request ReconcileOutboundCampaignHandoffRequestObject) (ReconcileOutboundCampaignHandoffResponseObject, error)
@@ -80287,6 +80721,32 @@ func (sh *strictHandler) GetChannelHistory(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetChannelHistoryResponseObject); ok {
 		if err := validResponse.VisitGetChannelHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCloudOrchestratorAudit operation middleware
+func (sh *strictHandler) ListCloudOrchestratorAudit(w http.ResponseWriter, r *http.Request, params ListCloudOrchestratorAuditParams) {
+	var request ListCloudOrchestratorAuditRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCloudOrchestratorAudit(ctx, request.(ListCloudOrchestratorAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCloudOrchestratorAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCloudOrchestratorAuditResponseObject); ok {
+		if err := validResponse.VisitListCloudOrchestratorAuditResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -83760,6 +84220,42 @@ func (sh *strictHandler) ReconcileOutboundCampaignDispatch(w http.ResponseWriter
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileOutboundCampaignDispatchResponseObject); ok {
 		if err := validResponse.VisitReconcileOutboundCampaignDispatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DispatchOutboundCampaignRecipient operation middleware
+func (sh *strictHandler) DispatchOutboundCampaignRecipient(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, customerId int64, params DispatchOutboundCampaignRecipientParams) {
+	var request DispatchOutboundCampaignRecipientRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+	request.CustomerId = customerId
+	request.Params = params
+
+	var body DispatchOutboundCampaignRecipientJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DispatchOutboundCampaignRecipient(ctx, request.(DispatchOutboundCampaignRecipientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DispatchOutboundCampaignRecipient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DispatchOutboundCampaignRecipientResponseObject); ok {
+		if err := validResponse.VisitDispatchOutboundCampaignRecipientResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

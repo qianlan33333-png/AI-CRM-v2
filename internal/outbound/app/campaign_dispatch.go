@@ -26,6 +26,15 @@ type CampaignDispatchCommand struct {
 	ExternalGate   bool
 }
 
+type CampaignRecipientDispatchCommand struct {
+	CampaignCode   string
+	PlanID         string
+	CustomerID     int64
+	ActorID        int64
+	IdempotencyKey string
+	ExternalGate   bool
+}
+
 type CampaignDispatchReconcileCommand struct {
 	CampaignCode   string
 	PlanID         string
@@ -134,11 +143,28 @@ func (service *CampaignDispatchService) WithAudienceQualification(qualifier outb
 }
 
 func (service *CampaignDispatchService) Dispatch(ctx context.Context, command CampaignDispatchCommand) (outbound.CampaignDispatchSummary, error) {
+	return service.dispatch(ctx, command, 0)
+}
+
+// DispatchRecipient accepts only the steps belonging to one explicitly
+// approved recipient. ExternalGate remains a separate runtime switch: with it
+// disabled this records blocked local facts and performs no Provider work.
+func (service *CampaignDispatchService) DispatchRecipient(ctx context.Context, command CampaignRecipientDispatchCommand) (outbound.CampaignDispatchSummary, error) {
+	if command.CustomerID < 1 {
+		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchInvalid
+	}
+	return service.dispatch(ctx, CampaignDispatchCommand{
+		CampaignCode: command.CampaignCode, PlanID: command.PlanID, ActorID: command.ActorID,
+		IdempotencyKey: command.IdempotencyKey, ExternalGate: command.ExternalGate,
+	}, command.CustomerID)
+}
+
+func (service *CampaignDispatchService) dispatch(ctx context.Context, command CampaignDispatchCommand, recipientID int64) (outbound.CampaignDispatchSummary, error) {
 	if ctx == nil || service == nil || service.now == nil || !validCampaignDispatchCommand(command) {
 		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchInvalid
 	}
 	key := sha256.Sum256([]byte(command.IdempotencyKey))
-	payload := sha256.Sum256([]byte("outbound.campaign_dispatch.command.v1\x00" + command.CampaignCode + "\x00" + command.PlanID + "\x00" + boolText(command.ExternalGate)))
+	payload := campaignDispatchCommandDigest(command, recipientID)
 	var summary outbound.CampaignDispatchSummary
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		evaluatedAt := service.now().UTC()
@@ -164,6 +190,29 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 		if err != nil {
 			return err
 		}
+		if recipientID > 0 {
+			reader, ok := service.repo.(outboundport.CampaignDispatchRecipientApprovalReader)
+			if !ok {
+				return outbound.ErrCampaignDispatchUnavailable
+			}
+			approval, approvalErr := reader.ReadCampaignDispatchRecipientApproval(tx, handoffID, recipientID)
+			if approvalErr != nil {
+				return approvalErr
+			}
+			if !approval.Approved {
+				return outbound.ErrCampaignDispatchConflict
+			}
+			candidates = campaignDispatchRecipientCandidates(candidates, recipientID)
+			if len(candidates) == 0 {
+				return outbound.ErrCampaignDispatchUnavailable
+			}
+			if strings.TrimSpace(approval.MessageOverride) != "" {
+				if len(candidates) != 1 {
+					return outbound.ErrCampaignDispatchConflict
+				}
+				candidates[0].Content = approval.MessageOverride
+			}
+		}
 		eligibility, err := service.dispatchEligibility(tx, candidates, evaluatedAt)
 		if err != nil {
 			return err
@@ -183,7 +232,7 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 			if candidate.CustomerID < 1 || candidate.StepIndex < 1 || strings.TrimSpace(candidate.Content) == "" {
 				return outbound.ErrCampaignDispatchUnavailable
 			}
-			binding := outboundport.CampaignDispatchBinding{HandoffID: handoffID, CustomerID: candidate.CustomerID, StepIndex: candidate.StepIndex, RecipientDigest: outbound.CampaignDispatchRecipientDigest(candidate.CustomerID), PayloadDigest: outbound.CampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content), CreatedAt: evaluatedAt, UpdatedAt: evaluatedAt}
+			binding := outboundport.CampaignDispatchBinding{HandoffID: handoffID, CustomerID: candidate.CustomerID, StepIndex: candidate.StepIndex, RecipientDigest: outbound.CampaignDispatchRecipientDigest(candidate.CustomerID), PayloadDigest: outbound.CampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content), ContentSnapshot: candidate.Content, CreatedAt: evaluatedAt, UpdatedAt: evaluatedAt}
 			decision, present := eligibility[candidate.CustomerID]
 			if !present {
 				return outbound.ErrCampaignDispatchUnavailable
@@ -277,6 +326,23 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
 	}
 	return summary, nil
+}
+
+func campaignDispatchCommandDigest(command CampaignDispatchCommand, recipientID int64) [32]byte {
+	if recipientID == 0 {
+		return sha256.Sum256([]byte("outbound.campaign_dispatch.command.v1\x00" + command.CampaignCode + "\x00" + command.PlanID + "\x00" + boolText(command.ExternalGate)))
+	}
+	return sha256.Sum256([]byte("outbound.campaign_dispatch.recipient.command.v1\x00" + command.CampaignCode + "\x00" + command.PlanID + "\x00" + strconv.FormatInt(recipientID, 10) + "\x00" + boolText(command.ExternalGate)))
+}
+
+func campaignDispatchRecipientCandidates(candidates []outboundport.CampaignDispatchCandidate, recipientID int64) []outboundport.CampaignDispatchCandidate {
+	result := make([]outboundport.CampaignDispatchCandidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.CustomerID == recipientID {
+			result = append(result, candidate)
+		}
+	}
+	return result
 }
 
 func (service *CampaignDispatchService) dispatchEligibility(ctx context.Context, candidates []outboundport.CampaignDispatchCandidate, evaluatedAt time.Time) (map[int64]contactport.ContactEligibility, error) {

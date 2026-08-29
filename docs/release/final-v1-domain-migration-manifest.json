@@ -1,8 +1,7 @@
 {
   "schema": {
     "from": 132,
-    "to": 140,
-    "forbidden_versions": [141],
+    "to": 142,
     "forbidden_hxc_objects": ["hxc_activation_funnel", "hxc_activation_broadcast"]
   },
   "scope": {
@@ -13,9 +12,7 @@
   },
   "phases": [
     {"mode": "import", "expect": "initial terminal receipts"},
-    {"mode": "import", "expect": "replayed only; no new target rows or receipts"},
-    {"mode": "reconcile", "expect": "verified counts and comparison digest"},
-    {"mode": "reconcile", "expect": "replayed=true and unchanged comparison digest"}
+    {"mode": "reconcile", "expect": "verified counts and comparison digest"}
   ],
   "domains": [
     {"domain": "campaign", "requires": ["campaign-actors"]},

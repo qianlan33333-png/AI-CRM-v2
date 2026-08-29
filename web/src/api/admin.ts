@@ -26,7 +26,7 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, listAIAudienceTemplates, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, previewAIAudienceTemplate, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, saveAIAudienceTemplateConfiguration, updateAIAudiencePackage, type AIAudiencePackageSender, type AIAudienceTemplateParameters, type AIAudienceTemplatePreviewRequest, type AIAudienceTemplateSaveRequest, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, getGroupOpsWebhookDescriptor, listAIAudienceOperationMembers, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, previewGroupOpsRunDue, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignMembers, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview, type CloudCampaignMemberStatusStatus, type ListCloudCampaignMembersParams } from './generated/health';
-import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
+import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, dispatchOutboundCampaignRecipient, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
 import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
@@ -67,13 +67,22 @@ export type CampaignTouchPlan = { id: string; campaignCode: string; campaignVers
 export type CampaignTouchPlanIndexItem = CampaignTouchPlan & { reviewStatus: 'draft' | 'pending_review' | 'approved' | 'rejected'; reviewVersion: number };
 export type CampaignTouchPlanIndexPage = { items: CampaignTouchPlanIndexItem[]; nextCursor: string | null };
 export type CampaignTouchPlanDetail = CampaignTouchPlan & { steps: Array<{ index: number; delayMinutes: number; content: string }> };
-export type CampaignTouchPlanReview = { status: string; version: number; handoffStatus: string | null };
+export type CampaignTouchPlanReview = {
+  status: string;
+  version: number;
+  handoffStatus: string | null;
+  submittedByActorID: number | null;
+  submittedAt: string | null;
+  reviewedByActorID: number | null;
+  reviewedAt: string | null;
+};
 export type CampaignTouchPlanRecipient = { customerID: number };
 export type CampaignTouchPlanRecipientPage = { items: CampaignTouchPlanRecipient[]; nextCursor: string | null };
-export type CampaignTouchPlanRecipientReview = { customerID: number; messageOverride: string; status: 'pending_review' | 'approved' | 'rejected'; version: number; updatedAt: string };
+export type CampaignTouchPlanRecipientReview = { customerID: number; messageOverride: string; status: 'pending_review' | 'approved' | 'rejected'; version: number; updatedByActorID: number; updatedAt: string };
 export type CampaignOutboundHandoff = { id: number; campaignCode: string; planID: string; reviewVersion: number; status: 'held'; targetCount: number; stepCount: number; acceptedAt: string; providerExecutionEligible: boolean };
 export type CampaignOutboundHandoffReconciliation = CampaignOutboundHandoff & { heldCount: number; blockedCount: number; pendingCount: number; notEvaluatedCount: number; eligibleCount: number; inactiveCount: number; contactPolicyCount: number };
-export type CampaignOutboundDispatchReconciliation = { handoffID: number; blocked: number; accepted: number; queued: number; attempted: number; executed: number; outcomeUnknown: number; reconciled: number; retryableFailed: number; finalFailed: number; providerExecutionEligible: boolean };
+export type CampaignOutboundDispatchReconciliation = { handoffID: number; blocked: number; accepted: number; queued: number; attempted: number; executed: number; outcomeUnknown: number; reconciled: number; retryableFailed: number; finalFailed: number; providerExecutionEligible: boolean; businessCallDispatched: boolean; realExternalCallExecuted: boolean; deliveryProven: false };
+export type CampaignOutboundRecipientDispatch = CampaignOutboundDispatchReconciliation & { customerID: number };
 
 const requiredText = (source: Obj, field: string): string => {
   const value = source[field];
@@ -83,6 +92,18 @@ const requiredText = (source: Obj, field: string): string => {
 const requiredPositive = (source: Obj, field: string): number => {
   const value = Number(source[field]);
   if (!Number.isSafeInteger(value) || value < 1) throw new Error(`Campaign 响应缺少有效 ${field}`);
+  return value;
+};
+const nullablePositive = (source: Obj, field: string): number | null => {
+  if (source[field] == null) return null;
+  const value = Number(source[field]);
+  if (!Number.isSafeInteger(value) || value < 1) throw new Error(`Campaign 响应包含无效 ${field}`);
+  return value;
+};
+const nullableInstant = (source: Obj, field: string): string | null => {
+  if (source[field] == null) return null;
+  const value = source[field];
+  if (typeof value !== 'string' || !value || Number.isNaN(Date.parse(value))) throw new Error(`Campaign 响应包含无效 ${field}`);
   return value;
 };
 const requiredCount = (source: Obj, field: string): number => {
@@ -116,12 +137,34 @@ const requireHandoffScope = (handoff: CampaignOutboundHandoff, campaignCode: str
 };
 const campaignDispatchReconciliationDto = (value: unknown): CampaignOutboundDispatchReconciliation => {
   const source = obj(value);
-  if (typeof source.provider_execution_eligible !== 'boolean' || source.business_call_dispatched !== false || source.real_external_call_executed !== false || source.delivery_proven !== false) throw new Error('Campaign dispatch 响应越过本地执行边界');
-  return { handoffID: requiredPositive(source, 'handoff_id'), blocked: requiredCount(source, 'blocked'), accepted: requiredCount(source, 'accepted'), queued: requiredCount(source, 'queued'), attempted: requiredCount(source, 'attempted'), executed: requiredCount(source, 'executed'), outcomeUnknown: requiredCount(source, 'outcome_unknown'), reconciled: requiredCount(source, 'reconciled'), retryableFailed: requiredCount(source, 'retryable_failed'), finalFailed: requiredCount(source, 'final_failed'), providerExecutionEligible: source.provider_execution_eligible };
+  if (typeof source.provider_execution_eligible !== 'boolean' || typeof source.business_call_dispatched !== 'boolean' || typeof source.real_external_call_executed !== 'boolean' || source.delivery_proven !== false) throw new Error('Campaign dispatch 响应缺少可验证的执行事实边界');
+  return { handoffID: requiredPositive(source, 'handoff_id'), blocked: requiredCount(source, 'blocked'), accepted: requiredCount(source, 'accepted'), queued: requiredCount(source, 'queued'), attempted: requiredCount(source, 'attempted'), executed: requiredCount(source, 'executed'), outcomeUnknown: requiredCount(source, 'outcome_unknown'), reconciled: requiredCount(source, 'reconciled'), retryableFailed: requiredCount(source, 'retryable_failed'), finalFailed: requiredCount(source, 'final_failed'), providerExecutionEligible: source.provider_execution_eligible, businessCallDispatched: source.business_call_dispatched, realExternalCallExecuted: source.real_external_call_executed, deliveryProven: false };
 };
 const campaignItemDto = (value: unknown): CampaignListItem => {
   const source = obj(value);
   return { code: requiredText(source, 'campaign_code'), name: requiredText(source, 'name'), approvalStatus: requiredText(source, 'approval_status'), runtimeStatus: requiredText(source, 'runtime_status'), version: requiredPositive(source, 'version'), updatedAt: requiredText(source, 'updated_at') };
+};
+const campaignTouchPlanReviewDto = (value: unknown, handoff?: unknown): CampaignTouchPlanReview => {
+  const review = obj(value);
+  const handoffSource = obj(handoff);
+  const status = requiredText(review, 'status');
+  if (!['draft', 'pending_review', 'approved', 'rejected'].includes(status)) throw new Error('Campaign 审核状态无效');
+  const submittedByActorID = nullablePositive(review, 'submitted_by_actor_id');
+  const submittedAt = nullableInstant(review, 'submitted_at');
+  const reviewedByActorID = nullablePositive(review, 'reviewed_by_actor_id');
+  const reviewedAt = nullableInstant(review, 'reviewed_at');
+  const submitted = submittedByActorID !== null || submittedAt !== null;
+  const reviewed = reviewedByActorID !== null || reviewedAt !== null;
+  if ((submittedByActorID === null) !== (submittedAt === null) || (reviewedByActorID === null) !== (reviewedAt === null) || status === 'draft' && (submitted || reviewed) || status === 'pending_review' && (!submitted || reviewed) || (status === 'approved' || status === 'rejected') && (!submitted || !reviewed)) throw new Error('Campaign 审核审计字段与状态不一致');
+  return {
+    status,
+    version: requiredPositive(review, 'version'),
+    handoffStatus: typeof handoffSource.status === 'string' ? handoffSource.status : null,
+    submittedByActorID,
+    submittedAt,
+    reviewedByActorID,
+    reviewedAt,
+  };
 };
 const touchPlanDto = (value: unknown): CampaignTouchPlan => {
   const source = obj(value);
@@ -135,7 +178,7 @@ const mutationOptions = (): RequestInit => {
   if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交 Campaign 本地审核');
   return apiRequestOptions({ headers: { 'Idempotency-Key': `campaign-review-${globalThis.crypto.randomUUID()}` } });
 };
-const handoffMutationOptions = (operation: 'accept' | 'dispatch'): RequestInit => {
+const handoffMutationOptions = (operation: 'accept' | 'dispatch' | 'recipient-dispatch'): RequestInit => {
   if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交 Campaign handoff 操作');
   return apiRequestOptions({ headers: { 'Idempotency-Key': `campaign-handoff-${operation}-${globalThis.crypto.randomUUID()}` } });
 };
@@ -318,17 +361,14 @@ export async function getCampaignTouchPlanDto(campaignCode: string, planID: stri
 export async function getCampaignTouchPlanReviewDto(campaignCode: string, planID: string): Promise<CampaignTouchPlanReview> {
   const source = obj(await call(getCloudCampaignTouchPlanReview(campaignCode, planID, apiRequestOptions())));
   requireTouchPlanLocal(source);
-  const review = obj(source.review);
-  const handoff = obj(source.handoff);
-  return { status: requiredText(review, 'status'), version: requiredPositive(review, 'version'), handoffStatus: typeof handoff.status === 'string' ? handoff.status : null };
+  return campaignTouchPlanReviewDto(source.review, source.handoff);
 }
 export async function decideCampaignTouchPlanReviewDto(campaignCode: string, planID: string, operation: 'approve' | 'reject'): Promise<CampaignTouchPlanReview> {
   const current = await getCampaignTouchPlanReviewDto(campaignCode, planID);
   if (current.status !== 'pending_review') throw new Error('当前计划不在待审核状态，已拒绝提交');
   const source = obj(await call(mutateCloudCampaignTouchPlanReview(campaignCode, planID, operation, { expected_version: current.version, confirmation: `${operation.toUpperCase()} ${planID}` }, mutationOptions())));
   requireTouchPlanLocal(source);
-  const review = obj(source.review);
-  return { status: requiredText(review, 'status'), version: requiredPositive(review, 'version'), handoffStatus: typeof obj(source.handoff).status === 'string' ? String(obj(source.handoff).status) : null };
+  return campaignTouchPlanReviewDto(source.review, source.handoff);
 }
 export async function listCampaignTouchPlanRecipientsDto(campaignCode: string, planID: string, cursor?: string): Promise<CampaignTouchPlanRecipientPage> {
   const source = obj(await call(listCloudCampaignTouchPlanRecipients(campaignCode, planID, { limit: 50, cursor }, apiRequestOptions())));
@@ -347,7 +387,7 @@ const recipientReviewDto = (value: unknown, customerID: number): CampaignTouchPl
   const returnedID = requiredPositive(source, 'canonical_customer_id');
   const status = source.status;
   if (returnedID !== customerID || (status !== 'pending_review' && status !== 'approved' && status !== 'rejected')) throw new Error('Campaign 单客户审核范围不匹配');
-  return { customerID: returnedID, messageOverride: typeof source.message_override === 'string' ? source.message_override : '', status, version: requiredPositive(source, 'version'), updatedAt: requiredText(source, 'updated_at') };
+  return { customerID: returnedID, messageOverride: typeof source.message_override === 'string' ? source.message_override : '', status, version: requiredPositive(source, 'version'), updatedByActorID: requiredPositive(source, 'updated_by_actor_id'), updatedAt: requiredText(source, 'updated_at') };
 };
 export async function getCampaignTouchPlanRecipientReviewDto(campaignCode: string, planID: string, customerID: number): Promise<CampaignTouchPlanRecipientReview | null> {
   try {
@@ -419,6 +459,18 @@ export async function dispatchCampaignOutboundHandoffDto(campaignCode: string, p
   const reconciliation = campaignDispatchReconciliationDto(await call(dispatchOutboundCampaignHandoff(campaignCode, planID, { external_gate: true }, handoffMutationOptions('dispatch'))));
   if (reconciliation.handoffID !== handoff.id) throw new Error('Campaign dispatch 返回 handoff 范围不匹配');
   return reconciliation;
+}
+export async function dispatchCampaignOutboundRecipientDto(campaignCode: string, planID: string, customerID: number): Promise<CampaignOutboundRecipientDispatch> {
+  if (!Number.isSafeInteger(customerID) || customerID < 1) throw new Error('Campaign 单客户受控发送范围无效');
+  const [review, recipientReview, handoff] = await Promise.all([
+    getCampaignTouchPlanReviewDto(campaignCode, planID),
+    getCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID),
+    getCampaignOutboundHandoffDto(campaignCode, planID),
+  ]);
+  if (review.status !== 'approved' || recipientReview?.status !== 'approved' || handoff.status !== 'held') throw new Error('Campaign 计划、单客户审核或 handoff 尚未就绪，已拒绝受控发送');
+  const reconciliation = campaignDispatchReconciliationDto(await call(dispatchOutboundCampaignRecipient(campaignCode, planID, customerID, { external_gate: true }, handoffMutationOptions('recipient-dispatch'))));
+  if (reconciliation.handoffID !== handoff.id || reconciliation.providerExecutionEligible) throw new Error('Campaign 单客户 dispatch 返回范围或本地边界不匹配');
+  return { ...reconciliation, customerID };
 }
 
 export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), stageId: customer.stage_id }; }
@@ -760,7 +812,10 @@ const groupOpsMaterialPlanDto = (value: unknown): GroupOpsMaterialPlan => {
     return { kind, id };
   }) };
 };
-export const groupOpsDetailDto = (value: unknown, preview?: unknown, descriptor?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); const webhook = obj(descriptor); const webhookUrl = text(webhook.url, ''); if (webhook.configured === true && !/^\/api\/automation\/group-ops\/webhooks\/[A-Za-z0-9._:-]{1,128}$/.test(webhookUrl)) throw new Error('Group Ops webhook URL 描述符不安全'); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, ''), materialPlan: groupOpsMaterialPlanDto(obj(item).material_plan) })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), webhookUrl, previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
+const requireGroupOpsRuntimeLocal = (source: Obj, label: string): void => {
+  if (typeof source.provider_execution_eligible !== 'boolean' || source.real_external_call_executed !== false || source.provider_accepted !== false || source.delivery_proven !== false) throw new Error(label + ' 越过本地执行边界');
+};
+export const groupOpsDetailDto = (value: unknown, preview?: unknown, descriptor?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); const webhook = obj(descriptor); const webhookUrl = text(webhook.url, ''); if (x.provider_execution_eligible !== false || x.real_external_call_executed !== false) throw new Error('Group Ops 计划详情越过本地执行边界'); if (webhook.configured === true && !/^\/api\/automation\/group-ops\/webhooks\/[A-Za-z0-9._:-]{1,128}$/.test(webhookUrl)) throw new Error('Group Ops webhook URL 描述符不安全'); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, ''), materialPlan: groupOpsMaterialPlanDto(obj(item).material_plan) })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), webhookUrl, previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
 const memberGridStaffRows = (value: unknown): MemberGridStaffOption[] => {
   const page = obj(value); const pageSize = Number(page.page_size); const items = page.items;
   if (!Array.isArray(items)) throw new Error('真实员工目录缺少 items');
@@ -793,7 +848,7 @@ const groupOpsPreviewDto = (planId: string, value: unknown): AdminDb['rows']['or
 };
 const groupOpsWebhookDescriptorDto = (value: unknown): AdminDb['rows']['orderKv'] => {
   const source = obj(value);
-  if (source.real_external_call_executed !== false || typeof source.provider_execution_eligible !== 'boolean') throw new Error('Group Ops webhook 描述符越过本地读取边界');
+  if (source.real_external_call_executed !== false || source.provider_execution_eligible !== false) throw new Error('Group Ops webhook 描述符越过本地读取边界');
   const url = source.configured === true ? text(source.url, '') : '';
   if (source.configured === true && !/^\/api\/automation\/group-ops\/webhooks\/[A-Za-z0-9._:-]{1,128}$/.test(url)) throw new Error('Group Ops webhook URL 描述符不安全');
   return [
@@ -804,6 +859,7 @@ const groupOpsWebhookDescriptorDto = (value: unknown): AdminDb['rows']['orderKv'
 };
 const groupOpsExecutionRows = (planId: string, value: unknown): AdminDb['rows']['orderEvents'] => {
   const source = obj(value);
+  requireGroupOpsRuntimeLocal(source, 'Group Ops execution');
   const stateHint: Record<string, string> = {
     accepted: '已接受内部执行；不等于 Provider 调用或送达',
     provider_accepted: 'Provider 已受理；仍不等于送达',
@@ -816,8 +872,11 @@ const groupOpsExecutionRows = (planId: string, value: unknown): AdminDb['rows'][
     const execution = obj(item);
     const state = text(execution.state);
     if (text(execution.plan_id) !== planId || !stateHint[state]) throw new Error('Group Ops execution 返回范围或状态不匹配');
+    if (typeof execution.provider_accepted !== 'boolean' || typeof execution.delivery_proven !== 'boolean' || typeof execution.provider_receipt_present !== 'boolean' || typeof execution.reconciliation_evidence_present !== 'boolean') throw new Error('Group Ops execution 缺少状态回执字段');
     if (execution.delivery_proven === true && (state !== 'delivery_proven' || execution.provider_receipt_present !== true)) throw new Error('Group Ops execution 缺少可验证送达回执');
-    return { time: text(execution.updated_at), ev: `execution ${text(execution.execution_id)} · attempts ${text(execution.attempt_count, '0')}`, st: stateHint[state], tone: toneFor(state) };
+    const receipt = execution.provider_receipt_present ? 'Provider receipt=present' : 'Provider receipt=absent';
+    const reconciliation = execution.reconciliation_evidence_present ? 'reconciliation=evidence' : 'reconciliation=pending';
+    return { time: text(execution.updated_at), ev: `execution ${text(execution.execution_id)} · attempts ${text(execution.attempt_count, '0')} · ${receipt}`, st: `${stateHint[state]}；${reconciliation}`, tone: toneFor(state) };
   });
 };
 export const configCategoryPageDto = (value: unknown): ConfigCategory => { const x = obj(value); return { key: text(x.key), label: text(x.key), group: '本地安全配置', on: x.enabled === true, toggleable: true, checkSupported: true, blocks: [] }; };

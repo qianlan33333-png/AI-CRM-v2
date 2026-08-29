@@ -16,20 +16,48 @@ JOIN public.outbound_campaign_handoff_steps AS step ON step.handoff_id = link.ha
 WHERE link.handoff_id = $1
 ORDER BY link.customer_id, step.step_index;
 
+-- name: ReadOutboundCampaignDispatchRecipientApproval :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.outbound_campaign_handoffs AS handoff
+  JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = handoff.plan_id
+   AND review.campaign_code = handoff.campaign_code
+  JOIN public.outbound_campaign_handoff_customer_tasks AS task
+    ON task.handoff_id = handoff.id
+   AND task.customer_id = review.customer_id
+  WHERE handoff.id = sqlc.arg(handoff_id)
+    AND review.customer_id = sqlc.arg(customer_id)
+    AND review.status = 'approved'
+) AS approved,
+COALESCE((
+  SELECT review.message_override
+  FROM public.outbound_campaign_handoffs AS handoff
+  JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = handoff.plan_id
+   AND review.campaign_code = handoff.campaign_code
+  JOIN public.outbound_campaign_handoff_customer_tasks AS task
+    ON task.handoff_id = handoff.id
+   AND task.customer_id = review.customer_id
+  WHERE handoff.id = sqlc.arg(handoff_id)
+    AND review.customer_id = sqlc.arg(customer_id)
+    AND review.status = 'approved'
+), '')::text AS message_override;
+
 -- name: InsertOutboundCampaignDispatch :one
-INSERT INTO public.outbound_campaign_dispatches(handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+INSERT INTO public.outbound_campaign_dispatches(handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,content_snapshot,state,block_reason)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
 ON CONFLICT(handoff_id,customer_id,step_index) DO UPDATE SET updated_at=public.outbound_campaign_dispatches.updated_at
-RETURNING id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,created_at,updated_at;
+RETURNING id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,content_snapshot,state,block_reason,created_at,updated_at;
 
 -- name: InsertOutboundCampaignDispatchWithAudienceSnapshot :one
 INSERT INTO public.outbound_campaign_dispatches(
-  handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,
+  handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,content_snapshot,state,block_reason,
   sender_userid_snapshot,external_userid_snapshot
-) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 ON CONFLICT(handoff_id,customer_id,step_index) DO UPDATE
 SET updated_at=public.outbound_campaign_dispatches.updated_at
-RETURNING id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,
+RETURNING id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,content_snapshot,state,block_reason,
           sender_userid_snapshot,external_userid_snapshot,created_at,updated_at;
 
 -- name: ReserveOutboundCampaignDispatchReceipt :one
@@ -63,18 +91,16 @@ JOIN public.outbound_campaign_provider_attempt_receipts AS receipt ON receipt.ex
 WHERE dispatch.handoff_id=$1;
 
 -- name: LoadOutboundCampaignDispatchByEffect :one
-SELECT id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,created_at,updated_at
+SELECT id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,content_snapshot,state,block_reason,created_at,updated_at
 FROM public.outbound_campaign_dispatches WHERE external_effect_id=$1;
 
 -- name: LoadOutboundCampaignDispatchProviderRequest :one
-SELECT dispatch.id,dispatch.handoff_id,dispatch.customer_id,dispatch.step_index,dispatch.payload_digest,step.content,
+SELECT dispatch.id,dispatch.handoff_id,dispatch.customer_id,dispatch.step_index,dispatch.payload_digest,dispatch.content_snapshot AS content,
        COALESCE(plan.source_kind,'') AS source_kind,plan.audience_package_id,
        dispatch.sender_userid_snapshot,dispatch.external_userid_snapshot
 FROM public.outbound_campaign_dispatches AS dispatch
 JOIN public.outbound_campaign_handoffs AS handoff ON handoff.id=dispatch.handoff_id
 LEFT JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
-JOIN public.outbound_campaign_handoff_steps AS step
-  ON step.handoff_id = dispatch.handoff_id AND step.step_index = dispatch.step_index
 WHERE dispatch.payload_digest=$1;
 
 -- name: ReadOutboundCampaignAudiencePackage :one

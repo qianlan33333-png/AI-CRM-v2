@@ -75,6 +75,7 @@ type Querier interface {
 	ReadOutboundCampaignAudiencePackage(ctx context.Context, id int64) (ReadOutboundCampaignAudiencePackageRow, error)
 	ReadOutboundCampaignDispatchDeliveryEvidence(ctx context.Context, handoffID int64) (bool, error)
 	ReadOutboundCampaignDispatchEvidence(ctx context.Context, handoffID int64) (ReadOutboundCampaignDispatchEvidenceRow, error)
+	ReadOutboundCampaignDispatchRecipientApproval(ctx context.Context, arg ReadOutboundCampaignDispatchRecipientApprovalParams) (ReadOutboundCampaignDispatchRecipientApprovalRow, error)
 	ReadOutboundCampaignDispatchSourceKind(ctx context.Context, externalEffectID pgtype.Int8) (string, error)
 	ReadOutboundCampaignHandoffForDispatch(ctx context.Context, arg ReadOutboundCampaignHandoffForDispatchParams) (int64, error)
 	RecordOutboundTaskJobLink(ctx context.Context, arg RecordOutboundTaskJobLinkParams) (RecordOutboundTaskJobLinkRow, error)

@@ -46,16 +46,72 @@ func main() {
 
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
-	mode := flags.String("mode", "import", "import|reconcile")
-	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|customer-timeline-history (immutable observations)|member-grid-history (read-only)|campaign-history (read-only snapshots)|automation-history (non-executable configuration)|profile-catalog-history (inert templates and signup rules)|hxc-history (immutable observations)|hxc-runtime-history (inert sender/send observations)|hxc-chat-job-history (inert dialogue job observations)|hxc-member-usage-history (inert generation observations)|contact-reference-history (inert customer binding/directory references)|cycle-observation-history (read-only cycle metrics/references)|static-tail-history (inert media/product/cycle facts)|customer-state-history (immutable status observations)|marketing-state-history (immutable marketing observations)|legacy-marketing-history (read-only snapshots)|survey-unresolved-history (read-only answers)|broadcast-job-history (inert job observations)|outbound-task-history (inert task observations)|external-identity-gap (sealed archive gap identities)|wecom-contact-history (read-only source observations)|radar-click-history|marketing-config-history")
+	mode := flags.String("mode", "import", "import|reconcile|final-preflight|final-reconcile")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|customer-timeline-history (immutable observations)|member-grid-history (read-only)|campaign-history (read-only snapshots)|automation-history (non-executable configuration)|profile-catalog-history (inert templates and signup rules)|hxc-history (immutable observations)|hxc-runtime-history (inert sender/send observations)|hxc-chat-job-history (inert dialogue job observations)|hxc-member-usage-history (inert generation observations)|contact-reference-history (inert customer binding/directory references)|cycle-observation-history (read-only cycle metrics/references)|static-tail-history (inert media/product/cycle facts)|customer-state-history (immutable status observations)|marketing-state-history (immutable marketing observations)|legacy-marketing-history (read-only snapshots)|survey-unresolved-history (read-only answers)|broadcast-job-history (inert job observations)|outbound-task-history (inert task observations)|external-identity-gap (sealed archive gap identities)|wecom-contact-history (read-only source observations)|radar-click-history|marketing-config-history|final (final-preflight/final-reconcile only)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
+	manifestPath := flags.String("manifest", finalMigrationManifestPath, "final V1 domain migration manifest (final-preflight/final-reconcile only)")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
 	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
 	dm01RunID := flags.Int64("dm01-run-id", 0, "verified DM01 full-import run for historical references")
 	referenceCorpID := flags.String("reference-corp-id", "", "explicit WeCom enterprise for contact-reference-history attribution")
 	usageRecoveryFile := flags.String("usage-recovery-file", "", "frozen has_token_usage recovery JSONL for member-grid-history import")
+	preflightOutput := flags.String("preflight-output", "json", "json|lines (final-preflight only)")
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	if *mode == finalPreflightMode {
+		if *domain != finalReconcileDomain || *archiveRunID == "" || environment.TargetDatabaseURL == "" || (*preflightOutput != "json" && *preflightOutput != "lines") {
+			return fmt.Errorf("final-preflight requires domain=final, archive-run-id, target database and json or lines output")
+		}
+		dm01 := appconfig.LoadDM01RuntimeEnvironment()
+		if environment.SourceDatabaseURL != "" || dm01.SourceDatabaseURL != "" {
+			return fmt.Errorf("final-preflight requires V1 and DM01 source database connections to be unset")
+		}
+		manifest, err := loadFinalMigrationManifest(*manifestPath)
+		if err != nil {
+			return err
+		}
+		pool, err := pgxpool.New(context.Background(), environment.TargetDatabaseURL)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
+		result, err := preflightFinalMigration(context.Background(), pool, *archiveRunID, manifest)
+		if err != nil {
+			return err
+		}
+		if *preflightOutput == "lines" {
+			for _, domain := range result.MissingDomains {
+				if _, err := fmt.Fprintln(os.Stdout, domain); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
+	}
+	if *mode == finalReconcileMode {
+		if *domain != finalReconcileDomain || *archiveRunID == "" || environment.TargetDatabaseURL == "" || *dm01RunID < 1 {
+			return fmt.Errorf("final-reconcile requires domain=final, archive-run-id, dm01-run-id and target database")
+		}
+		dm01 := appconfig.LoadDM01RuntimeEnvironment()
+		if environment.SourceDatabaseURL != "" || dm01.SourceDatabaseURL != "" {
+			return fmt.Errorf("final-reconcile requires V1 and DM01 source database connections to be unset")
+		}
+		manifest, err := loadFinalMigrationManifest(*manifestPath)
+		if err != nil {
+			return err
+		}
+		pool, err := pgxpool.New(context.Background(), environment.TargetDatabaseURL)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
+		result, err := reconcileFinalMigration(context.Background(), pool, *archiveRunID, *dm01RunID, manifest)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"final_reconciliation": result})
 	}
 	if (*mode != "import" && *mode != "reconcile") || !validDomain(*domain) || *archiveRunID == "" || environment.TargetDatabaseURL == "" {
 		return fmt.Errorf("valid mode, domain, archive-run-id and target database are required")

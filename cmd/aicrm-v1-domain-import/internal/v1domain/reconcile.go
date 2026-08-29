@@ -1447,3 +1447,142 @@ func equalBytes(left, right []byte) bool {
 	}
 	return true
 }
+
+// FinalImportReceiptRow is the immutable receipt projection used by the
+// release command's final read-only aggregate.
+type FinalImportReceiptRow struct {
+	TableID         string
+	SourceKeyDigest []byte
+	PayloadDigest   []byte
+	Disposition     string
+	Reason          string
+	TargetDomain    *string
+	TargetTable     *string
+	TargetID        *string
+	TargetDigest    []byte
+	Verified        bool
+}
+
+// FinalStoredReconciliation is the sealed reconciliation summary for one
+// import-version scope.
+type FinalStoredReconciliation struct {
+	Selected    int64
+	Receipts    int64
+	Imported    int64
+	Archived    int64
+	Quarantined int64
+	Verified    int64
+	Digest      []byte
+}
+
+func FinalExternalEffectCount(ctx context.Context, tx pgx.Tx) (int64, error) {
+	var count int64
+	err := tx.QueryRow(ctx, "SELECT count(*) FROM public.external_effects").Scan(&count)
+	return count, err
+}
+
+func FinalImportVersions(ctx context.Context, tx pgx.Tx, archiveRunID string) ([]string, error) {
+	rows, err := tx.Query(ctx, `SELECT import_version FROM public.v1_domain_import_receipts WHERE archive_run_id=$1
+UNION
+SELECT import_version FROM public.v1_domain_import_reconciliation_receipts WHERE archive_run_id=$1`, archiveRunID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	versions := make([]string, 0)
+	for rows.Next() {
+		var version string
+		if err = rows.Scan(&version); err != nil {
+			return nil, err
+		}
+		versions = append(versions, version)
+	}
+	return versions, rows.Err()
+}
+
+func FinalImportReceiptCount(ctx context.Context, tx pgx.Tx, archiveRunID, importVersion string) (int64, error) {
+	var count int64
+	err := tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_domain_import_receipts WHERE archive_run_id=$1 AND import_version=$2`, archiveRunID, importVersion).Scan(&count)
+	return count, err
+}
+
+func FinalArchiveReconciled(ctx context.Context, tx pgx.Tx, archiveRunID, adapterID string) (bool, error) {
+	var ready bool
+	err := tx.QueryRow(ctx, `SELECT EXISTS(
+SELECT 1 FROM public.v1_archive_reconciliation_receipts receipt
+JOIN public.data_migration_runs run USING (run_id)
+WHERE receipt.run_id=$1 AND run.phase='reconciled' AND run.adapter_id=$2
+AND receipt.source_row_count=receipt.archive_record_count
+AND receipt.source_row_count=receipt.terminal_disposition_count
+AND receipt.source_table_count=receipt.archived_table_count
+)`, archiveRunID, adapterID).Scan(&ready)
+	return ready, err
+}
+
+func FinalImportReceiptRows(ctx context.Context, tx pgx.Tx, archiveRunID, importVersion string, sourceTables []string) ([]FinalImportReceiptRow, error) {
+	query := `SELECT table_id,source_key_digest,payload_digest,disposition,reason,target_domain,target_table,target_id,target_digest,verified
+FROM public.v1_domain_import_receipts WHERE import_version=$1 AND archive_run_id=$2`
+	args := []any{importVersion, archiveRunID}
+	if len(sourceTables) > 0 {
+		query += " AND table_id=ANY($3::text[])"
+		args = append(args, sourceTables)
+	}
+	query += " ORDER BY table_id,source_key_digest"
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]FinalImportReceiptRow, 0)
+	for rows.Next() {
+		var row FinalImportReceiptRow
+		if err = rows.Scan(&row.TableID, &row.SourceKeyDigest, &row.PayloadDigest, &row.Disposition, &row.Reason, &row.TargetDomain, &row.TargetTable, &row.TargetID, &row.TargetDigest, &row.Verified); err != nil {
+			return nil, err
+		}
+		result = append(result, row)
+	}
+	return result, rows.Err()
+}
+
+func FinalArchiveSourceCounts(ctx context.Context, tx pgx.Tx, archiveRunID, adapterID string, tables []string) (int, int64, int64, error) {
+	var tableCount int
+	var selected, sourceRows int64
+	err := tx.QueryRow(ctx, `SELECT count(*),COALESCE(sum(row_count),0)
+FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=ANY($2::text[])`, archiveRunID, tables).Scan(&tableCount, &selected)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	err = tx.QueryRow(ctx, `SELECT count(*) FROM public.v1_archive_records
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=ANY($3::text[])`, archiveRunID, adapterID, tables).Scan(&sourceRows)
+	return tableCount, selected, sourceRows, err
+}
+
+func FinalReconciliationCounts(ctx context.Context, tx pgx.Tx, archiveRunID, importVersion string) (FinalStoredReconciliation, error) {
+	var value FinalStoredReconciliation
+	err := tx.QueryRow(ctx, `SELECT selected_source_count,receipt_count,imported_count,archived_count,quarantined_count,verified_count,comparison_digest
+FROM public.v1_domain_import_reconciliation_receipts WHERE import_version=$1 AND archive_run_id=$2`, importVersion, archiveRunID).
+		Scan(&value.Selected, &value.Receipts, &value.Imported, &value.Archived, &value.Quarantined, &value.Verified, &value.Digest)
+	return value, err
+}
+
+func FinalIdentityRunImported(ctx context.Context, tx pgx.Tx, dm01RunID int64) (bool, error) {
+	var ready bool
+	err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.legacy_contact_identity_import_runs
+WHERE id=$1 AND mode='full' AND state='imported')`, dm01RunID).Scan(&ready)
+	return ready, err
+}
+
+func FinalIdentityMappingCounts(ctx context.Context, tx pgx.Tx, dm01RunID int64) (int64, int64, error) {
+	var mappings, verified int64
+	err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER (WHERE
+EXISTS(SELECT 1 FROM public.legacy_contact_identity_import_row_receipts receipt
+WHERE receipt.run_id=$1 AND receipt.source_table=mapping.source_table
+AND receipt.source_key_hmac=mapping.source_key_hmac AND receipt.payload_hmac=mapping.payload_hmac
+AND receipt.disposition='imported')
+AND (mapping.staff_id IS NULL OR EXISTS(SELECT 1 FROM public.staff WHERE id=mapping.staff_id))
+AND (mapping.customer_id IS NULL OR EXISTS(SELECT 1 FROM public.customers WHERE id=mapping.customer_id AND NOT is_deleted))
+AND (mapping.identity_id IS NULL OR EXISTS(SELECT 1 FROM public.identities WHERE id=mapping.identity_id))
+) FROM public.legacy_contact_identity_source_mappings mapping
+WHERE mapping.last_run_id=$1`, dm01RunID).Scan(&mappings, &verified)
+	return mappings, verified, err
+}
