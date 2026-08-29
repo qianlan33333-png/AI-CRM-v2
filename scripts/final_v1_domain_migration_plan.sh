@@ -27,14 +27,11 @@ importer="$repository_root/cmd/aicrm-v1-domain-import"
 [[ -z "${AICRM_V1_ARCHIVE_SOURCE_DATABASE_URL:-}" ]] || fail 'V1 archive source database URL must be unset'
 [[ -z "${AICRM_DM01_SOURCE_DATABASE_URL:-}" ]] || fail 'DM01 source database URL must be unset'
 
-for version in $(seq 132 140); do
+for version in $(seq 132 141); do
   matches=("$migrations"/"$(printf '%05d' "$version")"_*.sql)
   [[ -f "${matches[0]:-}" && ! -L "${matches[0]:-}" ]] || fail "required migration $version is missing"
 done
 
-if find "$migrations" -maxdepth 1 -type f -name '00141_*.sql' -print -quit | grep -q .; then
-  fail 'schema 141 is forbidden for the cancelled HXC minimal-A scope'
-fi
 if grep -R -E -q 'hxc_activation_funnel|hxc_activation_broadcast' "$migrations"; then
   fail 'cancelled HXC minimal-A objects are present in migrations'
 fi
@@ -47,10 +44,10 @@ while IFS= read -r file; do
   version=$((10#$version))
   [[ -z "$latest" || "$version" -gt "$latest" ]] && latest="$version"
 done < <(find "$migrations" -maxdepth 1 -type f -name '*.sql' -print)
-[[ "$latest" = '140' ]] || fail "final schema must be 140, found ${latest:-none}"
+[[ "$latest" = '141' ]] || fail "final schema must be 141, found ${latest:-none}"
 
 grep -Fq '"from": 132' "$manifest" || fail 'manifest must start from schema 132'
-grep -Fq '"to": 140' "$manifest" || fail 'manifest must end at schema 140'
+grep -Fq '"to": 141' "$manifest" || fail 'manifest must end at schema 141'
 if grep -Eq '"domain"[[:space:]]*:[[:space:]]*"all"' "$manifest"; then
   fail 'manifest must enumerate domains and cannot use domain=all'
 fi
@@ -66,5 +63,5 @@ done < <(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "
 if [[ "$mode" = '--render' ]]; then
   cat "$manifest"
 else
-  printf 'final-v1-domain-migration-plan: PASS (schema=132->140 domains=%s)\n' "$domain_count"
+  printf 'final-v1-domain-migration-plan: PASS (schema=132->141 domains=%s)\n' "$domain_count"
 fi
