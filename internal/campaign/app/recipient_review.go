@@ -31,6 +31,50 @@ func NewRecipientReviewService(uow campaignport.UnitOfWork, repo campaignport.Re
 	return &RecipientReviewService{uow: uow, repo: repo, events: events, now: time.Now}, nil
 }
 
+func (s *RecipientReviewService) ListCampaignMembers(ctx context.Context, campaignCode string, status campaign.TouchPlanRecipientReviewStatus, limit, offset int32) (campaign.CampaignMemberStatusPage, error) {
+	if s == nil || s.uow == nil || s.repo == nil || ctx == nil || ctx.Err() != nil {
+		return campaign.CampaignMemberStatusPage{}, campaign.ErrUnavailable
+	}
+	if !campaign.ValidCampaignCode(campaignCode) || status != "" && !status.Valid() || limit < 1 || limit > campaign.MaximumCampaignMemberPage || offset < 0 {
+		return campaign.CampaignMemberStatusPage{}, campaign.ErrInvalidArgument
+	}
+	var snapshot campaign.CampaignMemberStatusSnapshot
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		var readErr error
+		snapshot, readErr = s.repo.ListLatestCampaignMemberStatuses(tx, campaignCode, status, limit, offset)
+		return readErr
+	})
+	if err != nil {
+		if errors.Is(err, campaign.ErrNotFound) {
+			return campaign.CampaignMemberStatusPage{}, campaign.ErrNotFound
+		}
+		return campaign.CampaignMemberStatusPage{}, campaign.ErrUnavailable
+	}
+	if !validCampaignMemberStatusSnapshot(snapshot, status, limit) {
+		return campaign.CampaignMemberStatusPage{}, campaign.ErrUnavailable
+	}
+	return campaign.CampaignMemberStatusPage{
+		PlanID: snapshot.PlanID,
+		Items:  append([]campaign.CampaignMemberStatus(nil), snapshot.Items...),
+		Total:  snapshot.Total,
+		Limit:  limit,
+		Offset: offset,
+		Safety: campaign.LocalInitiationSafety(),
+	}, nil
+}
+
+func validCampaignMemberStatusSnapshot(value campaign.CampaignMemberStatusSnapshot, filter campaign.TouchPlanRecipientReviewStatus, limit int32) bool {
+	if value.Total < 0 || len(value.Items) > int(limit) || value.PlanID == "" && (value.Total != 0 || len(value.Items) != 0) || value.PlanID != "" && !campaign.ValidTouchPlanReviewID(value.PlanID) {
+		return false
+	}
+	for index, item := range value.Items {
+		if item.PlanID != value.PlanID || item.CustomerID < 1 || !item.Status.Valid() || filter != "" && item.Status != filter || index > 0 && value.Items[index-1].CustomerID >= item.CustomerID {
+			return false
+		}
+	}
+	return int64(len(value.Items)) <= value.Total
+}
+
 func (s *RecipientReviewService) Get(ctx context.Context, campaignCode, planID string, customerID int64) (campaign.TouchPlanRecipientReview, error) {
 	if s == nil || s.repo == nil || ctx == nil || ctx.Err() != nil {
 		return campaign.TouchPlanRecipientReview{}, campaign.ErrUnavailable

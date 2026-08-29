@@ -21,6 +21,11 @@ type recipientReviewFixture struct {
 	events     []campaign.TouchPlanRecipientReviewEvent
 	nextID     int64
 	eventErr   error
+	memberRead struct {
+		status campaign.TouchPlanRecipientReviewStatus
+		limit  int32
+		offset int32
+	}
 }
 
 func newRecipientReviewFixture(planID string) *recipientReviewFixture {
@@ -43,6 +48,40 @@ func (f *recipientReviewFixture) Within(_ context.Context, fn func(context.Conte
 		return err
 	}
 	return nil
+}
+
+func (f *recipientReviewFixture) ListLatestCampaignMemberStatuses(_ context.Context, campaignCode string, status campaign.TouchPlanRecipientReviewStatus, limit, offset int32) (campaign.CampaignMemberStatusSnapshot, error) {
+	f.memberRead.status, f.memberRead.limit, f.memberRead.offset = status, limit, offset
+	planID := ""
+	for candidate, review := range f.reviews {
+		if review.CampaignCode == campaignCode {
+			planID = candidate
+			break
+		}
+	}
+	if planID == "" {
+		return campaign.CampaignMemberStatusSnapshot{}, campaign.ErrNotFound
+	}
+	items := make([]campaign.CampaignMemberStatus, 0, len(f.recipients[planID]))
+	for _, recipient := range f.recipients[planID] {
+		projected := campaign.TouchPlanRecipientReviewPending
+		if review, ok := f.values[recipientReviewValueKey(planID, recipient.CustomerID)]; ok {
+			projected = review.Status
+		}
+		if status == "" || projected == status {
+			items = append(items, campaign.CampaignMemberStatus{PlanID: planID, CustomerID: recipient.CustomerID, Status: projected})
+		}
+	}
+	total := int64(len(items))
+	start := int(offset)
+	if start > len(items) {
+		start = len(items)
+	}
+	end := start + int(limit)
+	if end > len(items) {
+		end = len(items)
+	}
+	return campaign.CampaignMemberStatusSnapshot{PlanID: planID, Items: items[start:end], Total: total}, nil
 }
 
 func (f *recipientReviewFixture) ReserveTouchPlanRecipientReviewReceipt(_ context.Context, reservation campaignport.RecipientReviewReceiptReservation) (campaign.TouchPlanRecipientReviewReceipt, bool, error) {
@@ -218,6 +257,29 @@ func TestRecipientReviewOverrideDecisionReplayAndNoHandoff(t *testing.T) {
 	}
 	if fixture.events[3].AuditType != campaign.RecipientReviewAuditRejected || fixture.events[3].CustomerID != 3 || fixture.reviews[planID].Version != 2 {
 		t.Fatalf("reject event=%+v plan=%+v", fixture.events[3], fixture.reviews[planID])
+	}
+}
+
+func TestCampaignMemberStatusProjectionAndFilter(t *testing.T) {
+	planID := testReviewPlanID('9')
+	fixture := newRecipientReviewFixture(planID)
+	fixture.values[recipientReviewValueKey(planID, 7)] = campaign.TouchPlanRecipientReview{Status: campaign.TouchPlanRecipientReviewApproved}
+	service := recipientReviewService(t, fixture)
+
+	page, err := service.ListCampaignMembers(context.Background(), "spring-campaign", "", 1, 0)
+	if err != nil || page.PlanID != planID || page.Total != 2 || page.Limit != 1 || page.Offset != 0 || len(page.Items) != 1 || page.Items[0].CustomerID != 3 || page.Items[0].Status != campaign.TouchPlanRecipientReviewPending || page.Safety != campaign.LocalInitiationSafety() {
+		t.Fatalf("page=%+v err=%v", page, err)
+	}
+	approved, err := service.ListCampaignMembers(context.Background(), "spring-campaign", campaign.TouchPlanRecipientReviewApproved, 100, 0)
+	if err != nil || approved.Total != 1 || len(approved.Items) != 1 || approved.Items[0].CustomerID != 7 || fixture.memberRead.status != campaign.TouchPlanRecipientReviewApproved {
+		t.Fatalf("approved=%+v read=%+v err=%v", approved, fixture.memberRead, err)
+	}
+	if _, err = service.ListCampaignMembers(context.Background(), "spring-campaign", "draft", 100, 0); !errors.Is(err, campaign.ErrInvalidArgument) {
+		t.Fatalf("invalid status err=%v", err)
+	}
+	fixture.recipients[planID] = []campaign.TouchPlanRecipient{{PlanID: planID, CustomerID: 7}, {PlanID: planID, CustomerID: 3}}
+	if _, err = service.ListCampaignMembers(context.Background(), "spring-campaign", "", 100, 0); !errors.Is(err, campaign.ErrUnavailable) {
+		t.Fatalf("unordered projection err=%v", err)
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 // not extend ReviewRepository, so current production storage cannot expose a
 // partially persisted recipient decision.
 type RecipientReviewRepository interface {
+	ListLatestCampaignMemberStatuses(context.Context, string, campaign.TouchPlanRecipientReviewStatus, int32, int32) (campaign.CampaignMemberStatusSnapshot, error)
 	ReserveTouchPlanRecipientReviewReceipt(context.Context, RecipientReviewReceiptReservation) (campaign.TouchPlanRecipientReviewReceipt, bool, error)
 	LockTouchPlanReview(context.Context, string, string) (campaign.TouchPlanReview, error)
 	GetTouchPlanRecipient(context.Context, string, string, int64) (campaign.TouchPlanRecipient, error)
