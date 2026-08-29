@@ -609,6 +609,12 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         const calls = [];
         const downloads = [];
         const product = { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', enabled: true, archived: false, version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' };
+        const gridColumns = ['member_ref', 'service_product_id', 'customer_id', 'state', 'source', 'starts_at', 'expires_at', 'expired_at', 'removed_at', 'version', 'updated_at', 'display_name'].map((key) => ({ key, label: key, type: 'string', nullable: key !== 'member_ref' }));
+        const memberRows = [
+          { member_ref: 'spm_abcdefghijklmnopqrstuv', service_product_id: 8, customer_id: 21, display_name: '本地客户', state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, expired_at: null, removed_at: null, version: 2, updated_at: '2026-08-26T08:00:00Z' },
+          { member_ref: 'spm_zyxwvutsrqponmlkjihgfe', service_product_id: 8, customer_id: 22, display_name: '过期客户', state: 'expired', source: 'paid_order', starts_at: '2026-07-01T00:00:00Z', expires_at: '2026-08-01T00:00:00Z', expired_at: '2026-08-01T00:00:00Z', removed_at: null, version: 1, updated_at: '2026-08-25T08:00:00Z' },
+        ];
+        let collaboratorRows = [{ collaborator_id: 6, service_product_id: 8, staff_id: 5, permission: 'view', version: 1, invited_by: 1, created_at: '2026-08-26T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' }];
         const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
         window.__serviceProductHttpTest = { calls, downloads, opened: [] };
         window.URL.createObjectURL = () => 'blob:service-product-qr';
@@ -617,9 +623,36 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         window.open = (...args) => { window.__serviceProductHttpTest.opened.push(args); return null; };
         window.fetch = async (input, init = {}) => {
           const url = new URL(String(input), window.location.origin);
-          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          const method = init.method || 'GET';
+          const body = init.body ? JSON.parse(String(init.body)) : null;
+          calls.push({ path: url.pathname, query: url.search, method, body });
           if (url.pathname === '/api/admin/service-period-products') return json({ items: [product] });
+          if (url.pathname === '/api/admin/service-period-products/8') return json({ product });
           if (url.pathname === '/api/admin/service-period-products/8/share') return json({ ok: true, service_product_id: 8, public_path: '/p/service_period/8', local_only: true, real_external_call_executed: false });
+          if (url.pathname === '/api/admin/service-period-products/8/member-grid/access') return json({ product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false });
+          if (url.pathname === '/api/admin/service-period-products/8/member-grid/schema') return json({ service_product_id: 8, columns: gridColumns });
+          if (url.pathname === '/api/admin/service-period-products/8/member-views') return json({ product_id: 8, views: [{ id: 'default', name: '默认视图', source: 'built_in', read_only: true }] });
+          if (url.pathname === '/api/admin/service-period-products/8/member-grid/share-settings') return json({ service_product_id: 8, saved_views: [], collaborators: collaboratorRows, external_share_supported: true, external_share_enabled: false, external_share_version: 0, real_external_call_executed: false, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false });
+          if (url.pathname === '/api/admin/common/operation-members') return json({ scope: 'group_ops', items: [{ staff_id: 5, sender_userid: 'staff-5', display_name: '客服五' }, { staff_id: 7, sender_userid: 'staff-7', display_name: '客服七' }], page_size: 100, provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: false, delivery_proven: false });
+          if (url.pathname === '/api/admin/service-period-products/8/member-grid/query') return json({ rows: memberRows, limit: 50, next_cursor: '', has_more: false });
+          if (url.pathname === '/api/admin/service-period-products/8/member-grid/collaborators' && method === 'POST') {
+            const row = { collaborator_id: 7, service_product_id: 8, staff_id: body.staff_id, permission: body.permission, version: 1, invited_by: 1, created_at: '2026-08-29T00:00:00Z', updated_at: '2026-08-29T00:00:00Z' };
+            collaboratorRows = [...collaboratorRows, row];
+            return json({ ok: true, collaborator: row, edit_permission_is_local_metadata_only: true, grants_central_products_permission: false }, 201);
+          }
+          const collaboratorID = url.pathname.match(/\/member-grid\/collaborators\/(\d+)$/)?.[1];
+          if (collaboratorID && method === 'PUT') {
+            const row = collaboratorRows.find((item) => item.collaborator_id === Number(collaboratorID));
+            if (!row) return json({ code: 'not_found' }, 404);
+            row.permission = body.permission;
+            row.version += 1;
+            return json({ ok: true, collaborator: row, edit_permission_is_local_metadata_only: true, grants_central_products_permission: false });
+          }
+          if (collaboratorID && method === 'DELETE') {
+            const row = collaboratorRows.find((item) => item.collaborator_id === Number(collaboratorID));
+            collaboratorRows = collaboratorRows.filter((item) => item.collaborator_id !== Number(collaboratorID));
+            return json({ ok: true, deleted: true, collaborator: row, edit_permission_is_local_metadata_only: true, grants_central_products_permission: false });
+          }
           return json({ code: 'unexpected_service_product_request' }, 500);
         };
         return;
@@ -1937,6 +1970,43 @@ console.log('admin/spProducts.html（真实周期商品分享）');
   click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存二维码'));
   await sleep(30);
   ok('预览与二维码下载均沿用同一真实链接', test.opened[0]?.[0] === expected && test.downloads[0]?.download === 'SP-8-qr.svg');
+  dom.window.close();
+}
+console.log('admin/spProductData.html?id=8（真实 Member Grid 受限查询与协作者）');
+{
+  const dom = await loadPage('admin/spProductData.html', { id: 8, serviceProductHttp: true });
+  const d = dom.window.document;
+  const test = dom.window.__serviceProductHttpTest;
+  await sleep(70);
+  const initialQuery = test.calls.find((call) => call.path.endsWith('/member-grid/query'));
+  ok('Member Grid 初始读取使用真实默认视图与受限排序', initialQuery?.method === 'POST' && initialQuery.body?.view_id === 'default' && initialQuery.body?.sort === 'updated_at_desc' && initialQuery.body?.group_by === undefined && d.querySelector('#member-grid-staff option[value="7"]')?.textContent.includes('客服七'));
+  const view = d.querySelector('#member-grid-view');
+  const sort = d.querySelector('#member-grid-sort');
+  const group = d.querySelector('#member-grid-group');
+  view.value = '';
+  sort.value = 'starts_at_desc';
+  group.value = 'state';
+  click(dom, d.querySelector('#member-grid-apply'));
+  await sleep(50);
+  const customQuery = test.calls.filter((call) => call.path.endsWith('/member-grid/query')).at(-1);
+  ok('Member Grid 受限查询发送 starts_at_desc/state 且不伪造任意选择', customQuery?.body?.sort === 'starts_at_desc' && customQuery.body?.group_by === 'state' && customQuery.body?.view_id === undefined && d.querySelectorAll('[data-member-group]').length === 2);
+  d.querySelector('#member-grid-staff').value = '7';
+  d.querySelector('#member-grid-permission').value = 'edit';
+  click(dom, d.querySelector('#member-grid-add'));
+  await sleep(90);
+  const addCall = test.calls.filter((call) => call.path.endsWith('/member-grid/collaborators')).at(-1);
+  ok('Member Grid 协作者添加使用 active staff 真实目录与 V2 产品内权限', addCall?.method === 'POST' && addCall.body?.staff_id === 7 && addCall.body?.permission === 'edit' && d.body.textContent.includes('V2 产品内') && d.body.textContent.includes('不发送企微邀请'));
+  const addedPermission = d.querySelector('[data-collab-permission="7"]');
+  addedPermission.value = 'view';
+  click(dom, d.querySelector('[data-collab-update="7"]'));
+  await sleep(90);
+  const updateCall = test.calls.filter((call) => call.path.endsWith('/member-grid/collaborators/7')).at(-1);
+  ok('Member Grid 协作者改权发送真实本地 HTTP PUT 与版本', updateCall?.method === 'PUT' && updateCall.body?.permission === 'view' && Number(updateCall.body?.expected_version) === 1);
+  dom.window.confirm = () => true;
+  click(dom, d.querySelector('[data-collab-remove="7"]'));
+  await sleep(90);
+  const removeCall = test.calls.filter((call) => call.path.endsWith('/member-grid/collaborators/7')).at(-1);
+  ok('Member Grid 协作者移除发送真实本地 HTTP DELETE 且不宣称企微成功', removeCall?.method === 'DELETE' && !d.querySelector('[data-collab-update="7"]') && d.body.textContent.includes('未调用企微/Provider'));
   dom.window.close();
 }
 

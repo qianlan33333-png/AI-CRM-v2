@@ -758,18 +758,22 @@ const groupOpsMaterialPlanDto = (value: unknown): GroupOpsMaterialPlan => {
   }) };
 };
 export const groupOpsDetailDto = (value: unknown, preview?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, ''), materialPlan: groupOpsMaterialPlanDto(obj(item).material_plan) })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
-export const groupOpsOperationMembersDto = (value: unknown): AdminDb['staff'] => {
+const memberGridStaffRows = (value: unknown): MemberGridStaffOption[] => {
   const page = obj(value); const pageSize = Number(page.page_size); const items = page.items;
-  if (!Array.isArray(items)) throw new Error('群运营成员选项缺少 items');
-  if (page.scope !== 'group_ops' || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100 || items.length > pageSize || typeof page.provider_execution_eligible !== 'boolean' || page.real_external_call_executed !== false || page.provider_accepted !== false || page.delivery_proven !== false) throw new Error('群运营成员选项缺少可信本地读取边界');
+  if (!Array.isArray(items)) throw new Error('真实员工目录缺少 items');
+  if (page.scope !== 'group_ops' || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100 || items.length > pageSize || typeof page.provider_execution_eligible !== 'boolean' || page.real_external_call_executed !== false || page.provider_accepted !== false || page.delivery_proven !== false) throw new Error('真实员工目录缺少可信本地读取边界');
   const staffIDs = new Set<number>(); const senderIDs = new Set<string>();
   return items.map((item) => {
     const source = obj(item); const staffID = source.staff_id; const senderID = source.sender_userid; const displayName = source.display_name;
-    if (typeof staffID !== 'number' || !Number.isSafeInteger(staffID) || staffID < 1 || typeof senderID !== 'string' || !/^[A-Za-z0-9._:-]{1,128}$/.test(senderID) || typeof displayName !== 'string' || displayName.trim() !== displayName || !displayName || [...displayName].length > 128 || staffIDs.has(staffID) || senderIDs.has(senderID)) throw new Error('群运营成员选项包含无效 staff_id 或目录身份');
+    if (typeof staffID !== 'number' || !Number.isSafeInteger(staffID) || staffID < 1 || typeof senderID !== 'string' || !/^[A-Za-z0-9._:-]{1,128}$/.test(senderID) || typeof displayName !== 'string' || displayName.trim() !== displayName || !displayName || [...displayName].length > 128 || staffIDs.has(staffID) || senderIDs.has(senderID)) throw new Error('真实员工目录包含无效 staff_id 或目录身份');
     staffIDs.add(staffID); senderIDs.add(senderID);
-    return { uid: String(staffID), name: `${displayName}（${senderID}）`, dept: '群运营成员' };
+    return { staffId: staffID, senderUserid: senderID, displayName };
   });
 };
+export const groupOpsOperationMembersDto = (value: unknown): AdminDb['staff'] => memberGridStaffRows(value).map((staff) => ({ uid: String(staff.staffId), name: `${staff.displayName}（${staff.senderUserid}）`, dept: '群运营成员' }));
+export async function listMemberGridStaffDto(): Promise<MemberGridStaffOption[]> {
+  return memberGridStaffRows(await call(listAIAudienceOperationMembers({ scope: 'group_ops', page_size: 100 }, apiRequestOptions())));
+}
 const groupOpsPreviewDto = (planId: string, value: unknown): AdminDb['rows']['orderKv'] => {
   const source = obj(value);
   if (text(source.plan_id) !== planId || source.real_external_call_executed !== false || source.provider_accepted !== false || source.delivery_proven !== false) throw new Error('Group Ops run-due 预览越过本地读取边界');
@@ -938,6 +942,10 @@ export type CouponClaimPage = { items: Array<{ claimRef: string; status: string;
 export type MemberGridState = 'active' | 'expired' | 'removed' | 'all';
 export type MemberGridSource = 'manual' | 'paid_order';
 export type MemberGridSourceFilter = MemberGridSource | '';
+export type MemberGridSort = 'updated_at_desc' | 'starts_at_desc';
+export type MemberGridGroupBy = '' | 'state';
+export type MemberGridViewID = '' | 'default';
+export type MemberGridStaffOption = { staffId: number; senderUserid: string; displayName: string };
 export type ServicePeriodMemberGridRow = { memberRef: string; serviceProductId: number; customerId: number; state: MemberGridState; source: MemberGridSource; startsAt: string; expiresAt: string | null; expiredAt: string | null; removedAt: string | null; version: number; updatedAt: string; displayName: string };
 export type ServicePeriodMemberGridPage = { rows: ServicePeriodMemberGridRow[]; limit: number; nextCursor: string; hasMore: boolean };
 export type ServicePeriodMemberDetail = ServicePeriodMemberGridRow & { remark: string | null; alliance: string | null; createdAt: string };
@@ -997,11 +1005,13 @@ export async function getServicePeriodMemberGridMetaDto(productId: number): Prom
   const collaboratorRows = list(share, 'collaborators').map((item) => collaboratorDto(item, productId));
   return { product: serviceProductPageDto(productSource.product || productSource), columns, views: builtInViews, collaborators: collaboratorRows.length, collaboratorRows, externalShareEnabled: share.external_share_enabled, externalShareVersion };
 }
-export async function queryServicePeriodMemberGridDto(productId: number, input: { state?: MemberGridState; source?: MemberGridSourceFilter; limit?: number; cursor?: string } = {}): Promise<ServicePeriodMemberGridPage> {
+type MemberGridQueryRequestWithSelection = Parameters<typeof queryServicePeriodMemberGrid>[1] & { sort?: MemberGridSort; group_by?: MemberGridGroupBy; view_id?: MemberGridViewID };
+export async function queryServicePeriodMemberGridDto(productId: number, input: { state?: MemberGridState; source?: MemberGridSourceFilter; sort?: MemberGridSort; groupBy?: MemberGridGroupBy; viewId?: MemberGridViewID; limit?: number; cursor?: string } = {}): Promise<ServicePeriodMemberGridPage> {
   if (!Number.isSafeInteger(productId) || productId < 1) throw new Error('Member Grid 商品 ID 无效');
-  const state = input.state || 'all'; const source = input.source || ''; const limit = input.limit ?? 50;
-  if (!['active', 'expired', 'removed', 'all'].includes(state) || !['', 'manual', 'paid_order'].includes(source) || !Number.isSafeInteger(limit) || limit < 1 || limit > 50) throw new Error('Member Grid 查询条件无效');
-  const page = obj(await call(queryServicePeriodMemberGrid(productId, { state, source: source || undefined, limit, cursor: input.cursor || '' }, apiRequestOptions())));
+  const state = input.state || 'all'; const source = input.source || ''; const sort = input.sort || 'updated_at_desc'; const groupBy = input.groupBy || ''; const viewId = input.viewId || ''; const limit = input.limit ?? 50;
+  if (!['active', 'expired', 'removed', 'all'].includes(state) || !['', 'manual', 'paid_order'].includes(source) || !['updated_at_desc', 'starts_at_desc'].includes(sort) || !['', 'state'].includes(groupBy) || !['', 'default'].includes(viewId) || viewId === 'default' && (state !== 'all' || source !== '' || sort !== 'updated_at_desc' || groupBy !== '') || !Number.isSafeInteger(limit) || limit < 1 || limit > 50) throw new Error('Member Grid 查询条件无效');
+  const query: MemberGridQueryRequestWithSelection = { state, source: source || undefined, sort, group_by: groupBy || undefined, view_id: viewId || undefined, limit, cursor: input.cursor || '' };
+  const page = obj(await call(queryServicePeriodMemberGrid(productId, query as Parameters<typeof queryServicePeriodMemberGrid>[1], apiRequestOptions())));
   if (!Array.isArray(page.rows) || typeof page.next_cursor !== 'string' || (page.has_more !== true && page.has_more !== false)) throw new Error('Member Grid 查询响应不完整');
   const rows = page.rows.map((item) => memberRowDto(item, productId));
   const pageLimit = requiredPositiveValue(page.limit, 'limit'); if (pageLimit > 50 || pageLimit !== limit) throw new Error('Member Grid 查询页大小不匹配');
