@@ -340,8 +340,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getServicePeriodProductExternalPush":       {"/api/admin/service-period-products/{service_product_id}/external-push", "GET", p4CommerceExternalPushEvidence, "products.read", "human_session", "financial", "product.external_push.local_configuration", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"saveServicePeriodProductExternalPush":      {"/api/admin/service-period-products/{service_product_id}/external-push", "PUT", p4CommerceExternalPushEvidence, "products.write", "human_session", "financial", "product.external_push.local_configuration", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"queueServicePeriodProductExternalPushTest": {"/api/admin/service-period-products/{service_product_id}/external-push/test", "POST", p4CommerceExternalPushEvidence, "products.write", "human_session", "financial", "product.external_push.local_accepted_effect", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"getServicePeriodMemberGridSchema":          {"/api/admin/service-period-products/{service_product_id}/member-grid/schema", "GET", p4ServicePeriodMemberGridCanonicalEvidence, "products.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
-	"queryServicePeriodMemberGrid":              {"/api/admin/service-period-products/{service_product_id}/member-grid/query", "POST", p4ServicePeriodMemberGridCanonicalEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodMemberGridSchema":          {"/api/admin/service-period-products/{service_product_id}/member-grid/schema", "GET", p4ServicePeriodMemberGridCanonicalEvidence, "member_grid.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"queryServicePeriodMemberGrid":              {"/api/admin/service-period-products/{service_product_id}/member-grid/query", "POST", p4ServicePeriodMemberGridCanonicalEvidence, "member_grid.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"downloadContactOwnerReassignmentTemplate":  {"/api/v1/contact-owner-reassignments/template", "GET", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_template", "none", map[string]string{"admin": "global"}},
 	"createContactOwnerReassignmentPreview":     {"/api/v1/contact-owner-reassignments/previews", "POST", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_preview", "required", map[string]string{"admin": "global"}},
 	"getContactOwnerReassignmentPreview":        {"/api/v1/contact-owner-reassignments/previews/{preview_id}", "GET", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_preview", "none", map[string]string{"admin": "global"}},
@@ -410,7 +410,7 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"addServicePeriodMember":          {"/api/admin/service-period-products/{service_product_id}/members", "POST", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"exportServicePeriodMembers":      {"/api/admin/service-period-products/{service_product_id}/members/export", "POST", p4ServicePeriodMembersEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getServicePeriodMember":          {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}", "GET", p4ServicePeriodMembersEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
-	"updateServicePeriodMemberFields": {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/fields", "PUT", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"updateServicePeriodMemberFields": {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/fields", "PUT", p4ServicePeriodMembersEvidence, "member_grid.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"expireServicePeriodMember":       {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/expire", "POST", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"removeServicePeriodMember":       {"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove", "POST", p4ServicePeriodMembersEvidence, "entitlements.write", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 
@@ -1266,10 +1266,10 @@ var authorizationContracts = map[string]authorizationContract{
 	"enableServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"disableServicePeriodProduct":                {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"copyServicePeriodProduct":                   {"products.write", map[string]string{"admin": "global", "ops": "global"}},
-	"getServicePeriodMemberGridAccess":           {"products.read", map[string]string{"admin": "global", "ops": "global"}},
-	"getServicePeriodMemberGridSchema":           {"products.read", map[string]string{"admin": "global", "ops": "global"}},
-	"listServicePeriodMemberViews":               {"products.read", map[string]string{"admin": "global", "ops": "global"}},
-	"queryServicePeriodMemberGrid":               {"entitlements.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodMemberGridAccess":           {"member_grid.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getServicePeriodMemberGridSchema":           {"member_grid.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listServicePeriodMemberViews":               {"member_grid.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"queryServicePeriodMemberGrid":               {"member_grid.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"createServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -2287,7 +2287,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				}
 			} else if p4ServicePeriodMemberGridReadOperations[op.OperationID] {
 				seenP4ServicePeriodMemberGridRead[op.OperationID] = true
-				capability := "products.read"
+				capability := "member_grid.read"
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ServicePeriodMemberGridReadLegacyMappings[op.OperationID]) ||
 					op.Extensions["x-p4-decision-evidence"] != p4ServicePeriodMemberGridReadEvidence ||

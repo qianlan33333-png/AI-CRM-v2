@@ -14,6 +14,7 @@ import (
 
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
+	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
 )
 
 const maximumQueryBodyBytes int64 = 8 << 10
@@ -29,6 +30,7 @@ type Application interface {
 	Schema(context.Context, int64) (SchemaResponse, error)
 	MemberViews(context.Context, int64) (MemberViewsResponse, error)
 	Query(context.Context, QueryInput) (QueryResponse, error)
+	UpdateFields(context.Context, UpdateFieldsCommand) (memberdomain.Member, error)
 }
 
 type Handler struct {
@@ -43,7 +45,7 @@ func NewHandler(application Application) (*Handler, error) {
 }
 
 func (handler *Handler) Access(writer http.ResponseWriter, request *http.Request, rawProductID string) {
-	if !requireMethod(writer, request, http.MethodGet) || !authorize(writer, request, authport.CapabilityProductsRead) {
+	if !requireMethod(writer, request, http.MethodGet) || !authorize(writer, request, authport.CapabilityMemberGridRead) {
 		return
 	}
 	productID, err := parseProductID(rawProductID)
@@ -60,7 +62,7 @@ func (handler *Handler) Access(writer http.ResponseWriter, request *http.Request
 }
 
 func (handler *Handler) Schema(writer http.ResponseWriter, request *http.Request, rawProductID string) {
-	if !requireMethod(writer, request, http.MethodGet) || !authorize(writer, request, authport.CapabilityProductsRead) {
+	if !requireMethod(writer, request, http.MethodGet) || !authorize(writer, request, authport.CapabilityMemberGridRead) {
 		return
 	}
 	productID, err := parseProductID(rawProductID)
@@ -77,7 +79,7 @@ func (handler *Handler) Schema(writer http.ResponseWriter, request *http.Request
 }
 
 func (handler *Handler) MemberViews(writer http.ResponseWriter, request *http.Request, rawProductID string) {
-	if !requireMethod(writer, request, http.MethodGet) || !authorize(writer, request, authport.CapabilityProductsRead) {
+	if !requireMethod(writer, request, http.MethodGet) || !authorize(writer, request, authport.CapabilityMemberGridRead) {
 		return
 	}
 	productID, err := parseProductID(rawProductID)
@@ -94,7 +96,7 @@ func (handler *Handler) MemberViews(writer http.ResponseWriter, request *http.Re
 }
 
 func (handler *Handler) Query(writer http.ResponseWriter, request *http.Request, rawProductID string) {
-	if !requireMethod(writer, request, http.MethodPost) || !authorize(writer, request, authport.CapabilityEntitlementsRead) {
+	if !requireMethod(writer, request, http.MethodPost) || !authorize(writer, request, authport.CapabilityMemberGridRead) {
 		return
 	}
 	productID, err := parseProductID(rawProductID)
@@ -116,6 +118,39 @@ func (handler *Handler) Query(writer http.ResponseWriter, request *http.Request,
 	writeJSON(writer, http.StatusOK, response)
 }
 
+func (handler *Handler) UpdateFields(writer http.ResponseWriter, request *http.Request, rawProductID, memberRef string) {
+	if !requireMethod(writer, request, http.MethodPut) || !authorize(writer, request, authport.CapabilityMemberGridWrite) {
+		return
+	}
+	productID, err := parseProductID(rawProductID)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	if !validMemberRef(memberRef) {
+		writeFailure(writer, request, ErrInvalidQuery)
+		return
+	}
+	command, problem := decodeUpdateFieldsBody(writer, request)
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	command.ProductID = productID
+	command.MemberRef = memberRef
+	command.IdempotencyKey = request.Header.Get("Idempotency-Key")
+	if !validIdempotencyKey(command.IdempotencyKey) {
+		writeProblem(writer, request, validation("Idempotency-Key", "invalid", ErrInvalidManagementInput))
+		return
+	}
+	member, err := handler.application.UpdateFields(request.Context(), command)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, member)
+}
+
 type routeFragment struct {
 	handler *Handler
 }
@@ -128,7 +163,7 @@ func NewRouteFragment(handler *Handler) (http.Handler, error) {
 }
 
 // ServeHTTP accepts the exact full prefix or the relative path supplied by a
-// stripping mount. It owns only the four routes documented in ROUTE_FRAGMENT.md.
+// stripping mount. It owns only the five routes documented in ROUTE_FRAGMENT.md.
 func (fragment *routeFragment) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	setSecurityHeaders(writer)
 	if fragment == nil || fragment.handler == nil || request == nil || request.URL == nil {
@@ -154,6 +189,8 @@ func (fragment *routeFragment) ServeHTTP(writer http.ResponseWriter, request *ht
 		fragment.handler.MemberViews(writer, request, segments[0])
 	case len(segments) == 3 && segments[1] == "member-grid" && segments[2] == "query":
 		fragment.handler.Query(writer, request, segments[0])
+	case len(segments) == 4 && segments[1] == "members" && segments[3] == "fields":
+		fragment.handler.UpdateFields(writer, request, segments[0], segments[2])
 	default:
 		writeCode(writer, request, platformhttp.CodeNotFound, errors.New("member grid route not found"))
 	}
@@ -199,7 +236,7 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 		return QueryInput{}, malformed("body", "object_required", errors.New("query body must be an object"))
 	}
 
-	seen := make(map[string]struct{}, 4)
+	seen := make(map[string]struct{}, 7)
 	for decoder.More() {
 		keyToken, tokenErr := decoder.Token()
 		key, ok := keyToken.(string)
@@ -254,6 +291,27 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 					field: "cursor", reason: "invalid",
 				}
 			}
+		case "sort":
+			if string(raw) == "null" || json.Unmarshal(raw, &input.Sort) != nil {
+				return QueryInput{}, validation("sort", "invalid", ErrInvalidQuery)
+			}
+			if !querySort(input.Sort).valid() {
+				return QueryInput{}, validation("sort", "unsupported", ErrInvalidQuery)
+			}
+		case "group_by":
+			if string(raw) == "null" || json.Unmarshal(raw, &input.GroupBy) != nil {
+				return QueryInput{}, validation("group_by", "invalid", ErrInvalidQuery)
+			}
+			if queryGroupBy(input.GroupBy) != queryGroupState {
+				return QueryInput{}, validation("group_by", "unsupported", ErrInvalidQuery)
+			}
+		case "view_id":
+			if string(raw) == "null" || json.Unmarshal(raw, &input.ViewID) != nil {
+				return QueryInput{}, validation("view_id", "invalid", ErrInvalidQuery)
+			}
+			if input.ViewID != "default" {
+				return QueryInput{}, validation("view_id", "unsupported", ErrInvalidQuery)
+			}
 		default:
 			return QueryInput{}, malformed("body", "unknown_field", errors.New("unknown query field"))
 		}
@@ -267,6 +325,36 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 		return QueryInput{}, malformed("body", "trailing_data", err)
 	}
 	return input, nil
+}
+
+func decodeUpdateFieldsBody(writer http.ResponseWriter, request *http.Request) (UpdateFieldsCommand, *requestProblem) {
+	if request == nil || request.Body == nil {
+		return UpdateFieldsCommand{}, malformed("body", "required", errors.New("fields body is required"))
+	}
+	if contentType := strings.TrimSpace(request.Header.Get("Content-Type")); contentType != "" {
+		mediaType, _, err := mime.ParseMediaType(contentType)
+		if err != nil || mediaType != "application/json" {
+			return UpdateFieldsCommand{}, malformed("body", "invalid_content_type", errors.New("application/json is required"))
+		}
+	}
+	var body struct {
+		ExpectedVersion *int64  `json:"expected_version"`
+		Remark          *string `json:"remark"`
+		Alliance        *string `json:"alliance"`
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, maximumQueryBodyBytes))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&body); err != nil {
+		return UpdateFieldsCommand{}, malformed("body", "invalid_json", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return UpdateFieldsCommand{}, malformed("body", "trailing_data", err)
+	}
+	if body.ExpectedVersion == nil || *body.ExpectedVersion < 1 || (body.Remark == nil && body.Alliance == nil) {
+		return UpdateFieldsCommand{}, validation("body", "invalid", ErrInvalidQuery)
+	}
+	return UpdateFieldsCommand{ExpectedVersion: *body.ExpectedVersion, Remark: body.Remark, Alliance: body.Alliance}, nil
 }
 
 func malformed(field, reason string, cause error) *requestProblem {
@@ -287,13 +375,23 @@ func authorize(writer http.ResponseWriter, request *http.Request, capability aut
 		writeCode(writer, request, platformhttp.CodeUnauthenticated, authport.ErrUnauthenticated)
 		return false
 	}
-	if principal.Role != authport.RoleAdmin && principal.Role != authport.RoleOps {
+	authorization, allowed := authport.AuthorizationFromContext(request.Context())
+	if !allowed || authorization.Capability != capability {
 		writeCode(writer, request, platformhttp.CodeUnauthorized, authport.ErrUnauthorized)
 		return false
 	}
-	authorization, allowed := authport.AuthorizationFromContext(request.Context())
-	if !allowed || authorization.Capability != capability || authorization.Scope != authport.ScopeGlobal ||
-		authorization.OwnerStaffID != 0 {
+	switch authorization.Scope {
+	case authport.ScopeGlobal:
+		if authorization.OwnerStaffID != 0 || (principal.Role != authport.RoleAdmin && principal.Role != authport.RoleOps) {
+			writeCode(writer, request, platformhttp.CodeUnauthorized, authport.ErrUnauthorized)
+			return false
+		}
+	case authport.ScopeOwnerStaff:
+		if principal.Role != authport.RoleSales || principal.StaffID == nil || *principal.StaffID < 1 || authorization.OwnerStaffID != *principal.StaffID {
+			writeCode(writer, request, platformhttp.CodeUnauthorized, authport.ErrUnauthorized)
+			return false
+		}
+	default:
 		writeCode(writer, request, platformhttp.CodeUnauthorized, authport.ErrUnauthorized)
 		return false
 	}
@@ -324,6 +422,8 @@ func writeFailure(writer http.ResponseWriter, request *http.Request, err error) 
 		})
 	case errors.Is(err, ErrInvalidQuery):
 		writeProblem(writer, request, validation("query", "invalid", err))
+	case errors.Is(err, ErrConflict):
+		writeCode(writer, request, platformhttp.CodeConflict, err)
 	case errors.Is(err, ErrNotFound):
 		writeCode(writer, request, platformhttp.CodeNotFound, err)
 	default:

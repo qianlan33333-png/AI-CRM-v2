@@ -1204,6 +1204,7 @@ func (handler *Handler) allowedCapabilities(ctx context.Context, principal authp
 		authport.CapabilityStagesWrite, authport.CapabilitySegmentsRead, authport.CapabilitySegmentsWrite,
 		authport.CapabilityOutboundRead, authport.CapabilityOutboundControl,
 		authport.CapabilityProductsRead, authport.CapabilityProductsWrite,
+		authport.CapabilityMemberGridRead, authport.CapabilityMemberGridWrite,
 		authport.CapabilityQuestionnairesRead, authport.CapabilityQuestionnairesWrite,
 		authport.CapabilityChannelsRead, authport.CapabilityChannelsWrite,
 		authport.CapabilityMessageArchiveRead, authport.CapabilityMessageArchiveExecute,

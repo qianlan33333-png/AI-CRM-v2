@@ -167,19 +167,19 @@ func TestManagementRouteFragmentDispatchesSevenClosedRoutes(t *testing.T) {
 	application := &fakeManagementApplication{
 		shareResponse: ShareSettingsResponse{
 			ServiceProductID: 7, SavedViews: []SavedView{view}, Collaborators: []Collaborator{collaborator},
-			CollaboratorEditIsLocalMetadataOnly: true,
+			CollaboratorEditIsLocalMetadataOnly: false,
 		},
 		createViewResponse: SavedViewResponse{OK: true, View: view},
 		updateViewResponse: SavedViewResponse{OK: true, View: view},
 		deleteViewResponse: DeleteSavedViewResponse{OK: true, Deleted: true, View: view},
 		createCollaboratorResponse: CollaboratorResponse{
-			OK: true, Collaborator: collaborator, EditPermissionIsLocalMetadataOnly: true,
+			OK: true, Collaborator: collaborator, EditPermissionIsLocalMetadataOnly: false,
 		},
 		updateCollaboratorResponse: CollaboratorResponse{
-			OK: true, Collaborator: collaborator, EditPermissionIsLocalMetadataOnly: true,
+			OK: true, Collaborator: collaborator, EditPermissionIsLocalMetadataOnly: false,
 		},
 		deleteCollaboratorResponse: DeleteCollaboratorResponse{
-			OK: true, Deleted: true, Collaborator: collaborator, EditPermissionIsLocalMetadataOnly: true,
+			OK: true, Deleted: true, Collaborator: collaborator, EditPermissionIsLocalMetadataOnly: false,
 		},
 	}
 	authorizer := &fakeManagementAuthorizer{actor: ManagementActor{ID: 17}}
@@ -329,7 +329,7 @@ func TestManagementShareSettingsAlwaysExposeLocalOnlyFlags(t *testing.T) {
 		ExternalShareSupported:                  false,
 		ExternalShareEnabled:                    false,
 		RealExternalCallExecuted:                false,
-		CollaboratorEditIsLocalMetadataOnly:     true,
+		CollaboratorEditIsLocalMetadataOnly:     false,
 		CollaboratorEditGrantsCentralPermission: false,
 	}}
 	recorder := httptest.NewRecorder()
@@ -347,8 +347,8 @@ func TestManagementShareSettingsAlwaysExposeLocalOnlyFlags(t *testing.T) {
 			t.Fatalf("%s=%v", key, body[key])
 		}
 	}
-	if value, ok := body["collaborator_edit_is_local_metadata_only"].(bool); !ok || !value {
-		t.Fatalf("local metadata flag=%v", body["collaborator_edit_is_local_metadata_only"])
+	if value, ok := body["collaborator_edit_is_local_metadata_only"].(bool); !ok || value {
+		t.Fatalf("member-grid grant flag=%v", body["collaborator_edit_is_local_metadata_only"])
 	}
 	for _, forbidden := range []string{"public_token", "share_url", "qr_code", "provider_receipt", "external_userid", "unionid"} {
 		if _, exists := body[forbidden]; exists {

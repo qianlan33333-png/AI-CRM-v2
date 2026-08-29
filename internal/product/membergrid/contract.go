@@ -5,6 +5,9 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
+	memberport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/port"
 )
 
 const (
@@ -55,6 +58,7 @@ type AccessResponse struct {
 	ProductID      int64 `json:"product_id"`
 	CanView        bool  `json:"can_view"`
 	CanQuery       bool  `json:"can_query"`
+	CanEdit        bool  `json:"can_edit"`
 	CanManageViews bool  `json:"can_manage_views"`
 	CanShare       bool  `json:"can_share"`
 }
@@ -104,6 +108,22 @@ type QueryInput struct {
 	Source    SourceFilter
 	Limit     int
 	Cursor    string
+	Sort      string
+	GroupBy   string
+	ViewID    string
+}
+
+type UpdateFieldsCommand struct {
+	ProductID       int64
+	MemberRef       string
+	ExpectedVersion int64
+	Remark          *string
+	Alliance        *string
+	IdempotencyKey  string
+}
+
+type MemberFieldEditor interface {
+	UpdateFields(context.Context, memberport.UpdateFieldsCommand) (memberdomain.Member, error)
 }
 
 type QueryResponse struct {

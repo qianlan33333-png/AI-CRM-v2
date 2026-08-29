@@ -83,7 +83,7 @@ func (service *ManagementService) ShareSettings(ctx context.Context, serviceProd
 		ExternalShareEnabled:                    false,
 		ExternalShareVersion:                    0,
 		RealExternalCallExecuted:                false,
-		CollaboratorEditIsLocalMetadataOnly:     true,
+		CollaboratorEditIsLocalMetadataOnly:     false,
 		CollaboratorEditGrantsCentralPermission: false,
 	}
 	var exists bool
@@ -486,7 +486,7 @@ func (service *ManagementService) DeleteCollaborator(ctx context.Context, comman
 	}
 	return DeleteCollaboratorResponse{
 		OK: true, Deleted: true, Collaborator: cloneCollaborator(*snapshot.Collaborator),
-		EditPermissionIsLocalMetadataOnly: true, GrantsCentralProductsPermission: false,
+		EditPermissionIsLocalMetadataOnly: false, GrantsCentralProductsPermission: false,
 	}, nil
 }
 
@@ -894,7 +894,7 @@ func optionalIDEqual(left, right *int64) bool {
 
 func collaboratorResponse(collaborator Collaborator) CollaboratorResponse {
 	return CollaboratorResponse{
-		OK: true, Collaborator: cloneCollaborator(collaborator), EditPermissionIsLocalMetadataOnly: true,
+		OK: true, Collaborator: cloneCollaborator(collaborator), EditPermissionIsLocalMetadataOnly: false,
 		GrantsCentralProductsPermission: false,
 	}
 }

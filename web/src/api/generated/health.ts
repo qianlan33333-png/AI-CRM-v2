@@ -8734,6 +8734,7 @@ export interface ServicePeriodMemberGridAccess {
   product_id: number;
   can_view: boolean;
   can_query: boolean;
+  can_edit: boolean;
   can_manage_views: boolean;
   can_share: boolean;
 }
@@ -8821,6 +8822,31 @@ export const ServicePeriodMemberGridQueryRequestState = {
   all: "all",
 } as const;
 
+export type ServicePeriodMemberGridQueryRequestSort =
+  (typeof ServicePeriodMemberGridQueryRequestSort)[keyof typeof ServicePeriodMemberGridQueryRequestSort];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestSort = {
+  updated_at_desc: "updated_at_desc",
+  starts_at_desc: "starts_at_desc",
+} as const;
+
+export type ServicePeriodMemberGridQueryRequestGroupBy =
+  (typeof ServicePeriodMemberGridQueryRequestGroupBy)[keyof typeof ServicePeriodMemberGridQueryRequestGroupBy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestGroupBy = {
+  state: "state",
+} as const;
+
+export type ServicePeriodMemberGridQueryRequestViewId =
+  (typeof ServicePeriodMemberGridQueryRequestViewId)[keyof typeof ServicePeriodMemberGridQueryRequestViewId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestViewId = {
+  default: "default",
+} as const;
+
 export interface ServicePeriodMemberGridQueryRequest {
   state?: ServicePeriodMemberGridQueryRequestState;
   source?: ServicePeriodMemberSource;
@@ -8834,6 +8860,9 @@ export interface ServicePeriodMemberGridQueryRequest {
    * @nullable
    */
   cursor?: string | null;
+  sort?: ServicePeriodMemberGridQueryRequestSort;
+  group_by?: ServicePeriodMemberGridQueryRequestGroupBy;
+  view_id?: ServicePeriodMemberGridQueryRequestViewId;
 }
 
 export interface ServicePeriodMemberGridMember {

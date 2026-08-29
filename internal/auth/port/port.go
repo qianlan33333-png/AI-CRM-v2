@@ -55,6 +55,8 @@ const (
 	CapabilityOutboundControl            Capability = "outbound.control"
 	CapabilityProductsRead               Capability = "products.read"
 	CapabilityProductsWrite              Capability = "products.write"
+	CapabilityMemberGridRead             Capability = "member_grid.read"
+	CapabilityMemberGridWrite            Capability = "member_grid.write"
 	CapabilityEntitlementsRead           Capability = "entitlements.read"
 	CapabilityEntitlementsWrite          Capability = "entitlements.write"
 	CapabilityMediaImagesWrite           Capability = "media.images.write"
@@ -89,7 +91,8 @@ func (capability Capability) Known() bool {
 		CapabilityConfigOverviewRead, CapabilityConfigSettingsManage, CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
 		CapabilityOutboundRead, CapabilityOutboundControl,
-		CapabilityProductsRead, CapabilityProductsWrite, CapabilityEntitlementsRead, CapabilityEntitlementsWrite,
+		CapabilityProductsRead, CapabilityProductsWrite, CapabilityMemberGridRead, CapabilityMemberGridWrite,
+		CapabilityEntitlementsRead, CapabilityEntitlementsWrite,
 		CapabilityMediaImagesWrite, CapabilityMediaLibraryRead, CapabilityMediaLibraryWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
 		CapabilityChannelsRead, CapabilityChannelsWrite, CapabilityCouponsRead, CapabilityCouponsWrite,
@@ -233,6 +236,11 @@ func validAuthorization(authorization Authorization) bool {
 		CapabilityOrderRead, CapabilityOrderWrite,
 		CapabilityMessageArchiveRead, CapabilityMessageArchiveExecute, CapabilityMessageArchiveExternalRead:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
+	case CapabilityMemberGridRead, CapabilityMemberGridWrite:
+		if authorization.Scope == ScopeGlobal {
+			return authorization.OwnerStaffID == 0
+		}
+		return authorization.Scope == ScopeOwnerStaff && authorization.OwnerStaffID > 0
 	case CapabilityOperationsRead, CapabilityOperationsManage:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	case CapabilityAdminRead, CapabilityAdminShellRead, CapabilityContactOwnerReassignment,

@@ -1,5 +1,5 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, groupOpsOperationMembersDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderDetailDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, setMemberGridExternalShareDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
-import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
+import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
 import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
@@ -451,7 +451,9 @@ export async function runAdminAdapterTests(): Promise<void> {
     const url = new URL('http://localhost' + String(input));
     const path = url.pathname;
     const requestBody = init?.body ? JSON.parse(String(init.body)) : {};
-    const responseBody = path.endsWith('/member-grid/query')
+    const responseBody = path.endsWith('/operation-members')
+      ? { scope: 'group_ops', items: [{ staff_id: 5, sender_userid: 'staff-5', display_name: '客服五' }], page_size: 100, provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: false, delivery_proven: false }
+      : path.endsWith('/member-grid/query')
       ? { rows: [{ ...member, display_name: '本地客户' }], limit: 50, next_cursor: requestBody.cursor ? '' : 'opaque-next', has_more: !requestBody.cursor }
       : path.endsWith('/fields')
         ? { ...member, remark: requestBody.remark, alliance: requestBody.alliance, version: 3, updated_at: '2026-08-26T01:00:00Z' }
@@ -465,9 +467,25 @@ export async function runAdminAdapterTests(): Promise<void> {
     return new Response(JSON.stringify(responseBody), { status: path.endsWith('/collaborators') && init?.method === 'POST' ? 201 : 200 });
   };
   try {
+    const staff = await listMemberGridStaffDto();
+    assert(staff.length === 1 && staff[0].staffId === 5 && staff[0].senderUserid === 'staff-5' && staff[0].displayName === '客服五', 'Member Grid staff picker maps the real active directory');
+    assert(memberCalls[0]?.input === '/api/admin/common/operation-members?scope=group_ops&page_size=100' && memberCalls[0].init?.method === 'GET' && memberCalls[0].init?.credentials === 'include', 'Member Grid staff picker uses the generated authenticated directory read');
     try { await getServicePeriodMemberDto(8, 'not-a-member-ref'); assert(false, 'Member Grid member ref must be validated before fetch'); }
     catch (error) { assert(error instanceof Error && error.message.includes('member_ref'), 'Member Grid rejects invalid member ref before fetch'); }
-    assert(memberCalls.length === 0, 'Member Grid invalid member ref does not issue a request');
+    assert(memberCalls.length === 1, 'Member Grid invalid member ref does not issue a request');
+    const defaultPage = await queryServicePeriodMemberGridDto(8, { viewId: 'default', limit: 50 });
+    const defaultQuery = memberCalls.find((call) => call.input.endsWith('/member-grid/query'));
+    const defaultBody = JSON.parse(String(defaultQuery?.init?.body));
+    assert(defaultPage.rows.length === 1 && defaultBody.view_id === 'default' && defaultBody.sort === 'updated_at_desc' && defaultBody.group_by === undefined && defaultBody.state === 'all' && defaultBody.source === undefined, 'Member Grid default view sends only the declared default selection');
+    const customPage = await queryServicePeriodMemberGridDto(8, { state: 'all', sort: 'starts_at_desc', groupBy: 'state', limit: 50 });
+    const customQueries = memberCalls.filter((call) => call.input.endsWith('/member-grid/query'));
+    const customQuery = customQueries[customQueries.length - 1];
+    const customBody = JSON.parse(String(customQuery?.init?.body));
+    assert(customPage.rows.length === 1 && customBody.sort === 'starts_at_desc' && customBody.group_by === 'state' && customBody.view_id === undefined, 'Member Grid custom query sends the restricted sort and group selection');
+    const queryCountBeforeInvalid = memberCalls.filter((call) => call.input.endsWith('/member-grid/query')).length;
+    try { await queryServicePeriodMemberGridDto(8, { viewId: 'default', state: 'active' }); assert(false, 'Member Grid accepted an invalid default-view combination'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('查询条件'), 'Member Grid rejects invalid default-view combinations before fetch'); }
+    assert(memberCalls.filter((call) => call.input.endsWith('/member-grid/query')).length === queryCountBeforeInvalid, 'Member Grid invalid selection does not issue a request');
     const firstPage = await queryServicePeriodMemberGridDto(8, { state: 'active', source: 'manual', limit: 50 });
     const secondPage = await queryServicePeriodMemberGridDto(8, { state: 'active', source: 'manual', limit: 50, cursor: firstPage.nextCursor });
     assert(firstPage.rows[0].memberRef === memberRef && firstPage.rows[0].displayName === '本地客户' && firstPage.hasMore && firstPage.nextCursor === 'opaque-next' && !secondPage.hasMore, 'Member Grid query maps safe rows and opaque cursor');
@@ -481,6 +499,18 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(memberCalls.some((call) => call.input.endsWith('/member-grid/query') && JSON.parse(String(call.init?.body)).cursor === ''), 'Member Grid first query sends explicit empty cursor');
     assert(memberCalls.some((call) => call.input.endsWith('/fields') && new Headers(call.init?.headers).get('Idempotency-Key')), 'Member Grid local field update carries idempotency key');
     assert(memberCalls.filter((call) => new Headers(call.init?.headers).get('Idempotency-Key')).length === 4, 'Member Grid mutations carry idempotency keys');
+    const savedMemberMutationFetch = globalThis.fetch;
+    const previousDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    let rejectedMutation: { input: string; init?: RequestInit } | undefined;
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: { cookie: 'aicrm_csrf=member-csrf' } });
+    globalThis.fetch = async (input, init) => { rejectedMutation = { input: String(input), init }; return new Response(JSON.stringify({ code: 'rejected' }), { status: init?.method === 'POST' ? 403 : 409 }); };
+    try { await createServicePeriodMemberGridCollaboratorDto(8, { staffId: 5, permission: 'view' }); assert(false, 'Member Grid collaborator create accepted a forbidden response'); }
+    catch (error) { assert(error instanceof ApiError && error.status === 403, 'Member Grid collaborator create preserves HTTP 403'); }
+    assert(rejectedMutation?.input.endsWith('/collaborators') && new Headers(rejectedMutation?.init?.headers).get('X-CSRF-Token') === 'member-csrf', 'Member Grid collaborator writes carry the same-origin CSRF token');
+    try { await updateServicePeriodMemberGridCollaboratorDto(8, 6, { expectedVersion: 2, permission: 'view' }); assert(false, 'Member Grid collaborator update accepted a conflict response'); }
+    catch (error) { assert(error instanceof ApiError && error.status === 409, 'Member Grid collaborator update preserves HTTP 409'); }
+    globalThis.fetch = savedMemberMutationFetch;
+    if (previousDocument) Object.defineProperty(globalThis, 'document', previousDocument); else Reflect.deleteProperty(globalThis, 'document');
   } finally { globalThis.fetch = savedFetch; }
 
   let channelRequest: { input: string; init?: RequestInit } | undefined;

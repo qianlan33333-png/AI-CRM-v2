@@ -13,7 +13,7 @@ import (
 
 func TestDTOJSONFieldWhitelists(t *testing.T) {
 	assertJSONFields(t, AccessResponse{}, []string{
-		"can_manage_views", "can_query", "can_share", "can_view", "product_id",
+		"can_edit", "can_manage_views", "can_query", "can_share", "can_view", "product_id",
 	})
 	assertJSONFields(t, MemberRow{}, []string{
 		"customer_id", "display_name", "expired_at", "expires_at", "member_ref", "removed_at", "service_product_id", "source", "starts_at", "state", "updated_at", "version",

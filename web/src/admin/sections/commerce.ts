@@ -2,6 +2,7 @@ import {
   getCouponDto,
   getServicePeriodMemberGridMetaDto,
   getServicePeriodMemberDto,
+  listMemberGridStaffDto,
   listCouponClaimsDto,
   listCouponProductOptionsDto,
   queryServicePeriodMemberGridDto,
@@ -15,8 +16,12 @@ import {
   type CouponClaimPage,
   type CouponProductOptionPage,
   type CouponWriteInput,
+  type MemberGridGroupBy,
   type MemberGridSourceFilter,
+  type MemberGridSort,
   type MemberGridState,
+  type MemberGridStaffOption,
+  type MemberGridViewID,
   type ServicePeriodMemberDetail,
   type ServicePeriodMemberGridPage,
   type ServicePeriodMemberGridMeta,
@@ -24,6 +29,7 @@ import {
 import type { Coupon } from '../../shared/api/types';
 import { toast } from '../../shared/ui/feedback';
 import { copyText, esc } from './util';
+import { ApiError } from '../../api/transport';
 
 const control = 'height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;background:#fff;color:#344054;font-size:13px';
 const button = 'height:32px;padding:0 12px;border:1px solid #D0D5DD;border-radius:6px;background:#fff;color:#344054;font-size:13px;cursor:pointer';
@@ -150,17 +156,42 @@ export async function mountCouponData(stage: HTMLElement): Promise<void> {
   render();
 }
 
-type MemberGridFilters = { state: MemberGridState; source: MemberGridSourceFilter };
+type MemberGridFilters = { state: MemberGridState; source: MemberGridSourceFilter; sort: MemberGridSort; groupBy: MemberGridGroupBy; viewId: MemberGridViewID };
 
 const memberStateLabel = (state: string): string => ({ active: '有效', expired: '已过期', removed: '已移除', all: '全部' }[state] || state);
 const memberSourceLabel = (source: string): string => ({ manual: '手动', paid_order: '已支付订单' }[source] || source);
 const memberTime = (value: string | null): string => value ? value.replace('T', ' ').replace('Z', '') : '—';
+const memberStaffLabel = (staff: MemberGridStaffOption): string => `${staff.displayName}（${staff.senderUserid}） · staff ${staff.staffId}`;
+const memberGridError = (error: unknown, action: string): string => {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return `${action}失败：登录状态已失效（HTTP 401）`;
+    if (error.status === 403) return `${action}失败：权限或 CSRF 校验未通过（HTTP 403）`;
+    if (error.status === 409) return `${action}失败：数据版本已变化，请刷新后重试（HTTP 409）`;
+    return `${action}失败（HTTP ${error.status}）`;
+  }
+  return `${action}失败：${error instanceof Error ? error.message : '未知错误'}`;
+};
 
-function memberGridHtml(grid: ServicePeriodMemberGridMeta, page: ServicePeriodMemberGridPage, filters: MemberGridFilters, cursorDepth: number, detail?: ServicePeriodMemberDetail, sharePath = '', productID?: number): string {
+function memberGridHtml(grid: ServicePeriodMemberGridMeta, page: ServicePeriodMemberGridPage, filters: MemberGridFilters, cursorDepth: number, detail?: ServicePeriodMemberDetail, sharePath = '', productID?: number, staffOptions: MemberGridStaffOption[] = [], staffDirectoryError = ''): string {
   const columns = grid.columns.map((column) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${esc(column.key)}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(column.label)}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(column.type)}${column.nullable ? ' · nullable' : ''}</td></tr>`).join('');
   const views = grid.views.map((view) => `<li>${esc(view.name)} <span style="color:#8F959E">（内置只读）</span></li>`).join('');
-  const rows = page.rows.map((row) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3"><strong>${esc(row.displayName)}</strong><div style="margin-top:3px;font:12px ui-monospace,Menlo,monospace;color:#667085">${esc(row.memberRef)}</div></td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(memberStateLabel(row.state))}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(memberSourceLabel(row.source))}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(memberTime(row.startsAt))}<br>${esc(memberTime(row.expiresAt))}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;text-align:right;font-variant-numeric:tabular-nums">v${row.version}<br><button data-member-edit="${esc(row.memberRef)}" style="${button};margin-top:5px">编辑备注/联盟</button></td></tr>`).join('') || '<tr><td colspan="5" style="padding:22px;text-align:center;color:#8F959E">当前筛选没有服务端返回的成员</td></tr>';
-  const collaborators = grid.collaboratorRows.map((collaborator) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">staff ${collaborator.staffId}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3"><select data-collab-permission="${collaborator.collaboratorId}" style="${control}"><option value="view"${collaborator.permission === 'view' ? ' selected' : ''}>查看</option><option value="edit"${collaborator.permission === 'edit' ? ' selected' : ''}>编辑（本地元数据）</option></select></td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">v${collaborator.version}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;text-align:right"><button data-collab-update="${collaborator.collaboratorId}" style="${button}">保存权限</button><button data-collab-remove="${collaborator.collaboratorId}" style="${button};margin-left:6px;color:#D83931">移除</button></td></tr>`).join('') || '<tr><td colspan="4" style="padding:18px;text-align:center;color:#8F959E">暂无本地协作者</td></tr>';
+  let previousState: MemberGridState | undefined;
+  const rows = page.rows.map((row) => {
+    const group = filters.groupBy === 'state' && row.state !== previousState ? `<tr data-member-group="${esc(row.state)}"><td colspan="5" style="padding:7px 12px;background:#F5F7FA;color:#667085;font-size:12px;font-weight:600">${esc(memberStateLabel(row.state))}</td></tr>` : '';
+    previousState = row.state;
+    return group + `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3"><strong>${esc(row.displayName)}</strong><div style="margin-top:3px;font:12px ui-monospace,Menlo,monospace;color:#667085">${esc(row.memberRef)}</div></td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(memberStateLabel(row.state))}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(memberSourceLabel(row.source))}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(memberTime(row.startsAt))}<br>${esc(memberTime(row.expiresAt))}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;text-align:right;font-variant-numeric:tabular-nums">v${row.version}<br><button data-member-edit="${esc(row.memberRef)}" style="${button};margin-top:5px">编辑备注/联盟</button></td></tr>`;
+  }).join('') || '<tr><td colspan="5" style="padding:22px;text-align:center;color:#8F959E">当前筛选没有服务端返回的成员</td></tr>';
+  const collaborators = grid.collaboratorRows.map((collaborator) => {
+    const staff = staffOptions.find((item) => item.staffId === collaborator.staffId);
+    const label = staff ? memberStaffLabel(staff) : `staff ${collaborator.staffId}（目录未返回）`;
+    return `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${esc(label)}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3"><select data-collab-permission="${collaborator.collaboratorId}" style="${control}"><option value="view"${collaborator.permission === 'view' ? ' selected' : ''}>查看（V2 产品内）</option><option value="edit"${collaborator.permission === 'edit' ? ' selected' : ''}>编辑（V2 产品内）</option></select></td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">v${collaborator.version}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3;text-align:right"><button data-collab-update="${collaborator.collaboratorId}" style="${button}">保存权限</button><button data-collab-remove="${collaborator.collaboratorId}" style="${button};margin-left:6px;color:#D83931">移除</button></td></tr>`;
+  }).join('') || '<tr><td colspan="4" style="padding:18px;text-align:center;color:#8F959E">暂无本地协作者</td></tr>';
+  const staffPicker = staffOptions.length
+    ? `<option value="">选择 active staff</option>${staffOptions.map((staff) => `<option value="${staff.staffId}">${esc(memberStaffLabel(staff))}</option>`).join('')}`
+    : '<option value="">真实 active staff 目录不可用</option>';
+  const staffDirectoryHint = staffDirectoryError
+    ? `<p role="alert" style="margin:8px 0 0;color:#B42318;font-size:12px">${esc(staffDirectoryError)}；添加协作者已停用。</p>`
+    : '<p style="margin:8px 0 0;color:#8F5A16;font-size:12px">仅选择服务端真实 active staff 目录；写入 V2 产品内权限，不发送企微邀请，不证明 Provider 成功。</p>';
   const editor = detail ? `<section style="padding:14px;border:1px solid #C5D6FF;border-radius:8px;background:#F5F9FF"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 style="margin:0;font-size:15px">编辑成员本地字段</h2><button id="member-edit-cancel" style="${button}">取消</button></div><div style="margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"><label style="display:grid;gap:6px;font-size:12px;color:#646A73">备注<textarea id="member-remark" maxlength="500" rows="3" style="${control};height:auto;padding:8px 10px">${esc(detail.remark || '')}</textarea></label><label style="display:grid;gap:6px;font-size:12px;color:#646A73">联盟<input id="member-alliance" maxlength="120" value="${esc(detail.alliance || '')}" style="${control}"></label></div><div style="margin-top:10px;font-size:12px;color:#667085">${esc(detail.memberRef)} · 当前版本 v${detail.version} · 仅写入本地成员字段</div><button id="member-edit-save" style="${primary};margin-top:12px">保存本地字段</button></section>` : '';
   const shareStatus = grid.externalShareEnabled ? '已开启' : '已关闭';
   const shareLink = sharePath ? `<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><code style="font-size:12px;color:#344054">${esc(sharePath)}</code><button id="member-grid-share-copy" style="${button}">复制新链接</button></div>` : grid.externalShareEnabled ? '<p style="margin:10px 0 0;color:#8F5A16;font-size:12px">链接只在开启或同一幂等重试时返回；如已遗失，请先关闭再重新开启。</p>' : '';
@@ -168,30 +199,39 @@ function memberGridHtml(grid: ServicePeriodMemberGridMeta, page: ServicePeriodMe
   const previous = cursorDepth > 0 ? `<button id="member-grid-previous" style="${button}">上一页</button>` : '';
   const next = page.hasMore ? `<button id="member-grid-next" style="${button}">下一页</button>` : '';
   const history = productID ? `<a href="spProductData.html?member_grid_history=1&history_kind=view&product_id=${productID}" style="${button};display:inline-flex;align-items:center;text-decoration:none">查看 V1 Member Grid 历史</a>` : '';
-  return `<div style="padding:20px;display:grid;gap:14px;align-content:start"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:12px;color:#8F959E">交易 / 周期商品</div><h1 style="margin:4px 0 0;font-size:20px">${esc(grid.product.name)} · Member Grid</h1></div><div style="display:flex;gap:8px">${history}<button id="member-grid-back" style="${button}">返回周期商品</button></div></div>${editor}<section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><h2 style="margin:0 0 10px;font-size:15px">当前读取边界</h2><div style="display:flex;gap:18px;flex-wrap:wrap"><span>访问：可查看 / 可查询</span><span>当前页：${page.rows.length} 条</span><span>共享视图：${grid.views.length} 个内置只读视图</span><span>外部分享：backend_blocked</span></div></section><section style="border:1px solid #DEE0E3;border-radius:8px;background:#fff;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid #EEF0F3;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><h2 style="margin:0;font-size:15px">会员数据（服务端 cursor）</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="member-grid-state" style="${control}"><option value="all"${filters.state === 'all' ? ' selected' : ''}>全部状态</option><option value="active"${filters.state === 'active' ? ' selected' : ''}>有效</option><option value="expired"${filters.state === 'expired' ? ' selected' : ''}>已过期</option><option value="removed"${filters.state === 'removed' ? ' selected' : ''}>已移除</option></select><select id="member-grid-source" style="${control}"><option value=""${filters.source === '' ? ' selected' : ''}>全部来源</option><option value="manual"${filters.source === 'manual' ? ' selected' : ''}>手动</option><option value="paid_order"${filters.source === 'paid_order' ? ' selected' : ''}>已支付订单</option></select><button id="member-grid-apply" style="${button}">查询</button><span style="font-size:12px;color:#667085">第 ${cursorDepth + 1} 页</span>${previous}${next}</div></div><div style="overflow-x:auto"><table style="width:100%;min-width:860px;border-collapse:collapse"><thead><tr style="background:#FAFAFB;text-align:left;color:#667085"><th style="padding:9px 12px">客户</th><th style="padding:9px 12px">状态</th><th style="padding:9px 12px">来源</th><th style="padding:9px 12px">起止时间</th><th style="padding:9px 12px;text-align:right">版本 / 操作</th></tr></thead><tbody>${rows}</tbody></table></div></section><section style="border:1px solid #DEE0E3;border-radius:8px;background:#fff;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid #EEF0F3"><h2 style="margin:0;font-size:15px">服务端 schema（${grid.columns.length} 列）</h2></div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;text-align:left;color:#667085"><th style="padding:9px 12px">字段</th><th style="padding:9px 12px">标签</th><th style="padding:9px 12px">类型</th></tr></thead><tbody>${columns}</tbody></table></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><h2 style="margin:0 0 8px;font-size:15px">只读视图</h2><ul style="margin:0;padding-left:20px">${views}</ul><p style="margin:10px 0 0;color:#8F5A16;font-size:12px">当前 OpenAPI 只提供状态/来源筛选和 opaque cursor；任意排序、分组、自定义视图保持 backend_blocked。</p></section><section style="border:1px solid #DEE0E3;border-radius:8px;background:#fff;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid #EEF0F3;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0;font-size:15px">本地协作者</h2><p style="margin:5px 0 0;font-size:12px;color:#8F5A16">写入的是本地 staff 元数据，不发送企微邀请、不证明 Provider 成功。</p></div><div style="display:flex;gap:8px;align-items:center"><input id="member-grid-staff" inputmode="numeric" placeholder="staff_id" style="${control};width:110px"><select id="member-grid-permission" style="${control}"><option value="view">查看</option><option value="edit">编辑（本地元数据）</option></select><button id="member-grid-add" style="${primary}">添加本地协作者</button></div></div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;text-align:left;color:#667085"><th style="padding:9px 12px">成员</th><th style="padding:9px 12px">权限</th><th style="padding:9px 12px">版本</th><th style="padding:9px 12px;text-align:right">操作</th></tr></thead><tbody>${collaborators}</tbody></table></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><h2 style="margin:0 0 10px;font-size:15px">公开只读分享</h2>${share}<p style="margin:10px 0 0;color:#667085;font-size:12px">不拼接、不复制、不打开未经服务端公开契约返回的链接。</p></section><p style="margin:0;color:#8F5A16;font-size:12px">当前页面复用 Member Grid 的真实本地读取、成员字段 CAS 和协作者本地元数据操作；不把旧页面行为、Mock 或 Seed 当作上线能力。</p></div>`;
+  return `<div style="padding:20px;display:grid;gap:14px;align-content:start"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:12px;color:#8F959E">交易 / 周期商品</div><h1 style="margin:4px 0 0;font-size:20px">${esc(grid.product.name)} · Member Grid</h1></div><div style="display:flex;gap:8px">${history}<button id="member-grid-back" style="${button}">返回周期商品</button></div></div>${editor}<section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><h2 style="margin:0 0 10px;font-size:15px">当前读取边界</h2><div style="display:flex;gap:18px;flex-wrap:wrap"><span>访问：可查看 / 可查询</span><span>当前页：${page.rows.length} 条</span><span>共享视图：${grid.views.length} 个内置只读视图</span><span>外部分享：backend_blocked</span></div></section><section style="border:1px solid #DEE0E3;border-radius:8px;background:#fff;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid #EEF0F3;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><h2 style="margin:0;font-size:15px">会员数据（服务端 cursor）</h2><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="member-grid-view" style="${control}"><option value="default"${filters.viewId === 'default' ? ' selected' : ''}>默认视图</option><option value=""${filters.viewId === '' ? ' selected' : ''}>受限自定义查询</option></select><select id="member-grid-state" style="${control}"><option value="all"${filters.state === 'all' ? ' selected' : ''}>全部状态</option><option value="active"${filters.state === 'active' ? ' selected' : ''}>有效</option><option value="expired"${filters.state === 'expired' ? ' selected' : ''}>已过期</option><option value="removed"${filters.state === 'removed' ? ' selected' : ''}>已移除</option></select><select id="member-grid-source" style="${control}"><option value=""${filters.source === '' ? ' selected' : ''}>全部来源</option><option value="manual"${filters.source === 'manual' ? ' selected' : ''}>手动</option><option value="paid_order"${filters.source === 'paid_order' ? ' selected' : ''}>已支付订单</option></select><select id="member-grid-sort" style="${control}"><option value="updated_at_desc"${filters.sort === 'updated_at_desc' ? ' selected' : ''}>按更新时间倒序</option><option value="starts_at_desc"${filters.sort === 'starts_at_desc' ? ' selected' : ''}>按开始时间倒序</option></select><select id="member-grid-group" style="${control}"><option value=""${filters.groupBy === '' ? ' selected' : ''}>不分组</option><option value="state"${filters.groupBy === 'state' ? ' selected' : ''}>按状态分组</option></select><button id="member-grid-apply" style="${button}">查询</button><span style="font-size:12px;color:#667085">第 ${cursorDepth + 1} 页</span>${previous}${next}</div></div><div style="overflow-x:auto"><table style="width:100%;min-width:860px;border-collapse:collapse"><thead><tr style="background:#FAFAFB;text-align:left;color:#667085"><th style="padding:9px 12px">客户</th><th style="padding:9px 12px">状态</th><th style="padding:9px 12px">来源</th><th style="padding:9px 12px">起止时间</th><th style="padding:9px 12px;text-align:right">版本 / 操作</th></tr></thead><tbody>${rows}</tbody></table></div></section><section style="border:1px solid #DEE0E3;border-radius:8px;background:#fff;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid #EEF0F3"><h2 style="margin:0;font-size:15px">服务端 schema（${grid.columns.length} 列）</h2></div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;text-align:left;color:#667085"><th style="padding:9px 12px">字段</th><th style="padding:9px 12px">标签</th><th style="padding:9px 12px">类型</th></tr></thead><tbody>${columns}</tbody></table></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><h2 style="margin:0 0 8px;font-size:15px">只读视图</h2><ul style="margin:0;padding-left:20px">${views}</ul><p style="margin:10px 0 0;color:#8F5A16;font-size:12px">当前仅接入 default、updated_at_desc / starts_at_desc 与 state / 空分组；遗留任意视图、排序和分组保持 backend_blocked。</p></section><section style="border:1px solid #DEE0E3;border-radius:8px;background:#fff;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid #EEF0F3;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2 style="margin:0;font-size:15px">V2 产品内协作者</h2>${staffDirectoryHint}</div><div style="display:flex;gap:8px;align-items:center"><select id="member-grid-staff" style="${control};min-width:230px">${staffPicker}</select><select id="member-grid-permission" style="${control}"><option value="view">查看（V2 产品内）</option><option value="edit">编辑（V2 产品内）</option></select><button id="member-grid-add" style="${primary}"${staffOptions.length ? '' : ' disabled'}>记录协作者</button></div></div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;text-align:left;color:#667085"><th style="padding:9px 12px">成员</th><th style="padding:9px 12px">权限</th><th style="padding:9px 12px">版本</th><th style="padding:9px 12px;text-align:right">操作</th></tr></thead><tbody>${collaborators}</tbody></table></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><h2 style="margin:0 0 10px;font-size:15px">公开只读分享</h2>${share}<p style="margin:10px 0 0;color:#667085;font-size:12px">不拼接、不复制、不打开未经服务端公开契约返回的链接。</p></section><p style="margin:0;color:#8F5A16;font-size:12px">当前页面复用 Member Grid 的真实本地读取、成员字段 CAS 和 V2 产品内协作者操作；不把企微邀请、Provider 或 Mock/Seed 当作上线成功。</p></div>`;
 }
 
 export async function mountServicePeriodMemberGrid(stage: HTMLElement): Promise<void> {
   const id = queryID();
   if (!id) throw new Error('Member Grid 需要有效周期商品 ID');
   let grid = await getServicePeriodMemberGridMetaDto(id);
-  let filters: MemberGridFilters = { state: 'all', source: '' };
+  let staffOptions: MemberGridStaffOption[] = [];
+  let staffDirectoryError = '';
+  try { staffOptions = await listMemberGridStaffDto(); }
+  catch (error) { staffDirectoryError = memberGridError(error, '真实 active staff 目录读取'); }
+  let filters: MemberGridFilters = { state: 'all', source: '', sort: 'updated_at_desc', groupBy: '', viewId: 'default' };
   let cursors = [''];
-  let page = await queryServicePeriodMemberGridDto(id, { state: filters.state, source: filters.source, limit: 50 });
+  let page = await queryServicePeriodMemberGridDto(id, { state: filters.state, source: filters.source, sort: filters.sort, groupBy: filters.groupBy, viewId: filters.viewId, limit: 50 });
   let detail: ServicePeriodMemberDetail | undefined;
   let sharePath = '';
 
-  const showError = (error: unknown, fallback: string): void => toast(error instanceof Error ? error.message : fallback, true);
+  const showError = (error: unknown, fallback: string): void => toast(memberGridError(error, fallback), true);
   const currentCursor = (): string => cursors[cursors.length - 1] || '';
-  const reloadPage = async (): Promise<void> => { page = await queryServicePeriodMemberGridDto(id, { state: filters.state, source: filters.source, limit: 50, cursor: currentCursor() || undefined }); render(); };
+  const reloadPage = async (): Promise<void> => { page = await queryServicePeriodMemberGridDto(id, { state: filters.state, source: filters.source, sort: filters.sort, groupBy: filters.groupBy, viewId: filters.viewId, limit: 50, cursor: currentCursor() || undefined }); render(); };
   const refreshGrid = async (): Promise<void> => { grid = await getServicePeriodMemberGridMetaDto(id); await reloadPage(); };
   const render = (): void => {
-    stage.innerHTML = memberGridHtml(grid, page, filters, cursors.length - 1, detail, sharePath, id).replace('外部分享：backend_blocked', `公开只读会员网格：${grid.externalShareEnabled ? '已开启' : '已关闭'}`);
+    stage.innerHTML = memberGridHtml(grid, page, filters, cursors.length - 1, detail, sharePath, id, staffOptions, staffDirectoryError).replace('外部分享：backend_blocked', `公开只读会员网格：${grid.externalShareEnabled ? '已开启' : '已关闭'}`);
     stage.querySelector<HTMLButtonElement>('#member-grid-back')?.addEventListener('click', () => { location.href = 'spProducts.html'; });
     stage.querySelector<HTMLButtonElement>('#member-grid-apply')?.addEventListener('click', () => {
       const state = valueOf(stage, 'member-grid-state') as MemberGridState;
       const source = valueOf(stage, 'member-grid-source') as MemberGridSourceFilter;
-      filters = { state: ['active', 'expired', 'removed', 'all'].includes(state) ? state : 'all', source: ['', 'manual', 'paid_order'].includes(source) ? source : '' };
+      const viewId = valueOf(stage, 'member-grid-view') === 'default' ? 'default' : '';
+      const sort = valueOf(stage, 'member-grid-sort') === 'starts_at_desc' ? 'starts_at_desc' : 'updated_at_desc';
+      const groupBy = valueOf(stage, 'member-grid-group') === 'state' ? 'state' : '';
+      filters = viewId === 'default'
+        ? { state: 'all', source: '', sort: 'updated_at_desc', groupBy: '', viewId: 'default' }
+        : { state: ['active', 'expired', 'removed', 'all'].includes(state) ? state : 'all', source: ['', 'manual', 'paid_order'].includes(source) ? source : '', sort, groupBy, viewId: '' };
       cursors = ['']; detail = undefined; void reloadPage().catch((error) => showError(error, 'Member Grid 查询失败'));
     });
     stage.querySelector<HTMLButtonElement>('#member-grid-previous')?.addEventListener('click', () => { if (cursors.length < 2) return; cursors.pop(); void reloadPage().catch((error) => showError(error, 'Member Grid 上一页读取失败')); });
@@ -207,7 +247,8 @@ export async function mountServicePeriodMemberGrid(stage: HTMLElement): Promise<
       void updateServicePeriodMemberFieldsDto(id, member.memberRef, { expectedVersion: member.version, remark: valueOf(stage, 'member-remark'), alliance: valueOf(stage, 'member-alliance') }).then((saved) => { detail = saved; toast('成员备注/联盟已保存（本地）'); return reloadPage(); }).catch((error) => showError(error, '成员字段保存失败'));
     });
     stage.querySelector<HTMLButtonElement>('#member-grid-add')?.addEventListener('click', () => {
-      const staffId = Number(valueOf(stage, 'member-grid-staff')); const permission = valueOf(stage, 'member-grid-permission') === 'edit' ? 'edit' : 'view';
+      const staffId = Number(valueOf(stage, 'member-grid-staff')); const staff = staffOptions.find((item) => item.staffId === staffId); const permission = valueOf(stage, 'member-grid-permission') === 'edit' ? 'edit' : 'view';
+      if (!staff) { showError(new Error('请选择真实 active staff'), '本地协作者添加失败'); return; }
       void createServicePeriodMemberGridCollaboratorDto(id, { staffId, permission }).then(() => refreshGrid()).then(() => toast('本地协作者配置已保存；未发送企微邀请/Provider')).catch((error) => showError(error, '本地协作者添加失败'));
     });
     stage.querySelectorAll<HTMLButtonElement>('[data-collab-update]').forEach((buttonElement) => buttonElement.addEventListener('click', () => {

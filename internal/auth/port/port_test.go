@@ -45,6 +45,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityStagesRead, CapabilityStagesWrite,
 		CapabilitySegmentsRead, CapabilitySegmentsWrite,
 		CapabilityProductsRead, CapabilityProductsWrite,
+		CapabilityMemberGridRead, CapabilityMemberGridWrite,
 		CapabilityEntitlementsRead, CapabilityEntitlementsWrite,
 		CapabilityMediaImagesWrite,
 		CapabilityQuestionnairesRead, CapabilityQuestionnairesWrite,
@@ -63,6 +64,19 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 	}
 	if Capability("customers.delete").Known() {
 		t.Fatal("unknown capability became known")
+	}
+}
+
+func TestMemberGridCapabilitiesAllowOnlyGlobalOrOwnerStaff(t *testing.T) {
+	for _, capability := range []Capability{CapabilityMemberGridRead, CapabilityMemberGridWrite} {
+		for _, authorization := range []Authorization{
+			{Capability: capability, Scope: ScopeGlobal},
+			{Capability: capability, Scope: ScopeOwnerStaff, OwnerStaffID: 42},
+		} {
+			if _, err := WithAuthorization(context.Background(), authorization); err != nil {
+				t.Fatalf("capability=%q authorization=%+v error=%v", capability, authorization, err)
+			}
+		}
 	}
 }
 

@@ -71,7 +71,7 @@ func TestManagementResponsesCannotClaimExternalSharingOrCentralPermission(t *tes
 		Settings: ShareSettingsResponse{
 			ServiceProductID: 1, SavedViews: []SavedView{}, Collaborators: []Collaborator{},
 			ExternalShareSupported: false, ExternalShareEnabled: false, RealExternalCallExecuted: false,
-			CollaboratorEditIsLocalMetadataOnly: true, CollaboratorEditGrantsCentralPermission: false,
+			CollaboratorEditIsLocalMetadataOnly: false, CollaboratorEditGrantsCentralPermission: false,
 		},
 		Collaborator: CollaboratorResponse{
 			OK: true,
@@ -79,7 +79,7 @@ func TestManagementResponsesCannotClaimExternalSharingOrCentralPermission(t *tes
 				ID: 2, ServiceProductID: 1, StaffID: 3, Permission: CollaboratorPermissionEdit,
 				Version: 1, InvitedBy: 4, CreatedAt: stamp, UpdatedAt: stamp,
 			},
-			EditPermissionIsLocalMetadataOnly: true, GrantsCentralProductsPermission: false,
+			EditPermissionIsLocalMetadataOnly: false, GrantsCentralProductsPermission: false,
 		},
 		Deleted: DeleteCollaboratorResponse{
 			OK: true, Deleted: true,
@@ -87,7 +87,7 @@ func TestManagementResponsesCannotClaimExternalSharingOrCentralPermission(t *tes
 				ID: 2, ServiceProductID: 1, StaffID: 3, Permission: CollaboratorPermissionEdit,
 				Version: 1, InvitedBy: 4, CreatedAt: stamp, UpdatedAt: stamp,
 			},
-			EditPermissionIsLocalMetadataOnly: true, GrantsCentralProductsPermission: false,
+			EditPermissionIsLocalMetadataOnly: false, GrantsCentralProductsPermission: false,
 		},
 	}
 	encoded, err := json.Marshal(response)
@@ -104,8 +104,8 @@ func TestManagementResponsesCannotClaimExternalSharingOrCentralPermission(t *tes
 	}
 	for _, want := range []string{
 		`"external_share_supported":false`, `"external_share_enabled":false`, `"external_share_version":0`, `"real_external_call_executed":false`,
-		`"collaborator_edit_is_local_metadata_only":true`, `"collaborator_edit_grants_central_permission":false`,
-		`"edit_permission_is_local_metadata_only":true`, `"grants_central_products_permission":false`,
+		`"collaborator_edit_is_local_metadata_only":false`, `"collaborator_edit_grants_central_permission":false`,
+		`"edit_permission_is_local_metadata_only":false`, `"grants_central_products_permission":false`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing invariant %s in %s", want, body)
