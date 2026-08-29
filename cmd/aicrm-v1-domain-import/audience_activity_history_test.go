@@ -27,3 +27,19 @@ func TestAudienceActivityParentSourceKeyUsesFrozenSingleIDJSON(t *testing.T) {
 		t.Fatal("zero parent source id accepted")
 	}
 }
+
+func TestAudienceActivityHistoryDomainIsExactAndLocalOnly(t *testing.T) {
+	if !validDomain(audienceActivityHistoryDomain) || validDomain("audience_activity_history") {
+		t.Fatal("audience activity history domain whitelist is not exact")
+	}
+	field := sha256.Sum256([]byte("field"))
+	metadata := audienceActivityMetadata(field)
+	got, err := audienceActivityFieldHMAC(metadata)
+	if err != nil || got != field {
+		t.Fatalf("field proof metadata mismatch: %v", err)
+	}
+	metadata["extra"] = "no"
+	if _, err = audienceActivityFieldHMAC(metadata); err == nil {
+		t.Fatal("extra metadata accepted")
+	}
+}

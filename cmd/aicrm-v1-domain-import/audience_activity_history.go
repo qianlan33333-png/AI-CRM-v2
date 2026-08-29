@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"strconv"
 	"strings"
 
@@ -11,11 +12,211 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1domain"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 )
 
-const audienceActivityImportVersion = "v1-audience-activity-history-a1"
+const (
+	audienceActivityHistoryDomain = "audience-activity-history"
+	audienceActivityImportVersion = "v1-audience-activity-history-a1"
+)
+
+const audienceActivityHistoryFieldMetadata = "field_hmac"
+
+// audienceActivityHistoryJournal maps the two app journal kinds to their
+// exact generic receipt scope. The generic receipt retains field HMAC in its
+// metadata, so an app replay cannot silently lose archive field proof.
+type audienceActivityHistoryJournal struct {
+	runs, events *v1domain.Journal
+	targets      segmentport.AudienceActivityHistoryStore
+	archiveRun   string
+}
+
+var _ segmentport.AudienceActivityHistoryJournal = (*audienceActivityHistoryJournal)(nil)
+var _ v1domain.AudienceActivityJournal = (*audienceActivityHistoryJournal)(nil)
+
+func newAudienceActivityHistoryJournal(run string, targets segmentport.AudienceActivityHistoryStore) (*audienceActivityHistoryJournal, error) {
+	if run == "" || targets == nil {
+		return nil, v1domain.ErrInvalidScope
+	}
+	runs, err := v1domain.NewJournal(v1domain.Scope{ImportVersion: audienceActivityImportVersion, ArchiveRunID: run, AdapterID: v1archive.DefaultAdapterID, TableID: segmentactivity.PackageRunsTableID, TargetDomain: "segment", TargetTable: "segment_v1_audience_activity_runs"})
+	if err != nil {
+		return nil, err
+	}
+	events, err := v1domain.NewJournal(v1domain.Scope{ImportVersion: audienceActivityImportVersion, ArchiveRunID: run, AdapterID: v1archive.DefaultAdapterID, TableID: segmentactivity.MemberEventsTableID, TargetDomain: "segment", TargetTable: "segment_v1_audience_activity_member_events"})
+	if err != nil {
+		return nil, err
+	}
+	return &audienceActivityHistoryJournal{runs: runs, events: events, targets: targets, archiveRun: run}, nil
+}
+func (j *audienceActivityHistoryJournal) terminal(kind string) (*v1domain.Journal, error) {
+	if j == nil {
+		return nil, v1domain.ErrInvalidScope
+	}
+	if kind == "package_runs" {
+		return j.runs, nil
+	}
+	if kind == "member_events" {
+		return j.events, nil
+	}
+	return nil, v1domain.ErrInvalidScope
+}
+func (j *audienceActivityHistoryJournal) LoadAudienceActivityHistory(ctx context.Context, kind, source string) (segmentport.AudienceActivityHistoryReceipt, bool, error) {
+	t, err := j.terminal(kind)
+	if err != nil || ctx == nil {
+		return segmentport.AudienceActivityHistoryReceipt{}, false, v1domain.ErrInvalidScope
+	}
+	value, found, err := t.LoadTerminal(ctx, source)
+	if err != nil || !found {
+		return segmentport.AudienceActivityHistoryReceipt{}, found, err
+	}
+	return j.receipt(kind, source, value)
+}
+func (j *audienceActivityHistoryJournal) RecordAudienceActivityHistory(ctx context.Context, kind string, receipt segmentport.AudienceActivityHistoryReceipt) error {
+	t, err := j.terminal(kind)
+	if err != nil || ctx == nil || receipt.Replayed || receipt.TargetID < 1 || receipt.PayloadDigest == ([32]byte{}) || receipt.TargetDigest == ([32]byte{}) {
+		return v1domain.ErrInvalidScope
+	}
+	source, err := v1domain.ParseSourceIdentifier(receipt.SourceIdentifier)
+	if err != nil {
+		return v1domain.ErrInvalidScope
+	}
+	var field [32]byte
+	if kind == "package_runs" {
+		value, e := j.targets.GetHistoricalAudienceActivityRun(ctx, receipt.TargetID)
+		if e != nil {
+			return e
+		}
+		digest, e := segmentapp.HistoricalAudienceActivityRunDigest(value)
+		if e != nil || value.ID != receipt.TargetID || value.SourceKeyDigest != source || value.SourcePayloadDigest != receipt.PayloadDigest || digest != receipt.TargetDigest {
+			return v1domain.ErrConflict
+		}
+		field = value.SourceFieldDigest
+	} else {
+		value, e := j.targets.GetHistoricalAudienceActivityMemberEvent(ctx, receipt.TargetID)
+		if e != nil {
+			return e
+		}
+		digest, e := segmentapp.HistoricalAudienceActivityMemberEventDigest(value)
+		if e != nil || value.ID != receipt.TargetID || value.SourceKeyDigest != source || value.SourcePayloadDigest != receipt.PayloadDigest || digest != receipt.TargetDigest {
+			return v1domain.ErrConflict
+		}
+		field = value.SourceFieldDigest
+	}
+	if field == ([32]byte{}) {
+		return v1domain.ErrConflict
+	}
+	return t.Record(ctx, v1domain.TerminalReceipt{SourceKeyDigest: source, PayloadDigest: receipt.PayloadDigest, Disposition: "import", TargetID: strconv.FormatInt(receipt.TargetID, 10), TargetDigest: receipt.TargetDigest, Metadata: audienceActivityMetadata(field)})
+}
+func (j *audienceActivityHistoryJournal) LoadAudienceActivityTerminal(ctx context.Context, version string, source [32]byte) (v1domain.AudienceActivityTerminal, bool, error) {
+	if j == nil || version != audienceActivityImportVersion || source == ([32]byte{}) {
+		return v1domain.AudienceActivityTerminal{}, false, v1domain.ErrInvalidScope
+	}
+	for _, kind := range []string{"package_runs", "member_events"} {
+		t, _ := j.terminal(kind)
+		value, found, err := t.LoadTerminal(ctx, v1domain.SourceIdentifier(source))
+		if err != nil {
+			return v1domain.AudienceActivityTerminal{}, false, err
+		}
+		if found {
+			return j.terminalValue(kind, value)
+		}
+	}
+	return v1domain.AudienceActivityTerminal{}, false, nil
+}
+func (j *audienceActivityHistoryJournal) RecordAudienceActivityTerminal(ctx context.Context, value v1domain.AudienceActivityTerminal) error {
+	if j == nil || value.Version != audienceActivityImportVersion || value.ArchiveRunID != j.archiveRun || value.Disposition != "quarantine" || value.TargetID != 0 || value.TargetDigest != ([32]byte{}) {
+		return v1domain.ErrInvalidScope
+	}
+	t, err := j.terminal(value.Kind)
+	if err != nil {
+		return err
+	}
+	return t.Record(ctx, v1domain.TerminalReceipt{SourceKeyDigest: value.SourceKeyHMAC, PayloadDigest: value.PayloadHMAC, Disposition: "quarantine", Reason: value.Reason, Metadata: audienceActivityMetadata(value.FieldHMAC)})
+}
+func (j *audienceActivityHistoryJournal) receipt(kind, source string, value v1domain.TerminalReceipt) (segmentport.AudienceActivityHistoryReceipt, bool, error) {
+	if _, err := audienceActivityFieldHMAC(value.Metadata); err != nil {
+		return segmentport.AudienceActivityHistoryReceipt{}, false, err
+	}
+	key, err := v1domain.ParseSourceIdentifier(source)
+	id, e := strconv.ParseInt(value.TargetID, 10, 64)
+	if err != nil || e != nil || key == ([32]byte{}) || value.SourceKeyDigest != key || value.Disposition != "import" || value.Reason != "" || id < 1 || value.TargetDigest == ([32]byte{}) {
+		return segmentport.AudienceActivityHistoryReceipt{}, false, v1domain.ErrConflict
+	}
+	return segmentport.AudienceActivityHistoryReceipt{SourceIdentifier: source, PayloadDigest: value.PayloadDigest, TargetID: id, TargetDigest: value.TargetDigest}, true, nil
+}
+func (j *audienceActivityHistoryJournal) terminalValue(kind string, value v1domain.TerminalReceipt) (v1domain.AudienceActivityTerminal, bool, error) {
+	field, err := audienceActivityFieldHMAC(value.Metadata)
+	if err != nil {
+		return v1domain.AudienceActivityTerminal{}, false, err
+	}
+	table := ""
+	if kind == "package_runs" {
+		table = segmentactivity.PackageRunsTableID
+	} else if kind == "member_events" {
+		table = segmentactivity.MemberEventsTableID
+	} else {
+		return v1domain.AudienceActivityTerminal{}, false, v1domain.ErrInvalidScope
+	}
+	out := v1domain.AudienceActivityTerminal{Version: audienceActivityImportVersion, ArchiveRunID: j.archiveRun, TableID: table, Kind: kind, SourceKeyHMAC: value.SourceKeyDigest, PayloadHMAC: value.PayloadDigest, FieldHMAC: field, Disposition: value.Disposition, Reason: value.Reason, TargetDigest: value.TargetDigest}
+	if value.Disposition == "import" {
+		id, e := strconv.ParseInt(value.TargetID, 10, 64)
+		if e != nil || id < 1 {
+			return v1domain.AudienceActivityTerminal{}, false, v1domain.ErrConflict
+		}
+		out.TargetID = id
+	} else if value.Disposition != "quarantine" || value.TargetID != "" || value.TargetDigest != ([32]byte{}) {
+		return v1domain.AudienceActivityTerminal{}, false, v1domain.ErrConflict
+	}
+	return out, true, nil
+}
+func audienceActivityMetadata(field [32]byte) map[string]any {
+	return map[string]any{audienceActivityHistoryFieldMetadata: hex.EncodeToString(field[:])}
+}
+func audienceActivityFieldHMAC(metadata map[string]any) ([32]byte, error) {
+	if len(metadata) != 1 {
+		return [32]byte{}, v1domain.ErrConflict
+	}
+	text, ok := metadata[audienceActivityHistoryFieldMetadata].(string)
+	if !ok || len(text) != 64 {
+		return [32]byte{}, v1domain.ErrConflict
+	}
+	raw, err := hex.DecodeString(text)
+	if err != nil || len(raw) != 32 {
+		return [32]byte{}, v1domain.ErrConflict
+	}
+	var out [32]byte
+	copy(out[:], raw)
+	if out == ([32]byte{}) || text != hex.EncodeToString(out[:]) {
+		return [32]byte{}, v1domain.ErrConflict
+	}
+	return out, nil
+}
+
+func importAudienceActivityHistory(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, run string, sourceKey []byte, reconcile bool) (any, error) {
+	if ctx == nil || archive == nil || uow == nil || run == "" || len(sourceKey) < sha256.Size {
+		return nil, v1domain.ErrInvalidScope
+	}
+	targets := segmentstore.NewAudienceActivityHistoryStore()
+	journal, err := newAudienceActivityHistoryJournal(run, targets)
+	if err != nil {
+		return nil, err
+	}
+	writer := segmentapp.NewAudienceActivityHistoryWriter(targets, journal)
+	refs, err := newAudienceActivityReferences(run, sourceKey, segmentstore.NewAudienceActivityHistoryReader(nil))
+	if err != nil {
+		return nil, err
+	}
+	importer, err := v1domain.NewAudienceActivityHistoryImporter(v1domain.NewAudienceActivityArchiveReadySQL(), archive, uow, writer, refs, targets, journal, v1domain.NewAudienceActivityReconciliationSealStore())
+	if err != nil {
+		return nil, err
+	}
+	if reconcile {
+		return importer.Reconcile(ctx, run, sourceKey)
+	}
+	return importer.Import(ctx, run, sourceKey)
+}
 
 // audienceActivityReferences is deliberately private to the archive command.
 // It does not infer a parent from a source_id alone: every reference first
@@ -123,24 +324,7 @@ func (references *audienceActivityReferences) verifyReceipt(ctx context.Context,
 	if references == nil || ctx == nil || source == ([sha256.Size]byte{}) || targetID < 1 {
 		return v1domain.ErrInvalidScope
 	}
-	tx, err := platformstore.TxFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	var verified bool
-	arguments := []any{version, references.archiveRun, v1archive.DefaultAdapterID, table, source[:], "segment", targetTable, strconv.FormatInt(targetID, 10)}
-	query := `SELECT EXISTS(SELECT 1 FROM public.v1_domain_import_receipts
-WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 AND source_key_digest=$5
-AND verified AND disposition='import' AND reason='' AND target_domain=$6 AND target_table=$7 AND target_id=$8`
-	if payload != ([sha256.Size]byte{}) {
-		query += " AND payload_digest=$9"
-		arguments = append(arguments, payload[:])
-	}
-	query += ")"
-	if err = tx.QueryRow(ctx, query, arguments...).Scan(&verified); err != nil || !verified {
-		return audienceActivityReferenceError(err)
-	}
-	return nil
+	return audienceActivityReferenceError(v1domain.VerifyAudienceActivityReceiptCrosswalk(ctx, version, references.archiveRun, v1archive.DefaultAdapterID, table, "segment", targetTable, source, targetID, payload))
 }
 
 func audienceActivityReferenceError(err error) error {
