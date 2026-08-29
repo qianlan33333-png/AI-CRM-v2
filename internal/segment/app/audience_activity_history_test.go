@@ -83,12 +83,12 @@ func TestAudienceActivityWriterPreservesNegativeCountsAndSourceTime(t *testing.T
 
 func activityRun(packageID int64, versionID *int64) segmentport.HistoricalAudienceActivityRun {
 	stamp := time.Date(2026, 8, 29, 8, 30, 0, 0, time.UTC)
-	return segmentport.HistoricalAudienceActivityRun{SourceID: 10, PackageHistoryID: packageID, VersionHistoryID: versionID, RunType: "incremental", OriginalStatus: "succeeded", RefreshStartedAt: stamp, ReturnedCount: 1, EnteredCount: 2, UpdatedCount: 3, ExitedCount: 4, MemberEventCount: 5, DurationMS: 6, CreatedAt: stamp, PrivateDigest: digest(8)}
+	return segmentport.HistoricalAudienceActivityRun{SourceKeyDigest: digest(5), SourcePayloadDigest: digest(6), SourceFieldDigest: digest(7), SourceID: 10, PackageHistoryID: packageID, VersionHistoryID: versionID, RunType: "incremental", OriginalStatus: "succeeded", RefreshStartedAt: stamp, ReturnedCount: 1, EnteredCount: 2, UpdatedCount: 3, ExitedCount: 4, MemberEventCount: 5, DurationMS: 6, CreatedAt: stamp, PrivateDigest: digest(8)}
 }
 
 func activityEvent(packageID int64, runID, memberID *int64) segmentport.HistoricalAudienceActivityMemberEvent {
 	stamp := time.Date(2026, 8, 29, 8, 30, 0, 0, time.UTC)
-	return segmentport.HistoricalAudienceActivityMemberEvent{SourceID: 11, PackageHistoryID: packageID, RunHistoryID: runID, MemberHistoryID: memberID, EventType: "entered", IdentityKind: "unionid", OccurredAt: stamp, CreatedAt: stamp, PrivateDigest: digest(8)}
+	return segmentport.HistoricalAudienceActivityMemberEvent{SourceKeyDigest: digest(5), SourcePayloadDigest: digest(6), SourceFieldDigest: digest(7), SourceID: 11, PackageHistoryID: packageID, RunHistoryID: runID, MemberHistoryID: memberID, EventType: "entered", IdentityKind: "unionid", OccurredAt: stamp, CreatedAt: stamp, PrivateDigest: digest(8)}
 }
 
 func digest(value byte) [32]byte    { var result [32]byte; result[0] = value; return result }

@@ -109,48 +109,54 @@ func (writer *AudienceActivityHistoryWriter) validateEventParents(ctx context.Co
 
 func HistoricalAudienceActivityRunDigest(value segmentport.HistoricalAudienceActivityRun) ([32]byte, error) {
 	value = normalizeAudienceActivityRun(value)
-	if value.ID < 1 || value.SourceID < 1 || value.PackageHistoryID < 1 || (value.VersionHistoryID != nil && *value.VersionHistoryID < 1) || value.PrivateDigest == ([32]byte{}) {
+	if value.ID < 1 || value.SourceKeyDigest == ([32]byte{}) || value.SourcePayloadDigest == ([32]byte{}) || value.SourceFieldDigest == ([32]byte{}) || value.SourceID < 1 || value.PackageHistoryID < 1 || (value.VersionHistoryID != nil && *value.VersionHistoryID < 1) || value.PrivateDigest == ([32]byte{}) {
 		return [32]byte{}, segmentport.ErrAudienceActivityHistoryInvalid
 	}
 	return audienceActivityDigest("package_runs", struct {
-		ID                int64
-		SourceID          int64
-		PackageHistoryID  int64
-		VersionHistoryID  *int64
-		RunType           string
-		OriginalStatus    string
-		RefreshStartedAt  time.Time
-		RefreshFinishedAt *time.Time
-		LastWatermarkAt   *time.Time
-		NextWatermarkAt   *time.Time
-		ReturnedCount     int32
-		EnteredCount      int32
-		UpdatedCount      int32
-		ExitedCount       int32
-		MemberEventCount  int32
-		DurationMS        int32
-		CreatedAt         time.Time
-		PrivateDigest     [32]byte
-	}{value.ID, value.SourceID, value.PackageHistoryID, value.VersionHistoryID, value.RunType, value.OriginalStatus, value.RefreshStartedAt, value.RefreshFinishedAt, value.LastWatermarkAt, value.NextWatermarkAt, value.ReturnedCount, value.EnteredCount, value.UpdatedCount, value.ExitedCount, value.MemberEventCount, value.DurationMS, value.CreatedAt, value.PrivateDigest})
+		ID                  int64
+		SourceKeyDigest     [32]byte
+		SourcePayloadDigest [32]byte
+		SourceFieldDigest   [32]byte
+		SourceID            int64
+		PackageHistoryID    int64
+		VersionHistoryID    *int64
+		RunType             string
+		OriginalStatus      string
+		RefreshStartedAt    time.Time
+		RefreshFinishedAt   *time.Time
+		LastWatermarkAt     *time.Time
+		NextWatermarkAt     *time.Time
+		ReturnedCount       int32
+		EnteredCount        int32
+		UpdatedCount        int32
+		ExitedCount         int32
+		MemberEventCount    int32
+		DurationMS          int32
+		CreatedAt           time.Time
+		PrivateDigest       [32]byte
+	}{value.ID, value.SourceKeyDigest, value.SourcePayloadDigest, value.SourceFieldDigest, value.SourceID, value.PackageHistoryID, value.VersionHistoryID, value.RunType, value.OriginalStatus, value.RefreshStartedAt, value.RefreshFinishedAt, value.LastWatermarkAt, value.NextWatermarkAt, value.ReturnedCount, value.EnteredCount, value.UpdatedCount, value.ExitedCount, value.MemberEventCount, value.DurationMS, value.CreatedAt, value.PrivateDigest})
 }
 
 func HistoricalAudienceActivityMemberEventDigest(value segmentport.HistoricalAudienceActivityMemberEvent) ([32]byte, error) {
 	value = normalizeAudienceActivityEvent(value)
-	if value.ID < 1 || value.SourceID < 1 || value.PackageHistoryID < 1 || (value.RunHistoryID != nil && *value.RunHistoryID < 1) || (value.MemberHistoryID != nil && *value.MemberHistoryID < 1) || value.PrivateDigest == ([32]byte{}) {
+	if value.ID < 1 || value.SourceKeyDigest == ([32]byte{}) || value.SourcePayloadDigest == ([32]byte{}) || value.SourceFieldDigest == ([32]byte{}) || value.SourceID < 1 || value.PackageHistoryID < 1 || (value.RunHistoryID != nil && *value.RunHistoryID < 1) || (value.MemberHistoryID != nil && *value.MemberHistoryID < 1) || value.PrivateDigest == ([32]byte{}) {
 		return [32]byte{}, segmentport.ErrAudienceActivityHistoryInvalid
 	}
 	return audienceActivityDigest("member_events", struct {
-		ID               int64
-		SourceID         int64
-		PackageHistoryID int64
-		RunHistoryID     *int64
-		MemberHistoryID  *int64
-		EventType        string
-		IdentityKind     string
-		OccurredAt       time.Time
-		CreatedAt        time.Time
-		PrivateDigest    [32]byte
-	}{value.ID, value.SourceID, value.PackageHistoryID, value.RunHistoryID, value.MemberHistoryID, value.EventType, value.IdentityKind, value.OccurredAt, value.CreatedAt, value.PrivateDigest})
+		ID                  int64
+		SourceKeyDigest     [32]byte
+		SourcePayloadDigest [32]byte
+		SourceFieldDigest   [32]byte
+		SourceID            int64
+		PackageHistoryID    int64
+		RunHistoryID        *int64
+		MemberHistoryID     *int64
+		EventType           string
+		IdentityKind        string
+		OccurredAt          time.Time
+		CreatedAt           time.Time
+		PrivateDigest       [32]byte
+	}{value.ID, value.SourceKeyDigest, value.SourcePayloadDigest, value.SourceFieldDigest, value.SourceID, value.PackageHistoryID, value.RunHistoryID, value.MemberHistoryID, value.EventType, value.IdentityKind, value.OccurredAt, value.CreatedAt, value.PrivateDigest})
 }
 
 func writeAudienceActivityHistory[T any](ctx context.Context, journal segmentport.AudienceActivityHistoryJournal, kind, source string, payload [32]byte, value T, id func(T) int64, withID func(T, int64) T, digest func(T) ([32]byte, error), create func(context.Context, T) (T, error), get func(context.Context, int64) (T, error)) (segmentport.AudienceActivityHistoryReceipt, error) {

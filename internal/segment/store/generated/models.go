@@ -24,6 +24,46 @@ type Customer struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type SegmentV1AudienceActivityMemberEvent struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	SourceID            int64              `json:"source_id"`
+	PackageHistoryID    int64              `json:"package_history_id"`
+	RunHistoryID        pgtype.Int8        `json:"run_history_id"`
+	MemberHistoryID     pgtype.Int8        `json:"member_history_id"`
+	EventType           string             `json:"event_type"`
+	IdentityKind        string             `json:"identity_kind"`
+	OccurredAt          pgtype.Timestamptz `json:"occurred_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	PrivateDigest       []byte             `json:"private_digest"`
+}
+
+type SegmentV1AudienceActivityRun struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	SourceID            int64              `json:"source_id"`
+	PackageHistoryID    int64              `json:"package_history_id"`
+	VersionHistoryID    pgtype.Int8        `json:"version_history_id"`
+	RunType             string             `json:"run_type"`
+	OriginalStatus      string             `json:"original_status"`
+	RefreshStartedAt    pgtype.Timestamptz `json:"refresh_started_at"`
+	RefreshFinishedAt   pgtype.Timestamptz `json:"refresh_finished_at"`
+	LastWatermarkAt     pgtype.Timestamptz `json:"last_watermark_at"`
+	NextWatermarkAt     pgtype.Timestamptz `json:"next_watermark_at"`
+	ReturnedCount       int32              `json:"returned_count"`
+	EnteredCount        int32              `json:"entered_count"`
+	UpdatedCount        int32              `json:"updated_count"`
+	ExitedCount         int32              `json:"exited_count"`
+	MemberEventCount    int32              `json:"member_event_count"`
+	DurationMs          int32              `json:"duration_ms"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	PrivateDigest       []byte             `json:"private_digest"`
+}
+
 type SegmentV1AudienceGroup struct {
 	ID        int64              `json:"id"`
 	SourceID  int64              `json:"source_id"`

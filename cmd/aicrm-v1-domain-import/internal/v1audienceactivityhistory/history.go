@@ -60,12 +60,14 @@ type MemberEventFact struct {
 }
 
 type PackageRunResult struct {
+	Source      SourceEnvelope
 	Disposition Disposition
 	Reason      string
 	Fact        *PackageRunFact
 }
 
 type MemberEventResult struct {
+	Source      SourceEnvelope
 	Disposition Disposition
 	Reason      string
 	Fact        *MemberEventFact
