@@ -13,7 +13,7 @@ WHERE step.handoff_id = dispatch.handoff_id
 
 ALTER TABLE public.outbound_campaign_dispatches
   ALTER COLUMN content_snapshot SET NOT NULL,
-  ADD CONSTRAINT outbound_campaign_dispatches_content_snapshot_check CHECK (content_snapshot <> '');
+  ADD CONSTRAINT outbound_campaign_dispatches_content_snapshot_check CHECK (btrim(content_snapshot) <> '');
 
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION public.aicrm_outbound_campaign_dispatches_no_delete()
