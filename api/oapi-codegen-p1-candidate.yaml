@@ -18,6 +18,7 @@ output-options:
     - p4-profile-catalog-history
     - p4-wecom-contact-history
     - p4-contact-reference-history
+    - p4-customer-timeline-history
     - p4-deferred-identity-history
     - p4-audience-history
     - p4-campaign-history

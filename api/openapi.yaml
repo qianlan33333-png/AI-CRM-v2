@@ -665,6 +665,51 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/customer-timeline-history/events:
+    get:
+      tags: [p4-customer-timeline-history]
+      operationId: listCustomerTimelineHistoryEvents
+      summary: Read safe immutable V1 customer timeline observations without creating current events
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CUSTOMER-TIMELINE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_customer_timeline_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: Safe read-only timeline observations, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerTimelineHistoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/customer-timeline-history/events/{history_id}:
+    get:
+      tags: [p4-customer-timeline-history]
+      operationId: getCustomerTimelineHistoryEvent
+      summary: Read one safe immutable V1 customer timeline observation
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-V1-CUSTOMER-TIMELINE-HISTORY-2026-08-29
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_v1_customer_timeline_history
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: history_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Safe read-only timeline observation, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerTimelineHistoryDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/broadcast-job-history:
     get:
       tags: [p4-broadcast-job-history]
@@ -16675,6 +16720,41 @@ components:
         read_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
         item: { $ref: "#/components/schemas/ContactReferenceHistoryDirectory" }
+    CustomerTimelineHistoryEvent:
+      type: object
+      additionalProperties: false
+      required: [id, source_id, event_id, event_type, event_time, source_table, source_value, created_at, customer_id]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        source_id: { type: integer, format: int64 }
+        event_id: { type: string }
+        event_type: { type: string }
+        event_time: { type: string, format: date-time }
+        source_table: { type: string }
+        source_value: { type: string }
+        created_at: { type: string, format: date-time }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+    CustomerTimelineHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, items, total, limit, offset]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        items: { type: array, items: { $ref: "#/components/schemas/CustomerTimelineHistoryEvent" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0 }
+    CustomerTimelineHistoryDetail:
+      type: object
+      additionalProperties: false
+      required: [source, read_only, real_external_call_executed, item]
+      properties:
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        item: { $ref: "#/components/schemas/CustomerTimelineHistoryEvent" }
     BroadcastJobHistory:
       type: object
       additionalProperties: false

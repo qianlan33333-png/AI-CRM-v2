@@ -2180,6 +2180,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.campaignDefinitionHistory = campaignstore.NewCampaignDefinitionHistoryReader(pool)
 	legacyHandler.wecomContactHistory = contactstore.NewWeComContactHistoryReader(pool)
 	legacyHandler.contactReferenceHistory = contactstore.NewReferenceHistoryReader(pool)
+	legacyHandler.customerTimelineHistory = contactstore.NewCustomerTimelineHistoryReader(pool)
 	legacyHandler.deferredIdentityHistory = contactstore.NewDeferredIdentityHistoryReader(pool)
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
@@ -3721,6 +3722,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 
 			{http.MethodGet, "/api/admin/hxc-history/refreshes", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCHistoryMeta)},
 			{http.MethodGet, "/api/admin/customer-state-history/snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCustomerStateHistorySnapshot)},
+			{http.MethodGet, "/api/admin/customer-timeline-history/events", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListCustomerTimelineHistoryEvents)},
+			{http.MethodGet, "/api/admin/customer-timeline-history/events/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCustomerTimelineHistoryEvent)},
 			{http.MethodGet, "/api/admin/marketing-state-history/state-snapshots", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListMarketingStateHistorySnapshot)},
 			{http.MethodGet, "/api/admin/broadcast-job-history", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListBroadcastJobHistory)},
 			{http.MethodGet, "/api/admin/broadcast-job-history/{history_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetBroadcastJobHistory)},
