@@ -146,6 +146,25 @@ type ContactV1CustomerStatusSnapshot struct {
 	Unionid               string             `json:"unionid"`
 }
 
+type ContactV1CustomerTimelineHistory struct {
+	ID                  int64              `json:"id"`
+	SourceKeyDigest     []byte             `json:"source_key_digest"`
+	SourcePayloadDigest []byte             `json:"source_payload_digest"`
+	SourceFieldDigest   []byte             `json:"source_field_digest"`
+	SourceID            int64              `json:"source_id"`
+	EventID             string             `json:"event_id"`
+	EventType           string             `json:"event_type"`
+	EventTime           pgtype.Timestamptz `json:"event_time"`
+	Title               string             `json:"title"`
+	Summary             string             `json:"summary"`
+	SourceTable         string             `json:"source_table"`
+	SourceValue         string             `json:"source_value"`
+	MetadataJson        string             `json:"metadata_json"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	Unionid             string             `json:"unionid"`
+	CustomerID          pgtype.Int8        `json:"customer_id"`
+}
+
 type ContactV1DeferredIdentityConflictHistory struct {
 	ID                      int64              `json:"id"`
 	SourceKeyDigest         []byte             `json:"source_key_digest"`
