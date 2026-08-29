@@ -19,8 +19,8 @@ VALUES($1,jsonb_build_object('trace_id',$2::text,'session_id',$3::text),now(),$4
 		"campaign.recipient.dispatch.requested", traceID, sessionID, marker).Scan(&eventID); err != nil {
 		t.Fatalf("seed cloud audit event: %v", err)
 	}
-	if _, err := pool.Exec(ctx, `INSERT INTO event_deliveries(event_id,consumer,status,attempt_count) VALUES
-($1,$2,'completed',1),($1,$3,'outcome_unknown',1)`, eventID, marker+"-completed", marker+"-unknown"); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO event_deliveries(event_id,consumer,status,attempt_count,completed_at) VALUES
+($1,$2,'completed',1,now()),($1,$3,'outcome_unknown',1,now())`, eventID, marker+"-completed", marker+"-unknown"); err != nil {
 		t.Fatalf("seed cloud audit deliveries: %v", err)
 	}
 	t.Cleanup(func() {
