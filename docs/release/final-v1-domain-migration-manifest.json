@@ -1,0 +1,62 @@
+{
+  "schema": {
+    "from": 132,
+    "to": 140,
+    "forbidden_versions": [141],
+    "forbidden_hxc_objects": ["hxc_activation_funnel", "hxc_activation_broadcast"]
+  },
+  "scope": {
+    "source": "V2 sealed archive only",
+    "source_database_connection": "forbidden",
+    "target": "isolated rehearsal or V2 formal target",
+    "external_effects": "disabled"
+  },
+  "phases": [
+    {"mode": "import", "expect": "initial terminal receipts"},
+    {"mode": "import", "expect": "replayed only; no new target rows or receipts"},
+    {"mode": "reconcile", "expect": "verified counts and comparison digest"},
+    {"mode": "reconcile", "expect": "replayed=true and unchanged comparison digest"}
+  ],
+  "domains": [
+    {"domain": "campaign", "requires": ["campaign-actors"]},
+    {"domain": "survey", "requires": ["migration-actor"]},
+    {"domain": "media", "requires": ["migration-actor"]},
+    {"domain": "radar", "requires": ["migration-actor"]},
+    {"domain": "shop", "requires": []},
+    {"domain": "static", "requires": ["migration-actor", "dm01-run-id"]},
+    {"domain": "finance", "requires": ["dm01-run-id"]},
+    {"domain": "service-period", "requires": ["dm01-run-id"]},
+    {"domain": "coupon", "requires": ["migration-actor", "dm01-run-id"]},
+    {"domain": "channel", "requires": ["migration-actor", "dm01-run-id"]},
+    {"domain": "groupops", "requires": ["migration-actor", "dm01-run-id"]},
+    {"domain": "audience-history", "requires": ["migration-actor", "dm01-run-id"]},
+    {"domain": "message-history", "requires": ["dm01-run-id"]},
+    {"domain": "contact-history", "requires": ["dm01-run-id"]},
+    {"domain": "member-grid-history", "requires": ["dm01-run-id", "usage-recovery-file"]},
+    {"domain": "campaign-history", "requires": ["dm01-run-id"]},
+    {"domain": "campaign-definition-history", "requires": []},
+    {"domain": "automation-history", "requires": []},
+    {"domain": "profile-catalog-history", "requires": []},
+    {"domain": "hxc-history", "requires": ["dm01-run-id"]},
+    {"domain": "hxc-runtime-history", "requires": []},
+    {"domain": "hxc-chat-job-history", "requires": []},
+    {"domain": "hxc-member-usage-history", "requires": []},
+    {"domain": "contact-reference-history", "requires": ["dm01-run-id", "reference-corp-id"]},
+    {"domain": "cycle-observation-history", "requires": []},
+    {"domain": "static-tail-history", "requires": []},
+    {"domain": "customer-state-history", "requires": []},
+    {"domain": "marketing-state-history", "requires": []},
+    {"domain": "wecom-contact-history", "requires": []},
+    {"domain": "radar-click-history", "requires": ["dm01-run-id"]},
+    {"domain": "marketing-config-history", "requires": []},
+    {"domain": "survey-unresolved-history", "requires": ["dm01-run-id"]},
+    {"domain": "legacy-marketing-history", "requires": []},
+    {"domain": "broadcast-job-history", "requires": []},
+    {"domain": "outbound-task-history", "requires": []},
+    {"domain": "deferred-identity-history", "requires": ["dm01-run-id"]},
+    {"domain": "external-identity-gap", "requires": ["dm01-run-id"]},
+    {"domain": "invalid-source-history", "requires": []},
+    {"domain": "customer-timeline-history", "requires": ["dm01-run-id"]},
+    {"domain": "audience-activity-history", "requires": []}
+  ]
+}
