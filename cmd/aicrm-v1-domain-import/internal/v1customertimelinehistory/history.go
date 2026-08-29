@@ -123,12 +123,12 @@ func AdaptTimelineEvent(row v1archive.ArchivedRow, sourceHMACKey []byte, expecte
 	if err != nil {
 		return TimelineEventFact{}, err
 	}
+	if len(row.RedactedFields) != 0 {
+		return TimelineEventFact{}, ErrRequiredFieldRedacted
+	}
 	var value timelineEventSource
 	if err := decodeExact(fields, row.Payload, &value); err != nil || !jsonValueValid(fields["metadata_json"]) || value.EventTime.IsZero() || value.CreatedAt.IsZero() {
 		return TimelineEventFact{}, ErrFact
-	}
-	if len(row.RedactedFields) != 0 {
-		return TimelineEventFact{}, ErrRequiredFieldRedacted
 	}
 	return TimelineEventFact{
 		Source: envelope, SourceID: value.ID, EventID: value.EventID, EventType: value.EventType,
@@ -189,15 +189,15 @@ func archiveFields(row v1archive.ArchivedRow, expectedOrdinal int64, key []byte)
 	if len(key) < sha256.Size || row.AdapterID != v1archive.DefaultAdapterID || row.TableID != TableID || row.SourceOrdinal != expectedOrdinal || row.SourceKeyHMAC == zero || row.PayloadHMAC == zero || row.FieldHMAC == zero || !json.Valid(row.Payload) {
 		return nil, SourceEnvelope{}, ErrArchiveRow
 	}
-	canonical, roots, err := v1archive.RedactPayload(row.Payload)
-	if err != nil || !bytes.Equal(canonical, row.Payload) || !sameStrings(roots, row.RedactedFields) {
+	canonical, _, err := v1archive.RedactPayload(row.Payload)
+	if err != nil || !bytes.Equal(canonical, row.Payload) {
 		return nil, SourceEnvelope{}, ErrArchiveRow
 	}
 	payload, err := v1archive.PayloadHMAC(key, archiveTableName(), canonical)
 	if err != nil || !hmac.Equal(payload[:], row.PayloadHMAC[:]) {
 		return nil, SourceEnvelope{}, ErrArchiveRow
 	}
-	field, err := v1archive.FieldHMAC(key, archiveTableName(), roots)
+	field, err := v1archive.FieldHMAC(key, archiveTableName(), row.RedactedFields)
 	if err != nil || !hmac.Equal(field[:], row.FieldHMAC[:]) {
 		return nil, SourceEnvelope{}, ErrArchiveRow
 	}
@@ -276,15 +276,3 @@ func cloneJSON(value json.RawMessage) json.RawMessage { return append(json.RawMe
 func utcMicro(value time.Time) time.Time              { return value.UTC().Truncate(time.Microsecond) }
 func isNull(value json.RawMessage) bool               { return bytes.Equal(bytes.TrimSpace(value), []byte("null")) }
 func jsonValueValid(value json.RawMessage) bool       { return isNull(value) || json.Valid(value) }
-
-func sameStrings(left, right []string) bool {
-	if len(left) != len(right) {
-		return false
-	}
-	for index := range left {
-		if left[index] != right[index] {
-			return false
-		}
-	}
-	return true
-}

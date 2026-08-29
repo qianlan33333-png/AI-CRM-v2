@@ -68,13 +68,9 @@ func TestAdaptTimelineEventRejectsMissingUnexpectedAndNonnullableNull(t *testing
 }
 
 func TestAdaptTimelineEventQuarantinesRedactedSourceOnlyInStream(t *testing.T) {
-	row := timelineRow(t, 1, 1, map[string]any{
-		"id": int64(1), "event_id": "event", "event_type": "type", "event_time": time.Now().UTC(), "title": "", "summary": "",
-		"source_table": "source", "source_id": "", "metadata_json": json.RawMessage(`{"access_token":"not-retained"}`), "created_at": time.Now().UTC(), "unionid": "",
-	})
-	if len(row.RedactedFields) == 0 {
-		t.Fatal("redaction fixture did not redact nested sensitive material")
-	}
+	payload := timelinePayload(1)
+	payload["unionid"] = "[REDACTED]"
+	row := timelineTopLevelRedactedRow(t, 1, 1, payload, "unionid")
 	if _, err := AdaptTimelineEvent(row, timelineTestKey, 1); !errors.Is(err, ErrRequiredFieldRedacted) {
 		t.Fatalf("redacted fact error=%v", err)
 	}
@@ -141,6 +137,18 @@ func timelineRow(t *testing.T, id, ordinal int64, payload map[string]any) v1arch
 		t.Fatal(err)
 	}
 	return v1archive.ArchivedRow{AdapterID: v1archive.DefaultAdapterID, TableID: TableID, SourceOrdinal: ordinal, SourceKeyHMAC: source, PayloadHMAC: payloadHMAC, FieldHMAC: fieldHMAC, Payload: canonical, RedactedFields: roots}
+}
+
+func timelineTopLevelRedactedRow(t *testing.T, id, ordinal int64, payload map[string]any, root string) v1archive.ArchivedRow {
+	t.Helper()
+	row := timelineRow(t, id, ordinal, payload)
+	fieldHMAC, err := v1archive.FieldHMAC(timelineTestKey, archiveTableName(), []string{root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	row.RedactedFields = []string{root}
+	row.FieldHMAC = fieldHMAC
+	return row
 }
 
 func clonePayload(t *testing.T, value map[string]any) map[string]any {

@@ -70,7 +70,7 @@ func readArchiveCensus(ctx context.Context, archive *v1archive.PostgresArchiveRe
 		}
 		summary.Rows++
 		summary.RedactedCombinations[redactedCombination(row.RedactedFields)]++
-		canonical, roots, redactErr := v1archive.RedactPayload(row.Payload)
+		canonical, _, redactErr := v1archive.RedactPayload(row.Payload)
 		if redactErr != nil || !bytes.Equal(canonical, row.Payload) {
 			summary.PayloadFailures++
 			summary.FieldFailures++
@@ -79,8 +79,8 @@ func readArchiveCensus(ctx context.Context, archive *v1archive.PostgresArchiveRe
 			if payloadErr != nil || expectedPayload != row.PayloadHMAC {
 				summary.PayloadFailures++
 			}
-			expectedFields, fieldErr := v1archive.FieldHMAC(key, archiveTableName(), roots)
-			if fieldErr != nil || expectedFields != row.FieldHMAC || !sameStrings(roots, row.RedactedFields) {
+			expectedFields, fieldErr := v1archive.FieldHMAC(key, archiveTableName(), row.RedactedFields)
+			if fieldErr != nil || expectedFields != row.FieldHMAC {
 				summary.FieldFailures++
 			}
 		}
