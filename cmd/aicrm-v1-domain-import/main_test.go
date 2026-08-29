@@ -118,6 +118,20 @@ func TestFinalReconciliationGroupsFailClosedWhenMissingOrIncomplete(t *testing.T
 	}
 }
 
+func TestFinalIdentityProofRejectsEmptyOrPartiallyVerifiedRun(t *testing.T) {
+	for _, proof := range []finalIdentityProof{
+		{DM01RunID: 1},
+		{DM01RunID: 1, MappingCount: 2, VerifiedMapping: 1},
+	} {
+		if err := validateFinalIdentityProof(proof); err == nil {
+			t.Fatalf("identity proof %#v was accepted", proof)
+		}
+	}
+	if err := validateFinalIdentityProof(finalIdentityProof{DM01RunID: 1, MappingCount: 2, VerifiedMapping: 2}); err != nil {
+		t.Fatalf("complete identity proof rejected: %v", err)
+	}
+}
+
 func TestHXCMemberUsageHistoryRequiresLocalKeysBeforeConnecting(t *testing.T) {
 	for _, mode := range []string{"import", "reconcile"} {
 		for _, kind := range []string{"source", "hmac", "aes"} {

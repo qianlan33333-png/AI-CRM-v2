@@ -493,20 +493,31 @@ WHERE id=$1 AND mode='full' AND state='imported')`, dm01RunID).Scan(&ready); err
 	result := finalIdentityProof{DM01RunID: dm01RunID}
 	err := tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER (WHERE
 EXISTS(SELECT 1 FROM public.legacy_contact_identity_import_row_receipts receipt
-WHERE receipt.run_id=mapping.last_run_id AND receipt.source_table=mapping.source_table
+WHERE receipt.run_id=$1 AND receipt.source_table=mapping.source_table
 AND receipt.source_key_hmac=mapping.source_key_hmac AND receipt.payload_hmac=mapping.payload_hmac
 AND receipt.disposition='imported')
 AND (mapping.staff_id IS NULL OR EXISTS(SELECT 1 FROM public.staff WHERE id=mapping.staff_id))
 AND (mapping.customer_id IS NULL OR EXISTS(SELECT 1 FROM public.customers WHERE id=mapping.customer_id AND NOT is_deleted))
 AND (mapping.identity_id IS NULL OR EXISTS(SELECT 1 FROM public.identities WHERE id=mapping.identity_id))
-) FROM public.legacy_contact_identity_source_mappings mapping`).Scan(&result.MappingCount, &result.VerifiedMapping)
+) FROM public.legacy_contact_identity_source_mappings mapping
+WHERE mapping.last_run_id=$1`, dm01RunID).Scan(&result.MappingCount, &result.VerifiedMapping)
 	if err != nil {
 		return finalIdentityProof{}, err
 	}
-	if result.MappingCount != result.VerifiedMapping {
-		return finalIdentityProof{}, fmt.Errorf("identity mappings are not receipt-bound live targets")
+	if err = validateFinalIdentityProof(result); err != nil {
+		return finalIdentityProof{}, err
 	}
 	return result, nil
+}
+
+func validateFinalIdentityProof(proof finalIdentityProof) error {
+	if proof.MappingCount == 0 {
+		return fmt.Errorf("DM01 run has no identity mappings")
+	}
+	if proof.MappingCount != proof.VerifiedMapping {
+		return fmt.Errorf("identity mappings are not receipt-bound live targets")
+	}
+	return nil
 }
 
 func stringValue(value *string) string {
