@@ -14868,13 +14868,13 @@ func (e WeComContactHistoryRelationDetailSource) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageReadOnly.
 const (
-	WeComContactHistoryRelationPageReadOnlyTrue WeComContactHistoryRelationPageReadOnly = true
+	True WeComContactHistoryRelationPageReadOnly = true
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageReadOnly enum.
 func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
 	switch e {
-	case WeComContactHistoryRelationPageReadOnlyTrue:
+	case True:
 		return true
 	default:
 		return false
