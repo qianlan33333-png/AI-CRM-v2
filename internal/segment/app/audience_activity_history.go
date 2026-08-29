@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
@@ -30,6 +31,9 @@ func (writer *AudienceActivityHistoryWriter) WriteRun(ctx context.Context, sourc
 		return segmentport.AudienceActivityHistoryReceipt{}, segmentport.ErrAudienceActivityHistoryInvalid
 	}
 	value = normalizeAudienceActivityRun(value)
+	if !audienceActivitySourceMatches(source, value.SourceKeyDigest) || payload != value.SourcePayloadDigest {
+		return segmentport.AudienceActivityHistoryReceipt{}, segmentport.ErrAudienceActivityHistoryInvalid
+	}
 	if _, err := HistoricalAudienceActivityRunDigest(withAudienceActivityRunID(value, 1)); err != nil {
 		return segmentport.AudienceActivityHistoryReceipt{}, segmentport.ErrAudienceActivityHistoryInvalid
 	}
@@ -53,6 +57,9 @@ func (writer *AudienceActivityHistoryWriter) WriteMemberEvent(ctx context.Contex
 		return segmentport.AudienceActivityHistoryReceipt{}, segmentport.ErrAudienceActivityHistoryInvalid
 	}
 	value = normalizeAudienceActivityEvent(value)
+	if !audienceActivitySourceMatches(source, value.SourceKeyDigest) || payload != value.SourcePayloadDigest {
+		return segmentport.AudienceActivityHistoryReceipt{}, segmentport.ErrAudienceActivityHistoryInvalid
+	}
 	if _, err := HistoricalAudienceActivityMemberEventDigest(withAudienceActivityEventID(value, 1)); err != nil {
 		return segmentport.AudienceActivityHistoryReceipt{}, segmentport.ErrAudienceActivityHistoryInvalid
 	}
@@ -274,4 +281,8 @@ func audienceActivityParentError(err error) error {
 		return segmentport.ErrAudienceActivityHistoryConflict
 	}
 	return audienceActivityHistoryError(err)
+}
+
+func audienceActivitySourceMatches(source string, digest [sha256.Size]byte) bool {
+	return digest != ([sha256.Size]byte{}) && source == hex.EncodeToString(digest[:])
 }

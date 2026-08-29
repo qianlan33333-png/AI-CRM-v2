@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"testing"
 	"time"
@@ -16,11 +17,11 @@ func TestAudienceActivityWriterReadbackReplayAndPrivateDigest(t *testing.T) {
 	journal := &audienceActivityJournal{values: map[string]segmentport.AudienceActivityHistoryReceipt{}}
 	writer := NewAudienceActivityHistoryWriter(store, journal)
 	value := activityRun(2, activityID(3))
-	first, err := writer.WriteRun(context.Background(), "run-source", digest(1), value)
+	first, err := writer.WriteRun(context.Background(), activitySource(value.SourceKeyDigest), value.SourcePayloadDigest, value)
 	if err != nil || first.Replayed || first.TargetID != 1 || len(store.runs) != 1 {
 		t.Fatalf("first write failed: receipt=%+v err=%v", first, err)
 	}
-	second, err := writer.WriteRun(context.Background(), "run-source", digest(1), value)
+	second, err := writer.WriteRun(context.Background(), activitySource(value.SourceKeyDigest), value.SourcePayloadDigest, value)
 	if err != nil || !second.Replayed || second.TargetID != first.TargetID || len(store.runs) != 1 {
 		t.Fatalf("replay did not read back target: receipt=%+v err=%v", second, err)
 	}
@@ -49,13 +50,16 @@ func TestAudienceActivityWriterRejectsCrossPackageParents(t *testing.T) {
 	store.runs[7] = activityRun(8, nil)
 	store.runs[7] = withAudienceActivityRunID(store.runs[7], 7)
 	writer := NewAudienceActivityHistoryWriter(store, &audienceActivityJournal{values: map[string]segmentport.AudienceActivityHistoryReceipt{}})
-	if _, err := writer.WriteRun(context.Background(), "bad-version", digest(1), activityRun(2, activityID(3))); !errors.Is(err, segmentport.ErrAudienceActivityHistoryConflict) {
+	badVersion := activityRun(2, activityID(3))
+	if _, err := writer.WriteRun(context.Background(), activitySource(badVersion.SourceKeyDigest), badVersion.SourcePayloadDigest, badVersion); !errors.Is(err, segmentport.ErrAudienceActivityHistoryConflict) {
 		t.Fatalf("cross-package version error=%v", err)
 	}
-	if _, err := writer.WriteMemberEvent(context.Background(), "bad-run", digest(2), activityEvent(2, activityID(7), nil)); !errors.Is(err, segmentport.ErrAudienceActivityHistoryConflict) {
+	badRun := activityEvent(2, activityID(7), nil)
+	if _, err := writer.WriteMemberEvent(context.Background(), activitySource(badRun.SourceKeyDigest), badRun.SourcePayloadDigest, badRun); !errors.Is(err, segmentport.ErrAudienceActivityHistoryConflict) {
 		t.Fatalf("cross-package run error=%v", err)
 	}
-	if _, err := writer.WriteMemberEvent(context.Background(), "bad-member", digest(3), activityEvent(2, nil, activityID(5))); !errors.Is(err, segmentport.ErrAudienceActivityHistoryConflict) {
+	badMember := activityEvent(2, nil, activityID(5))
+	if _, err := writer.WriteMemberEvent(context.Background(), activitySource(badMember.SourceKeyDigest), badMember.SourcePayloadDigest, badMember); !errors.Is(err, segmentport.ErrAudienceActivityHistoryConflict) {
 		t.Fatalf("cross-package member error=%v", err)
 	}
 	if len(store.events) != 0 || len(store.runs) != 1 {
@@ -72,12 +76,28 @@ func TestAudienceActivityWriterPreservesNegativeCountsAndSourceTime(t *testing.T
 	value.DurationMS = -9
 	stamp := time.Date(2026, 8, 29, 8, 30, 0, 123456789, time.FixedZone("source", 8*60*60))
 	value.RefreshStartedAt, value.CreatedAt = stamp, stamp
-	if _, err := writer.WriteRun(context.Background(), "negative", digest(4), value); err != nil {
+	if _, err := writer.WriteRun(context.Background(), activitySource(value.SourceKeyDigest), value.SourcePayloadDigest, value); err != nil {
 		t.Fatal(err)
 	}
 	stored := store.runs[1]
 	if stored.ReturnedCount != -7 || stored.DurationMS != -9 || stored.RefreshStartedAt.Nanosecond() != 123456000 || stored.RefreshStartedAt.Location() != time.UTC {
 		t.Fatalf("historical fact changed: %+v", stored)
+	}
+}
+
+func TestAudienceActivityWriterRejectsSourceAndPayloadDriftBeforeWrite(t *testing.T) {
+	store := newAudienceActivityStore()
+	store.packages[2] = segmentport.AudienceActivityPackageReference{ID: 2}
+	value := activityRun(2, nil)
+	writer := NewAudienceActivityHistoryWriter(store, &audienceActivityJournal{values: map[string]segmentport.AudienceActivityHistoryReceipt{}})
+	if _, err := writer.WriteRun(context.Background(), activitySource(digest(4)), value.SourcePayloadDigest, value); !errors.Is(err, segmentport.ErrAudienceActivityHistoryInvalid) {
+		t.Fatalf("wrong source accepted: %v", err)
+	}
+	if _, err := writer.WriteRun(context.Background(), activitySource(value.SourceKeyDigest), digest(4), value); !errors.Is(err, segmentport.ErrAudienceActivityHistoryInvalid) {
+		t.Fatalf("wrong payload accepted: %v", err)
+	}
+	if len(store.runs) != 0 {
+		t.Fatalf("source/payload drift wrote a target: %#v", store.runs)
 	}
 }
 
@@ -91,8 +111,9 @@ func activityEvent(packageID int64, runID, memberID *int64) segmentport.Historic
 	return segmentport.HistoricalAudienceActivityMemberEvent{SourceKeyDigest: digest(5), SourcePayloadDigest: digest(6), SourceFieldDigest: digest(7), SourceID: 11, PackageHistoryID: packageID, RunHistoryID: runID, MemberHistoryID: memberID, EventType: "entered", IdentityKind: "unionid", OccurredAt: stamp, CreatedAt: stamp, PrivateDigest: digest(8)}
 }
 
-func digest(value byte) [32]byte    { var result [32]byte; result[0] = value; return result }
-func activityID(value int64) *int64 { return &value }
+func digest(value byte) [32]byte           { var result [32]byte; result[0] = value; return result }
+func activityID(value int64) *int64        { return &value }
+func activitySource(value [32]byte) string { return hex.EncodeToString(value[:]) }
 
 type audienceActivityStore struct {
 	runs     map[int64]segmentport.HistoricalAudienceActivityRun
