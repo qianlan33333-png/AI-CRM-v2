@@ -103,6 +103,13 @@ type CampaignDispatchRepository interface {
 	RecordCampaignProviderAttemptReceipt(context.Context, string, int32, CampaignDispatchProviderAttemptReceipt) error
 }
 
+// CampaignDispatchRecipientApprovalReader is the additional narrow fact
+// required by the legacy single-recipient approval action. A local approval is
+// only eligibility for a controlled dispatch; it is never a send receipt.
+type CampaignDispatchRecipientApprovalReader interface {
+	IsCampaignDispatchRecipientApproved(context.Context, int64, int64) (bool, error)
+}
+
 // CampaignDispatchReconciliationEvidence contains only the private facts a
 // protocol verifier needs. A caller-supplied digest is never evidence.
 type CampaignDispatchReconciliationEvidence struct {

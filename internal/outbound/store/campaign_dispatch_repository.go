@@ -31,6 +31,7 @@ type CampaignDispatchRepository struct {
 
 var _ outboundport.CampaignDispatchRepository = (*CampaignDispatchRepository)(nil)
 var _ outboundport.CampaignDispatchEnqueuer = (*CampaignDispatchRepository)(nil)
+var _ outboundport.CampaignDispatchRecipientApprovalReader = (*CampaignDispatchRepository)(nil)
 
 func NewCampaignDispatchRepository(pool *pgxpool.Pool) (*CampaignDispatchRepository, error) {
 	if pool == nil {
@@ -104,6 +105,35 @@ func (repository *CampaignDispatchRepository) ListCampaignDispatchCandidates(ctx
 		result[i] = outboundport.CampaignDispatchCandidate{CustomerID: row.CustomerID, StepIndex: row.StepIndex, Content: row.Content}
 	}
 	return result, nil
+}
+
+func (repository *CampaignDispatchRepository) IsCampaignDispatchRecipientApproved(ctx context.Context, handoffID, customerID int64) (bool, error) {
+	if repository == nil || handoffID < 1 || customerID < 1 {
+		return false, outbound.ErrCampaignDispatchInvalid
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+	var approved bool
+	err = tx.QueryRow(ctx, `
+SELECT EXISTS (
+  SELECT 1
+  FROM public.outbound_campaign_handoffs AS handoff
+  JOIN public.cloud_campaign_touch_plan_recipient_reviews AS review
+    ON review.plan_id = handoff.plan_id
+   AND review.campaign_code = handoff.campaign_code
+  JOIN public.outbound_campaign_handoff_customer_tasks AS task
+    ON task.handoff_id = handoff.id
+   AND task.customer_id = review.customer_id
+  WHERE handoff.id = $1
+    AND review.customer_id = $2
+    AND review.status = 'approved'
+)`, handoffID, customerID).Scan(&approved)
+	if err != nil {
+		return false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	return approved, nil
 }
 
 func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx context.Context, binding outboundport.CampaignDispatchBinding) (outboundport.CampaignDispatchBinding, error) {

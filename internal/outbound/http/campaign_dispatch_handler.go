@@ -21,6 +21,10 @@ type CampaignDispatchApplication interface {
 	ManualReconcile(context.Context, outboundapp.CampaignDispatchReconcileCommand) (outbound.CampaignDispatchSummary, error)
 }
 
+type campaignRecipientDispatchApplication interface {
+	DispatchRecipient(context.Context, outboundapp.CampaignRecipientDispatchCommand) (outbound.CampaignDispatchSummary, error)
+}
+
 func (handler *CampaignDispatchHandler) Reconciliation(writer http.ResponseWriter, request *http.Request, campaignCode, planID string) {
 	if handler == nil || handler.application == nil || request == nil || request.URL == nil || request.URL.RawQuery != "" || !outbound.ValidCampaignHandoffIdentity(campaignCode, planID) {
 		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchInvalid)
@@ -122,6 +126,54 @@ func (handler *CampaignDispatchHandler) Dispatch(writer http.ResponseWriter, req
 		return
 	}
 	summary, err := handler.application.Dispatch(request.Context(), outboundapp.CampaignDispatchCommand{CampaignCode: campaignCode, PlanID: planID, ActorID: actorID, IdempotencyKey: keys[0], ExternalGate: body.ExternalGate})
+	if err != nil {
+		writeCampaignDispatchError(writer, request, err)
+		return
+	}
+	if !outbound.ValidCampaignDispatchSummary(summary) {
+		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchUnavailable)
+		return
+	}
+	writeCampaignHandoffJSON(writer, http.StatusOK, campaignDispatchResponseOf(summary))
+}
+
+// DispatchRecipient is a leaf transport for the single-recipient compatibility
+// action. Central route and OpenAPI registration remain deliberately separate.
+func (handler *CampaignDispatchHandler) DispatchRecipient(writer http.ResponseWriter, request *http.Request, campaignCode, planID string, customerID int64) {
+	if handler == nil || handler.application == nil {
+		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchUnavailable)
+		return
+	}
+	application, ok := handler.application.(campaignRecipientDispatchApplication)
+	if !ok || request == nil || request.URL == nil || request.URL.RawQuery != "" ||
+		!outbound.ValidCampaignHandoffIdentity(campaignCode, planID) || customerID < 1 {
+		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchInvalid)
+		return
+	}
+	actorID, err := campaignHandoffActor(request.Context(), authport.CapabilityOperationsManage)
+	if err != nil {
+		writeCampaignDispatchError(writer, request, err)
+		return
+	}
+	keys := request.Header.Values("Idempotency-Key")
+	if len(keys) != 1 || len(keys[0]) < 16 || len(keys[0]) > 128 || strings.TrimSpace(keys[0]) != keys[0] {
+		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchInvalid)
+		return
+	}
+	var body struct {
+		ExternalGate bool `json:"external_gate"`
+	}
+	request.Body = http.MaxBytesReader(writer, request.Body, MaximumCampaignHandoffRequestBytes)
+	decoder := json.NewDecoder(request.Body)
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&body) != nil || decoder.Decode(&struct{}{}) != io.EOF {
+		writeCampaignDispatchError(writer, request, outbound.ErrCampaignDispatchInvalid)
+		return
+	}
+	summary, err := application.DispatchRecipient(request.Context(), outboundapp.CampaignRecipientDispatchCommand{
+		CampaignCode: campaignCode, PlanID: planID, CustomerID: customerID, ActorID: actorID,
+		IdempotencyKey: keys[0], ExternalGate: body.ExternalGate,
+	})
 	if err != nil {
 		writeCampaignDispatchError(writer, request, err)
 		return
