@@ -110,8 +110,13 @@ func (importer *CustomerTimelineHistoryImporter) Import(ctx context.Context, arc
 		return CustomerTimelineHistoryImportResult{}, err
 	}
 	consumer := &customerTimelineImportConsumer{importer: importer, archiveRunID: archiveRunID}
-	if _, err := timeline.Stream(ctx, importer.archive, archiveRunID, sourceHMACKey, customerTimelineNoopVerifier{}, consumer); err != nil {
+	summary, err := timeline.Stream(ctx, importer.archive, archiveRunID, sourceHMACKey, customerTimelineNoopVerifier{}, consumer)
+	if err != nil {
 		return CustomerTimelineHistoryImportResult{}, err
+	}
+	processed := int64(consumer.result.Imported + consumer.result.Quarantined + consumer.result.Replayed)
+	if summary.Rows < 1 || processed != summary.Rows {
+		return CustomerTimelineHistoryImportResult{}, ErrConflict
 	}
 	return consumer.result, nil
 }

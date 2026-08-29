@@ -129,6 +129,15 @@ func TestCustomerTimelineHistoryFailsClosedBeforeWriteAndOnTargetDrift(t *testin
 	}
 }
 
+func TestCustomerTimelineHistoryImportRejectsEmptyArchive(t *testing.T) {
+	state := newCustomerTimelineHistoryState()
+	importer := customerTimelineHistoryImporter(t, &customerTimelineHistoryReady{}, &customerTimelineHistoryArchive{}, state, customerTimelineHistoryResolver{})
+	result, err := importer.Import(context.Background(), "timeline-run", customerTimelineHistoryTestKey)
+	if !errors.Is(err, ErrConflict) || result != (CustomerTimelineHistoryImportResult{}) || len(state.targets) != 0 || len(state.terminals) != 0 {
+		t.Fatalf("empty archive accepted: result=%#v targets=%d terminals=%d err=%v", result, len(state.targets), len(state.terminals), err)
+	}
+}
+
 func TestCustomerTimelineHistoryReconcileRechecksVerifiedUnionIDBinding(t *testing.T) {
 	state := newCustomerTimelineHistoryState()
 	resolver := customerTimelineHistoryResolver{"verified": customerTimelineHistoryInt64Pointer(17)}
