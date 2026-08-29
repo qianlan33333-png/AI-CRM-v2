@@ -53,12 +53,12 @@ case "${1:-}" in
   --check=compose-config) ;;
   --check=release) [[ "$*" = *"--expected-sha=${AICRM_FINAL_TEST_SHA:?}"* ]] ;;
   --stop=app,api,worker) ;;
-  --check=schema) [[ "$*" = *--expect=135* || "$*" = *--expect=141* ]] ;;
+  --check=schema) [[ "$*" = *--expect=135* || "$*" = *--expect=142* ]] ;;
   --check=external-effects) [[ "$*" = *--expect=0* ]] ;;
   --check=archive) [[ "$*" = *"--expected-sha=${AICRM_FINAL_TEST_ARCHIVE_SHA:?}"* ]] ;;
   --check=journals-empty) [[ "${AICRM_FINAL_TEST_FAIL_CHECK:-}" != journals-empty ]] ;;
   --check=stopped) [[ "$*" = *--services=app,api,worker* ]] ;;
-  --from=135) [[ "$*" = *--to=141* ]] ;;
+  --from=135) [[ "$*" = *--to=142* ]] ;;
   --mode=import) [[ "${AICRM_FINAL_TEST_FAIL_DOMAIN:-}" = '' || "$*" != *"--domain=$AICRM_FINAL_TEST_FAIL_DOMAIN"* ]] ;;
   --mode=reconcile) ;;
   --mode=final-reconcile) [[ "$*" = *--domain=final* && "$*" = *--dm01-run-id=1* && "$*" = *--usage-recovery-file=* ]] ;;
@@ -87,7 +87,7 @@ if run_apply "${arguments[@]}" >"$fixture/compose-control.log" 2>&1; then fail '
 grep -Fq 'runtime environment must not set COMPOSE_*' "$fixture/compose-control.log" || fail 'runtime COMPOSE_* rejection changed'
 sed -i.bak '$d' "$runtime_env" && rm -f "$runtime_env.bak"
 AICRM_WECOM_OUTBOUND_ENABLED=true run_apply "${arguments[@]}" >"$fixture/success.log"
-grep -Fq 'PASS (schema=135->141 domains=40; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
+grep -Fq 'PASS (schema=135->142 domains=40; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
 [[ "$(grep -c '^--mode=import ' "$log")" = 40 ]] || fail 'did not import exactly 40 domains'
 [[ "$(grep -c '^--mode=reconcile ' "$log")" = 36 ]] || fail 'did not reconcile every manifest package'
 [[ "$(grep -c '^--mode=final-reconcile ' "$log")" = 1 ]] || fail 'final reconcile was not invoked exactly once'
@@ -99,8 +99,8 @@ final_line="$(grep -n '^--mode=final-reconcile ' "$log" | cut -d: -f1)"
 last_effect_line="$(grep -n '^--check=external-effects ' "$log" | tail -1 | cut -d: -f1)"
 start_line="$(grep -n '^--start=api,worker ' "$log" | cut -d: -f1)"
 [[ "$final_line" -lt "$last_effect_line" && "$last_effect_line" -lt "$start_line" ]] || fail 'post-reconcile effects gate must precede startup'
-grep -Fqx -- "--from=135 --to=141 --runtime-env-file=$runtime_env" "$log" || fail 'Goose was not one bounded 135->141 command'
-grep -Fqx -- "--check=schema --expect=141 --runtime-env-file=$runtime_env" "$log" || fail 'post-Goose schema gate is missing'
+grep -Fqx -- "--from=135 --to=142 --runtime-env-file=$runtime_env" "$log" || fail 'Goose was not one bounded 135->142 command'
+grep -Fqx -- "--check=schema --expect=142 --runtime-env-file=$runtime_env" "$log" || fail 'post-Goose schema gate is missing'
 grep -Fqx -- "--check=journals-empty --archive-run-id=archive-final --runtime-env-file=$runtime_env" "$log" || fail 'fresh journal gate is missing'
 if grep -Fq 'target-not-live' "$log"; then fail 'a command argument leaked the target DSN'; fi
 if grep -Fq 'env-outbound=true' "$log"; then fail 'generated external switch did not override parent environment'; fi

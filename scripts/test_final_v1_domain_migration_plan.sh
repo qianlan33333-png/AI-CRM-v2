@@ -9,11 +9,11 @@ fail() {
 root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)"
 plan="$root/scripts/final_v1_domain_migration_plan.sh"
 
-[[ "$("$plan" --validate)" = 'final-v1-domain-migration-plan: PASS (schema=132->141 domains=40)' ]] ||
+[[ "$("$plan" --validate)" = 'final-v1-domain-migration-plan: PASS (schema=132->142 domains=40)' ]] ||
   fail 'baseline validation did not pass'
 rendered="$("$plan" --render)"
 grep -Fq '"from": 132' <<<"$rendered" || fail 'render omitted schema start'
-grep -Fq '"to": 141' <<<"$rendered" || fail 'render omitted schema end'
+grep -Fq '"to": 142' <<<"$rendered" || fail 'render omitted schema end'
 grep -Fq '"domain": "campaign"' <<<"$rendered" || fail 'render omitted explicit domains'
 if grep -Eq '"domain"[[:space:]]*:[[:space:]]*"all"' <<<"$rendered"; then
   fail 'render must not rely on domain=all'
