@@ -95,11 +95,18 @@ func (references *audienceActivityReferences) verifyPriorTarget(ctx context.Cont
 	if sourceID < 1 || targetID < 1 {
 		return v1domain.ErrConflict
 	}
-	key, err := v1archive.SourceKeyHMAC(references.sourceKey, strings.TrimPrefix(table, "public/"), []byte("["+strconv.FormatInt(sourceID, 10)+"]"))
+	key, err := audienceActivityParentSourceKey(references.sourceKey, table, sourceID)
 	if err != nil {
 		return v1domain.ErrConflict
 	}
 	return references.verifyReceipt(ctx, v1domain.AudienceHistoryImportVersion, table, targetTable, key, targetID, [sha256.Size]byte{})
+}
+
+func audienceActivityParentSourceKey(key []byte, table string, sourceID int64) ([sha256.Size]byte, error) {
+	if len(key) < sha256.Size || sourceID < 1 || !strings.HasPrefix(table, "public/") {
+		return [sha256.Size]byte{}, v1domain.ErrInvalidScope
+	}
+	return v1archive.SourceKeyHMAC(key, strings.TrimPrefix(table, "public/"), []byte("["+strconv.FormatInt(sourceID, 10)+"]"))
 }
 
 func (references *audienceActivityReferences) verifyCurrentTarget(ctx context.Context, table, targetTable string, source, payload [sha256.Size]byte, targetID int64) error {
