@@ -283,6 +283,48 @@ func TestBootstrapMatchesContextTokenAndWorkbenchTwoStepResult(t *testing.T) {
 	}
 }
 
+func TestBootstrapReportsSanitizedFailureStage(t *testing.T) {
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+
+	tests := []struct {
+		name         string
+		stage        string
+		breakService func(*Service)
+	}{
+		{
+			name:  "profile",
+			stage: "profile",
+			breakService: func(service *Service) {
+				service.profiles.(*profileFake).resolveErr = contactport.ErrSidebarProfileUnavailable
+			},
+		},
+		{
+			name:  "workbench",
+			stage: "workbench",
+			breakService: func(service *Service) {
+				service.workbench = failingWorkbenchReader{}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service, _ := sidebarTestService(t)
+			test.breakService(service)
+			_, err := service.Bootstrap(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
+			if !errors.Is(err, ErrUnavailable) || BootstrapFailureStage(err) != test.stage {
+				t.Fatalf("Bootstrap() error=%v stage=%q, want unavailable/%q", err, BootstrapFailureStage(err), test.stage)
+			}
+		})
+	}
+}
+
+type failingWorkbenchReader struct{}
+
+func (failingWorkbenchReader) Read(context.Context, contactport.CustomerID) (WorkbenchCounts, error) {
+	return WorkbenchCounts{}, ErrUnavailable
+}
+
 func TestUpdateProfileReportsQueuedProviderEligibleWithoutExecution(t *testing.T) {
 	service, staff := sidebarTestService(t)
 	profile := service.profiles.(*profileFake).profile
