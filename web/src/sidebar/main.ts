@@ -363,6 +363,14 @@ export class SidebarController {
         );
       }
     });
+    this.content.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        "[data-sidebar-subtab]",
+      );
+      if (!button || button.disabled) return;
+      const tab = button.dataset.sidebarSubtab;
+      if (isSidebarTab(tab)) this.activateTab(tab);
+    });
     this.content.addEventListener("input", (event) => {
       const target = event.target as HTMLInputElement | HTMLTextAreaElement;
       const field = target.dataset.profileField;
@@ -900,11 +908,8 @@ export class SidebarController {
     const definitions = [
       ["profile", "核心画像"],
       ["questionnaires", `问卷 ${wb?.questionnaire_count ?? ""}`],
-      ["timeline", "时间线"],
-      ["chat_activity", "聊天活动 · V2 补充"],
       ["products", "商品"],
       ["orders", `订单 ${wb?.order_count ?? ""}`],
-      ["periodic_orders", `周期订单 ${wb?.periodic_order_count ?? ""}`],
       ["coupons", "优惠券"],
       ["materials", `素材 ${wb?.material_count ?? ""}`],
       ["other_staff_messages", "其他客服聊天"],
@@ -916,7 +921,7 @@ export class SidebarController {
         button.dataset.sidebarTab = key;
         const supported = isSidebarTab(key);
         button.disabled = !ready || !supported;
-        if (key === this.activeTab) {
+        if (key === this.topLevelTab(this.activeTab)) {
           button.classList.add("active");
         }
         if (supported && ready) {
@@ -967,7 +972,34 @@ export class SidebarController {
                     : this.activeTab === "products"
                       ? this.renderProductsPanel()
                       : this.renderMaterialsPanel();
-    this.content.replaceChildren(this.renderOverview(workbench), panel);
+    const subTabs = this.renderSecondaryTabs();
+    this.content.replaceChildren(...(subTabs ? [subTabs, panel] : [panel]));
+  }
+
+  private topLevelTab(tab: SidebarTab): SidebarTab {
+    if (tab === "timeline" || tab === "chat_activity") return "profile";
+    if (tab === "periodic_orders") return "orders";
+    return tab;
+  }
+
+  private renderSecondaryTabs(): HTMLElement | null {
+    const top = this.topLevelTab(this.activeTab);
+    const definitions = top === "profile"
+      ? [["profile", "基础信息"], ["timeline", "用户时间线"], ["chat_activity", "聊天活动"]] as const
+      : top === "orders"
+        ? [["orders", "普通订单"], ["periodic_orders", "周期订单"]] as const
+        : null;
+    if (!definitions) return null;
+    const nav = createElement(this.doc, "div", `secondary-tabs${top === "profile" ? " profile-tabs" : ""}`);
+    for (const [key, label] of definitions) {
+      const button = createElement(this.doc, "button", "secondary-tab", label);
+      button.type = "button";
+      button.dataset.sidebarSubtab = key;
+      if (this.activeTab === key) button.classList.add("active");
+      markBound(button);
+      nav.append(button);
+    }
+    return nav;
   }
 
   private renderOverview(workbench: SidebarWorkbenchResponse): HTMLElement {

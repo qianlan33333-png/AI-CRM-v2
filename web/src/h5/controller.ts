@@ -1,6 +1,9 @@
-import { PageBase, type Vals } from '../shared/ui/runtime';
+import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import { readPublicSurvey, readSurveyResult, submitSurvey } from '../api/public-survey';
 import type { PublicSurveyDefinition, PublicSurveyQuestion, PublicSurveyResult, PublicSurveySubmissionAnswer } from '../api/generated/health';
+import { toast } from '../shared/ui/feedback';
+
+const ACCENT = '#3370ff';
 
 const validID = (value: number): boolean => Number.isSafeInteger(value) && value > 0;
 const validToken = (value: string): boolean => /^[A-Za-z0-9_-]{43}$/.test(value);
@@ -135,12 +138,43 @@ export class H5Controller extends PageBase {
     this.refresh();
   }
 
+  private optionVals(question: PublicSurveyQuestion | undefined): Vals[] {
+    if (!question) return [];
+    return question.options.map((option) => {
+      const selected = (this.answers.get(question.id) || []).includes(option.id);
+      const style: StyleObj = {
+        display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '13px 14px', marginBottom: '10px',
+        borderRadius: '12px', cursor: 'pointer', color: '#1F2329',
+        background: selected ? '#F2F7FF' : '#F7F8FA',
+        border: selected ? `1px solid ${ACCENT}` : '1px solid transparent',
+        boxShadow: selected ? '0 0 0 3px rgba(51,112,255,.08)' : 'none',
+      };
+      const mark: StyleObj = {
+        width: '18px', height: '18px', flex: 'none', marginTop: '2px', background: '#fff',
+        borderRadius: question.type === 'multi_choice' ? '5px' : '50%',
+        border: selected ? `5px solid ${ACCENT}` : '1px solid #C4C7CC',
+      };
+      return { text: option.option_text, style, dot: mark, box: mark, pick: () => this.select(question, option.id) };
+    });
+  }
+
+  private blocked(action: string): void {
+    toast(`后端能力未就绪：${action}不可执行；未发起任何外部请求`, true);
+  }
+
   renderVals(): Vals {
     const definition = this.definition;
     const stepMode = definition?.answer_display_mode === 'one_by_one';
     const questions = definition?.questions || [];
     const visible = stepMode ? questions.slice(this.questionIndex, this.questionIndex + 1) : questions;
     const ready = !!definition && !this.loading && !this.submitted;
+    const firstSingle = questions.find((question) => question.type === 'single_choice');
+    const firstMulti = questions.find((question) => question.type === 'multi_choice');
+    const current = visible[0];
+    const legacyNext = (): void => {
+      if (!definition || this.questionIndex < questions.length - 1) this.move(1);
+      else void this.submit();
+    };
     return {
       loading: this.loading, error: this.error, ready, result: this.result,
       submitted: this.submitted, resultPath: `result.html#result_token=${encodeURIComponent(this.resultToken)}`,
@@ -164,7 +198,23 @@ export class H5Controller extends PageBase {
             pick: () => this.select(question, option.id) };
         }),
       })),
-      act: { submit: () => { void this.submit(); }, previous: () => this.move(-1), next: () => this.move(1), retry: () => { void this.init(); } },
+      opts: {
+        single: this.optionVals(firstSingle),
+        multi: this.optionVals(firstMulti),
+        step: this.optionVals(current),
+        blank: this.optionVals(current),
+      },
+      qProgressText: stepMode && questions.length ? `第 ${this.questionIndex + 1} / ${questions.length} 题` : '尚未读取题目',
+      qPct: stepMode && questions.length ? Math.round(((this.questionIndex + 1) / questions.length) * 100) : 0,
+      qTitle: current?.title || '问卷题目',
+      dims: [],
+      act: {
+        submit: () => { void this.submit(); }, previous: () => this.move(-1), next: () => this.move(1), retry: () => { void this.init(); },
+        authContinue: () => this.blocked('H5 微信授权'), submitAll: () => { void this.submit(); }, prevQ: () => this.move(-1), nextQ: legacyNext,
+        viewCourses: () => this.blocked('课程推荐'), viewDetail: () => this.blocked('完整测评报告'),
+        signup: () => this.blocked('报名'), pay: () => this.blocked('支付'), renew: () => this.blocked('续费'),
+        addWx: () => this.blocked('添加企微账号'), closeQr: () => this.blocked('二维码关闭后的会员状态跳转'),
+      },
     };
   }
 }

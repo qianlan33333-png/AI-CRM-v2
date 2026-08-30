@@ -32,12 +32,30 @@ const RC_STATUS: Record<AiRecipientStatus, [string, Tone]> = {
 export async function mountAiAssistant(root: HTMLElement, api: AdminApi, opts: AiMountOpts): Promise<void> {
   root.className = 'labs sec-ai';
   if (api.mode === 'http') {
-    root.innerHTML = '<div class="card" style="margin:24px;padding:32px;text-align:center;color:#8F959E"><strong style="display:block;color:#1F2329;margin-bottom:8px">后端能力未就绪</strong>当前 AI 审阅壳的 ai-assist DTO 与 Cloud Orchestrator campaigns / touch-plans / review 契约不等价，页面未发送请求。</div>';
+    renderBlocked(root, opts);
     return;
   }
   const db = await api.loadDb({ page: opts.view === 'list' ? 'ai' : 'aiDetail', id: opts.id == null ? undefined : String(opts.id) });
   if (opts.view === 'list') renderList(root, db.aiPlans);
   else void renderDetail(root, api, db.aiPlans, opts.id);
+}
+
+function renderBlocked(root: HTMLElement, opts: AiMountOpts): void {
+  const detail = opts.view === 'detail';
+  root.innerHTML = `
+    <div class="crumb">客户管理后台 / 运营 / <b>AI 助手${detail ? ' / 计划详情' : ''}</b></div>
+    <div class="page-head"><div><div class="page-title">AI 助手 · 运营计划审阅</div><div class="page-desc">保留原审阅工作区；仅在 DTO 语义可证明等价后开放操作</div></div></div>
+    <div class="card" data-backend-blocked style="margin-bottom:14px;padding:14px 16px;border-color:#F5D6A7;background:#FFF9F0;color:#8A4B08;font-size:13px;line-height:20px">
+      <strong style="display:block;color:#1F2329;margin-bottom:4px">后端能力未就绪</strong>
+      当前 AI 审阅壳的 ai-assist DTO 与 Cloud Orchestrator campaigns / touch-plans / review 契约不等价。页面未读取演示计划、未发送请求，也未开放审批。
+    </div>
+    ${detail ? `
+      <div class="card" style="padding:18px"><div class="muted">计划详情</div><h2 style="margin:8px 0 4px;font-size:18px">无法读取该计划</h2><p class="muted" style="margin:0">缺少可验证的计划与收件人映射。</p><a href="ai.html" class="btn" style="display:inline-flex;margin-top:14px;text-decoration:none">返回计划列表</a></div>
+    ` : `
+      <div class="card toolbar"><input class="input" disabled placeholder="搜索计划名称、发送人" style="width:280px"><select class="select" disabled><option>全部状态</option></select><button class="btn" disabled>刷新</button></div>
+      <div class="stat-row"><div class="card stat"><div class="stat-l">待审批计划</div><div class="stat-v">—</div></div><div class="card stat"><div class="stat-l">预计触达</div><div class="stat-v">—</div></div><div class="card stat"><div class="stat-l">执行中计划</div><div class="stat-v">—</div></div><div class="card stat"><div class="stat-l">人员</div><div class="stat-v">—</div></div></div>
+      <div class="plan-head-row"><div>计划名称</div><div>创建人 / 发送人</div><div>更新时间</div><div>目标人数</div><div>状态</div><div>查看详情</div></div><div class="card" style="padding:40px;text-align:center;color:#8F959E">没有可安全展示的计划</div>
+    `}`;
 }
 
 /* ================= 计划列表 ================= */

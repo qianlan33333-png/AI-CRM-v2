@@ -15,6 +15,8 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
 
+fs.rmSync(DIST, { recursive: true, force: true });
+
 const read = (p) => fs.readFileSync(p, 'utf8');
 const write = (p, s) => {
   fs.mkdirSync(path.dirname(p), { recursive: true });
@@ -191,7 +193,7 @@ function topIndex() {
 <body>
 <div class="ix-wrap">
   <h1 class="ix-title">AI-CRM 全新前端 · TypeScript 实现</h1>
-  <p class="ix-sub">管理后台 ${registry.screens.length} 屏 / 企微侧边栏 / 用户端 H5 ${h5Registry.length} 屏 · mock 数据会话级写穿 · 接 API 即可上线</p>
+  <p class="ix-sub">管理后台 ${registry.screens.length} 屏 / 企微侧边栏 / 用户端 H5 ${h5Registry.length} 屏 · 真实 API 接入 · 缺失能力显式关闭</p>
   <div class="ix-grid">
     <a class="ix-card" href="admin/customers.html"><h2>管理后台 →</h2><p>${navCount} 个一级页 + ${subCount} 个二级页 · 雷达 / AI 助手 / 漏斗全真交互</p></a>
     <a class="ix-card" href="sidebar/index.html"><h2>企微侧边栏 →</h2><p>销售工作台 · 客户画像 / 快捷话术 / 跟进记录</p></a>

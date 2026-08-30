@@ -1366,7 +1366,7 @@ console.log('admin/customerDetail.html（安全 Customer360）');
 {
   const dom = await loadPage('admin/customerDetail.html', { id: 1 });
   const d = dom.window.document;
-  ok('Customer360 渲染安全档案', d.body.textContent.includes('李思远') && d.body.textContent.includes('安全 Customer360') && d.body.textContent.includes('渠道 ID'));
+  ok('Customer360 渲染原壳客户档案', d.body.textContent.includes('李思远') && d.body.textContent.includes('客户档案') && d.body.textContent.includes('渠道 ID'));
   ok('Customer360 渲染标签与时间线摘要', d.querySelectorAll('[data-customer-not-found]').length === 0 && d.querySelectorAll('tbody tr').length === 2 && d.body.textContent.includes('owner.assigned'));
   ok('Customer360 聊天只展示零正文摘要', d.querySelectorAll('[data-customer-not-found]').length === 0 && d.body.textContent.includes('消息类型：text') && d.body.textContent.includes('消息类型：image') && d.body.textContent.includes('仅展示类型和时间，不展示正文'));
   const rendered = d.querySelector('#stage')?.textContent || '';
@@ -1631,7 +1631,7 @@ console.log('admin/groupops.html（本地计划与目录边界）');
   const dom = await loadPage('admin/groupops.html');
   const d = dom.window.document;
   ok('群运营计划页显示本地计划和本地队列口径', d.body.textContent.includes('群运营计划') && d.body.textContent.includes('本地队列'));
-  ok('当前计划页保留功能并提供只读历史入口', !!d.querySelector('a[href="groupops.html?history=1"]'));
+  ok('当前计划页保留功能且迁移历史不占用主壳入口', !d.querySelector('a[href="groupops.html?history=1"]'));
   ok('运营成员选项展示可信数值 staff_id，目录与 Provider 验收分开', d.body.textContent.includes('运营成员选项') && d.body.textContent.includes('staff_id=') && ['S06-031', 'S06-032'].every((id) => d.body.textContent.includes(id)) && d.body.textContent.includes('真实 Provider 配置与回执仍需单独验收'));
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录'));
   await sleep(30);
@@ -1880,7 +1880,7 @@ console.log('admin/spProducts.html（真实周期商品分享）');
   click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '分享'));
   await sleep(40);
   const test = dom.window.__serviceProductHttpTest;
-  ok('当前周期商品列表提供独立 V1 历史只读入口', !!d.querySelector('a[href="spProducts.html?history=1"]'));
+  ok('当前周期商品列表不把迁移历史暴露为主壳入口', !d.querySelector('a[href="spProducts.html?history=1"]'));
   const expected = 'http://localhost/p/service_period/8';
   const svg = d.querySelector('#shareQrBox svg');
   ok('周期商品分享只读取真实 OpenAPI 投影', test.calls.some((call) => call.path === '/api/admin/service-period-products/8/share' && call.method === 'GET'));
@@ -1947,7 +1947,7 @@ console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享失�
 console.log('admin/coupons.html?history=1（真实历史定义只读分页）');
 {
   const regular = await loadPage('admin/coupons.html');
-  ok('原优惠券管理保留新建并提供独立历史入口', regular.window.document.querySelector('a[href="coupons.html?history=1"]')?.textContent.includes('只读') && [...regular.window.document.querySelectorAll('button')].some((button) => button.textContent.includes('新建优惠券')));
+  ok('原优惠券管理保留新建且迁移历史不占主壳入口', !regular.window.document.querySelector('a[href="coupons.html?history=1"]') && [...regular.window.document.querySelectorAll('button')].some((button) => button.textContent.includes('新建优惠券')));
   regular.window.close();
   const dom = await loadPage('admin/coupons.html', { q: 'history=1', couponHistoryHttp: {} });
   const d = dom.window.document;
@@ -2112,7 +2112,7 @@ console.log('admin/channelForm.html?id=49（HTTP 历史停用渠道安全默认�
 
 console.log('admin/channelForm.html?id=49（V1 归档历史只读分页）');
 {
-  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true });
+  const dom = await loadPage('admin/channelForm.html', { q: 'id=49&history=1', channelHttp: true });
   await sleep(80);
   const d = dom.window.document;
   const calls = dom.window.__channelHttpTest.calls;
@@ -2129,7 +2129,7 @@ console.log('admin/channelForm.html?id=49（V1 归档历史只读分页）');
 
 console.log('admin/channelForm.html?id=49（V1 归档历史读取失败关闭）');
 {
-  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true, channelHistoryHttpFailure: true });
+  const dom = await loadPage('admin/channelForm.html', { q: 'id=49&history=1', channelHttp: true, channelHistoryHttpFailure: true });
   await sleep(80);
   const d = dom.window.document;
   click(dom, d.querySelector('#channelHistoryLoad'));
@@ -2140,7 +2140,7 @@ console.log('admin/channelForm.html?id=49（V1 归档历史读取失败关闭）
 
 console.log('admin/channelForm.html?id=49（V1 归档历史空态）');
 {
-  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true, channelHistoryEmpty: true });
+  const dom = await loadPage('admin/channelForm.html', { q: 'id=49&history=1', channelHttp: true, channelHistoryEmpty: true });
   await sleep(80);
   const d = dom.window.document;
   click(dom, d.querySelector('#channelHistoryLoad'));
@@ -2162,7 +2162,7 @@ console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
   const dom = await loadPage('admin/ownerMig.html');
   const d = dom.window.document;
   const csv = d.querySelector('#ownerMigCsv');
-  ok('当前负责人迁移页提供独立 V1 历史只读入口', d.querySelector('a[href="ownerMig.html?contact_history=1"]')?.textContent.includes('历史'));
+  ok('当前负责人迁移主壳不暴露重复计数的旧历史导航', !d.querySelector('a[href="ownerMig.html?contact_history=1"]'));
   ok('接受 CSV/XLSX 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && csv?.getAttribute('accept')?.includes('.xlsx') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
   ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
 
@@ -2341,7 +2341,7 @@ for (const scenario of [
 for (const page of ['auth', 'loading', 'error', 'done', 'signup', 'active', 'expired', 'pay', 'qr']) {
   const dom = await loadPage(`h5/${page}.html`, { h5Http: {} });
   const d = dom.window.document;
-  ok(`H5 ${page} 明确blocked，不显示假成功或调用Provider`, !!d.querySelector('[data-h5-blocked]') && d.body.textContent.includes('后端能力未就绪') && !d.querySelector('#screen button') && dom.window.__h5HttpTest.calls.length === 0 && !d.body.textContent.includes('诊断报告已生成'));
+  ok(`H5 ${page} 保留原壳但明确blocked，不调用Provider`, !!d.querySelector('[data-h5-blocked]') && d.body.textContent.includes('后端能力未就绪') && [...d.querySelectorAll('#screen button')].every((button) => button.disabled) && dom.window.__h5HttpTest.calls.length === 0 && !d.body.textContent.includes('诊断报告已生成'));
   dom.window.close();
 }
 
@@ -2350,7 +2350,7 @@ console.log('sidebar/index.html');
 {
   const dom = await loadPage('sidebar/index.html');
   const d = dom.window.document;
-  ok('侧边栏渲染（含 WX 顶栏）', d.body.textContent.includes('WX'));
+  ok('侧边栏渲染 375px 高密度壳', d.querySelector('#sidebar-workbench-root.sidebar-shell') && d.querySelector('.customer-card') && [...d.querySelectorAll('style')].some((style) => style.textContent.includes('width:min(375px,100vw)')));
   dom.window.close();
 }
 
@@ -2360,11 +2360,9 @@ for (const scenario of ['success', 'empty', 'error']) {
   const d = dom.window.document;
   const questionnaireTab = d.querySelector('[data-sidebar-tab="questionnaires"]');
   ok('workbench ready 后问卷 tab 可用', questionnaireTab && !questionnaireTab.disabled);
-  ok('真实 Sidebar tabs 可用、未接入能力仍关闭',
-    !d.querySelector('[data-sidebar-tab="timeline"]').disabled &&
-    !d.querySelector('[data-sidebar-tab="chat_activity"]').disabled &&
+  ok('Sidebar 保持 7 个一级 tab，未接入优惠券仍关闭',
+    d.querySelectorAll('[data-sidebar-tab]').length === 7 &&
     !d.querySelector('[data-sidebar-tab="orders"]').disabled &&
-    !d.querySelector('[data-sidebar-tab="periodic_orders"]').disabled &&
     !d.querySelector('[data-sidebar-tab="materials"]').disabled &&
     !d.querySelector('[data-sidebar-tab="products"]').disabled &&
     !d.querySelector('[data-sidebar-tab="other_staff_messages"]').disabled &&
@@ -2395,7 +2393,8 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
     dom.window.__sidebarTest.phoneBody?.mobile === '+8613800138000' &&
     dom.window.__sidebarTest.phoneKey?.startsWith('sidebar-phone-'));
 
-  click(dom, d.querySelector('[data-sidebar-tab="timeline"]'));
+  click(dom, d.querySelector('[data-sidebar-tab="profile"]'));
+  click(dom, d.querySelector('[data-sidebar-subtab="timeline"]'));
   await sleep(30);
   ok('时间线只展示安全事件元数据',
     d.querySelectorAll('[data-timeline-event-id]').length === 1 &&
@@ -2407,7 +2406,7 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
   await sleep(30);
   ok('时间线使用 opaque cursor 加载更多', d.querySelectorAll('[data-timeline-event-id]').length === 2);
 
-  click(dom, d.querySelector('[data-sidebar-tab="chat_activity"]'));
+  click(dom, d.querySelector('[data-sidebar-subtab="chat_activity"]'));
   await sleep(30);
   ok('聊天活动独立标注 V2 补充能力且不展示正文',
     d.querySelector('[data-sidebar-capability="v2-supplement"]')?.textContent.includes('不计 LEGACY-S05-028 销项') &&
@@ -2433,7 +2432,7 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
     orderDetail?.textContent.includes('商品编码 course-1') &&
     !orderDetail?.textContent.includes('/api/admin/orders/'));
 
-  click(dom, d.querySelector('[data-sidebar-tab="periodic_orders"]'));
+  click(dom, d.querySelector('[data-sidebar-subtab="periodic_orders"]'));
   await sleep(30);
   ok('周期订单渲染 canonical member 与版本',
     d.querySelectorAll('[data-periodic-member-ref]').length === 1 &&
@@ -2497,7 +2496,15 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
   const empty = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=empty' });
   const emptyDoc = empty.window.document;
   for (const tab of ['timeline', 'chat_activity', 'orders', 'periodic_orders', 'products', 'materials']) {
-    click(empty, emptyDoc.querySelector(`[data-sidebar-tab="${tab}"]`));
+    if (tab === 'timeline' || tab === 'chat_activity') {
+      click(empty, emptyDoc.querySelector('[data-sidebar-tab="profile"]'));
+      click(empty, emptyDoc.querySelector(`[data-sidebar-subtab="${tab}"]`));
+    } else if (tab === 'periodic_orders') {
+      click(empty, emptyDoc.querySelector('[data-sidebar-tab="orders"]'));
+      click(empty, emptyDoc.querySelector('[data-sidebar-subtab="periodic_orders"]'));
+    } else {
+      click(empty, emptyDoc.querySelector(`[data-sidebar-tab="${tab}"]`));
+    }
     await sleep(30);
     ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : tab === 'products' ? '暂无可分享的已启用商品' : '暂无匹配素材'));
   }
@@ -2505,10 +2512,12 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
 
   const failed = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=error' });
   const failedDoc = failed.window.document;
-  click(failed, failedDoc.querySelector('[data-sidebar-tab="timeline"]'));
+  click(failed, failedDoc.querySelector('[data-sidebar-tab="profile"]'));
+  click(failed, failedDoc.querySelector('[data-sidebar-subtab="timeline"]'));
   await sleep(30);
   ok('时间线失败态提供重试', failedDoc.body.textContent.includes('时间线读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-timeline"]'));
-  click(failed, failedDoc.querySelector('[data-sidebar-tab="periodic_orders"]'));
+  click(failed, failedDoc.querySelector('[data-sidebar-tab="orders"]'));
+  click(failed, failedDoc.querySelector('[data-sidebar-subtab="periodic_orders"]'));
   await sleep(30);
   ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
   failed.window.close();

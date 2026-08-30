@@ -80,7 +80,7 @@
                 <sc-if value="{{ channelFormPage.providerLinks.receipt.canReconcile }}"><div style="padding:10px 12px;border:1px solid #F5D6A7;border-radius:6px;background:#FFF9F0;display:grid;grid-template-columns:1fr 1fr;gap:9px"><label style="display:grid;gap:5px">回执 ID<input id="providerLinkReceiptId" value="{{ channelFormPage.providerLinks.receipt.id }}"></label><label style="display:grid;gap:5px">Provider 回读结论<select id="providerLinkResolution"><option value="provider_applied">已落地</option><option value="provider_not_applied">未落地</option></select></label><label style="grid-column:1/-1;display:grid;gap:5px">证据 SHA-256<input id="providerLinkEvidenceDigest" placeholder="64 位小写十六进制"></label><button onClick="{{ channelFormPage.providerLinks.reconcile }}" style="width:max-content">提交显式对账</button></div></sc-if>
               </div>
             </div>
-            <sc-if value="{{ channelFormPage.history.available }}"><div style="max-width:1100px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+            <sc-if value="{{ channelFormPage.history.visible }}"><div style="max-width:1100px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
               <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">V1 历史（只读）</div>
               <div style="padding:14px 16px;display:grid;gap:10px;font-size:12px;color:#646A73">
                 <div>仅显示已归档的入渠与客服快照；不代表当前客户归属、员工权限或企微 Provider 效果。客服源时间不含时区。</div>

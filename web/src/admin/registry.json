@@ -3,10 +3,10 @@
     "automation",
     "cycles",
     "groupops",
-    "campaigns",
     "channels",
     "ai",
     "customers",
+    "funnel",
     "questionnaires",
     "radar",
     "tags",
@@ -196,12 +196,12 @@
     },
     {
       "key": "campaigns",
-      "num": 36,
-      "title": "Campaign 审核（一级）",
-      "label": "Campaign 审核",
-      "level": "一级",
-      "nav": "campaigns",
-      "isNav": true
+      "num": 0,
+      "title": "Cloud Campaign 工作区（V2 隐藏路由）",
+      "label": "Cloud Campaign 工作区",
+      "level": "扩展",
+      "nav": "automation",
+      "isNav": false
     },
     {
       "key": "ai",
@@ -210,6 +210,15 @@
       "label": "AI 助手 · 运营计划审阅",
       "level": "一级",
       "nav": "ai",
+      "isNav": true
+    },
+    {
+      "key": "funnel",
+      "num": 20,
+      "title": "漏斗 / 数据看板（一级）",
+      "label": "漏斗 / 数据看板",
+      "level": "一级",
+      "nav": "funnel",
       "isNav": true
     },
     {
