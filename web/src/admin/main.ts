@@ -38,6 +38,7 @@ import { mountOutboundTaskHistory } from './sections/outboundTaskHistory';
 import { mountWeComContactHistory } from './sections/wecomContactHistory';
 import { mountInvalidSourceHistory } from './sections/invalidSourceHistory';
 import { mountDeferredIdentityHistory } from './sections/deferredIdentityHistory';
+import { mountAutomationAgents } from './sections/automationAgents';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -168,6 +169,18 @@ function boot(): void {
 
   /* ---- 富交互页：模块自管理反馈（toast/confirmBox 均引自 feedback.ts） ---- */
   switch (page) {
+    case 'agents':
+      if (api.mode === 'http') {
+        void mountAutomationAgents(stage, 'list').catch((error) => showLoadError(stage, error));
+        return;
+      }
+      break;
+    case 'agentEdit':
+      if (api.mode === 'http') {
+        void mountAutomationAgents(stage, 'edit').catch((error) => showLoadError(stage, error));
+        return;
+      }
+      break;
     case 'spProducts':
       if (new URLSearchParams(location.search).get('history') === '1') {
         void mountServicePeriodHistory(stage).catch((error) => showLoadError(stage, error));

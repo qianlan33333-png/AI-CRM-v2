@@ -173,6 +173,7 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 		AudienceIdentitySkippedCount: 0,
 		AudienceGroupSourceCount:     1, AudienceGroupProjectedCount: 1,
 		AudienceSourceMembers: 517, AudienceMappedMembers: 517, AudienceProjectedMembers: 517,
+		AutomationAgentSourceCount: 6, AutomationAgentProjectedCount: 6, AutomationAgentPausedCount: 6, AutomationAgentDisabledCount: 6, AutomationMaterialReferenceCount: 0,
 		TargetDigest: strings.Repeat("01", 32),
 	}
 	if err := validateFinalEditableProjectionProof(valid); err != nil {
@@ -189,6 +190,10 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 		func(value *finalEditableProjectionProof) { value.AudienceGroupProjectedCount-- },
 		func(value *finalEditableProjectionProof) { value.AudienceMappedMembers-- },
 		func(value *finalEditableProjectionProof) { value.AudienceProjectedMembers-- },
+		func(value *finalEditableProjectionProof) { value.AutomationAgentProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.AutomationAgentPausedCount-- },
+		func(value *finalEditableProjectionProof) { value.AutomationAgentDisabledCount-- },
+		func(value *finalEditableProjectionProof) { value.AutomationMaterialReferenceCount++ },
 		func(value *finalEditableProjectionProof) { value.TargetDigest = "broken" },
 	} {
 		candidate := valid

@@ -1,7 +1,7 @@
 {
   "schema": {
     "from": 132,
-    "to": 144,
+    "to": 145,
     "forbidden_hxc_objects": ["hxc_activation_funnel", "hxc_activation_broadcast"]
   },
   "scope": {
@@ -13,7 +13,7 @@
   "phases": [
     {"mode": "import", "expect": "initial terminal receipts"},
     {"mode": "reconcile", "expect": "verified immutable counts and comparison digest"},
-    {"mode": "final-project", "expect": "receipt-bound editable current Product and Audience objects"},
+    {"mode": "final-project", "expect": "receipt-bound editable current Product, Audience and disabled Automation Agent objects"},
     {"mode": "final-reconcile", "expect": "aggregate source, target count, target digest and external_effects=0 proof"}
   ],
   "domains": [

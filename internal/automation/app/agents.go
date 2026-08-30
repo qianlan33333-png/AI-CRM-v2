@@ -24,14 +24,16 @@ const (
 	maxAgentCode      = 120
 	maxPrompt         = 20_000
 	maxContentText    = 4_000
+	maxLegacyConfig   = 100_000
 	maxIdempotencyKey = 128
 )
 
 var (
-	ErrInvalidAgent     = errors.New("invalid automation agent")
-	ErrAgentNotFound    = errors.New("automation agent not found")
-	ErrAgentConflict    = errors.New("automation agent command conflict")
-	ErrAgentUnavailable = errors.New("automation agent service unavailable")
+	ErrInvalidAgent           = errors.New("invalid automation agent")
+	ErrAgentNotFound          = errors.New("automation agent not found")
+	ErrAgentConflict          = errors.New("automation agent command conflict")
+	ErrAgentUnavailable       = errors.New("automation agent service unavailable")
+	ErrAgentExecutionDisabled = errors.New("automation agent execution disabled")
 )
 
 type Receipt struct {
@@ -192,6 +194,9 @@ func (s *Service) Publish(ctx context.Context, input automationport.MutationComm
 }
 
 func (s *Service) SetStatus(ctx context.Context, input automationport.MutationCommand, status automationport.AgentStatus) (automationport.Agent, error) {
+	if status == automationport.AgentStatusActive {
+		return automationport.Agent{}, ErrAgentExecutionDisabled
+	}
 	if !validStatus(status) {
 		return automationport.Agent{}, ErrInvalidAgent
 	}
@@ -337,7 +342,7 @@ func (s *Service) appendEvent(ctx context.Context, operation string, item automa
 func normalizeCreate(item automationport.Agent, actor int64) (automationport.Agent, error) {
 	item.ID = 0
 	item.AgentName, item.AgentCode = strings.TrimSpace(item.AgentName), strings.TrimSpace(item.AgentCode)
-	if !validText(item.AgentName, maxAgentName) || item.AgentName == "" || !validCode(item.AgentCode) || !validType(item.AutomationType) || !validStatus(item.Status) {
+	if !validText(item.AgentName, maxAgentName) || item.AgentName == "" || !validCode(item.AgentCode) || !validType(item.AutomationType) || item.Status != automationport.AgentStatusPaused || item.ExecutionEnabled {
 		return automationport.Agent{}, ErrInvalidAgent
 	}
 	if !validText(item.DraftRolePrompt, maxPrompt) || !validText(item.DraftTaskPrompt, maxPrompt) {
@@ -348,6 +353,11 @@ func normalizeCreate(item automationport.Agent, actor int64) (automationport.Age
 		return automationport.Agent{}, err
 	}
 	item.FixedContentPackage = content
+	legacy, err := normalizeLegacyConfiguration(item.LegacyConfiguration)
+	if err != nil {
+		return automationport.Agent{}, err
+	}
+	item.LegacyConfiguration = legacy
 	item.DraftVersion, item.PublishedVersion = 1, 1
 	item.PublishedRolePrompt, item.PublishedTaskPrompt = item.DraftRolePrompt, item.DraftTaskPrompt
 	item.CreatedBy, item.UpdatedBy = actor, actor
@@ -372,9 +382,12 @@ func applyUpdate(item automationport.Agent, input automationport.UpdateCommand) 
 		item.DraftTaskPrompt = *input.TaskPrompt
 	}
 	if input.Status != nil {
+		if *input.Status != automationport.AgentStatusPaused {
+			return automationport.Agent{}, ErrAgentExecutionDisabled
+		}
 		item.Status = *input.Status
 	}
-	if !validText(item.AgentName, maxAgentName) || item.AgentName == "" || !validType(item.AutomationType) || !validStatus(item.Status) || !validText(item.DraftRolePrompt, maxPrompt) || !validText(item.DraftTaskPrompt, maxPrompt) {
+	if !validText(item.AgentName, maxAgentName) || item.AgentName == "" || !validType(item.AutomationType) || !validStatus(item.Status) || item.Status == automationport.AgentStatusActive || item.ExecutionEnabled || !validText(item.DraftRolePrompt, maxPrompt) || !validText(item.DraftTaskPrompt, maxPrompt) {
 		return automationport.Agent{}, ErrInvalidAgent
 	}
 	if input.FixedContentPackage != nil {
@@ -390,6 +403,13 @@ func applyUpdate(item automationport.Agent, input automationport.UpdateCommand) 
 			return automationport.Agent{}, err
 		}
 	}
+	if input.LegacyConfiguration != nil {
+		legacy, err := normalizeLegacyConfiguration(*input.LegacyConfiguration)
+		if err != nil {
+			return automationport.Agent{}, err
+		}
+		item.LegacyConfiguration = legacy
+	}
 	if item.DraftRolePrompt != before.DraftRolePrompt || item.DraftTaskPrompt != before.DraftTaskPrompt {
 		item.DraftVersion++
 	}
@@ -399,6 +419,9 @@ func applyUpdate(item automationport.Agent, input automationport.UpdateCommand) 
 func normalizeContent(content automationport.FixedContentPackage, kind automationport.AutomationType) (automationport.FixedContentPackage, error) {
 	content.ContentText = strings.TrimSpace(content.ContentText)
 	if !validText(content.ContentText, maxContentText) || (kind != automationport.AutomationTypeFixedScript && content.ContentText != "") {
+		return automationport.FixedContentPackage{}, ErrInvalidAgent
+	}
+	if len(content.ImageLibraryIDs) != 0 || len(content.MiniprogramLibraryIDs) != 0 || len(content.AttachmentLibraryIDs) != 0 || len(content.GroupInviteLibraryIDs) != 0 || len(content.DynamicMiniprogramCard) != 0 {
 		return automationport.FixedContentPackage{}, ErrInvalidAgent
 	}
 	var err error
@@ -435,6 +458,24 @@ func normalizeContent(content automationport.FixedContentPackage, kind automatio
 		content.DynamicMiniprogramCard = canonical
 	}
 	return content, nil
+}
+
+func normalizeLegacyConfiguration(raw json.RawMessage) (json.RawMessage, error) {
+	if len(raw) == 0 {
+		raw = json.RawMessage(`{}`)
+	}
+	if len(raw) > maxLegacyConfig || !json.Valid(raw) {
+		return nil, ErrInvalidAgent
+	}
+	var value map[string]json.RawMessage
+	if json.Unmarshal(raw, &value) != nil || value == nil {
+		return nil, ErrInvalidAgent
+	}
+	canonical, err := json.Marshal(value)
+	if err != nil {
+		return nil, ErrInvalidAgent
+	}
+	return canonical, nil
 }
 
 func normalIDs(values []int64, limit int) ([]int64, error) {
@@ -536,13 +577,14 @@ func validStatus(value automationport.AgentStatus) bool {
 	return value == automationport.AgentStatusActive || value == automationport.AgentStatusPaused || value == automationport.AgentStatusArchived
 }
 func validPersisted(item automationport.Agent) bool {
-	return item.ID > 0 && item.CreatedBy > 0 && item.UpdatedBy > 0 && !item.CreatedAt.IsZero() && !item.UpdatedAt.IsZero() && item.DraftVersion >= 1 && item.PublishedVersion >= 1 && item.PublishedVersion <= item.DraftVersion && validCode(item.AgentCode) && validType(item.AutomationType) && validStatus(item.Status)
+	_, legacyErr := normalizeLegacyConfiguration(item.LegacyConfiguration)
+	return item.ID > 0 && item.CreatedBy > 0 && item.UpdatedBy > 0 && !item.CreatedAt.IsZero() && !item.UpdatedAt.IsZero() && item.DraftVersion >= 1 && item.PublishedVersion >= 1 && item.PublishedVersion <= item.DraftVersion && validCode(item.AgentCode) && validType(item.AutomationType) && validStatus(item.Status) && item.Status != automationport.AgentStatusActive && !item.ExecutionEnabled && legacyErr == nil
 }
 func validVisible(item automationport.Agent) bool {
 	return validPersisted(item) && item.Status != automationport.AgentStatusArchived
 }
 func sameConfig(a, b automationport.Agent) bool {
-	return a.AgentName == b.AgentName && a.AgentCode == b.AgentCode && a.AutomationType == b.AutomationType && a.Status == b.Status && a.DraftRolePrompt == b.DraftRolePrompt && a.DraftTaskPrompt == b.DraftTaskPrompt && a.PublishedRolePrompt == b.PublishedRolePrompt && a.PublishedTaskPrompt == b.PublishedTaskPrompt && a.DraftVersion == b.DraftVersion && a.PublishedVersion == b.PublishedVersion && reflect.DeepEqual(a.FixedContentPackage, b.FixedContentPackage)
+	return a.AgentName == b.AgentName && a.AgentCode == b.AgentCode && a.AutomationType == b.AutomationType && a.Status == b.Status && a.ExecutionEnabled == b.ExecutionEnabled && a.DraftRolePrompt == b.DraftRolePrompt && a.DraftTaskPrompt == b.DraftTaskPrompt && a.PublishedRolePrompt == b.PublishedRolePrompt && a.PublishedTaskPrompt == b.PublishedTaskPrompt && a.DraftVersion == b.DraftVersion && a.PublishedVersion == b.PublishedVersion && reflect.DeepEqual(a.FixedContentPackage, b.FixedContentPackage) && jsonEqual(a.LegacyConfiguration, b.LegacyConfiguration)
 }
 func sameReceipt(receipt Receipt, reservation Reservation) bool {
 	return receipt.Operation == reservation.Operation && receipt.ActorScope == reservation.ActorScope && subtle.ConstantTimeCompare(receipt.KeyDigest[:], reservation.KeyDigest[:]) == 1
@@ -553,7 +595,7 @@ func jsonEqual(left, right []byte) bool {
 }
 func classify(err error) error {
 	switch {
-	case errors.Is(err, ErrInvalidAgent), errors.Is(err, ErrAgentNotFound), errors.Is(err, ErrAgentConflict), errors.Is(err, ErrAgentUnavailable):
+	case errors.Is(err, ErrInvalidAgent), errors.Is(err, ErrAgentNotFound), errors.Is(err, ErrAgentConflict), errors.Is(err, ErrAgentUnavailable), errors.Is(err, ErrAgentExecutionDisabled):
 		return err
 	default:
 		if strings.Contains(strings.ToLower(err.Error()), "no rows") {

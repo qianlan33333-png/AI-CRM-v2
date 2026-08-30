@@ -53,6 +53,7 @@ type Agent struct {
 	AgentCode           string              `json:"agent_code"`
 	AutomationType      AutomationType      `json:"automation_type"`
 	Status              AgentStatus         `json:"status"`
+	ExecutionEnabled    bool                `json:"execution_enabled"`
 	DraftRolePrompt     string              `json:"draft_role_prompt"`
 	DraftTaskPrompt     string              `json:"draft_task_prompt"`
 	PublishedRolePrompt string              `json:"published_role_prompt"`
@@ -60,6 +61,7 @@ type Agent struct {
 	DraftVersion        int64               `json:"draft_version"`
 	PublishedVersion    int64               `json:"published_version"`
 	FixedContentPackage FixedContentPackage `json:"fixed_content_package"`
+	LegacyConfiguration json.RawMessage     `json:"legacy_configuration"`
 	CreatedBy           int64               `json:"created_by"`
 	UpdatedBy           int64               `json:"updated_by"`
 	CreatedAt           time.Time           `json:"created_at"`
@@ -85,6 +87,7 @@ type UpdateCommand struct {
 	RolePrompt          *string
 	TaskPrompt          *string
 	FixedContentPackage *FixedContentPackage
+	LegacyConfiguration *json.RawMessage
 	Actor               int64
 	IdempotencyKey      string
 }

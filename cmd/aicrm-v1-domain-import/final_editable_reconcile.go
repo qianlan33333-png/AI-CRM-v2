@@ -12,23 +12,28 @@ import (
 )
 
 type finalEditableProjectionProof struct {
-	ProductSourceCount            int64  `json:"product_source_count"`
-	ProductProjectedCount         int64  `json:"product_projected_count"`
-	ProductReceiptBoundCount      int64  `json:"product_receipt_bound_count"`
-	ServicePeriodSourceCount      int64  `json:"service_period_source_count"`
-	ServicePeriodProjectedCount   int64  `json:"service_period_projected_count"`
-	ProductLegacyImageSourceCount int64  `json:"product_legacy_image_source_count"`
-	ProductImageReferenceCount    int64  `json:"product_image_reference_count"`
-	ProductLegacyReferenceCount   int64  `json:"product_legacy_reference_count"`
-	AudienceSourceCount           int64  `json:"audience_source_count"`
-	AudienceProjectedCount        int64  `json:"audience_projected_count"`
-	AudienceIdentitySkippedCount  int64  `json:"audience_identity_skipped_count"`
-	AudienceGroupSourceCount      int64  `json:"audience_group_source_count"`
-	AudienceGroupProjectedCount   int64  `json:"audience_group_projected_count"`
-	AudienceSourceMembers         int64  `json:"audience_source_members"`
-	AudienceMappedMembers         int64  `json:"audience_mapped_members"`
-	AudienceProjectedMembers      int64  `json:"audience_projected_members"`
-	TargetDigest                  string `json:"target_digest"`
+	ProductSourceCount               int64  `json:"product_source_count"`
+	ProductProjectedCount            int64  `json:"product_projected_count"`
+	ProductReceiptBoundCount         int64  `json:"product_receipt_bound_count"`
+	ServicePeriodSourceCount         int64  `json:"service_period_source_count"`
+	ServicePeriodProjectedCount      int64  `json:"service_period_projected_count"`
+	ProductLegacyImageSourceCount    int64  `json:"product_legacy_image_source_count"`
+	ProductImageReferenceCount       int64  `json:"product_image_reference_count"`
+	ProductLegacyReferenceCount      int64  `json:"product_legacy_reference_count"`
+	AudienceSourceCount              int64  `json:"audience_source_count"`
+	AudienceProjectedCount           int64  `json:"audience_projected_count"`
+	AudienceIdentitySkippedCount     int64  `json:"audience_identity_skipped_count"`
+	AudienceGroupSourceCount         int64  `json:"audience_group_source_count"`
+	AudienceGroupProjectedCount      int64  `json:"audience_group_projected_count"`
+	AudienceSourceMembers            int64  `json:"audience_source_members"`
+	AudienceMappedMembers            int64  `json:"audience_mapped_members"`
+	AudienceProjectedMembers         int64  `json:"audience_projected_members"`
+	AutomationAgentSourceCount       int64  `json:"automation_agent_source_count"`
+	AutomationAgentProjectedCount    int64  `json:"automation_agent_projected_count"`
+	AutomationAgentPausedCount       int64  `json:"automation_agent_paused_count"`
+	AutomationAgentDisabledCount     int64  `json:"automation_agent_disabled_count"`
+	AutomationMaterialReferenceCount int64  `json:"automation_material_reference_count"`
+	TargetDigest                     string `json:"target_digest"`
 }
 
 func verifyFinalEditableProjection(ctx context.Context, tx pgx.Tx, archiveRunID string) (finalEditableProjectionProof, error) {
@@ -131,6 +136,42 @@ FROM expected, actual`, deferredKeys).Scan(
 	if actualAudienceSourceMembers != proof.AudienceSourceMembers || actualAudienceMappedMembers != proof.AudienceMappedMembers {
 		return finalEditableProjectionProof{}, fmt.Errorf("editable Audience projection source counts mismatch")
 	}
+	if err = tx.QueryRow(ctx, `
+WITH expected AS (
+  SELECT count(*) AS source_count
+  FROM public.automation_v1_agent_history
+  WHERE original_enabled AND archived_at=''
+    AND lower(agent_code) NOT LIKE '%smoke%' AND lower(agent_code) NOT LIKE '%realtest%'
+    AND lower(agent_code) NOT LIKE 'test\_%' ESCAPE '\'
+    AND lower(agent_code) NOT LIKE 'test-%'
+    AND lower(agent_code) NOT LIKE '%\_test' ESCAPE '\'
+    AND lower(agent_code) NOT LIKE '%-test'
+    AND lower(agent_name) NOT LIKE '%smoke%' AND lower(agent_name) NOT LIKE '%realtest%'
+    AND agent_name NOT LIKE '%测试%'
+), actual AS (
+  SELECT count(*) AS projected_count,
+         count(*) FILTER (WHERE current.status='paused') AS paused_count,
+         count(*) FILTER (WHERE NOT current.execution_enabled) AS disabled_count,
+         count(*) FILTER (WHERE
+           jsonb_array_length(COALESCE(current.fixed_content_package_json->'image_library_ids','[]'::jsonb)) > 0 OR
+           jsonb_array_length(COALESCE(current.fixed_content_package_json->'miniprogram_library_ids','[]'::jsonb)) > 0 OR
+           jsonb_array_length(COALESCE(current.fixed_content_package_json->'attachment_library_ids','[]'::jsonb)) > 0 OR
+           jsonb_array_length(COALESCE(current.fixed_content_package_json->'group_invite_library_ids','[]'::jsonb)) > 0 OR
+           current.fixed_content_package_json ? 'dynamic_miniprogram_card'
+         ) AS material_reference_count
+  FROM public.automation_v1_editable_agent_projections AS projection
+  JOIN public.automation_v1_agent_history AS history ON history.id=projection.agent_history_id
+  JOIN public.automation_v1_prompt_history AS prompt ON prompt.id=projection.prompt_history_id AND prompt.agent_code=history.agent_code
+  JOIN public.automation_agent_configurations AS current ON current.id=projection.agent_id AND current.agent_code=history.agent_code
+  LEFT JOIN public.automation_v1_agent_config_history AS config ON config.id=projection.config_history_id AND config.agent_code=history.agent_code
+  WHERE history.original_enabled AND history.archived_at=''
+    AND jsonb_typeof(current.legacy_configuration_json)='object'
+)
+SELECT expected.source_count,actual.projected_count,actual.paused_count,actual.disabled_count,actual.material_reference_count FROM expected,actual`).Scan(
+		&proof.AutomationAgentSourceCount, &proof.AutomationAgentProjectedCount, &proof.AutomationAgentPausedCount,
+		&proof.AutomationAgentDisabledCount, &proof.AutomationMaterialReferenceCount); err != nil {
+		return finalEditableProjectionProof{}, err
+	}
 	hash := sha256.New()
 	encoder := json.NewEncoder(hash)
 	productRows, err := tx.Query(ctx, `
@@ -192,6 +233,38 @@ ORDER BY package.source_id`)
 	if err = audienceRows.Err(); err != nil {
 		return finalEditableProjectionProof{}, err
 	}
+	automationRows, err := tx.Query(ctx, `
+SELECT history.source_id,projection.agent_id,current.agent_code,current.agent_name,current.status,current.execution_enabled,
+       current.draft_role_prompt,current.draft_task_prompt,current.published_role_prompt,current.published_task_prompt,
+       current.draft_version,current.published_version,current.legacy_configuration_json::text,
+       COALESCE(config.source_id,0),prompt.source_id
+FROM public.automation_v1_editable_agent_projections AS projection
+JOIN public.automation_v1_agent_history AS history ON history.id=projection.agent_history_id
+JOIN public.automation_v1_prompt_history AS prompt ON prompt.id=projection.prompt_history_id
+LEFT JOIN public.automation_v1_agent_config_history AS config ON config.id=projection.config_history_id
+JOIN public.automation_agent_configurations AS current ON current.id=projection.agent_id
+ORDER BY history.source_id`)
+	if err != nil {
+		return finalEditableProjectionProof{}, err
+	}
+	defer automationRows.Close()
+	for automationRows.Next() {
+		var sourceID, agentID, draftVersion, publishedVersion, configSourceID, promptSourceID int64
+		var code, name, status, draftRole, draftTask, publishedRole, publishedTask, legacy string
+		var executionEnabled bool
+		if err = automationRows.Scan(&sourceID, &agentID, &code, &name, &status, &executionEnabled, &draftRole, &draftTask, &publishedRole, &publishedTask, &draftVersion, &publishedVersion, &legacy, &configSourceID, &promptSourceID); err != nil {
+			return finalEditableProjectionProof{}, err
+		}
+		if status != "paused" || executionEnabled {
+			return finalEditableProjectionProof{}, fmt.Errorf("editable automation Agent is not paused")
+		}
+		if err = encoder.Encode([]any{"automation_agent", sourceID, agentID, code, name, status, executionEnabled, draftRole, draftTask, publishedRole, publishedTask, draftVersion, publishedVersion, legacy, configSourceID, promptSourceID}); err != nil {
+			return finalEditableProjectionProof{}, err
+		}
+	}
+	if err = automationRows.Err(); err != nil {
+		return finalEditableProjectionProof{}, err
+	}
 	proof.TargetDigest = hex.EncodeToString(hash.Sum(nil))
 	if err = validateFinalEditableProjectionProof(proof); err != nil {
 		return finalEditableProjectionProof{}, err
@@ -216,6 +289,9 @@ func validateFinalEditableProjectionProof(proof finalEditableProjectionProof) er
 	if proof.AudienceSourceCount != proof.AudienceProjectedCount+proof.AudienceIdentitySkippedCount || proof.AudienceGroupProjectedCount != proof.AudienceGroupSourceCount ||
 		proof.AudienceSourceMembers != proof.AudienceMappedMembers || proof.AudienceMappedMembers != proof.AudienceProjectedMembers {
 		return fmt.Errorf("editable Audience definitions are incomplete")
+	}
+	if proof.AutomationAgentSourceCount < 1 || proof.AutomationAgentProjectedCount != proof.AutomationAgentSourceCount || proof.AutomationAgentPausedCount != proof.AutomationAgentSourceCount || proof.AutomationAgentDisabledCount != proof.AutomationAgentSourceCount || proof.AutomationMaterialReferenceCount != 0 {
+		return fmt.Errorf("editable Automation Agent definitions are incomplete or active")
 	}
 	return nil
 }

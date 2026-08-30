@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1domain"
+	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	product "github.com/qianlan33333-png/AI-CRM-v2/internal/product"
@@ -21,6 +22,7 @@ type finalEditableProjectionResult struct {
 	ServicePeriods   productstore.HistoricalServicePeriodProjectionResult `json:"service_periods"`
 	ProductMaterials productstore.HistoricalProductMaterialClearResult    `json:"product_materials"`
 	Audiences        segmentapp.AudienceEditableProjectionResult          `json:"audiences"`
+	AutomationAgents automationstore.V1EditableAgentProjectionResult      `json:"automation_agents"`
 }
 
 func projectFinalEditableBusiness(ctx context.Context, pool *pgxpool.Pool, archive *v1archive.PostgresArchiveReader, archiveRunID string, actorID int64, at time.Time) (finalEditableProjectionResult, error) {
@@ -35,7 +37,7 @@ func projectFinalEditableBusiness(ctx context.Context, pool *pgxpool.Pool, archi
 	if err = verifyReconciledArchive(ctx, preflight, archiveRunID); err != nil {
 		return finalEditableProjectionResult{}, err
 	}
-	for _, version := range []string{staticImportVersion, servicePeriodImportVersion, v1domain.AudienceHistoryImportVersion, staticTailHistoryImportVersion} {
+	for _, version := range []string{staticImportVersion, servicePeriodImportVersion, v1domain.AudienceHistoryImportVersion, staticTailHistoryImportVersion, automationHistoryImportVersion} {
 		if _, err = loadReconciliationCounts(ctx, preflight, archiveRunID, version); err != nil {
 			return finalEditableProjectionResult{}, fmt.Errorf("editable projection requires reconciled scope %s: %w", version, err)
 		}
@@ -74,6 +76,27 @@ func projectFinalEditableBusiness(ctx context.Context, pool *pgxpool.Pool, archi
 	}
 	projector := segmentapp.NewAudienceEditableProjectionService(uow, segmentstore.NewAudienceEditableProjectionStore())
 	if result.Audiences, err = projector.Project(ctx, actorID, at); err != nil {
+		return finalEditableProjectionResult{}, err
+	}
+	editableAgents, err := loadEditableAutomationAgents(ctx, archive, uow, archiveRunID)
+	if err != nil {
+		return finalEditableProjectionResult{}, err
+	}
+	seeds := make([]automationstore.V1EditableAgentProjection, len(editableAgents))
+	for index, item := range editableAgents {
+		seeds[index] = automationstore.V1EditableAgentProjection{
+			SourceAgentID: item.SourceAgentID, SourceConfigID: item.SourceConfigID, SourcePromptID: item.SourcePromptID,
+			AgentName: item.AgentName, AgentCode: item.AgentCode,
+			DraftRolePrompt: item.DraftRole, DraftTaskPrompt: item.DraftTask,
+			PublishedRolePrompt: item.PublishedRole, PublishedTaskPrompt: item.PublishedTask,
+			DraftVersion: item.DraftVersion, PublishedVersion: item.PublishedVersion,
+			LegacyConfiguration: item.LegacyConfiguration, CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
+		}
+	}
+	if err = uow.Within(ctx, func(bound context.Context) error {
+		result.AutomationAgents, err = automationstore.ProjectV1EditableAgents(bound, seeds, actorID, at)
+		return err
+	}); err != nil {
 		return finalEditableProjectionResult{}, err
 	}
 	return result, nil

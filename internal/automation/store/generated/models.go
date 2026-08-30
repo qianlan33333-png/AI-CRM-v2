@@ -40,6 +40,8 @@ type AutomationAgentConfiguration struct {
 	UpdatedBy               int64              `json:"updated_by"`
 	CreatedAt               pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	LegacyConfigurationJson []byte             `json:"legacy_configuration_json"`
+	ExecutionEnabled        bool               `json:"execution_enabled"`
 }
 
 type AutomationAgentOperationReceipt struct {

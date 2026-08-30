@@ -642,7 +642,8 @@ var p4AutomationAgentOperations = map[string]bool{
 
 var p4AutomationAgentManagementOperations = map[string]bool{
 	"createLegacyAutomationAgent": true, "getLegacyAutomationAgent": true, "updateLegacyAutomationAgent": true,
-	"archiveLegacyAutomationAgent": true, "activateLegacyAutomationAgent": true, "copyLegacyAutomationAgent": true,
+	"precheckLegacyAutomationAgent": true,
+	"archiveLegacyAutomationAgent":  true, "activateLegacyAutomationAgent": true, "copyLegacyAutomationAgent": true,
 	"saveLegacyAutomationAgentFixedContent": true, "pauseLegacyAutomationAgent": true, "publishLegacyAutomationAgent": true,
 }
 
@@ -1252,6 +1253,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"getAdminConfigOverview":                     {"config.overview.read", map[string]string{"admin": "global"}},
 	"createLegacyAutomationAgent":                {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAutomationAgent":                   {"config.overview.read", map[string]string{"admin": "global"}},
+	"precheckLegacyAutomationAgent":              {"config.overview.read", map[string]string{"admin": "global"}},
 	"updateLegacyAutomationAgent":                {"config.settings.manage", map[string]string{"admin": "global"}},
 	"archiveLegacyAutomationAgent":               {"config.settings.manage", map[string]string{"admin": "global"}},
 	"activateLegacyAutomationAgent":              {"config.settings.manage", map[string]string{"admin": "global"}},
@@ -2302,10 +2304,17 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					return fmt.Errorf("%s must not close the independently automated legacy ledger", op.OperationID)
 				}
 				if op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-data-classification"] != "internal" ||
-					op.Extensions["x-aicrm-external-effect"] != "none" || op.Responses.Value("401") == nil || op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
+					op.Extensions["x-aicrm-external-effect"] != "none" || op.Responses.Value("401") == nil || op.Responses.Value("403") == nil {
 					return fmt.Errorf("%s local Automation Agent management boundary drifted", op.OperationID)
 				}
-				if op.OperationID == "getLegacyAutomationAgent" {
+				if op.OperationID == "activateLegacyAutomationAgent" {
+					if op.Responses.Value("409") == nil || op.Responses.Value("503") == nil || op.Responses.Value("200") != nil {
+						return fmt.Errorf("%s must fail closed while execution is disabled", op.OperationID)
+					}
+				} else if op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s local Automation Agent dependency failure is not declared", op.OperationID)
+				}
+				if op.OperationID == "getLegacyAutomationAgent" || op.OperationID == "precheckLegacyAutomationAgent" {
 					if op.Extensions["x-aicrm-session-bound-csrf"] != "none" {
 						return fmt.Errorf("%s read must not require CSRF", op.OperationID)
 					}

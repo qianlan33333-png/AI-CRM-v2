@@ -45,17 +45,15 @@ const createAutomationAgent = `-- name: CreateAutomationAgent :one
 INSERT INTO automation_agent_configurations (
   agent_name, agent_code, automation_type, status, draft_role_prompt,
   draft_task_prompt, published_role_prompt, published_task_prompt,
-  draft_version, published_version, fixed_content_package_json, created_by,
+  draft_version, published_version, fixed_content_package_json, legacy_configuration_json, execution_enabled, created_by,
   updated_by, created_at, updated_at
 ) VALUES (
   $1, $2, $3, $4,
   $5, $6, $7,
   $8, $9, $10,
-  $11, $12, $13,
-  $14, $15
-) RETURNING id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-  draft_task_prompt, published_role_prompt, published_task_prompt, draft_version,
-  published_version, fixed_content_package_json, created_by, updated_by, created_at, updated_at
+  $11, $12, $13, $14, $15,
+  $16, $17
+) RETURNING id, agent_name, agent_code, automation_type, status, draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt, draft_version, published_version, fixed_content_package_json, created_by, updated_by, created_at, updated_at, legacy_configuration_json, execution_enabled
 `
 
 type CreateAutomationAgentParams struct {
@@ -70,6 +68,8 @@ type CreateAutomationAgentParams struct {
 	DraftVersion            int64              `json:"draft_version"`
 	PublishedVersion        int64              `json:"published_version"`
 	FixedContentPackageJson []byte             `json:"fixed_content_package_json"`
+	LegacyConfigurationJson []byte             `json:"legacy_configuration_json"`
+	ExecutionEnabled        bool               `json:"execution_enabled"`
 	CreatedBy               int64              `json:"created_by"`
 	UpdatedBy               int64              `json:"updated_by"`
 	CreatedAt               pgtype.Timestamptz `json:"created_at"`
@@ -89,6 +89,8 @@ func (q *Queries) CreateAutomationAgent(ctx context.Context, arg CreateAutomatio
 		arg.DraftVersion,
 		arg.PublishedVersion,
 		arg.FixedContentPackageJson,
+		arg.LegacyConfigurationJson,
+		arg.ExecutionEnabled,
 		arg.CreatedBy,
 		arg.UpdatedBy,
 		arg.CreatedAt,
@@ -112,15 +114,14 @@ func (q *Queries) CreateAutomationAgent(ctx context.Context, arg CreateAutomatio
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LegacyConfigurationJson,
+		&i.ExecutionEnabled,
 	)
 	return i, err
 }
 
 const getAutomationAgent = `-- name: GetAutomationAgent :one
-SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-       draft_task_prompt, published_role_prompt, published_task_prompt,
-       draft_version, published_version, fixed_content_package_json, created_by,
-       updated_by, created_at, updated_at
+SELECT automation_agent_configurations.id, automation_agent_configurations.agent_name, automation_agent_configurations.agent_code, automation_agent_configurations.automation_type, automation_agent_configurations.status, automation_agent_configurations.draft_role_prompt, automation_agent_configurations.draft_task_prompt, automation_agent_configurations.published_role_prompt, automation_agent_configurations.published_task_prompt, automation_agent_configurations.draft_version, automation_agent_configurations.published_version, automation_agent_configurations.fixed_content_package_json, automation_agent_configurations.created_by, automation_agent_configurations.updated_by, automation_agent_configurations.created_at, automation_agent_configurations.updated_at, automation_agent_configurations.legacy_configuration_json, automation_agent_configurations.execution_enabled
 FROM automation_agent_configurations WHERE id = $1 AND status <> 'archived'
 `
 
@@ -144,6 +145,8 @@ func (q *Queries) GetAutomationAgent(ctx context.Context, id int64) (AutomationA
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LegacyConfigurationJson,
+		&i.ExecutionEnabled,
 	)
 	return i, err
 }
@@ -265,10 +268,7 @@ func (q *Queries) ListAutomationAgentImageReferencePackages(ctx context.Context)
 }
 
 const listAutomationAgents = `-- name: ListAutomationAgents :many
-SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-       draft_task_prompt, published_role_prompt, published_task_prompt,
-       draft_version, published_version, fixed_content_package_json, created_by,
-       updated_by, created_at, updated_at
+SELECT automation_agent_configurations.id, automation_agent_configurations.agent_name, automation_agent_configurations.agent_code, automation_agent_configurations.automation_type, automation_agent_configurations.status, automation_agent_configurations.draft_role_prompt, automation_agent_configurations.draft_task_prompt, automation_agent_configurations.published_role_prompt, automation_agent_configurations.published_task_prompt, automation_agent_configurations.draft_version, automation_agent_configurations.published_version, automation_agent_configurations.fixed_content_package_json, automation_agent_configurations.created_by, automation_agent_configurations.updated_by, automation_agent_configurations.created_at, automation_agent_configurations.updated_at, automation_agent_configurations.legacy_configuration_json, automation_agent_configurations.execution_enabled
 FROM automation_agent_configurations
 WHERE status <> 'archived'
   AND ($1::text = '' OR automation_type = $1::text)
@@ -301,6 +301,8 @@ func (q *Queries) ListAutomationAgents(ctx context.Context, automationType strin
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LegacyConfigurationJson,
+			&i.ExecutionEnabled,
 		); err != nil {
 			return nil, err
 		}
@@ -313,10 +315,7 @@ func (q *Queries) ListAutomationAgents(ctx context.Context, automationType strin
 }
 
 const lockAutomationAgent = `-- name: LockAutomationAgent :one
-SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-       draft_task_prompt, published_role_prompt, published_task_prompt,
-       draft_version, published_version, fixed_content_package_json, created_by,
-       updated_by, created_at, updated_at
+SELECT automation_agent_configurations.id, automation_agent_configurations.agent_name, automation_agent_configurations.agent_code, automation_agent_configurations.automation_type, automation_agent_configurations.status, automation_agent_configurations.draft_role_prompt, automation_agent_configurations.draft_task_prompt, automation_agent_configurations.published_role_prompt, automation_agent_configurations.published_task_prompt, automation_agent_configurations.draft_version, automation_agent_configurations.published_version, automation_agent_configurations.fixed_content_package_json, automation_agent_configurations.created_by, automation_agent_configurations.updated_by, automation_agent_configurations.created_at, automation_agent_configurations.updated_at, automation_agent_configurations.legacy_configuration_json, automation_agent_configurations.execution_enabled
 FROM automation_agent_configurations WHERE id = $1 FOR UPDATE
 `
 
@@ -340,6 +339,8 @@ func (q *Queries) LockAutomationAgent(ctx context.Context, id int64) (Automation
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LegacyConfigurationJson,
+		&i.ExecutionEnabled,
 	)
 	return i, err
 }
@@ -389,11 +390,11 @@ UPDATE automation_agent_configurations SET
   draft_task_prompt = $5, published_role_prompt = $6,
   published_task_prompt = $7, draft_version = $8,
   published_version = $9, fixed_content_package_json = $10,
-  updated_by = $11, updated_at = $12
-WHERE id = $13
-RETURNING id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-  draft_task_prompt, published_role_prompt, published_task_prompt, draft_version,
-  published_version, fixed_content_package_json, created_by, updated_by, created_at, updated_at
+  legacy_configuration_json = $11,
+  execution_enabled = $12,
+  updated_by = $13, updated_at = $14
+WHERE id = $15
+RETURNING id, agent_name, agent_code, automation_type, status, draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt, draft_version, published_version, fixed_content_package_json, created_by, updated_by, created_at, updated_at, legacy_configuration_json, execution_enabled
 `
 
 type UpdateAutomationAgentParams struct {
@@ -407,6 +408,8 @@ type UpdateAutomationAgentParams struct {
 	DraftVersion            int64              `json:"draft_version"`
 	PublishedVersion        int64              `json:"published_version"`
 	FixedContentPackageJson []byte             `json:"fixed_content_package_json"`
+	LegacyConfigurationJson []byte             `json:"legacy_configuration_json"`
+	ExecutionEnabled        bool               `json:"execution_enabled"`
 	UpdatedBy               int64              `json:"updated_by"`
 	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
 	ID                      int64              `json:"id"`
@@ -424,6 +427,8 @@ func (q *Queries) UpdateAutomationAgent(ctx context.Context, arg UpdateAutomatio
 		arg.DraftVersion,
 		arg.PublishedVersion,
 		arg.FixedContentPackageJson,
+		arg.LegacyConfigurationJson,
+		arg.ExecutionEnabled,
 		arg.UpdatedBy,
 		arg.UpdatedAt,
 		arg.ID,
@@ -446,6 +451,8 @@ func (q *Queries) UpdateAutomationAgent(ctx context.Context, arg UpdateAutomatio
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LegacyConfigurationJson,
+		&i.ExecutionEnabled,
 	)
 	return i, err
 }

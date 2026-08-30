@@ -97,35 +97,45 @@ func TestP4AutomationAgentsABTwelveRoutesSessionCSRFRBACAndNoExternalEffect(t *t
 	if err := json.Unmarshal(list.Body.Bytes(), &listBody); err != nil || len(listBody.Items) != 1 {
 		t.Fatalf("decode list err=%v body=%s", err, list.Body.String())
 	}
-	if got := listBody.Items[0]; len(got) != 10 || got["bound_package_key"] != "" || got["bound_package_id"] != nil || got["bound_package_name"] != "" || got["automation_type_label"] != nil || got["draft_role_prompt"] != nil || got["fixed_content_package"] != nil {
+	if got := listBody.Items[0]; len(got) != 12 || got["bound_package_key"] != "" || got["bound_package_id"] != nil || got["bound_package_name"] != "" || got["execution_enabled"] != false || got["materials_configured"] != false || got["automation_type_label"] != nil || got["draft_role_prompt"] != nil || got["fixed_content_package"] != nil {
 		t.Fatalf("unsafe or incomplete list item=%#v", got)
 	}
 	detail := httptest.NewRecorder()
 	router.ServeHTTP(detail, legacyRequest(http.MethodGet, "/api/admin/automation-agents/7", legacyToken(133)))
-	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), "\"has_unpublished_changes\":false") {
+	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), "\"has_unpublished_changes\":false") || !strings.Contains(detail.Body.String(), "\"execution_enabled\":false") || !strings.Contains(detail.Body.String(), "\"materials_configured\":false") || !strings.Contains(detail.Body.String(), "\"legacy_configuration\":{\"scenario\":\"welcome\"}") {
 		t.Fatalf("detail=%d body=%s", detail.Code, detail.Body.String())
 	}
+	precheck := httptest.NewRecorder()
+	router.ServeHTTP(precheck, legacyRequest(http.MethodGet, "/api/admin/automation-agents/7/precheck", legacyToken(133)))
+	if precheck.Code != http.StatusOK || !strings.Contains(precheck.Body.String(), "\"can_activate\":false") || !strings.Contains(precheck.Body.String(), "\"execution_disabled\"") || stub.mutationCalls != 0 {
+		t.Fatalf("precheck=%d writes=%d body=%s", precheck.Code, stub.mutationCalls, precheck.Body.String())
+	}
 	create := httptest.NewRecorder()
-	router.ServeHTTP(create, legacyAutomationAgentWriteRequest(http.MethodPost, "/api/admin/automation-agents", "{\"agent_name\":\"话术\",\"agent_code\":\"agent_1\"}"))
-	if create.Code != http.StatusOK || stub.create.Actor != 1 || stub.create.IdempotencyKey == "" || stub.create.Agent.DraftRolePrompt != "" || stub.create.Agent.DraftTaskPrompt != "" || create.Header().Get("X-AICRM-Real-External-Call-Executed") != "false" {
+	router.ServeHTTP(create, legacyAutomationAgentWriteRequest(http.MethodPost, "/api/admin/automation-agents", "{\"agent_name\":\"话术\",\"agent_code\":\"agent_1\",\"legacy_configuration\":{\"scenario\":\"welcome\"}}"))
+	if create.Code != http.StatusOK || stub.create.Actor != 1 || stub.create.IdempotencyKey == "" || stub.create.Agent.DraftRolePrompt != "" || stub.create.Agent.DraftTaskPrompt != "" || string(stub.create.Agent.LegacyConfiguration) != `{"scenario":"welcome"}` || create.Header().Get("X-AICRM-Real-External-Call-Executed") != "false" {
 		t.Fatalf("create=%d command=%#v headers=%v", create.Code, stub.create, create.Header())
 	}
-	for _, route := range []struct{ method, path, body string }{{http.MethodPatch, "/api/admin/automation-agents/7", "{\"agent_name\":\"更新后的话术\"}"}, {http.MethodPost, "/api/admin/automation-agents/7/activate", ""}, {http.MethodPost, "/api/admin/automation-agents/7/copy", ""}, {http.MethodPut, "/api/admin/automation-agents/7/fixed-content", "{}"}, {http.MethodPost, "/api/admin/automation-agents/7/pause", ""}, {http.MethodPost, "/api/admin/automation-agents/7/publish", ""}, {http.MethodDelete, "/api/admin/automation-agents/7", ""}} {
+	for _, route := range []struct{ method, path, body string }{{http.MethodPatch, "/api/admin/automation-agents/7", "{\"agent_name\":\"更新后的话术\",\"legacy_configuration\":{\"scenario\":\"closing\"}}"}, {http.MethodPost, "/api/admin/automation-agents/7/copy", ""}, {http.MethodPut, "/api/admin/automation-agents/7/fixed-content", "{}"}, {http.MethodPost, "/api/admin/automation-agents/7/pause", ""}, {http.MethodPost, "/api/admin/automation-agents/7/publish", ""}, {http.MethodDelete, "/api/admin/automation-agents/7", ""}} {
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, legacyAutomationAgentWriteRequest(route.method, route.path, route.body))
 		if response.Code != http.StatusOK {
 			t.Fatalf("%s %s=%d body=%s", route.method, route.path, response.Code, response.Body.String())
 		}
 	}
-	if stub.update.ID != 7 || stub.update.AgentName == nil || *stub.update.AgentName != "更新后的话术" || stub.copy.ID != 7 || stub.fixed.ContentPackage.ContentText != "" || len(stub.fixed.ContentPackage.ImageLibraryIDs) != 0 || stub.status.ID != 7 || stub.statusValue != automationport.AgentStatusArchived || stub.mutationCalls != 8 {
+	activate := httptest.NewRecorder()
+	router.ServeHTTP(activate, legacyAutomationAgentWriteRequest(http.MethodPost, "/api/admin/automation-agents/7/activate", ""))
+	if activate.Code != http.StatusConflict || !strings.Contains(activate.Body.String(), "automation_execution_disabled") || stub.mutationCalls != 7 {
+		t.Fatalf("activate=%d writes=%d body=%s", activate.Code, stub.mutationCalls, activate.Body.String())
+	}
+	if stub.update.ID != 7 || stub.update.AgentName == nil || *stub.update.AgentName != "更新后的话术" || stub.update.LegacyConfiguration == nil || string(*stub.update.LegacyConfiguration) != `{"scenario":"closing"}` || stub.copy.ID != 7 || stub.fixed.ContentPackage.ContentText != "" || len(stub.fixed.ContentPackage.ImageLibraryIDs) != 0 || stub.status.ID != 7 || stub.statusValue != automationport.AgentStatusArchived || stub.mutationCalls != 7 {
 		t.Fatalf("mutations=%d update=%#v copy=%#v fixed=%#v status=%#v/%q", stub.mutationCalls, stub.update, stub.copy, stub.fixed, stub.status, stub.statusValue)
 	}
-	if got := auth.capabilities(); len(got) != 12 {
+	if got := auth.capabilities(); len(got) != 13 {
 		t.Fatalf("capabilities=%v", got)
 	} else {
 		for index, capability := range got {
 			want := authport.CapabilityConfigSettingsManage
-			if index < 4 {
+			if index < 5 {
 				want = authport.CapabilityConfigOverviewRead
 			}
 			if capability != want {
@@ -205,6 +215,9 @@ func TestP4AutomationAgentsABBoundaryAndErrorFailClosed(t *testing.T) {
 		{name: "empty update", request: func() *http.Request {
 			return legacyAutomationAgentWriteRequest(http.MethodPatch, "/api/admin/automation-agents/7", `{}`)
 		}},
+		{name: "non-object legacy configuration", request: func() *http.Request {
+			return legacyAutomationAgentWriteRequest(http.MethodPatch, "/api/admin/automation-agents/7", `{"legacy_configuration":[]}`)
+		}},
 		{name: "unknown fixed content field", request: func() *http.Request {
 			return legacyAutomationAgentWriteRequest(http.MethodPut, "/api/admin/automation-agents/7/fixed-content", `{"unexpected":true}`)
 		}},
@@ -250,5 +263,5 @@ func legacyAutomationAgentWriteRequest(method, path, body string) *http.Request 
 }
 func legacyAutomationAgentItem() automationport.Agent {
 	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
-	return automationport.Agent{ID: 7, AgentName: "自动化话术", AgentCode: "agent_1", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusActive, DraftRolePrompt: "角色", DraftTaskPrompt: "任务", PublishedRolePrompt: "角色", PublishedTaskPrompt: "任务", DraftVersion: 1, PublishedVersion: 1, CreatedBy: 1, UpdatedBy: 1, CreatedAt: now, UpdatedAt: now, FixedContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{}, MiniprogramLibraryIDs: []int64{}, AttachmentLibraryIDs: []int64{}, GroupInviteLibraryIDs: []int64{}}}
+	return automationport.Agent{ID: 7, AgentName: "自动化话术", AgentCode: "agent_1", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusPaused, ExecutionEnabled: false, DraftRolePrompt: "角色", DraftTaskPrompt: "任务", PublishedRolePrompt: "角色", PublishedTaskPrompt: "任务", DraftVersion: 1, PublishedVersion: 1, CreatedBy: 1, UpdatedBy: 1, CreatedAt: now, UpdatedAt: now, FixedContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{}, MiniprogramLibraryIDs: []int64{}, AttachmentLibraryIDs: []int64{}, GroupInviteLibraryIDs: []int64{}}, LegacyConfiguration: json.RawMessage(`{"scenario":"welcome"}`)}
 }

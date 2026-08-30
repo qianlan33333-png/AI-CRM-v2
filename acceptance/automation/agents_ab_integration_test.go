@@ -10,13 +10,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	mediafixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/mediafixture"
 	automationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/app"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
-	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -24,7 +22,7 @@ func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	pool, ctx := openPool(t)
 	service := newP4AutomationAgentService(pool)
 	code, actor := p4AutomationAgentCode(t), p4AutomationActor()
-	create := automationport.CreateCommand{Actor: actor, IdempotencyKey: p4AutomationKey(code, "create"), Agent: automationport.Agent{AgentName: "P4 Automation Agent", AgentCode: code, AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusActive}}
+	create := automationport.CreateCommand{Actor: actor, IdempotencyKey: p4AutomationKey(code, "create"), Agent: automationport.Agent{AgentName: "P4 Automation Agent", AgentCode: code, AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusPaused}}
 	created, err := service.Create(ctx, create)
 	if err != nil || created.ID < 1 || created.DraftRolePrompt != "" || created.DraftTaskPrompt != "" || created.PublishedVersion != 1 {
 		t.Fatalf("create=%+v err=%v", created, err)
@@ -46,13 +44,8 @@ func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	if err != nil || published.PublishedVersion != published.DraftVersion {
 		t.Fatalf("publish=%+v err=%v", published, err)
 	}
-	imageID, err := mediafixture.CreateImage(ctx, pool, "P4 Automation Agent Image")
-	if err != nil {
-		t.Fatal(err)
-	}
-	fixed, err := service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "content"), ContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{imageID, imageID}}})
-	if err != nil || len(fixed.FixedContentPackage.ImageLibraryIDs) != 1 || fixed.FixedContentPackage.ImageLibraryIDs[0] != imageID {
-		t.Fatalf("fixed=%+v err=%v", fixed, err)
+	if _, err = service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "content"), ContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{7}}}); !errors.Is(err, automationapp.ErrInvalidAgent) {
+		t.Fatalf("legacy material reference error=%v", err)
 	}
 	emptied, err := service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "empty-content")})
 	if err != nil || emptied.FixedContentPackage.ContentText != "" || len(emptied.FixedContentPackage.ImageLibraryIDs) != 0 {
@@ -66,9 +59,8 @@ func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	if err != nil || paused.Status != automationport.AgentStatusPaused {
 		t.Fatalf("pause=%+v err=%v", paused, err)
 	}
-	active, err := service.SetStatus(ctx, automationport.MutationCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "activate")}, automationport.AgentStatusActive)
-	if err != nil || active.Status != automationport.AgentStatusActive {
-		t.Fatalf("activate=%+v err=%v", active, err)
+	if _, err = service.SetStatus(ctx, automationport.MutationCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "activate")}, automationport.AgentStatusActive); !errors.Is(err, automationapp.ErrAgentExecutionDisabled) {
+		t.Fatalf("activate error=%v", err)
 	}
 	archived, err := service.SetStatus(ctx, automationport.MutationCommand{ID: created.ID, Actor: actor, IdempotencyKey: p4AutomationKey(code, "archive")}, automationport.AgentStatusArchived)
 	if err != nil || archived.Status != automationport.AgentStatusArchived {
@@ -96,7 +88,7 @@ func TestP4AutomationAgentsABNormalIdempotencyAndNoExecution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if configurations != 1 || receipts != 10 || completed != 10 || events != 8 || deliveries != 0 {
+	if configurations != 1 || receipts != 8 || completed != 8 || events != 5 || deliveries != 0 {
 		t.Fatalf("configuration/receipt/completed/event/delivery=%d/%d/%d/%d/%d", configurations, receipts, completed, events, deliveries)
 	}
 }
@@ -105,26 +97,25 @@ func TestP4AutomationAgentsABBoundaryErrorAndUOWRollback(t *testing.T) {
 	pool, ctx := openPool(t)
 	service := newP4AutomationAgentService(pool)
 	code := p4AutomationAgentCode(t)
-	if _, err := service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: "p4-automation-agents-invalid-0001", Agent: automationport.Agent{AgentName: "invalid", AgentCode: "bad code", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusActive}}); !errors.Is(err, automationapp.ErrInvalidAgent) {
+	if _, err := service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: "p4-automation-agents-invalid-0001", Agent: automationport.Agent{AgentName: "invalid", AgentCode: "bad code", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusPaused}}); !errors.Is(err, automationapp.ErrInvalidAgent) {
 		t.Fatalf("invalid code error=%v", err)
 	}
-	archived, err := service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: p4AutomationKey(code, "archived-create"), Agent: automationport.Agent{AgentName: "archived", AgentCode: code + "archived", AutomationType: automationport.AutomationTypeFixedScript, Status: automationport.AgentStatusArchived}})
-	if err != nil || archived.ID < 1 || archived.Status != automationport.AgentStatusArchived {
-		t.Fatalf("archived create=%+v err=%v", archived, err)
+	if _, err := service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: p4AutomationKey(code, "archived-create"), Agent: automationport.Agent{AgentName: "archived", AgentCode: code + "archived", AutomationType: automationport.AutomationTypeFixedScript, Status: automationport.AgentStatusArchived}}); !errors.Is(err, automationapp.ErrInvalidAgent) {
+		t.Fatalf("archived create error=%v", err)
 	}
-	valid, err := service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: p4AutomationKey(code, "valid"), Agent: automationport.Agent{AgentName: "valid", AgentCode: code + "a", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusActive}})
+	valid, err := service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: p4AutomationKey(code, "valid"), Agent: automationport.Agent{AgentName: "valid", AgentCode: code + "a", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusPaused}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err = service.SaveFixedContent(ctx, automationport.FixedContentCommand{ID: valid.ID, Actor: 702, IdempotencyKey: "p4-automation-agents-overflow-001", ContentPackage: automationport.FixedContentPackage{ImageLibraryIDs: []int64{1, 2, 3, 4}}}); !errors.Is(err, automationapp.ErrInvalidAgent) {
 		t.Fatalf("over-limit fixed content error=%v", err)
 	}
-	if _, err = service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: p4AutomationKey(code, "valid"), Agent: automationport.Agent{AgentName: "different", AgentCode: code + "b", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusActive}}); !errors.Is(err, automationapp.ErrAgentConflict) {
+	if _, err = service.Create(ctx, automationport.CreateCommand{Actor: 702, IdempotencyKey: p4AutomationKey(code, "valid"), Agent: automationport.Agent{AgentName: "different", AgentCode: code + "b", AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusPaused}}); !errors.Is(err, automationapp.ErrAgentConflict) {
 		t.Fatalf("idempotency conflict error=%v", err)
 	}
 	rollbackCode := p4AutomationAgentCode(t)
 	failing := automationapp.NewAgentService(platformstore.NewUnitOfWork(pool), automationstore.NewAgentRepository(), failingAutomationAppender{})
-	if _, err = failing.Create(ctx, automationport.CreateCommand{Actor: 703, IdempotencyKey: p4AutomationKey(rollbackCode, "rollback"), Agent: automationport.Agent{AgentName: "rollback", AgentCode: rollbackCode, AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusActive}}); !errors.Is(err, automationapp.ErrAgentUnavailable) {
+	if _, err = failing.Create(ctx, automationport.CreateCommand{Actor: 703, IdempotencyKey: p4AutomationKey(rollbackCode, "rollback"), Agent: automationport.Agent{AgentName: "rollback", AgentCode: rollbackCode, AutomationType: automationport.AutomationTypeAgent, Status: automationport.AgentStatusPaused}}); !errors.Is(err, automationapp.ErrAgentUnavailable) {
 		t.Fatalf("failing UoW create error=%v", err)
 	}
 	var configurations, receipts, events int
@@ -150,7 +141,7 @@ func TestP4AutomationAgentsABStorageHasNoTenantOrCrossDomainOwnership(t *testing
 }
 
 func newP4AutomationAgentService(pool *pgxpool.Pool) *automationapp.Service {
-	return automationapp.NewAgentServiceWithImageReferences(platformstore.NewUnitOfWork(pool), automationstore.NewAgentRepository(), mediastore.NewUploadRepository(), eventstore.NewAppender())
+	return automationapp.NewAgentService(platformstore.NewUnitOfWork(pool), automationstore.NewAgentRepository(), eventstore.NewAppender())
 }
 
 var errP4AutomationAppender = errors.New("forced event append failure")
@@ -166,7 +157,7 @@ func p4AutomationAgentCode(t *testing.T) string {
 }
 func p4AutomationKey(code, operation string) string { return "p4-automation-" + code + "-" + operation }
 func p4AutomationEventKeys(code string) []string {
-	return []string{p4AutomationEventKey("create", p4AutomationKey(code, "create")), p4AutomationEventKey("update", p4AutomationKey(code, "update")), p4AutomationEventKey("publish", p4AutomationKey(code, "publish")), p4AutomationEventKey("fixed_content", p4AutomationKey(code, "content")), p4AutomationEventKey("fixed_content", p4AutomationKey(code, "empty-content")), p4AutomationEventKey("set_status", p4AutomationKey(code, "pause")), p4AutomationEventKey("set_status", p4AutomationKey(code, "activate")), p4AutomationEventKey("set_status", p4AutomationKey(code, "archive"))}
+	return []string{p4AutomationEventKey("create", p4AutomationKey(code, "create")), p4AutomationEventKey("update", p4AutomationKey(code, "update")), p4AutomationEventKey("publish", p4AutomationKey(code, "publish")), p4AutomationEventKey("copy", p4AutomationKey(code, "copy")), p4AutomationEventKey("set_status", p4AutomationKey(code, "archive"))}
 }
 func p4AutomationEventKey(operation, key string) string {
 	digest := sha256.Sum256([]byte("automation.agent." + operation + "\x00" + key))

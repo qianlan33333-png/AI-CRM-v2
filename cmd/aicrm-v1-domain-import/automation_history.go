@@ -44,3 +44,19 @@ func importAutomationHistory(ctx context.Context, archive *v1archive.PostgresArc
 	}
 	return importer.Import(ctx, run)
 }
+
+func loadEditableAutomationAgents(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, run string) ([]v1automationhistory.EditableAgent, error) {
+	journal, err := newAutomationHistoryJournal(run)
+	if err != nil {
+		return nil, err
+	}
+	writer, err := automationapp.NewAutomationHistoryWriter(automationstore.NewRepository(nil), journal)
+	if err != nil {
+		return nil, err
+	}
+	importer, err := v1domain.NewAutomationHistoryImporter(archive, uow, writer, journal)
+	if err != nil {
+		return nil, err
+	}
+	return importer.EditableAgents(ctx, run)
+}

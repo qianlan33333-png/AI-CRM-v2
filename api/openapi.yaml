@@ -5973,13 +5973,34 @@ paths:
         "404": { description: Unknown local automation-agent ID or image reference, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
         "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
         "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+  /api/admin/automation-agents/{agent_id}/precheck:
+    parameters:
+      - $ref: "#/components/parameters/AutomationAgentID"
+    get:
+      tags: [p4-automation-agents]
+      operationId: precheckLegacyAutomationAgent
+      summary: Check current local configuration before a separately authorized future activation
+      x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local precheck result; activation and external execution remain disabled., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentPrecheckResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
   /api/admin/automation-agents/{agent_id}/activate:
     parameters:
       - $ref: "#/components/parameters/AutomationAgentID"
     post:
       tags: [p4-automation-agents]
       operationId: activateLegacyAutomationAgent
-      summary: Activate one local automation-agent configuration without running it
+      summary: Reject activation while whitelist automation execution is disabled
       x-p4-decision-evidence: P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20
       x-aicrm-capability: config.settings.manage
       x-aicrm-rbac-scopes: { admin: global }
@@ -5990,13 +6011,11 @@ paths:
       x-aicrm-external-effect: none
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       responses:
-        "200": { description: Confirmed active local configuration, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentDetailResponse" } } } }
-        "400": { description: Invalid local command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { description: Unknown local automation-agent ID, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
-        "409": { description: Local idempotency or state conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
-        "503": { description: Local automation-agent store is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "409": { description: "Execution is disabled; no local state, queue, or external effect was produced.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
+        "503": { description: Local automation-agent read model is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAutomationAgentError" } } } }
   /api/admin/automation-agents/{agent_id}/copy:
     parameters:
       - $ref: "#/components/parameters/AutomationAgentID"
@@ -22862,7 +22881,7 @@ components:
     LegacyAutomationAgentListItem:
       type: object
       additionalProperties: false
-      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, updated_at]
+      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, execution_enabled, materials_configured, updated_at]
       properties:
         id: { type: integer, format: int64, minimum: 1 }
         automation_type: { type: string, enum: [agent, fixed_script] }
@@ -22872,7 +22891,9 @@ components:
         bound_package_id: { type: integer, format: int64, nullable: true, enum: [null] }
         bound_package_name: { type: string, enum: [""] }
         fixed_material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
-        status: { type: string, enum: [active, paused] }
+        status: { type: string, enum: [paused] }
+        execution_enabled: { type: boolean, enum: [false] }
+        materials_configured: { type: boolean, enum: [false] }
         updated_at: { type: string, format: date-time }
     LegacyAutomationAgentListResponse:
       type: object
@@ -22906,11 +22927,10 @@ components:
       required: [content_text, image_library_ids, miniprogram_library_ids, attachment_library_ids, group_invite_library_ids]
       properties:
         content_text: { type: string, maxLength: 4000 }
-        image_library_ids: { type: array, maxItems: 3, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
-        miniprogram_library_ids: { type: array, maxItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
-        attachment_library_ids: { type: array, maxItems: 9, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
-        group_invite_library_ids: { type: array, maxItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
-        dynamic_miniprogram_card: { $ref: "#/components/schemas/LegacyAutomationAgentDynamicCard" }
+        image_library_ids: { type: array, maxItems: 0, items: { type: integer, format: int64 } }
+        miniprogram_library_ids: { type: array, maxItems: 0, items: { type: integer, format: int64 } }
+        attachment_library_ids: { type: array, maxItems: 0, items: { type: integer, format: int64 } }
+        group_invite_library_ids: { type: array, maxItems: 0, items: { type: integer, format: int64 } }
     LegacyAutomationAgentFixedContentPreview:
       type: object
       additionalProperties: false
@@ -22922,7 +22942,7 @@ components:
     LegacyAutomationAgentDetail:
       type: object
       additionalProperties: false
-      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, updated_at, automation_type_label, draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt, draft_version, published_version, has_unpublished_changes, fixed_content_package, fixed_content_package_preview]
+      required: [id, automation_type, agent_code, agent_name, bound_package_key, bound_package_id, bound_package_name, fixed_material_summary, status, execution_enabled, materials_configured, updated_at, automation_type_label, draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt, draft_version, published_version, has_unpublished_changes, fixed_content_package, fixed_content_package_preview, legacy_configuration]
       properties:
         id: { type: integer, format: int64, minimum: 1 }
         automation_type: { type: string, enum: [agent, fixed_script] }
@@ -22932,7 +22952,9 @@ components:
         bound_package_id: { type: integer, format: int64, nullable: true, enum: [null] }
         bound_package_name: { type: string, enum: [""] }
         fixed_material_summary: { $ref: "#/components/schemas/LegacyAutomationAgentMaterialSummary" }
-        status: { type: string, enum: [active, paused] }
+        status: { type: string, enum: [paused] }
+        execution_enabled: { type: boolean, enum: [false] }
+        materials_configured: { type: boolean, enum: [false] }
         updated_at: { type: string, format: date-time }
         automation_type_label: { type: string, enum: [Agent 机器人, 固定话术] }
         draft_role_prompt: { type: string, maxLength: 20000 }
@@ -22944,6 +22966,7 @@ components:
         has_unpublished_changes: { type: boolean }
         fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
         fixed_content_package_preview: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContentPreview" }
+        legacy_configuration: { type: object, maxProperties: 100 }
     LegacyAutomationAgentDetailResponse:
       type: object
       additionalProperties: false
@@ -22959,10 +22982,11 @@ components:
         agent_name: { type: string, minLength: 1, maxLength: 120 }
         agent_code: { type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9_-]+$' }
         automation_type: { type: string, enum: [agent, fixed_script], default: agent }
-        status: { type: string, enum: [active, paused], default: active }
+        status: { type: string, enum: [paused], default: paused }
         role_prompt: { type: string, maxLength: 20000, default: "" }
         task_prompt: { type: string, maxLength: 20000, default: "" }
         fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+        legacy_configuration: { type: object, maxProperties: 100, default: {} }
     LegacyAutomationAgentUpdateRequest:
       type: object
       additionalProperties: false
@@ -22970,10 +22994,11 @@ components:
       properties:
         agent_name: { type: string, minLength: 1, maxLength: 120 }
         automation_type: { type: string, enum: [agent, fixed_script] }
-        status: { type: string, enum: [active, paused] }
+        status: { type: string, enum: [paused] }
         role_prompt: { type: string, maxLength: 20000 }
         task_prompt: { type: string, maxLength: 20000 }
         fixed_content_package: { $ref: "#/components/schemas/LegacyAutomationAgentFixedContent" }
+        legacy_configuration: { type: object, maxProperties: 100 }
     LegacyAutomationAgentFixedContentRequest:
       type: object
       additionalProperties: false
@@ -22994,13 +23019,26 @@ components:
       properties:
         ok: { type: boolean, enum: [true] }
         agent: { $ref: "#/components/schemas/LegacyAutomationAgentArchiveResult" }
+    LegacyAutomationAgentPrecheckResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, agent_id, configuration_ready, materials_configured, execution_enabled, can_activate, reasons, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        agent_id: { type: integer, format: int64, minimum: 1 }
+        configuration_ready: { type: boolean }
+        materials_configured: { type: boolean, enum: [false] }
+        execution_enabled: { type: boolean, enum: [false] }
+        can_activate: { type: boolean, enum: [false] }
+        reasons: { type: array, minItems: 2, uniqueItems: true, items: { type: string, enum: [prompt_unconfigured, material_unconfigured, execution_disabled] } }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyAutomationAgentError:
       type: object
       additionalProperties: false
       required: [ok, error]
       properties:
         ok: { type: boolean, enum: [false] }
-        error: { type: string, enum: [invalid_agent_payload, agent_not_found, automation_agent_conflict, authentication_required, permission_denied, automation_agent_unavailable, webhook_configuration_retired] }
+        error: { type: string, enum: [invalid_agent_payload, agent_not_found, automation_agent_conflict, automation_execution_disabled, authentication_required, permission_denied, automation_agent_unavailable, webhook_configuration_retired] }
     LegacyExecutionTimelineUnavailable:
       type: object
       additionalProperties: false
