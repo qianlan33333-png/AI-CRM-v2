@@ -20,43 +20,23 @@ let fbTimer: ReturnType<typeof setTimeout> | null = null;
 /* ---------- 样式与 DOM ---------- */
 function ensureUI(): void {
   if (document.getElementById('fb-toast')) return;
-  const css = document.createElement('style');
-  css.textContent = `
-    #fb-toast{position:fixed;right:22px;bottom:22px;z-index:9999;background:#1F2329;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;box-shadow:0 12px 28px rgba(15,23,42,.25);display:none;font-family:inherit;animation:fb-in .18s ease-out;max-width:min(420px,80vw);line-height:1.5}
-    #fb-toast.err{background:#D83931}
-    @keyframes fb-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-    #fb-mask{position:fixed;inset:0;background:rgba(15,23,42,.34);z-index:9990;display:none;align-items:center;justify-content:center;padding:24px}
-    #fb-panel{width:min(420px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 64px rgba(15,23,42,.22);overflow:hidden;font-family:inherit}
-    #fb-head{padding:18px 18px 0;font-size:15px;font-weight:600;color:#1F2329}
-    #fb-body{padding:10px 18px 18px;font-size:13px;color:#646A73;line-height:1.7;white-space:pre-wrap}
-    #fb-foot{display:flex;justify-content:flex-end;gap:10px;padding:0 18px 18px}
-    .fb-btn{height:32px;padding:0 14px;border-radius:6px;border:1px solid #DEE0E3;background:#fff;color:#1F2329;font-size:13px;cursor:pointer}
-    .fb-btn.primary{background:#3370ff;border-color:#3370ff;color:#fff}
-    .fb-btn.danger{border-color:#F2B8B5;color:#D83931}
-    #fb-prog-mask{position:fixed;inset:0;background:rgba(15,23,42,.34);z-index:9995;display:none;align-items:center;justify-content:center}
-    #fb-prog{width:min(360px,90%);background:#fff;border-radius:12px;padding:22px;font-family:inherit}
-    #fb-prog-track{height:6px;border-radius:99px;background:#EFF0F1;overflow:hidden;margin-top:14px}
-    #fb-prog-bar{height:100%;width:0;background:#3370ff;border-radius:99px;transition:width .18s linear}
-    .fb-busy{opacity:.65;pointer-events:none}
-  `;
-  document.head.appendChild(css);
   const mk = (html: string): Element => {
     const d = document.createElement('div');
     d.innerHTML = html;
     return d.firstElementChild as Element;
   };
-  document.body.appendChild(mk('<div id="fb-toast"></div>'));
+  document.body.appendChild(mk('<div id="fb-toast" hidden></div>'));
   document.body.appendChild(
-    mk(`<div id="fb-mask"><div id="fb-panel">
+    mk(`<div id="fb-mask" hidden><div id="fb-panel">
       <div id="fb-head"></div><div id="fb-body"></div>
       <div id="fb-foot"><button class="fb-btn" id="fb-cancel">取消</button><button class="fb-btn primary" id="fb-ok">确认</button></div>
     </div></div>`),
   );
   document.body.appendChild(
-    mk(`<div id="fb-prog-mask"><div id="fb-prog">
-      <div style="font-size:14px;font-weight:600;color:#1F2329" id="fb-prog-title">正在上传</div>
-      <div id="fb-prog-track"><div id="fb-prog-bar"></div></div>
-      <div style="font-size:12px;color:#8F959E;margin-top:8px" id="fb-prog-pct">0%</div>
+    mk(`<div id="fb-prog-mask" hidden><div id="fb-prog">
+      <div id="fb-prog-title">正在上传</div>
+      <progress id="fb-prog-bar" max="100" value="0"></progress>
+      <div id="fb-prog-pct">0%</div>
     </div></div>`),
   );
   document.getElementById('fb-mask')!.addEventListener('click', (e) => {
@@ -71,10 +51,10 @@ export function toast(msg: string, err = false): void {
   const t = document.getElementById('fb-toast')!;
   t.textContent = msg;
   t.className = err ? 'err' : '';
-  t.style.display = 'block';
+  t.hidden = false;
   if (fbTimer) clearTimeout(fbTimer);
   fbTimer = setTimeout(() => {
-    t.style.display = 'none';
+    t.hidden = true;
   }, 2400);
 }
 
@@ -82,7 +62,7 @@ export function toast(msg: string, err = false): void {
 let onOkCb: (() => void) | null = null;
 
 function hideConfirm(): void {
-  document.getElementById('fb-mask')!.style.display = 'none';
+  document.getElementById('fb-mask')!.hidden = true;
   onOkCb = null;
 }
 
@@ -105,7 +85,7 @@ export function confirmBox(
     hideConfirm();
     if (cb) cb();
   };
-  document.getElementById('fb-mask')!.style.display = 'flex';
+  document.getElementById('fb-mask')!.hidden = false;
 }
 
 /* ---------- 按钮 busy ---------- */
@@ -127,20 +107,20 @@ export function busy(btn: FbElement, ms: number, done?: () => void): void {
 export function simulateUpload(label?: string, onDone?: () => void): void {
   ensureUI();
   const mask = document.getElementById('fb-prog-mask')!;
-  const bar = document.getElementById('fb-prog-bar')!;
+  const bar = document.getElementById('fb-prog-bar') as HTMLProgressElement;
   const pct = document.getElementById('fb-prog-pct')!;
   document.getElementById('fb-prog-title')!.textContent = '正在上传 · ' + (label || '文件');
-  mask.style.display = 'flex';
+  mask.hidden = false;
   let p = 0;
   const tick = setInterval(() => {
     p = Math.min(100, p + 9 + Math.random() * 12);
-    bar.style.width = p + '%';
+    bar.value = p;
     pct.textContent = Math.floor(p) + '%';
     if (p >= 100) {
       clearInterval(tick);
       setTimeout(() => {
-        mask.style.display = 'none';
-        bar.style.width = '0';
+        mask.hidden = true;
+        bar.value = 0;
         toast('上传完成');
         if (onDone) onDone();
       }, 320);
