@@ -118,6 +118,15 @@ type AdminState = {
   /** 优惠券列表仅对已加载行做本地筛选，不产生新的服务端请求。 */
   couponQuery: string;
   couponStatus: string;
+  /** 订单页沿用 Kimi 壳的本地筛选；导出仍单独调用真实 OpenAPI。 */
+  orderFilters: {
+    transactionId: string;
+    payer: string;
+    product: string;
+    status: string;
+    createdFrom: string;
+    createdTo: string;
+  };
 };
 
 /** 全部屏幕键（go 跳转表） */
@@ -218,6 +227,7 @@ export class AdminController extends PageBase {
     channelHistoryError: '',
     couponQuery: '',
     couponStatus: '',
+    orderFilters: { transactionId: '', payer: '', product: '', status: '', createdFrom: '', createdTo: '' },
   };
 
   db: AdminDb = emptyAdminDb();
@@ -1263,6 +1273,21 @@ export class AdminController extends PageBase {
     }).catch((error) => { this.setState({ saving: false }); toast(error instanceof Error ? error.message : '微信支付交易导出失败', true); });
   }
 
+  private queryOrders(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value.trim() || '';
+    const createdFrom = value('orderCreatedFrom');
+    const createdTo = value('orderCreatedTo');
+    if (createdFrom && createdTo && createdFrom > createdTo) { toast('开始日期不能晚于结束日期', true); return; }
+    this.setState({ orderFilters: {
+      transactionId: value('orderTransactionId'), payer: value('orderMobile'), product: value('orderProductCode'),
+      status: value('orderStatus'), createdFrom, createdTo,
+    } });
+  }
+
+  private clearOrderFilters(): void {
+    this.setState({ orderFilters: { transactionId: '', payer: '', product: '', status: '', createdFrom: '', createdTo: '' } });
+  }
+
   private migDownloadTemplate(): void {
     void this.api.downloadOwnerReassignmentTemplate()
       .then((blob) => this.saveBlob(blob, '负责人迁移模板.csv'))
@@ -2290,6 +2315,16 @@ export class AdminController extends PageBase {
       height: '28px', minWidth: '28px', padding: '0 8px', border: '1px solid #DEE0E3', borderRadius: '6px',
       background: '#fff', color: enabled ? '#1F2329' : '#BBBFC4', fontSize: '12px', cursor: enabled ? 'pointer' : 'not-allowed',
     });
+    const orderFilters = this.state.orderFilters;
+    const includes = (value: string, query: string): boolean => !query || value.toLowerCase().includes(query.toLowerCase());
+    const orderStatusValue = (label: string): string => ({ '已支付': 'paid', '退款中': 'refunding', '未支付': 'unpaid', '已退款': 'refunded', '已关闭': 'closed' }[label] || label);
+    const orderRows = rows.orders.filter((order) =>
+      includes(`${order.no} ${order.plat}`, orderFilters.transactionId) &&
+      includes(`${order.payer} ${order.uid}`, orderFilters.payer) &&
+      includes(order.product, orderFilters.product) &&
+      (!orderFilters.status || orderStatusValue(order.status) === orderFilters.status) &&
+      (!orderFilters.createdFrom || order.time.slice(0, 10) >= orderFilters.createdFrom) &&
+      (!orderFilters.createdTo || order.time.slice(0, 10) <= orderFilters.createdTo));
 
     return {
       go,
@@ -2549,9 +2584,18 @@ export class AdminController extends PageBase {
         historicalRefunds: rows.orders[0]?.historicalRefunds || [],
         submitRefund: () => this.submitRefundIntent(),
       },
-      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directory: () => this.openGroupOpsDirectory() },
+      groupOpsPage: {
+        rows: groupOpsRows,
+        total: groupOpsRows.length,
+        activeCount: groupOpsRows.filter((plan) => plan.status === 'active').length,
+        queueTotal: groupOpsRows.reduce((total, plan) => total + (plan.queueCount || 0), 0),
+        members: this.db.staff,
+        memberCount: this.db.staff.length,
+        create: () => this.goto('groupopsDetail'),
+        directory: () => this.openGroupOpsDirectory(),
+      },
       groupOpsDetailPage: {
-        item: groupOpsDetail ? { ...groupOpsDetail, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', webhookUrl: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        item: groupOpsDetail ? { ...groupOpsDetail, staffCount: groupOpsDetail.staffIds.length, assetCount: groupOpsDetail.assets.length, nodeCount: groupOpsDetail.nodes.length, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, staffCount: 0, assetCount: 0, nodeCount: 0, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', webhookUrl: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
         members: groupOpsMemberOptions,
         directory: () => this.openGroupOpsDirectory(),
         save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'), copyWebhookUrl: () => { const value = groupOpsDetail?.webhookUrl || ''; if (!value) return toast('尚未配置可复制的 Webhook URL', true); copyText(value, (message, error) => toast(message, error)); },
@@ -2979,7 +3023,7 @@ export class AdminController extends PageBase {
       },
 
       /* 配置中心 */
-      configPage: { rows: configRows, total: this.db.configCategories.length },
+      configPage: { rows: configRows, total: this.db.configCategories.length + 2 },
       cfg: {
         cat: cfgVals,
         save: () => this.saveConfig(),
@@ -2988,7 +3032,24 @@ export class AdminController extends PageBase {
       },
 
       /* ================= 列表页数据 ================= */
-      orderPage: { exportWechat: () => this.exportWechatOrders(), saving: this.state.saving },
+      orderPage: {
+        filters: orderFilters,
+        statusOptions: [
+          { value: '', label: '全部状态' }, { value: 'paid', label: '已支付' },
+          { value: 'refunding', label: '退款中' }, { value: 'unpaid', label: '未支付' },
+          { value: 'refunded', label: '已退款' }, { value: 'closed', label: '已关闭' },
+        ].map(({ value, label }) => ({
+          value, label,
+          selected: orderFilters.status === value,
+          unselected: orderFilters.status !== value,
+        })),
+        query: () => this.queryOrders(),
+        clear: () => this.clearOrderFilters(),
+        exportWechat: () => this.exportWechatOrders(),
+        saving: this.state.saving,
+        summary: orderRows.length === rows.orders.length ? `当前加载 ${orderRows.length} 条` : `当前筛选 ${orderRows.length} / ${rows.orders.length} 条`,
+        empty: orderRows.length === 0,
+      },
       rows: {
         customers: rows.customers.map((r) => ({ ...r, view: () => this.goto('customerDetail', '?id=' + encodeURIComponent(r.id)) })),
         tags: rows.tags,
@@ -3040,7 +3101,7 @@ export class AdminController extends PageBase {
           edit: () => this.goto('channelForm', r.resourceId == null ? '' : '?id=' + r.resourceId),
           cs: mk(r.tone), tcs: mk(r.tagTone), typeCs: mk('blue'), matCs: mk('gray'), welCs: mk('ok'),
         })),
-        orders: rows.orders.map((r) => ({ ...r, cs: mk(r.tone), view: () => this.goto('orderDetail', '?id=' + encodeURIComponent(r.no)) })),
+        orders: orderRows.map((r) => ({ ...r, cs: mk(r.tone), view: () => this.goto('orderDetail', '?id=' + encodeURIComponent(r.no)) })),
         orderKv: rows.orderKv.map((r) => ({
           ...r,
           vs: {
