@@ -434,9 +434,3 @@ type CustomerTag struct {
 	TaggedAt   pgtype.Timestamptz `json:"tagged_at"`
 	TaggedBy   string             `json:"tagged_by"`
 }
-
-type TagGroup struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	SortOrder int32  `json:"sort_order"`
-}

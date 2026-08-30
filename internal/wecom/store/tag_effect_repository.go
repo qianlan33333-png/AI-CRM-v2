@@ -187,6 +187,19 @@ func (repository *TagEffectRepository) CompleteAttempt(ctx context.Context, comp
 				return err
 			}
 		}
+		groupIDs := make(map[string]int64, len(completion.Catalog.Groups))
+		providerGroupIDs := make([]string, 0, len(completion.Catalog.Groups))
+		for _, group := range completion.Catalog.Groups {
+			groupID, groupErr := queries.UpsertWeComTagGroupProjection(ctx, wecomdb.UpsertWeComTagGroupProjectionParams{
+				ProviderGroupID: textValue(group.ProviderGroupID), Name: group.Name, ProviderOrder: group.Order,
+			})
+			if groupErr != nil {
+				return groupErr
+			}
+			groupIDs[group.ProviderGroupID] = groupID
+			providerGroupIDs = append(providerGroupIDs, group.ProviderGroupID)
+		}
+		providerTagIDs := make([]string, 0, len(completion.Catalog.Tags))
 		for _, providerTag := range completion.Catalog.Tags {
 			if err = queries.InsertWeComTagCatalogTag(ctx, wecomdb.InsertWeComTagCatalogTagParams{
 				SnapshotID: snapshotID, ProviderTagID: providerTag.ProviderTagID,
@@ -194,6 +207,22 @@ func (repository *TagEffectRepository) CompleteAttempt(ctx context.Context, comp
 			}); err != nil {
 				return err
 			}
+			groupID, ok := groupIDs[providerTag.ProviderGroupID]
+			if !ok {
+				return tag.ErrInvalidCommand
+			}
+			if err = queries.UpsertWeComTagProjection(ctx, wecomdb.UpsertWeComTagProjectionParams{
+				GroupID: int8Value(groupID), ProviderTagID: textValue(providerTag.ProviderTagID), Name: providerTag.Name, ProviderOrder: providerTag.Order,
+			}); err != nil {
+				return err
+			}
+			providerTagIDs = append(providerTagIDs, providerTag.ProviderTagID)
+		}
+		if err = queries.ArchiveMissingWeComTagProjections(ctx, providerTagIDs); err != nil {
+			return err
+		}
+		if err = queries.ArchiveMissingWeComTagGroupProjections(ctx, providerGroupIDs); err != nil {
+			return err
 		}
 		return nil
 	})

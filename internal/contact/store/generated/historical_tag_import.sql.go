@@ -103,9 +103,15 @@ type CreateHistoricalTagImportGroupParams struct {
 	SortOrder int32  `json:"sort_order"`
 }
 
-func (q *Queries) CreateHistoricalTagImportGroup(ctx context.Context, arg CreateHistoricalTagImportGroupParams) (TagGroup, error) {
+type CreateHistoricalTagImportGroupRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+func (q *Queries) CreateHistoricalTagImportGroup(ctx context.Context, arg CreateHistoricalTagImportGroupParams) (CreateHistoricalTagImportGroupRow, error) {
 	row := q.db.QueryRow(ctx, createHistoricalTagImportGroup, arg.Name, arg.SortOrder)
-	var i TagGroup
+	var i CreateHistoricalTagImportGroupRow
 	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
 	return i, err
 }
@@ -198,9 +204,15 @@ WHERE id = $1::bigint
 FOR KEY SHARE
 `
 
-func (q *Queries) LockHistoricalTagImportGroup(ctx context.Context, groupID int64) (TagGroup, error) {
+type LockHistoricalTagImportGroupRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+func (q *Queries) LockHistoricalTagImportGroup(ctx context.Context, groupID int64) (LockHistoricalTagImportGroupRow, error) {
 	row := q.db.QueryRow(ctx, lockHistoricalTagImportGroup, groupID)
-	var i TagGroup
+	var i LockHistoricalTagImportGroupRow
 	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
 	return i, err
 }

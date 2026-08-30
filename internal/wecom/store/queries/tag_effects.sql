@@ -143,3 +143,30 @@ VALUES ($1, $2, $3, $4);
 INSERT INTO public.wecom_tag_catalog_tags
   (snapshot_id, provider_tag_id, provider_group_id, name, provider_order)
 VALUES ($1, $2, $3, $4, $5);
+
+-- name: UpsertWeComTagGroupProjection :one
+INSERT INTO public.tag_groups (wecom_group_id, name, sort_order)
+VALUES (sqlc.arg(provider_group_id), sqlc.arg(name), sqlc.arg(provider_order))
+ON CONFLICT (wecom_group_id) DO UPDATE
+SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order
+RETURNING id;
+
+-- name: UpsertWeComTagProjection :exec
+INSERT INTO public.tags (group_id, wecom_tag_id, name, sort_order)
+VALUES (sqlc.arg(group_id), sqlc.arg(provider_tag_id), sqlc.arg(name), sqlc.arg(provider_order))
+ON CONFLICT (wecom_tag_id) DO UPDATE
+SET group_id = EXCLUDED.group_id, name = EXCLUDED.name, sort_order = EXCLUDED.sort_order;
+
+-- name: ArchiveMissingWeComTagProjections :exec
+UPDATE public.tags
+SET name = 'archived:' || id::text
+WHERE wecom_tag_id IS NOT NULL
+  AND wecom_tag_id <> ALL(sqlc.arg(provider_tag_ids)::text[])
+  AND name NOT LIKE 'archived:%';
+
+-- name: ArchiveMissingWeComTagGroupProjections :exec
+UPDATE public.tag_groups
+SET name = 'archived:' || id::text
+WHERE wecom_group_id IS NOT NULL
+  AND wecom_group_id <> ALL(sqlc.arg(provider_group_ids)::text[])
+  AND name NOT LIKE 'archived:%';

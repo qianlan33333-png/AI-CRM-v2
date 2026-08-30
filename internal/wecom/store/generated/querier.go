@@ -13,6 +13,8 @@ import (
 type Querier interface {
 	AcceptMessageArchiveSyncReceipt(ctx context.Context, arg AcceptMessageArchiveSyncReceiptParams) (AcceptMessageArchiveSyncReceiptRow, error)
 	AdvanceWeComSyncState(ctx context.Context, arg AdvanceWeComSyncStateParams) (AdvanceWeComSyncStateRow, error)
+	ArchiveMissingWeComTagGroupProjections(ctx context.Context, providerGroupIds []string) error
+	ArchiveMissingWeComTagProjections(ctx context.Context, providerTagIds []string) error
 	ClaimWeComContactInbox(ctx context.Context, arg ClaimWeComContactInboxParams) (ClaimWeComContactInboxRow, error)
 	CompleteCustomerAcquisitionLinkReceipt(ctx context.Context, arg CompleteCustomerAcquisitionLinkReceiptParams) (WecomCustomerAcquisitionLinkReceipt, error)
 	CompleteWeComContactInbox(ctx context.Context, arg CompleteWeComContactInboxParams) (CompleteWeComContactInboxRow, error)
@@ -56,6 +58,8 @@ type Querier interface {
 	RecordWeComTagEffectClaim(ctx context.Context, arg RecordWeComTagEffectClaimParams) (WecomTagEffect, error)
 	ReserveMessageArchiveSyncReceipt(ctx context.Context, arg ReserveMessageArchiveSyncReceiptParams) (ReserveMessageArchiveSyncReceiptRow, error)
 	RestartCompletedWeComSyncState(ctx context.Context, syncKey string) (string, error)
+	UpsertWeComTagGroupProjection(ctx context.Context, arg UpsertWeComTagGroupProjectionParams) (int64, error)
+	UpsertWeComTagProjection(ctx context.Context, arg UpsertWeComTagProjectionParams) error
 }
 
 var _ Querier = (*Queries)(nil)

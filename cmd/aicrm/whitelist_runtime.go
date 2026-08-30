@@ -252,6 +252,7 @@ func checkWhitelistReadiness(ctx context.Context, pool *pgxpool.Pool) error {
   to_regclass('public.segments') IS NOT NULL AND
   to_regclass('public.automation_agent_configurations') IS NOT NULL AND
   to_regclass('public.tag_groups') IS NOT NULL AND
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='tag_groups' AND column_name='wecom_group_id') AND
   to_regclass('public.tags') IS NOT NULL AND
   to_regclass('public.coupons') IS NOT NULL AND
   to_regclass('public.media_images') IS NOT NULL AND

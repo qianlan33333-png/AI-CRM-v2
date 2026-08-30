@@ -15710,7 +15710,8 @@ ALTER TABLE public.tag_catalog_operation_receipts ALTER COLUMN id ADD GENERATED 
 CREATE TABLE public.tag_groups (
     id bigint NOT NULL,
     name text NOT NULL,
-    sort_order integer DEFAULT 0 NOT NULL
+    sort_order integer DEFAULT 0 NOT NULL,
+    wecom_group_id text
 );
 
 
@@ -19449,7 +19450,7 @@ COPY public.tag_catalog_operation_receipts (id, operation, actor, key_digest, pa
 -- Data for Name: tag_groups; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.tag_groups (id, name, sort_order) FROM stdin;
+COPY public.tag_groups (id, name, sort_order, wecom_group_id) FROM stdin;
 \.
 
 
@@ -26641,6 +26642,14 @@ ALTER TABLE ONLY public.tag_catalog_operation_receipts
 
 ALTER TABLE ONLY public.tag_groups
     ADD CONSTRAINT tag_groups_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tag_groups tag_groups_wecom_group_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_groups
+    ADD CONSTRAINT tag_groups_wecom_group_id_key UNIQUE (wecom_group_id);
 
 
 --

@@ -11,6 +11,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const archiveMissingWeComTagGroupProjections = `-- name: ArchiveMissingWeComTagGroupProjections :exec
+UPDATE public.tag_groups
+SET name = 'archived:' || id::text
+WHERE wecom_group_id IS NOT NULL
+  AND wecom_group_id <> ALL($1::text[])
+  AND name NOT LIKE 'archived:%'
+`
+
+func (q *Queries) ArchiveMissingWeComTagGroupProjections(ctx context.Context, providerGroupIds []string) error {
+	_, err := q.db.Exec(ctx, archiveMissingWeComTagGroupProjections, providerGroupIds)
+	return err
+}
+
+const archiveMissingWeComTagProjections = `-- name: ArchiveMissingWeComTagProjections :exec
+UPDATE public.tags
+SET name = 'archived:' || id::text
+WHERE wecom_tag_id IS NOT NULL
+  AND wecom_tag_id <> ALL($1::text[])
+  AND name NOT LIKE 'archived:%'
+`
+
+func (q *Queries) ArchiveMissingWeComTagProjections(ctx context.Context, providerTagIds []string) error {
+	_, err := q.db.Exec(ctx, archiveMissingWeComTagProjections, providerTagIds)
+	return err
+}
+
 const completeWeComTagEffectAttempt = `-- name: CompleteWeComTagEffectAttempt :one
 UPDATE public.wecom_tag_effects AS binding
 SET state = $1, attempt_receipt_id = $2,
@@ -560,4 +586,49 @@ func (q *Queries) RecordWeComTagEffectClaim(ctx context.Context, arg RecordWeCom
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const upsertWeComTagGroupProjection = `-- name: UpsertWeComTagGroupProjection :one
+INSERT INTO public.tag_groups (wecom_group_id, name, sort_order)
+VALUES ($1, $2, $3)
+ON CONFLICT (wecom_group_id) DO UPDATE
+SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order
+RETURNING id
+`
+
+type UpsertWeComTagGroupProjectionParams struct {
+	ProviderGroupID pgtype.Text `json:"provider_group_id"`
+	Name            string      `json:"name"`
+	ProviderOrder   int32       `json:"provider_order"`
+}
+
+func (q *Queries) UpsertWeComTagGroupProjection(ctx context.Context, arg UpsertWeComTagGroupProjectionParams) (int64, error) {
+	row := q.db.QueryRow(ctx, upsertWeComTagGroupProjection, arg.ProviderGroupID, arg.Name, arg.ProviderOrder)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const upsertWeComTagProjection = `-- name: UpsertWeComTagProjection :exec
+INSERT INTO public.tags (group_id, wecom_tag_id, name, sort_order)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (wecom_tag_id) DO UPDATE
+SET group_id = EXCLUDED.group_id, name = EXCLUDED.name, sort_order = EXCLUDED.sort_order
+`
+
+type UpsertWeComTagProjectionParams struct {
+	GroupID       pgtype.Int8 `json:"group_id"`
+	ProviderTagID pgtype.Text `json:"provider_tag_id"`
+	Name          string      `json:"name"`
+	ProviderOrder int32       `json:"provider_order"`
+}
+
+func (q *Queries) UpsertWeComTagProjection(ctx context.Context, arg UpsertWeComTagProjectionParams) error {
+	_, err := q.db.Exec(ctx, upsertWeComTagProjection,
+		arg.GroupID,
+		arg.ProviderTagID,
+		arg.Name,
+		arg.ProviderOrder,
+	)
+	return err
 }

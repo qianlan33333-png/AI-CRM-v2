@@ -130,9 +130,15 @@ WHERE g.id = $1
 RETURNING g.id, g.name, g.sort_order
 `
 
-func (q *Queries) ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (TagGroup, error) {
+type ArchiveLegacyTagGroupRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+func (q *Queries) ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (ArchiveLegacyTagGroupRow, error) {
 	row := q.db.QueryRow(ctx, archiveLegacyTagGroup, groupID)
-	var i TagGroup
+	var i ArchiveLegacyTagGroupRow
 	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
 	return i, err
 }
@@ -180,9 +186,15 @@ WHERE name NOT LIKE 'archived:%'
 RETURNING id,name,sort_order
 `
 
-func (q *Queries) CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error) {
+type CreateLegacyTagGroupRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+func (q *Queries) CreateLegacyTagGroup(ctx context.Context, name string) (CreateLegacyTagGroupRow, error) {
 	row := q.db.QueryRow(ctx, createLegacyTagGroup, name)
-	var i TagGroup
+	var i CreateLegacyTagGroupRow
 	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
 	return i, err
 }
@@ -285,15 +297,21 @@ const listLegacyTagGroups = `-- name: ListLegacyTagGroups :many
 SELECT id, name, sort_order FROM tag_groups WHERE name NOT LIKE 'archived:%' ORDER BY sort_order, id
 `
 
-func (q *Queries) ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error) {
+type ListLegacyTagGroupsRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+func (q *Queries) ListLegacyTagGroups(ctx context.Context) ([]ListLegacyTagGroupsRow, error) {
 	rows, err := q.db.Query(ctx, listLegacyTagGroups)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TagGroup{}
+	items := []ListLegacyTagGroupsRow{}
 	for rows.Next() {
-		var i TagGroup
+		var i ListLegacyTagGroupsRow
 		if err := rows.Scan(&i.ID, &i.Name, &i.SortOrder); err != nil {
 			return nil, err
 		}
@@ -577,9 +595,15 @@ type UpdateLegacyTagGroupParams struct {
 	ID   int64  `json:"id"`
 }
 
-func (q *Queries) UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error) {
+type UpdateLegacyTagGroupRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int32  `json:"sort_order"`
+}
+
+func (q *Queries) UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (UpdateLegacyTagGroupRow, error) {
 	row := q.db.QueryRow(ctx, updateLegacyTagGroup, arg.Name, arg.ID)
-	var i TagGroup
+	var i UpdateLegacyTagGroupRow
 	err := row.Scan(&i.ID, &i.Name, &i.SortOrder)
 	return i, err
 }
