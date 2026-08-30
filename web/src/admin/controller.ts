@@ -15,6 +15,7 @@ import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, Channel
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
 import { buildChannelFinalUrl, channelAcquisitionAssetReady, listAudienceTemplatesDto, previewAudienceTemplateDto, saveAudienceTemplateConfigurationDto, type AudienceTemplate, type AudienceTemplateEvaluation, type AudienceTemplateKey, type AudienceTemplateParameters } from '../api/admin';
+import { ApiError } from '../api/transport';
 import type { AdminDbWithMiniProgramList, AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, MiniProgramListPage, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
@@ -24,6 +25,11 @@ import { createWeComAcquisitionLink, deleteWeComAcquisitionLink, getWeComAcquisi
 const ACCENT = '#3370ff';
 const CHANNEL_HISTORY_PAGE_SIZE = 50;
 const MINI_PROGRAM_PAGE_SIZE = 50;
+
+const channelAcquisitionErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof ApiError && error.status === 503
+    ? '企微客户联系能力未配置，配置后即可生成二维码'
+    : error instanceof Error ? error.message : fallback;
 
 type AdminState = {
   cstep: number;
@@ -941,7 +947,7 @@ export class AdminController extends PageBase {
       }
       this.openChannelDrawer(channelId);
       toast('二维码仍在生成，可在渠道详情中查看状态', true);
-    })().catch((error) => toast(error instanceof Error ? error.message : '二维码生成或下载失败', true));
+    })().catch((error) => toast(channelAcquisitionErrorMessage(error, '二维码生成或下载失败'), true));
   }
 
   private requestChannelAsset(channelId: number | undefined, kind: ChannelAcquisitionAsset['kind'], target: 'drawer' | 'form'): void {
@@ -958,11 +964,11 @@ export class AdminController extends PageBase {
         const assets = await this.loadChannelAcquisitionAssets(channelId);
         this.setState({ [assetsKey]: assets.some((item) => item.effectId === queued.effectId) ? assets : [queued, ...assets] });
       } catch (error) {
-        this.setState({ [errorKey]: error instanceof Error ? error.message : '资产状态读取失败' });
+        this.setState({ [errorKey]: channelAcquisitionErrorMessage(error, '资产状态读取失败') });
       }
     }).catch((error) => {
-      this.setState({ [busyKey]: false, [errorKey]: error instanceof Error ? error.message : '资产申请失败' });
-      toast(error instanceof Error ? error.message : '资产申请失败', true);
+      this.setState({ [busyKey]: false, [errorKey]: channelAcquisitionErrorMessage(error, '资产申请失败') });
+      toast(channelAcquisitionErrorMessage(error, '资产申请失败'), true);
     });
   }
 
@@ -990,7 +996,7 @@ export class AdminController extends PageBase {
         channelDrawerPreview: preview.status === 'fulfilled' ? preview.value : null,
         channelDrawerPreviewError: preview.status === 'rejected' ? (preview.reason instanceof Error ? preview.reason.message : '本地分配配置读取失败') : '',
         channelDrawerAssets: assets.status === 'fulfilled' ? assets.value : [],
-        channelDrawerAssetError: assets.status === 'rejected' ? (assets.reason instanceof Error ? assets.reason.message : '资产状态读取失败') : '',
+        channelDrawerAssetError: assets.status === 'rejected' ? channelAcquisitionErrorMessage(assets.reason, '资产状态读取失败') : '',
       });
     })();
   }
@@ -1011,10 +1017,10 @@ export class AdminController extends PageBase {
     ]);
     this.state.channelFormPreview = preview.status === 'fulfilled' ? preview.value : null;
     const previewError = preview.status === 'rejected' ? (preview.reason instanceof Error ? preview.reason.message : '本地分配配置读取失败') : '';
-    const staffError = staff.status === 'rejected' ? (staff.reason instanceof Error ? staff.reason.message : '企微客服目录读取失败') : '';
+    const staffError = staff.status === 'rejected' ? channelAcquisitionErrorMessage(staff.reason, '企微客服目录读取失败') : '';
     this.state.channelFormPreviewError = [previewError, staffError].filter(Boolean).join('；');
     this.state.channelFormAssets = assets.status === 'fulfilled' ? assets.value : [];
-    this.state.channelFormAssetError = assets.status === 'rejected' ? (assets.reason instanceof Error ? assets.reason.message : '资产状态读取失败') : '';
+    this.state.channelFormAssetError = assets.status === 'rejected' ? channelAcquisitionErrorMessage(assets.reason, '资产状态读取失败') : '';
     this.db.staff = staff.status === 'fulfilled' ? staff.value.map((item) => ({ name: item.name, uid: item.staffId, dept: '企微可用客服' })) : [];
     if (this.state.channelFormPreview?.assignees.length && !this.state.cfStaff) {
       this.state.cfStaff = this.state.channelFormPreview.assignees.map((assignee) => ({ id: assignee.staffId, uid: assignee.staffId, name: assignee.name }));
