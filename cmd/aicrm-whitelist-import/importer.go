@@ -36,6 +36,36 @@ type copySpec struct {
 	transform    func(string, []byte, map[int64]int64) ([]byte, error)
 }
 
+type questionnaireReference struct {
+	entity string
+	value  string
+}
+
+type questionnaireResolutionRow struct {
+	recordType       string
+	submissionID     int64
+	matchCount       int64
+	existingCustomer int64
+	unionID          string
+	externalUserID   string
+	openID           string
+	mobile           string
+	createdAt        time.Time
+}
+
+type syntheticCustomer struct {
+	id        int64
+	createdAt time.Time
+	updatedAt time.Time
+}
+
+type questionnaireResolution struct {
+	bySubmission map[int64]int64
+	byOrder      map[int64]int64
+	references   map[int64][]questionnaireReference
+	synthetic    []syntheticCustomer
+}
+
 var whitelistCopySpecs = []copySpec{
 	{sourceEntity: "admin_users", targetTable: "admin_users", query: sameRows("admin_users", "id")},
 	{sourceEntity: "admin_sessions", targetTable: "admin_sessions", query: sameRows("admin_sessions", "id")},
@@ -54,7 +84,7 @@ SELECT id::text, to_jsonb(item), to_jsonb(item) || jsonb_build_object(
 FROM public.products AS item ORDER BY id`},
 	{domain: "order", sourceEntity: "order_list_projections", targetTable: "order_list_projections", query: `
 SELECT id::text, to_jsonb(item), to_jsonb(item) || '{"payer_name_snapshot":"","mobile_snapshot":"","identity_kind":"","identity_value":""}'::jsonb
-FROM public.order_list_projections AS item ORDER BY id`},
+FROM public.order_list_projections AS item WHERE product_id IS NOT NULL ORDER BY id`, transform: addOrderCustomer},
 	{domain: "order", sourceEntity: "order_historical_refunds", targetTable: "order_refund_facts", query: `
 SELECT refund.id::text, to_jsonb(refund), jsonb_build_object(
 	  'id',refund.id,'order_id',refund.order_id,'provider',orders.provider,
@@ -65,6 +95,7 @@ SELECT refund.id::text, to_jsonb(refund), jsonb_build_object(
 FROM public.order_historical_refunds AS refund
 JOIN public.order_list_projections AS orders ON orders.id=refund.order_id
 WHERE lower(refund.status) IN ('completed','success','succeeded','refunded','failed','rejected','cancelled')
+  AND orders.product_id IS NOT NULL
 ORDER BY refund.id`},
 	{domain: "membership", sourceEntity: "product_local_entitlements", targetTable: "product_local_entitlements", query: sameRows("product_local_entitlements", "id")},
 	{domain: "questionnaire", sourceEntity: "questionnaires", targetTable: "questionnaires", query: `
@@ -239,7 +270,7 @@ func importWhitelist(ctx context.Context, config cliConfig) (importResult, error
 
 type receiptWriter func(context.Context, pgx.Tx, string, copySpec, string, []byte, string) error
 
-func walkSource(ctx context.Context, source, target pgx.Tx, questionnaireCustomers map[int64]int64, sourceBinding, runID string, writeReceipt receiptWriter) (string, map[string]int64, error) {
+func walkSource(ctx context.Context, source, target pgx.Tx, questionnaireCustomers questionnaireResolution, sourceBinding, runID string, writeReceipt receiptWriter) (string, map[string]int64, error) {
 	hasher := sha256.New()
 	writeDigest(hasher, "v1_archive_binding", sourceBinding, []byte(sourceBinding))
 	counts := map[string]int64{}
@@ -247,7 +278,7 @@ func walkSource(ctx context.Context, source, target pgx.Tx, questionnaireCustome
 	if err != nil {
 		return "", nil, err
 	}
-	if err = verifyRequiredIdentities(ctx, source, customerIDs); err != nil {
+	if err = verifyRequiredIdentities(ctx, source, customerIDs, questionnaireCustomers.byOrder); err != nil {
 		return "", nil, err
 	}
 	for _, spec := range whitelistCopySpecs {
@@ -264,7 +295,11 @@ func walkSource(ctx context.Context, source, target pgx.Tx, questionnaireCustome
 			}
 			writeDigest(hasher, spec.sourceEntity, key, sourcePayload)
 			if spec.transform != nil {
-				targetPayload, queryErr = spec.transform(key, targetPayload, questionnaireCustomers)
+				mappings := questionnaireCustomers.bySubmission
+				if spec.sourceEntity == "order_list_projections" {
+					mappings = questionnaireCustomers.byOrder
+				}
+				targetPayload, queryErr = spec.transform(key, targetPayload, mappings)
 				if queryErr != nil {
 					rows.Close()
 					return "", nil, queryErr
@@ -296,10 +331,59 @@ func walkSource(ctx context.Context, source, target pgx.Tx, questionnaireCustome
 	if err = recordSkippedRefunds(ctx, source, target, hasher, counts, runID, writeReceipt); err != nil {
 		return "", nil, err
 	}
+	if err = recordRejectedOrders(ctx, source, target, hasher, counts, runID); err != nil {
+		return "", nil, err
+	}
 	if err = recordSkippedAudiences(ctx, source, target, hasher, counts, runID, writeReceipt); err != nil {
 		return "", nil, err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), counts, nil
+}
+
+func recordRejectedOrders(ctx context.Context, source, target pgx.Tx, hasher hash.Hash, counts map[string]int64, runID string) error {
+	for _, rejected := range []struct {
+		sourceEntity string
+		targetTable  string
+		query        string
+		reason       string
+	}{
+		{"order_list_projections", "order_list_projections", `SELECT id::text,to_jsonb(item) FROM public.order_list_projections AS item WHERE product_id IS NULL ORDER BY id`, "order has no exact product relation"},
+		{"order_historical_refunds", "order_refund_facts", `
+SELECT refund.id::text,to_jsonb(refund)
+FROM public.order_historical_refunds AS refund
+JOIN public.order_list_projections AS orders ON orders.id=refund.order_id
+WHERE orders.product_id IS NULL
+  AND lower(refund.status) IN ('completed','success','succeeded','refunded','failed','rejected','cancelled')
+ORDER BY refund.id`, "parent order has no exact product relation"},
+	} {
+		rows, err := source.Query(ctx, rejected.query)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var key string
+			var payload []byte
+			if err = rows.Scan(&key, &payload); err != nil {
+				rows.Close()
+				return err
+			}
+			writeDigest(hasher, rejected.sourceEntity+".rejected", key, payload)
+			counts["order_rejected"]++
+			if target != nil {
+				spec := copySpec{domain: "order", sourceEntity: rejected.sourceEntity, targetTable: rejected.targetTable}
+				if err = insertRejectedReceipt(ctx, target, runID, spec, key, payload, rejected.reason); err != nil {
+					rows.Close()
+					return err
+				}
+			}
+		}
+		if err = rows.Err(); err != nil {
+			rows.Close()
+			return err
+		}
+		rows.Close()
+	}
+	return nil
 }
 
 func recordSkippedRefunds(ctx context.Context, source, target pgx.Tx, hasher hash.Hash, counts map[string]int64, runID string, writeReceipt receiptWriter) error {
@@ -330,13 +414,15 @@ ORDER BY refund.id`)
 	return rows.Err()
 }
 
-func importCustomers(ctx context.Context, source, target pgx.Tx, hasher hash.Hash, counts map[string]int64, questionnaireCustomers map[int64]int64, runID string, writeReceipt receiptWriter) (map[int64]int64, error) {
-	questionnaireCustomerIDs := make([]int64, 0, len(questionnaireCustomers))
+func importCustomers(ctx context.Context, source, target pgx.Tx, hasher hash.Hash, counts map[string]int64, questionnaireCustomers questionnaireResolution, runID string, writeReceipt receiptWriter) (map[int64]int64, error) {
+	questionnaireCustomerIDs := make([]int64, 0, len(questionnaireCustomers.bySubmission)+len(questionnaireCustomers.byOrder))
 	seen := map[int64]struct{}{}
-	for _, customerID := range questionnaireCustomers {
-		if _, ok := seen[customerID]; !ok {
-			seen[customerID] = struct{}{}
-			questionnaireCustomerIDs = append(questionnaireCustomerIDs, customerID)
+	for _, mappings := range []map[int64]int64{questionnaireCustomers.bySubmission, questionnaireCustomers.byOrder} {
+		for _, customerID := range mappings {
+			if _, ok := seen[customerID]; !ok {
+				seen[customerID] = struct{}{}
+				questionnaireCustomerIDs = append(questionnaireCustomerIDs, customerID)
+			}
 		}
 	}
 	sort.Slice(questionnaireCustomerIDs, func(i, j int) bool { return questionnaireCustomerIDs[i] < questionnaireCustomerIDs[j] })
@@ -354,7 +440,6 @@ ORDER BY customer.id`, questionnaireCustomerIDs)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 	ids := map[int64]int64{}
 	for rows.Next() {
 		var id int64
@@ -385,36 +470,230 @@ ORDER BY customer.id`, questionnaireCustomerIDs)
 		}
 		counts["identity"]++
 	}
-	return ids, rows.Err()
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+	for _, customer := range questionnaireCustomers.synthetic {
+		payload, marshalErr := json.Marshal(struct {
+			ID        int64     `json:"id"`
+			CreatedAt time.Time `json:"created_at"`
+			UpdatedAt time.Time `json:"updated_at"`
+		}{customer.id, customer.createdAt, customer.updatedAt})
+		if marshalErr != nil {
+			return nil, marshalErr
+		}
+		key := fmt.Sprint(customer.id)
+		writeDigest(hasher, "questionnaire_subjects", key, payload)
+		ids[customer.id] = customer.id
+		if target != nil {
+			if _, err = target.Exec(ctx, `INSERT INTO public.customers(id,state,created_at,updated_at) OVERRIDING SYSTEM VALUE VALUES($1,'active',$2,$3)`, customer.id, customer.createdAt, customer.updatedAt); err != nil {
+				return nil, err
+			}
+			if writeReceipt != nil {
+				spec := copySpec{domain: "identity", sourceEntity: "questionnaire_subjects", targetTable: "customers"}
+				if err = writeReceipt(ctx, target, runID, spec, key, payload, key); err != nil {
+					return nil, err
+				}
+			}
+		}
+		counts["identity"]++
+	}
+	customerIDs := make([]int64, 0, len(questionnaireCustomers.references))
+	for customerID := range questionnaireCustomers.references {
+		customerIDs = append(customerIDs, customerID)
+	}
+	sort.Slice(customerIDs, func(i, j int) bool { return customerIDs[i] < customerIDs[j] })
+	for _, customerID := range customerIDs {
+		for _, reference := range questionnaireCustomers.references[customerID] {
+			digest := digestBytes("aicrm_v2_frozen\x00" + reference.entity + "\x00" + reference.value)
+			key := fmt.Sprintf("%d:%s:%s", customerID, reference.entity, hex.EncodeToString(digest))
+			writeDigest(hasher, "source_subject_refs", key, digest)
+			if target != nil {
+				if _, err = target.Exec(ctx, `INSERT INTO public.source_subject_refs(customer_id,source_system,source_entity,reference_digest,assurance,created_at) VALUES($1,'aicrm_v2_frozen',$2,$3,'legacy_stable',$4)`, customerID, reference.entity, digest, time.Now().UTC()); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	return ids, nil
 }
 
-func resolveQuestionnaireCustomers(ctx context.Context, source pgx.Tx) (map[int64]int64, error) {
+func resolveQuestionnaireCustomers(ctx context.Context, source pgx.Tx) (questionnaireResolution, error) {
+	var maxCustomerID int64
+	if err := source.QueryRow(ctx, `SELECT COALESCE(max(id),0) FROM public.customers`).Scan(&maxCustomerID); err != nil {
+		return questionnaireResolution{}, err
+	}
 	rows, err := source.Query(ctx, `
-SELECT submission.id,count(DISTINCT identity.customer_id),min(identity.customer_id)
+SELECT submission.id,count(DISTINCT identity.customer_id),min(identity.customer_id),
+  submission.unionid,submission.external_userid,submission.openid,submission.mobile,submission.created_at
 FROM public.questionnaire_submissions AS submission
 LEFT JOIN public.identities AS identity ON identity.customer_id IS NOT NULL AND (
   (submission.unionid<>'' AND identity.kind='unionid' AND identity.normalized_value=submission.unionid) OR
   (submission.external_userid<>'' AND identity.kind='wecom_external_userid' AND identity.normalized_value=submission.external_userid) OR
   (submission.openid<>'' AND identity.kind IN ('mp_openid','oa_openid') AND identity.normalized_value=submission.openid) OR
   (submission.mobile<>'' AND identity.kind='phone' AND identity.normalized_value=submission.mobile))
-GROUP BY submission.id ORDER BY submission.id`)
+GROUP BY submission.id,submission.unionid,submission.external_userid,submission.openid,submission.mobile,submission.created_at
+ORDER BY submission.id`)
 	if err != nil {
-		return nil, err
+		return questionnaireResolution{}, err
 	}
 	defer rows.Close()
-	result := map[int64]int64{}
+	resolvedRows := []questionnaireResolutionRow{}
 	for rows.Next() {
-		var submissionID, matches int64
+		row := questionnaireResolutionRow{recordType: "questionnaire"}
 		var customerID pgtype.Int8
-		if err = rows.Scan(&submissionID, &matches, &customerID); err != nil {
-			return nil, err
+		if err = rows.Scan(&row.submissionID, &row.matchCount, &customerID, &row.unionID, &row.externalUserID, &row.openID, &row.mobile, &row.createdAt); err != nil {
+			return questionnaireResolution{}, err
 		}
-		if matches != 1 || !customerID.Valid || customerID.Int64 < 1 {
-			return nil, fmt.Errorf("questionnaire submission %d identity mapping count is %d", submissionID, matches)
+		if customerID.Valid {
+			row.existingCustomer = customerID.Int64
 		}
-		result[submissionID] = customerID.Int64
+		resolvedRows = append(resolvedRows, row)
 	}
-	return result, rows.Err()
+	if err = rows.Err(); err != nil {
+		return questionnaireResolution{}, err
+	}
+	rows.Close()
+	orderRows, err := source.Query(ctx, `
+SELECT orders.id,count(DISTINCT identity.customer_id),min(identity.customer_id),
+  orders.identity_kind,orders.identity_value,orders.created_at
+FROM public.order_list_projections AS orders
+LEFT JOIN public.identities AS identity ON orders.customer_id IS NULL AND identity.customer_id IS NOT NULL AND (
+  (orders.identity_kind='unionid' AND identity.kind='unionid' AND identity.normalized_value=orders.identity_value) OR
+  (orders.identity_kind IN ('external_userid','userid') AND identity.kind='wecom_external_userid' AND identity.normalized_value=orders.identity_value))
+WHERE orders.product_id IS NOT NULL AND orders.customer_id IS NULL
+GROUP BY orders.id,orders.identity_kind,orders.identity_value,orders.created_at
+ORDER BY orders.id`)
+	if err != nil {
+		return questionnaireResolution{}, err
+	}
+	defer orderRows.Close()
+	for orderRows.Next() {
+		row := questionnaireResolutionRow{recordType: "order"}
+		var identityKind, identityValue string
+		var customerID pgtype.Int8
+		if err = orderRows.Scan(&row.submissionID, &row.matchCount, &customerID, &identityKind, &identityValue, &row.createdAt); err != nil {
+			return questionnaireResolution{}, err
+		}
+		if customerID.Valid {
+			row.existingCustomer = customerID.Int64
+		}
+		switch identityKind {
+		case "unionid":
+			row.unionID = identityValue
+		case "external_userid", "userid":
+			row.externalUserID = identityValue
+		default:
+			if identityValue != "" {
+				return questionnaireResolution{}, fmt.Errorf("order %d has unsupported identity kind %q", row.submissionID, identityKind)
+			}
+		}
+		resolvedRows = append(resolvedRows, row)
+	}
+	if err = orderRows.Err(); err != nil {
+		return questionnaireResolution{}, err
+	}
+	return resolveQuestionnaireRows(resolvedRows, maxCustomerID)
+}
+
+func resolveQuestionnaireRows(rows []questionnaireResolutionRow, maxCustomerID int64) (questionnaireResolution, error) {
+	result := questionnaireResolution{bySubmission: map[int64]int64{}, byOrder: map[int64]int64{}, references: map[int64][]questionnaireReference{}}
+	referenceOwners := map[string]int64{}
+	referenceSeen := map[int64]map[string]struct{}{}
+	syntheticIndexes := map[int64]int{}
+	nextCustomerID := maxCustomerID + 1
+	for _, row := range rows {
+		if row.matchCount > 1 || (row.matchCount == 1 && row.existingCustomer < 1) {
+			return questionnaireResolution{}, fmt.Errorf("%s %d identity mapping count is %d", row.recordType, row.submissionID, row.matchCount)
+		}
+		references := questionnaireReferences(row)
+		candidates := map[int64]struct{}{}
+		if row.matchCount == 1 {
+			candidates[row.existingCustomer] = struct{}{}
+		}
+		for _, reference := range references {
+			if owner := referenceOwners[reference.entity+"\x00"+reference.value]; owner > 0 {
+				candidates[owner] = struct{}{}
+			}
+		}
+		if len(candidates) > 1 {
+			return questionnaireResolution{}, fmt.Errorf("%s %d has conflicting subject references", row.recordType, row.submissionID)
+		}
+		customerID := int64(0)
+		for candidate := range candidates {
+			customerID = candidate
+		}
+		if customerID == 0 {
+			customerID = nextCustomerID
+			nextCustomerID++
+			syntheticIndexes[customerID] = len(result.synthetic)
+			result.synthetic = append(result.synthetic, syntheticCustomer{id: customerID, createdAt: row.createdAt, updatedAt: row.createdAt})
+		} else if index, ok := syntheticIndexes[customerID]; ok && row.createdAt.After(result.synthetic[index].updatedAt) {
+			result.synthetic[index].updatedAt = row.createdAt
+		}
+		if row.recordType == "order" {
+			result.byOrder[row.submissionID] = customerID
+		} else {
+			result.bySubmission[row.submissionID] = customerID
+		}
+		if referenceSeen[customerID] == nil {
+			referenceSeen[customerID] = map[string]struct{}{}
+		}
+		for _, reference := range references {
+			key := reference.entity + "\x00" + reference.value
+			referenceOwners[key] = customerID
+			if _, ok := referenceSeen[customerID][key]; ok {
+				continue
+			}
+			referenceSeen[customerID][key] = struct{}{}
+			result.references[customerID] = append(result.references[customerID], reference)
+		}
+	}
+	return result, nil
+}
+
+func questionnaireReferences(row questionnaireResolutionRow) []questionnaireReference {
+	references := make([]questionnaireReference, 0, 4)
+	for _, candidate := range []questionnaireReference{
+		{entity: "unionid", value: row.unionID},
+		{entity: "wecom_external_userid", value: row.externalUserID},
+		{entity: "openid", value: row.openID},
+		{entity: "phone", value: row.mobile},
+	} {
+		if candidate.value != "" {
+			references = append(references, candidate)
+		}
+	}
+	if len(references) == 0 {
+		entity := "questionnaire_submission"
+		if row.recordType == "order" {
+			entity = "order"
+		}
+		references = append(references, questionnaireReference{entity: entity, value: fmt.Sprint(row.submissionID)})
+	}
+	return references
+}
+
+func addOrderCustomer(key string, payload []byte, mappings map[int64]int64) ([]byte, error) {
+	var orderID int64
+	if _, err := fmt.Sscan(key, &orderID); err != nil {
+		return nil, errors.New("invalid order id")
+	}
+	var value map[string]any
+	if err := json.Unmarshal(payload, &value); err != nil {
+		return nil, err
+	}
+	if value["customer_id"] != nil {
+		return payload, nil
+	}
+	customerID, ok := mappings[orderID]
+	if !ok {
+		return nil, fmt.Errorf("order %d has no customer mapping", orderID)
+	}
+	value["customer_id"] = customerID
+	return json.Marshal(value)
 }
 
 func addSubmissionCustomer(key string, payload []byte, mappings map[int64]int64) ([]byte, error) {
@@ -434,21 +713,44 @@ func addSubmissionCustomer(key string, payload []byte, mappings map[int64]int64)
 	return json.Marshal(value)
 }
 
-func verifyRequiredIdentities(ctx context.Context, source pgx.Tx, customerIDs map[int64]int64) error {
-	var invalidOrders, invalidEntitlements, invalidMembers int64
+func verifyRequiredIdentities(ctx context.Context, source pgx.Tx, customerIDs map[int64]int64, orderCustomers map[int64]int64) error {
+	var invalidEntitlements, invalidMembers int64
 	if err := source.QueryRow(ctx, `SELECT
-  (SELECT count(*) FROM public.order_list_projections WHERE customer_id IS NULL OR product_id IS NULL),
   (SELECT count(*) FROM public.product_local_entitlements WHERE customer_id IS NULL),
-  (SELECT count(*) FROM public.service_period_members WHERE customer_id IS NULL)`).Scan(&invalidOrders, &invalidEntitlements, &invalidMembers); err != nil {
+	  (SELECT count(*) FROM public.service_period_members WHERE customer_id IS NULL)`).Scan(&invalidEntitlements, &invalidMembers); err != nil {
 		return err
 	}
-	if invalidOrders != 0 || invalidEntitlements != 0 || invalidMembers != 0 {
-		return fmt.Errorf("required identity mapping failed: orders=%d entitlements=%d memberships=%d", invalidOrders, invalidEntitlements, invalidMembers)
+	if invalidEntitlements != 0 || invalidMembers != 0 {
+		return fmt.Errorf("required identity mapping failed: entitlements=%d memberships=%d", invalidEntitlements, invalidMembers)
 	}
+	orderRows, err := source.Query(ctx, `SELECT id,customer_id FROM public.order_list_projections WHERE product_id IS NOT NULL ORDER BY id`)
+	if err != nil {
+		return err
+	}
+	for orderRows.Next() {
+		var orderID int64
+		var sourceCustomerID pgtype.Int8
+		if err = orderRows.Scan(&orderID, &sourceCustomerID); err != nil {
+			orderRows.Close()
+			return err
+		}
+		customerID := sourceCustomerID.Int64
+		if !sourceCustomerID.Valid {
+			customerID = orderCustomers[orderID]
+		}
+		if customerID < 1 || customerIDs[customerID] < 1 {
+			orderRows.Close()
+			return fmt.Errorf("order %d is missing a required customer", orderID)
+		}
+	}
+	if err = orderRows.Err(); err != nil {
+		orderRows.Close()
+		return err
+	}
+	orderRows.Close()
 	rows, err := source.Query(ctx, `
 SELECT DISTINCT customer_id FROM (
-	  SELECT customer_id FROM public.order_list_projections
-	  UNION ALL SELECT customer_id FROM public.product_local_entitlements
+	  SELECT customer_id FROM public.product_local_entitlements
 	  UNION ALL SELECT customer_id FROM public.service_period_members
 ) AS required ORDER BY customer_id`)
 	if err != nil {
@@ -541,6 +843,13 @@ func insertSkippedReceipt(ctx context.Context, target pgx.Tx, runID string, spec
 	_, err := target.Exec(ctx, `INSERT INTO public.whitelist_import_domain_receipts
 (run_id,domain,source_entity,source_key_digest,source_payload_digest,target_entity,target_id,disposition,reason,created_at)
 VALUES($1,$2,$3,$4,$5,$6,NULL,'ARCHIVE_NOT_ON_V2',$7,$8)`, runID, spec.domain, spec.sourceEntity, digestBytes(spec.sourceEntity+"\x00"+key), digestBytes(string(payload)), spec.targetTable, reason, time.Now().UTC())
+	return err
+}
+
+func insertRejectedReceipt(ctx context.Context, target pgx.Tx, runID string, spec copySpec, key string, payload []byte, reason string) error {
+	_, err := target.Exec(ctx, `INSERT INTO public.whitelist_import_domain_receipts
+(run_id,domain,source_entity,source_key_digest,source_payload_digest,target_entity,target_id,disposition,reason,created_at)
+VALUES($1,$2,$3,$4,$5,$6,NULL,'REJECT',$7,$8)`, runID, spec.domain, spec.sourceEntity, digestBytes(spec.sourceEntity+"\x00"+key), digestBytes(string(payload)), spec.targetTable, reason, time.Now().UTC())
 	return err
 }
 
