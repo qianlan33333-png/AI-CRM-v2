@@ -119,11 +119,9 @@ function memberGridSharePage(assets) {
   return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Member Grid 公开会员网格</title>${stylesheet('../', assets.tokens)}</head><body><div id="stage" class="ix-wrap"></div>${moduleScript('../', assets.memberGridShare)}</body></html>\n`;
 }
 
-function topIndex(assets) {
-  const adminLinks = registry.screens.map((screen) => `<a href="admin/${screen.key}.html">${screen.label}${screen.level === '二级' ? ' · 二级' : ''}</a>`).join('\n');
-  const h5Links = h5Registry.map((screen) => `<a href="h5/${screen.key}.html">${screen.title}</a>`).join('\n');
-  const navCount = registry.screens.filter((screen) => screen.isNav).length;
-  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI-CRM 前端 · TypeScript 版</title>${stylesheet('', assets.tokens)}</head><body><div class="ix-wrap"><h1 class="ix-title">AI-CRM 全新前端 · TypeScript 实现</h1><p class="ix-sub">管理后台 ${registry.screens.length} 屏 / 企微侧边栏 / 用户端 H5 ${h5Registry.length} 屏</p><div class="ix-grid"><a class="ix-card" href="admin/customers.html"><h2>管理后台 →</h2><p>${navCount} 个一级页 + ${registry.screens.length - navCount} 个二级页</p></a><a class="ix-card" href="sidebar/index.html"><h2>企微侧边栏 →</h2><p>销售工作台</p></a><a class="ix-card" href="h5/index.html"><h2>用户端 H5 →</h2><p>问卷与报名支付</p></a></div><div class="ix-sec">管理后台 · 全部页面</div><div class="ix-list">${adminLinks}</div><div class="ix-sec">用户端 H5 · 全部屏幕</div><div class="ix-list">${h5Links}</div></div></body></html>\n`;
+function rootEntry() {
+  const login = '/login?next=%2Fadmin';
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="0; url=${login}"><title>正在进入 AI-CRM</title></head><body>正在验证登录状态… <a href="${login}">手动进入管理后台</a></body></html>\n`;
 }
 
 function h5Index(assets) {
@@ -236,7 +234,7 @@ async function main() {
   write(path.join(DIST, 'h5/index.html'), h5Index(entries));
   write(path.join(DIST, 'sidebar/index.html'), sidebarPage(entries));
   write(path.join(DIST, 'member-grid-share/index.html'), memberGridSharePage(entries));
-  write(path.join(DIST, 'index.html'), topIndex(entries));
+  write(path.join(DIST, 'index.html'), rootEntry());
   manifest.release_files = createReleaseFiles();
   write(path.join(DIST, 'asset-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 

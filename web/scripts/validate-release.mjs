@@ -15,6 +15,13 @@ const manifestPath = path.join(dist, "asset-manifest.json");
 if (!fs.statSync(manifestPath, { throwIfNoEntry: false })?.isFile()) fail("asset-manifest.json is missing");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 if (manifest.source_sha !== expectedSHA || manifest.version !== 1) fail("manifest source SHA or version does not match");
+const rootIndex = fs.readFileSync(path.join(dist, "index.html"), "utf8");
+if (!rootIndex.includes('content="0; url=/login?next=%2Fadmin"') || !rootIndex.includes('href="/login?next=%2Fadmin"')) {
+  fail("root entry must authenticate before entering the admin application");
+}
+if (rootIndex.includes("AI-CRM 全新前端") || rootIndex.includes("管理后台 · 全部页面")) {
+  fail("development page index must not be published as the application root");
+}
 for (const tool of ["node", "npm", "esbuild", "orval"]) {
   if (typeof manifest.tools?.[tool] !== "string" || !manifest.tools[tool]) fail(`tool version is missing: ${tool}`);
 }
