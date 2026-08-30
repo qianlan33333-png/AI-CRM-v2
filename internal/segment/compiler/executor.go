@@ -26,6 +26,23 @@ type QuerySet interface {
 	DeletedEqual(context.Context, bool) ([]int64, error)
 }
 
+type HXCQuerySet interface {
+	HXCSubscriptionTierEqual(context.Context, string) ([]int64, error)
+	HXCSubscriptionActiveEqual(context.Context, bool) ([]int64, error)
+	HXCDaysRemainingGTE(context.Context, int64) ([]int64, error)
+	HXCDaysRemainingLTE(context.Context, int64) ([]int64, error)
+	HXCUserMessages7DGTE(context.Context, int64) ([]int64, error)
+	HXCUserMessages7DLTE(context.Context, int64) ([]int64, error)
+	HXCUserMessages30DGTE(context.Context, int64) ([]int64, error)
+	HXCUserMessages30DLTE(context.Context, int64) ([]int64, error)
+	HXCLastCapabilityEqual(context.Context, string) ([]int64, error)
+	HXCBusinessStageEqual(context.Context, string) ([]int64, error)
+	HXCMainLineTypeEqual(context.Context, string) ([]int64, error)
+	HXCUserSegmentEqual(context.Context, string) ([]int64, error)
+	HXCFocusTopicAny(context.Context, []string) ([]int64, error)
+	HXCPainTagEqual(context.Context, string) ([]int64, error)
+}
+
 type execution struct {
 	queries  QuerySet
 	universe []int64
@@ -106,6 +123,7 @@ func (run execution) leaf(ctx context.Context, input leaf) ([]int64, error) {
 		ids []int64
 		err error
 	)
+	hxc, hxcOK := run.queries.(HXCQuerySet)
 	switch input.opcode {
 	case StageEqual:
 		ids, err = run.queries.StageEqual(ctx, requiredInteger(input.bind))
@@ -131,6 +149,76 @@ func (run execution) leaf(ctx context.Context, input leaf) ([]int64, error) {
 		ids, err = run.queries.LastInteractAfter(ctx, requiredTimestamp(input.bind))
 	case DeletedEqual:
 		ids, err = run.queries.DeletedEqual(ctx, requiredBoolean(input.bind))
+	case HXCSubscriptionTierEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCSubscriptionTierEqual(ctx, requiredText(input.bind))
+	case HXCSubscriptionActiveEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCSubscriptionActiveEqual(ctx, requiredBoolean(input.bind))
+	case HXCDaysRemainingGTE:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCDaysRemainingGTE(ctx, requiredNonnegativeInteger(input.bind))
+	case HXCDaysRemainingLTE:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCDaysRemainingLTE(ctx, requiredNonnegativeInteger(input.bind))
+	case HXCUserMessages7DGTE:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCUserMessages7DGTE(ctx, requiredNonnegativeInteger(input.bind))
+	case HXCUserMessages7DLTE:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCUserMessages7DLTE(ctx, requiredNonnegativeInteger(input.bind))
+	case HXCUserMessages30DGTE:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCUserMessages30DGTE(ctx, requiredNonnegativeInteger(input.bind))
+	case HXCUserMessages30DLTE:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCUserMessages30DLTE(ctx, requiredNonnegativeInteger(input.bind))
+	case HXCLastCapabilityEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCLastCapabilityEqual(ctx, requiredText(input.bind))
+	case HXCBusinessStageEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCBusinessStageEqual(ctx, requiredText(input.bind))
+	case HXCMainLineTypeEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCMainLineTypeEqual(ctx, requiredText(input.bind))
+	case HXCUserSegmentEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCUserSegmentEqual(ctx, requiredText(input.bind))
+	case HXCFocusTopicAny:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCFocusTopicAny(ctx, requiredTexts(input.bind))
+	case HXCPainTagEqual:
+		if !hxcOK {
+			return nil, unsafe()
+		}
+		ids, err = hxc.HXCPainTagEqual(ctx, requiredText(input.bind))
 	default:
 		return nil, unsafe()
 	}
@@ -143,41 +231,70 @@ func (run execution) leaf(ctx context.Context, input leaf) ([]int64, error) {
 func validLeafBind(input leaf) bool {
 	switch input.opcode {
 	case StageEqual, OwnerEqual, ChannelEqual:
-		return input.bind.integer != nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && *input.bind.integer > 0
+		return input.bind.integer != nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text == nil && input.bind.texts == nil && *input.bind.integer > 0
+	case HXCDaysRemainingGTE, HXCDaysRemainingLTE, HXCUserMessages7DGTE, HXCUserMessages7DLTE, HXCUserMessages30DGTE, HXCUserMessages30DLTE:
+		return input.bind.integer != nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text == nil && input.bind.texts == nil && *input.bind.integer >= 0
 	case StageAny, OwnerAny, ChannelAny, TagHasAny:
-		return input.bind.integer == nil && canonicalPositiveList(input.bind.integers) && input.bind.timestamp == nil && input.bind.boolean == nil
+		return input.bind.integer == nil && canonicalPositiveList(input.bind.integers) && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text == nil && input.bind.texts == nil
 	case AddedBefore, AddedAfter, LastInteractBefore, LastInteractAfter:
-		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp != nil && input.bind.boolean == nil && !input.bind.timestamp.IsZero() && input.bind.timestamp.Location() == time.UTC
+		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp != nil && input.bind.boolean == nil && input.bind.text == nil && input.bind.texts == nil && !input.bind.timestamp.IsZero() && input.bind.timestamp.Location() == time.UTC
 	case DeletedEqual:
-		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean != nil
+		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean != nil && input.bind.text == nil && input.bind.texts == nil
+	case HXCSubscriptionActiveEqual:
+		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean != nil && input.bind.text == nil && input.bind.texts == nil
+	case HXCSubscriptionTierEqual, HXCLastCapabilityEqual, HXCBusinessStageEqual, HXCMainLineTypeEqual, HXCUserSegmentEqual, HXCPainTagEqual:
+		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text != nil && *input.bind.text != "" && input.bind.texts == nil
+	case HXCFocusTopicAny:
+		return input.bind.integer == nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text == nil && canonicalStringList(input.bind.texts)
 	default:
 		return false
 	}
 }
 
+func requiredNonnegativeInteger(value bind) int64 {
+	if value.integer == nil || value.integers != nil || value.timestamp != nil || value.boolean != nil || value.text != nil || value.texts != nil || *value.integer < 0 {
+		return -1
+	}
+	return *value.integer
+}
+
+func requiredText(value bind) string {
+	if value.integer != nil || value.integers != nil || value.timestamp != nil || value.boolean != nil || value.text == nil || value.texts != nil {
+		return ""
+	}
+	return *value.text
+}
+
+func requiredTexts(value bind) []string {
+	if value.integer != nil || value.integers != nil || value.timestamp != nil || value.boolean != nil || value.text != nil || !canonicalStringList(value.texts) {
+		return nil
+	}
+	return append([]string(nil), value.texts...)
+}
+
 func requiredInteger(value bind) int64 {
-	if value.integer == nil || value.integers != nil || value.timestamp != nil || value.boolean != nil || *value.integer <= 0 {
+	if value.integer == nil || value.integers != nil || value.timestamp != nil || value.boolean != nil || value.text != nil || value.texts != nil || *value.integer <= 0 {
 		return 0
 	}
 	return *value.integer
 }
 
 func requiredIntegers(value bind) []int64 {
-	if value.integer != nil || value.integers == nil || value.timestamp != nil || value.boolean != nil || !canonicalPositiveList(value.integers) {
+	if value.integer != nil || value.integers == nil || value.timestamp != nil || value.boolean != nil || value.text != nil || value.texts != nil || !canonicalPositiveList(value.integers) {
 		return nil
 	}
 	return append([]int64(nil), value.integers...)
 }
 
 func requiredTimestamp(value bind) time.Time {
-	if value.integer != nil || value.integers != nil || value.timestamp == nil || value.boolean != nil || value.timestamp.IsZero() || value.timestamp.Location() != time.UTC {
+	if value.integer != nil || value.integers != nil || value.timestamp == nil || value.boolean != nil || value.text != nil || value.texts != nil || value.timestamp.IsZero() || value.timestamp.Location() != time.UTC {
 		return time.Time{}
 	}
 	return *value.timestamp
 }
 
 func requiredBoolean(value bind) bool {
-	if value.integer != nil || value.integers != nil || value.timestamp != nil || value.boolean == nil {
+	if value.integer != nil || value.integers != nil || value.timestamp != nil || value.boolean == nil || value.text != nil || value.texts != nil {
 		return false
 	}
 	return *value.boolean

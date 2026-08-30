@@ -83,12 +83,14 @@ export async function runAdminAdapterTests(): Promise<void> {
     timeline: [{ id: 101, event_type: 'owner.assigned', occurred_at: '2026-08-21T08:00:00Z' }],
     timeline_next_cursor: null,
     chat: { local_archive_available: true, items: [{ chat_type: 'private', message_type: 'text', sent_at: '2026-08-25T09:30:00Z' }], total: 1 },
+    hxc: { available: true, last_synced_at: '2026-08-25T12:00:00Z', status: { subscription_tier: 'pro', subscription_expires_at: '2026-12-31T00:00:00Z', days_remaining: 127, monthly_chat_quota: 100, current_period_used: 12, consultation_limit: 10, consultation_used: 2, consultation_remaining: 8, sessions_7d: 3, sessions_30d: 8, sessions_total: 20, user_messages_7d: 12, user_messages_30d: 30, user_messages_total: 80, last_used_at: '2026-08-25T09:00:00Z', last_capability: 'peer_chat', business_stage: '起步', main_line_type: '内容', user_segment: '创业者', focus_topics: ['获客'], pain_tag: '流量', source_updated_at: '2026-08-25T10:00:00Z' } },
     non_atomic_snapshot: true,
     real_external_call_executed: false,
   };
   const safeContextMapped = customerContextPageDto(safeContext);
   assert(safeContextMapped.profile.id === '7' && safeContextMapped.profile.owner === '3' && !('mobile' in safeContextMapped.profile), 'safe Customer360 profile excludes phone');
   assert(safeContextMapped.timeline[0].eventType === 'owner.assigned' && safeContextMapped.chat.items[0].messageType === 'text', 'safe Customer360 maps timeline and zero-body chat summary');
+  assert(safeContextMapped.hxc.available && safeContextMapped.hxc.status?.subscriptionTier === 'pro', 'safe Customer360 maps real HXC current status');
   const safeSurvey = { customer_id: 7, items: [{ submission_id: 81, questionnaire_id: 41, submitted_at: '2026-08-23T10:30:00Z', score: 86, choice_answers: [{ question_id: 5, question_type: 'single_choice', sort_order: 0, option_ids: [12] }] }], limit: 30, scan_limit: 500, scanned_count: 80, matched_count: 1, scan_truncated: false, result_truncated: false, non_atomic_snapshot: true, identity_values_included: false, free_text_included: false, real_external_call_executed: false };
   const safeSurveyMapped = customerSurveyPageDto(safeSurvey, 7);
   assert(safeSurveyMapped.items[0].choices[0].optionIds[0] === 12 && !('answer' in safeSurveyMapped.items[0].choices[0]), 'safe survey maps only choice identifiers');

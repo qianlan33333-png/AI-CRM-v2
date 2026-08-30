@@ -1,6 +1,6 @@
 /**
  * 后台页面入口：按 <body data-page> 分发。
- *  - 富交互页（雷达 / AI 助手 / 漏斗）→ sections/* 独立模块（真实 DOM + AdminApi）
+ *  - 富交互页（雷达 / AI 助手）→ sections/* 独立模块（真实 DOM + AdminApi）
  *  - 其余 28 屏 → mini-runtime 模板 + AdminController
  * 每页 HTML 由 scripts/build.mjs 生成（静态导航 shell）。
  */
@@ -11,7 +11,6 @@ import { AdminController } from './controller';
 import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
-import { mountHXCHistory } from './sections/hxcHistory';
 import { mountCampaignWorkspace } from './sections/campaigns';
 import { mountCampaignHistory } from './sections/campaignHistory';
 import { mountAdminAccess } from './sections/adminAccess';
@@ -86,13 +85,6 @@ function boot(): void {
   }
   if (page === 'config' && historyQuery.get('static_history') === '1') {
     void mountStaticHistory(stage).catch(() => { stage.innerHTML = '<p role="alert">静态历史读取失败；未进入当前配置。</p>'; });
-    return;
-  }
-  if (page === 'funnel' && historyQuery.get('hxc_history') === '1') {
-    void mountHXCHistory(stage, {
-      kind: historyQuery.get('history_kind') ?? undefined,
-      historyID: historyQuery.get('history_id') ?? undefined,
-    }).catch((error) => showLoadError(stage, error));
     return;
   }
   if ((page === 'radar' && historyQuery.get('click_history') === '1') || (page === 'ai' && historyQuery.get('marketing_config_history') === '1')) {
@@ -208,10 +200,6 @@ function boot(): void {
       return;
     case 'aiDetail':
       void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
-      return;
-    case 'funnel':
-      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error))
-        .finally(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="funnel.html?hxc_history=1">V1 HXC历史观察（只读）</a></p>'); });
       return;
     case 'campaigns':
       void mountCampaignWorkspace(stage).catch((error) => showLoadError(stage, error));

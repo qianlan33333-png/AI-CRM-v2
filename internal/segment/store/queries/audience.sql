@@ -38,3 +38,45 @@ SELECT id FROM customers WHERE last_interact_at > sqlc.arg(instant)::timestamptz
 
 -- name: SelectSegmentDeletedEqual :many
 SELECT id FROM customers WHERE is_deleted = sqlc.arg(is_deleted)::boolean;
+
+-- name: SelectSegmentHXCSubscriptionTierEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND subscription_tier = sqlc.arg(value)::text ORDER BY customer_id;
+
+-- name: SelectSegmentHXCSubscriptionActiveEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND COALESCE(subscription_expires_at > CURRENT_TIMESTAMP, false) = sqlc.arg(value)::boolean ORDER BY customer_id;
+
+-- name: SelectSegmentHXCDaysRemainingGTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND subscription_expires_at IS NOT NULL AND GREATEST(FLOOR(EXTRACT(EPOCH FROM (subscription_expires_at - CURRENT_TIMESTAMP)) / 86400), 0)::bigint >= sqlc.arg(value)::bigint ORDER BY customer_id;
+
+-- name: SelectSegmentHXCDaysRemainingLTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND subscription_expires_at IS NOT NULL AND GREATEST(FLOOR(EXTRACT(EPOCH FROM (subscription_expires_at - CURRENT_TIMESTAMP)) / 86400), 0)::bigint <= sqlc.arg(value)::bigint ORDER BY customer_id;
+
+-- name: SelectSegmentHXCUserMessages7DGTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_7d >= sqlc.arg(value)::bigint ORDER BY customer_id;
+
+-- name: SelectSegmentHXCUserMessages7DLTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_7d <= sqlc.arg(value)::bigint ORDER BY customer_id;
+
+-- name: SelectSegmentHXCUserMessages30DGTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_30d >= sqlc.arg(value)::bigint ORDER BY customer_id;
+
+-- name: SelectSegmentHXCUserMessages30DLTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_30d <= sqlc.arg(value)::bigint ORDER BY customer_id;
+
+-- name: SelectSegmentHXCLastCapabilityEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND last_capability = sqlc.arg(value)::text ORDER BY customer_id;
+
+-- name: SelectSegmentHXCBusinessStageEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND business_stage = sqlc.arg(value)::text ORDER BY customer_id;
+
+-- name: SelectSegmentHXCMainLineTypeEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND main_line_type = sqlc.arg(value)::text ORDER BY customer_id;
+
+-- name: SelectSegmentHXCUserSegmentEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_segment = sqlc.arg(value)::text ORDER BY customer_id;
+
+-- name: SelectSegmentHXCFocusTopicAny :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND focus_topics ?| sqlc.arg(values)::text[] ORDER BY customer_id;
+
+-- name: SelectSegmentHXCPainTagEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND pain_tag = sqlc.arg(value)::text ORDER BY customer_id;

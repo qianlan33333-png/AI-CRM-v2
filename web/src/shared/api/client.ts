@@ -290,6 +290,7 @@ export class MockApi implements AdminApi {
         ],
         total: 2,
       },
+      hxc: { available: false, lastSyncedAt: null, status: null },
       nonAtomicSnapshot: true,
       realExternalCallExecuted: false,
     };

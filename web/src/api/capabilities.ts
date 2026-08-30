@@ -13,7 +13,7 @@ export type Capability = Readonly<{
   reason?: string;
 }>;
 
-export const ADMIN_SCREENS = ['customers', 'customerDetail', 'questionnaires', 'questionnaireDetail', 'channels', 'channelForm', 'orders', 'orderDetail', 'spProducts', 'coupons', 'couponForm', 'images', 'agents', 'agentEdit', 'config', 'configDetail', 'automation', 'cycles', 'groupops', 'campaigns', 'ai', 'funnel', 'radar', 'tags', 'products', 'mpLib', 'attach', 'ownerMig', 'apidocs', 'productForm', 'spProductForm', 'groupopsDetail', 'radarDetail', 'radarForm', 'aiDetail', 'audienceEdit', 'cyclesDetail', 'questionnaireOps', 'spProductData', 'couponData'] as const;
+export const ADMIN_SCREENS = ['customers', 'customerDetail', 'questionnaires', 'questionnaireDetail', 'channels', 'channelForm', 'orders', 'orderDetail', 'spProducts', 'coupons', 'couponForm', 'images', 'agents', 'agentEdit', 'config', 'configDetail', 'automation', 'cycles', 'groupops', 'campaigns', 'ai', 'radar', 'tags', 'products', 'mpLib', 'attach', 'ownerMig', 'apidocs', 'productForm', 'spProductForm', 'groupopsDetail', 'radarDetail', 'radarForm', 'aiDetail', 'audienceEdit', 'cyclesDetail', 'questionnaireOps', 'spProductData', 'couponData'] as const;
 
 export const CAPABILITIES: readonly Capability[] = [
   { surface: 'admin', screen: 'customers/customerDetail', action: '客户与关联读取', state: 'real', operation: 'listCustomers/getCustomer/getCustomerContext/listCustomerChatActivity/listCustomerSurveyAnswers/getCustomerActivityAnalytics' },
@@ -57,7 +57,7 @@ export const CAPABILITIES: readonly Capability[] = [
   { surface: 'admin', screen: 'radar/radarDetail/radarForm', action: '链接、图片与 PDF 雷达新建和编辑', state: 'real', operation: 'createRadarLink/updateRadarLink' },
   { surface: 'admin', screen: 'radar/radarDetail/radarForm', action: '图片/PDF 雷达素材上传', state: 'real', operation: 'uploadLegacyImage/uploadLegacyAttachment' },
   { surface: 'admin', screen: 'ai/aiDetail', action: 'AI 计划审批', state: 'backend_blocked', reason: '当前导入壳使用的 ai-assist/review-plans DTO 不在 OpenAPI 中' },
-  { surface: 'admin', screen: 'funnel/cycles/cyclesDetail', action: '原型漏斗和复盘会话', state: 'backend_blocked', reason: '当前壳 DTO 与 Member Grid、execution-runtime 契约不等价' },
+  { surface: 'admin', screen: 'cycles/cyclesDetail', action: '复盘会话', state: 'backend_blocked', reason: '当前壳 DTO 与 execution-runtime 契约不等价；HXC 漏斗已退休' },
   { surface: 'admin', screen: 'config/configDetail', action: '配置类目安全投影读取', state: 'real', operation: 'listAdminOpsCategories/getAdminOpsCategory' },
   { surface: 'admin', screen: 'config/configDetail', action: '应用设置读取与非敏感字段保存', state: 'real', operation: 'getLegacyAppSettingsResource/saveLegacyAppSettingsResource' },
   { surface: 'admin', screen: 'config/configDetail', action: 'Push 能力与配置发布记录读取', state: 'real', operation: 'getAdminOpsPushCapabilities/listAdminOpsReleases' },

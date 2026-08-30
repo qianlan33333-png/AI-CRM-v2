@@ -47,6 +47,21 @@ func TestParseCanonicalAST(t *testing.T) {
 	}
 }
 
+func TestParseHXCFixedFilterFamilies(t *testing.T) {
+	ast, err := Parse([]byte(`{"and":[{"field":"hxc_subscription_tier","op":"eq","value":"pro"},{"field":"hxc_subscription_active","op":"eq","value":true},{"field":"hxc_days_remaining","op":"gte","value":0},{"field":"hxc_focus_topic","op":"has_any","value":["growth","content"]}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonical, err := ast.CanonicalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"and":[{"field":"hxc_subscription_tier","op":"eq","value":"pro"},{"field":"hxc_subscription_active","op":"eq","value":true},{"field":"hxc_days_remaining","op":"gte","value":0},{"field":"hxc_focus_topic","op":"has_any","value":["content","growth"]}]}`
+	if string(canonical) != want {
+		t.Fatalf("canonical = %s", canonical)
+	}
+}
+
 func TestParseRejectsClosedDSLViolations(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

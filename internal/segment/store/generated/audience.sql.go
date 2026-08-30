@@ -131,6 +131,342 @@ func (q *Queries) SelectSegmentDeletedEqual(ctx context.Context, isDeleted bool)
 	return items, nil
 }
 
+const selectSegmentHXCBusinessStageEqual = `-- name: SelectSegmentHXCBusinessStageEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND business_stage = $1::text ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCBusinessStageEqual(ctx context.Context, value string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCBusinessStageEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCDaysRemainingGTE = `-- name: SelectSegmentHXCDaysRemainingGTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND subscription_expires_at IS NOT NULL AND GREATEST(FLOOR(EXTRACT(EPOCH FROM (subscription_expires_at - CURRENT_TIMESTAMP)) / 86400), 0)::bigint >= $1::bigint ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCDaysRemainingGTE(ctx context.Context, value int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCDaysRemainingGTE, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCDaysRemainingLTE = `-- name: SelectSegmentHXCDaysRemainingLTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND subscription_expires_at IS NOT NULL AND GREATEST(FLOOR(EXTRACT(EPOCH FROM (subscription_expires_at - CURRENT_TIMESTAMP)) / 86400), 0)::bigint <= $1::bigint ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCDaysRemainingLTE(ctx context.Context, value int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCDaysRemainingLTE, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCFocusTopicAny = `-- name: SelectSegmentHXCFocusTopicAny :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND focus_topics ?| $1::text[] ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCFocusTopicAny(ctx context.Context, values []string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCFocusTopicAny, values)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCLastCapabilityEqual = `-- name: SelectSegmentHXCLastCapabilityEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND last_capability = $1::text ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCLastCapabilityEqual(ctx context.Context, value string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCLastCapabilityEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCMainLineTypeEqual = `-- name: SelectSegmentHXCMainLineTypeEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND main_line_type = $1::text ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCMainLineTypeEqual(ctx context.Context, value string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCMainLineTypeEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCPainTagEqual = `-- name: SelectSegmentHXCPainTagEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND pain_tag = $1::text ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCPainTagEqual(ctx context.Context, value string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCPainTagEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCSubscriptionActiveEqual = `-- name: SelectSegmentHXCSubscriptionActiveEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND COALESCE(subscription_expires_at > CURRENT_TIMESTAMP, false) = $1::boolean ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCSubscriptionActiveEqual(ctx context.Context, value bool) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCSubscriptionActiveEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCSubscriptionTierEqual = `-- name: SelectSegmentHXCSubscriptionTierEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND subscription_tier = $1::text ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCSubscriptionTierEqual(ctx context.Context, value string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCSubscriptionTierEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCUserMessages30DGTE = `-- name: SelectSegmentHXCUserMessages30DGTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_30d >= $1::bigint ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCUserMessages30DGTE(ctx context.Context, value int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCUserMessages30DGTE, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCUserMessages30DLTE = `-- name: SelectSegmentHXCUserMessages30DLTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_30d <= $1::bigint ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCUserMessages30DLTE(ctx context.Context, value int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCUserMessages30DLTE, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCUserMessages7DGTE = `-- name: SelectSegmentHXCUserMessages7DGTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_7d >= $1::bigint ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCUserMessages7DGTE(ctx context.Context, value int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCUserMessages7DGTE, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCUserMessages7DLTE = `-- name: SelectSegmentHXCUserMessages7DLTE :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_messages_7d <= $1::bigint ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCUserMessages7DLTE(ctx context.Context, value int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCUserMessages7DLTE, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const selectSegmentHXCUserSegmentEqual = `-- name: SelectSegmentHXCUserSegmentEqual :many
+SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND user_segment = $1::text ORDER BY customer_id
+`
+
+func (q *Queries) SelectSegmentHXCUserSegmentEqual(ctx context.Context, value string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectSegmentHXCUserSegmentEqual, value)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var column_1 int64
+		if err := rows.Scan(&column_1); err != nil {
+			return nil, err
+		}
+		items = append(items, column_1)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const selectSegmentLastInteractAfter = `-- name: SelectSegmentLastInteractAfter :many
 SELECT id FROM customers WHERE last_interact_at > $1::timestamptz
 `

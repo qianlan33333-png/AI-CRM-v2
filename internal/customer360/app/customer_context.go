@@ -8,6 +8,7 @@ import (
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	customer360port "github.com/qianlan33333-png/AI-CRM-v2/internal/customer360/port"
+	hxcport "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/port"
 	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
@@ -21,16 +22,25 @@ type customerChatSummaryReader interface {
 	ListCustomerChatSummaries(context.Context, wecomport.CustomerChatSummaryQuery) (wecomport.CustomerChatSummaryPage, error)
 }
 
+type hxcCurrentReader interface {
+	ReadCustomerCurrent(context.Context, contactport.CustomerID) (hxcport.CurrentSnapshot, error)
+}
+
 // CustomerContextService composes only local, already-authorized safe read
 // ports. It does not generate AI output, invoke a provider, or infer any
 // identity linkage.
 type CustomerContextService struct {
 	customers customer360Reader
 	chats     customerChatSummaryReader
+	hxc       hxcCurrentReader
 }
 
-func NewCustomerContextService(customers customer360Reader, chats customerChatSummaryReader) *CustomerContextService {
-	return &CustomerContextService{customers: customers, chats: chats}
+func NewCustomerContextService(customers customer360Reader, chats customerChatSummaryReader, hxc ...hxcCurrentReader) *CustomerContextService {
+	service := &CustomerContextService{customers: customers, chats: chats}
+	if len(hxc) == 1 {
+		service.hxc = hxc[0]
+	}
+	return service
 }
 
 func (service *CustomerContextService) ReadCustomerContext(
@@ -63,6 +73,7 @@ func (service *CustomerContextService) ReadCustomerContext(
 	}
 
 	result := customerContextFromContact(local)
+	service.readHXC(ctx, query.CustomerID, &result)
 	page, chatErr := service.chats.ListCustomerChatSummaries(ctx, wecomport.CustomerChatSummaryQuery{
 		CustomerID: query.CustomerID, Limit: customerContextChatLimit, Offset: 0,
 	})
@@ -83,6 +94,44 @@ func (service *CustomerContextService) ReadCustomerContext(
 		result.Chat.Items[index] = customer360port.ChatEntry{ChatType: item.ChatType, MessageType: item.MessageType, SentAt: item.SentAt.UTC()}
 	}
 	return result, nil
+}
+
+func (service *CustomerContextService) readHXC(ctx context.Context, customerID contactport.CustomerID, result *customer360port.CustomerContext) {
+	if nilCustomerContextDependency(service.hxc) {
+		return
+	}
+	snapshot, err := service.hxc.ReadCustomerCurrent(ctx, customerID)
+	result.HXC.LastSyncedAt = cloneCustomerContextTime(snapshot.LastSyncedAt)
+	if err != nil {
+		return
+	}
+	result.HXC.Available = true
+	if !snapshot.Found {
+		return
+	}
+	current := snapshot.Current
+	consultationRemaining := current.ConsultationLimit - current.ConsultationUsed
+	if consultationRemaining < 0 {
+		consultationRemaining = 0
+	}
+	var daysRemaining int32
+	if current.SubscriptionExpiresAt != nil {
+		days := int32(time.Until(current.SubscriptionExpiresAt.UTC()).Hours() / 24)
+		if days > 0 {
+			daysRemaining = days
+		}
+	}
+	result.HXC.Status = &customer360port.HXCCurrentStatus{
+		SubscriptionTier: current.SubscriptionTier, SubscriptionExpiresAt: cloneCustomerContextTime(current.SubscriptionExpiresAt), DaysRemaining: daysRemaining,
+		MonthlyChatQuota: current.MonthlyChatQuota, CurrentPeriodUsed: current.CurrentPeriodUsed,
+		ConsultationLimit: current.ConsultationLimit, ConsultationUsed: current.ConsultationUsed, ConsultationRemaining: consultationRemaining,
+		Sessions7D: current.Sessions7D, Sessions30D: current.Sessions30D, SessionsTotal: current.SessionsTotal,
+		UserMessages7D: current.UserMessages7D, UserMessages30D: current.UserMessages30D, UserMessagesTotal: current.UserMessagesTotal,
+		LastUsedAt: cloneCustomerContextTime(current.LastUsedAt), LastCapability: cloneCustomerContextString(current.LastCapability),
+		BusinessStage: cloneCustomerContextString(current.BusinessStage), MainLineType: cloneCustomerContextString(current.MainLineType),
+		UserSegment: cloneCustomerContextString(current.UserSegment), FocusTopics: append([]string{}, current.FocusTopics...),
+		PainTag: cloneCustomerContextString(current.PainTag), SourceUpdatedAt: current.SourceUpdatedAt.UTC(),
+	}
 }
 
 func customerContextFromContact(local contactport.Customer360Read) customer360port.CustomerContext {

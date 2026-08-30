@@ -1,5 +1,16 @@
 version: "2"
 sql:
+  - engine: mysql
+    schema: tools/sqlc/hxc_current_source_schema.sql
+    queries: internal/hxcsource/store/queries
+    gen:
+      go:
+        package: hxcsource
+        out: internal/hxcsource/store/generated
+        sql_package: database/sql
+        emit_interface: true
+        emit_json_tags: true
+        emit_empty_slices: true
   - engine: postgresql
     schema: migrations
     queries: internal/hxc/store/queries

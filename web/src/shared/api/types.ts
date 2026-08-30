@@ -397,6 +397,31 @@ export interface Customer360ChatEntry {
   sentAt: string;
 }
 
+export interface Customer360HXCStatus {
+  subscriptionTier: string;
+  subscriptionExpiresAt: string | null;
+  daysRemaining: number;
+  monthlyChatQuota: number;
+  currentPeriodUsed: number;
+  consultationLimit: number;
+  consultationUsed: number;
+  consultationRemaining: number;
+  sessions7d: number;
+  sessions30d: number;
+  sessionsTotal: number;
+  userMessages7d: number;
+  userMessages30d: number;
+  userMessagesTotal: number;
+  lastUsedAt: string | null;
+  lastCapability: string | null;
+  businessStage: string | null;
+  mainLineType: string | null;
+  userSegment: string | null;
+  focusTopics: string[];
+  painTag: string | null;
+  sourceUpdatedAt: string;
+}
+
 export interface Customer360Context {
   profile: Customer360Profile;
   tags: Tag[];
@@ -407,6 +432,7 @@ export interface Customer360Context {
     items: Customer360ChatEntry[];
     total: number;
   };
+  hxc: { available: boolean; lastSyncedAt: string | null; status: Customer360HXCStatus | null };
   nonAtomicSnapshot: boolean;
   realExternalCallExecuted: boolean;
 }

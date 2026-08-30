@@ -478,6 +478,7 @@ const requiredContextNumber = (value: unknown, field: string): number => { const
 const requiredContextText = (value: unknown, field: string): string => { if (typeof value !== 'string' || !value.trim()) throw new Error(`客户安全上下文缺少 ${field}`); return value; };
 const optionalContextNumber = (value: unknown): number | null => { if (value == null) return null; const number = Number(value); return Number.isSafeInteger(number) && number >= 1 ? number : null; };
 const optionalContextText = (value: unknown): string | null => typeof value === 'string' ? value : null;
+const nonnegativeContextNumber = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 0) throw new Error(`客户安全上下文缺少有效 ${field}`); return number; };
 export function customerContextPageDto(value: unknown): Customer360Context {
   const source = obj(value);
   const customer = obj(source.customer);
@@ -504,12 +505,41 @@ export function customerContextPageDto(value: unknown): Customer360Context {
   });
   const total = Number(chatSource.total);
   if (!Number.isSafeInteger(total) || total < 0) throw new Error('客户安全上下文缺少有效聊天总数');
+  const hxcSource = obj(source.hxc);
+  if (typeof hxcSource.available !== 'boolean') throw new Error('客户安全上下文缺少 HXC 可用状态');
+  const hxcStatusSource = hxcSource.status == null ? null : obj(hxcSource.status);
+  const hxcStatus = hxcStatusSource == null ? null : {
+    subscriptionTier: requiredContextText(hxcStatusSource.subscription_tier, 'HXC 会员等级'),
+    subscriptionExpiresAt: optionalContextText(hxcStatusSource.subscription_expires_at),
+    daysRemaining: nonnegativeContextNumber(hxcStatusSource.days_remaining, 'HXC 剩余天数'),
+    monthlyChatQuota: nonnegativeContextNumber(hxcStatusSource.monthly_chat_quota, 'HXC 聊天额度'),
+    currentPeriodUsed: nonnegativeContextNumber(hxcStatusSource.current_period_used, 'HXC 当前周期使用量'),
+    consultationLimit: nonnegativeContextNumber(hxcStatusSource.consultation_limit, 'HXC 咨询额度'),
+    consultationUsed: nonnegativeContextNumber(hxcStatusSource.consultation_used, 'HXC 咨询使用量'),
+    consultationRemaining: nonnegativeContextNumber(hxcStatusSource.consultation_remaining, 'HXC 剩余咨询量'),
+    sessions7d: nonnegativeContextNumber(hxcStatusSource.sessions_7d, 'HXC 7 天会话数'),
+    sessions30d: nonnegativeContextNumber(hxcStatusSource.sessions_30d, 'HXC 30 天会话数'),
+    sessionsTotal: nonnegativeContextNumber(hxcStatusSource.sessions_total, 'HXC 累计会话数'),
+    userMessages7d: nonnegativeContextNumber(hxcStatusSource.user_messages_7d, 'HXC 7 天消息数'),
+    userMessages30d: nonnegativeContextNumber(hxcStatusSource.user_messages_30d, 'HXC 30 天消息数'),
+    userMessagesTotal: nonnegativeContextNumber(hxcStatusSource.user_messages_total, 'HXC 累计消息数'),
+    lastUsedAt: optionalContextText(hxcStatusSource.last_used_at),
+    lastCapability: optionalContextText(hxcStatusSource.last_capability),
+    businessStage: optionalContextText(hxcStatusSource.business_stage),
+    mainLineType: optionalContextText(hxcStatusSource.main_line_type),
+    userSegment: optionalContextText(hxcStatusSource.user_segment),
+    focusTopics: list(hxcStatusSource, 'focus_topics').map((topic) => requiredContextText(topic, 'HXC 兴趣主题')),
+    painTag: optionalContextText(hxcStatusSource.pain_tag),
+    sourceUpdatedAt: requiredContextText(hxcStatusSource.source_updated_at, 'HXC 来源更新时间'),
+  };
+  if (!hxcSource.available && hxcStatus !== null) throw new Error('HXC 不可用状态不得携带当前数据');
   return {
     profile,
     tags,
     timeline,
     timelineNextCursor: typeof source.timeline_next_cursor === 'string' ? source.timeline_next_cursor : null,
     chat: { localArchiveAvailable: chatSource.local_archive_available === true, items: chatItems, total },
+    hxc: { available: hxcSource.available, lastSyncedAt: optionalContextText(hxcSource.last_synced_at), status: hxcStatus },
     nonAtomicSnapshot: source.non_atomic_snapshot === true,
     realExternalCallExecuted: source.real_external_call_executed === true,
   };

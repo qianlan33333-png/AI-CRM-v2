@@ -56,6 +56,48 @@ func (set *QuerySet) LastInteractAfter(ctx context.Context, instant time.Time) (
 func (set *QuerySet) DeletedEqual(ctx context.Context, value bool) ([]int64, error) {
 	return set.queries.SelectSegmentDeletedEqual(ctx, value)
 }
+func (set *QuerySet) HXCSubscriptionTierEqual(ctx context.Context, value string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCSubscriptionTierEqual(ctx, value)
+}
+func (set *QuerySet) HXCSubscriptionActiveEqual(ctx context.Context, value bool) ([]int64, error) {
+	return set.queries.SelectSegmentHXCSubscriptionActiveEqual(ctx, value)
+}
+func (set *QuerySet) HXCDaysRemainingGTE(ctx context.Context, value int64) ([]int64, error) {
+	return set.queries.SelectSegmentHXCDaysRemainingGTE(ctx, value)
+}
+func (set *QuerySet) HXCDaysRemainingLTE(ctx context.Context, value int64) ([]int64, error) {
+	return set.queries.SelectSegmentHXCDaysRemainingLTE(ctx, value)
+}
+func (set *QuerySet) HXCUserMessages7DGTE(ctx context.Context, value int64) ([]int64, error) {
+	return set.queries.SelectSegmentHXCUserMessages7DGTE(ctx, value)
+}
+func (set *QuerySet) HXCUserMessages7DLTE(ctx context.Context, value int64) ([]int64, error) {
+	return set.queries.SelectSegmentHXCUserMessages7DLTE(ctx, value)
+}
+func (set *QuerySet) HXCUserMessages30DGTE(ctx context.Context, value int64) ([]int64, error) {
+	return set.queries.SelectSegmentHXCUserMessages30DGTE(ctx, value)
+}
+func (set *QuerySet) HXCUserMessages30DLTE(ctx context.Context, value int64) ([]int64, error) {
+	return set.queries.SelectSegmentHXCUserMessages30DLTE(ctx, value)
+}
+func (set *QuerySet) HXCLastCapabilityEqual(ctx context.Context, value string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCLastCapabilityEqual(ctx, value)
+}
+func (set *QuerySet) HXCBusinessStageEqual(ctx context.Context, value string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCBusinessStageEqual(ctx, value)
+}
+func (set *QuerySet) HXCMainLineTypeEqual(ctx context.Context, value string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCMainLineTypeEqual(ctx, value)
+}
+func (set *QuerySet) HXCUserSegmentEqual(ctx context.Context, value string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCUserSegmentEqual(ctx, value)
+}
+func (set *QuerySet) HXCFocusTopicAny(ctx context.Context, values []string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCFocusTopicAny(ctx, values)
+}
+func (set *QuerySet) HXCPainTagEqual(ctx context.Context, value string) ([]int64, error) {
+	return set.queries.SelectSegmentHXCPainTagEqual(ctx, value)
+}
 
 func timestamp(instant time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: instant, Valid: true}

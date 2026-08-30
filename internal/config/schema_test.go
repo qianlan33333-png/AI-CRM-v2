@@ -56,6 +56,25 @@ func TestLoadValidatesSelectedRoleConfiguration(t *testing.T) {
 	}
 }
 
+func TestLoadEnablesHXCOnlyForCompleteWorkerConfiguration(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", workerPoolMaxConnsEnv: "9",
+		criticalWorkersEnv: "2", eventWorkersEnv: "1", outboundWorkersEnv: "1", syncWorkersEnv: "1", heavyWorkersEnv: "1", aiWorkersEnv: "1",
+		hxcSourceDSNEnv: "readonly:secret@tcp(hxc.internal:3306)/hxc", hxcUnionIDScopeEnv: "wechat-open-platform:hxc",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !root.HXC.Enabled || root.HXC.SourceDSN.Value() != values[hxcSourceDSNEnv] || root.HXC.UnionIDScope != values[hxcUnionIDScopeEnv] {
+		t.Fatalf("HXC config = %#v", root.HXC)
+	}
+	delete(values, hxcUnionIDScopeEnv)
+	if _, err := load(appruntime.RoleWorker, mapLookup(values)); err == nil || !strings.Contains(err.Error(), "hxc requires") {
+		t.Fatalf("partial HXC error = %v", err)
+	}
+}
+
 func TestLoadReturnsAllRelevantProblemsWithoutValues(t *testing.T) {
 	const sentinel = "database-password-sentinel"
 	values := map[string]string{

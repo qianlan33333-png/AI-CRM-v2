@@ -8,6 +8,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type HxcUserCurrent struct {
+	HxcUserID             string             `json:"hxc_user_id"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	MatchState            string             `json:"match_state"`
+	SubscriptionTier      string             `json:"subscription_tier"`
+	SubscriptionExpiresAt pgtype.Timestamptz `json:"subscription_expires_at"`
+	MonthlyChatQuota      int32              `json:"monthly_chat_quota"`
+	CurrentPeriodUsed     int32              `json:"current_period_used"`
+	ConsultationLimit     int32              `json:"consultation_limit"`
+	ConsultationUsed      int32              `json:"consultation_used"`
+	Sessions7d            int64              `json:"sessions_7d"`
+	Sessions30d           int64              `json:"sessions_30d"`
+	SessionsTotal         int64              `json:"sessions_total"`
+	UserMessages7d        int64              `json:"user_messages_7d"`
+	UserMessages30d       int64              `json:"user_messages_30d"`
+	UserMessagesTotal     int64              `json:"user_messages_total"`
+	CapabilityUsage       []byte             `json:"capability_usage"`
+	LastUsedAt            pgtype.Timestamptz `json:"last_used_at"`
+	LastCapability        pgtype.Text        `json:"last_capability"`
+	BusinessStage         pgtype.Text        `json:"business_stage"`
+	MainLineType          pgtype.Text        `json:"main_line_type"`
+	UserSegment           pgtype.Text        `json:"user_segment"`
+	FocusTopics           []byte             `json:"focus_topics"`
+	PainTag               pgtype.Text        `json:"pain_tag"`
+	SourceUpdatedAt       pgtype.Timestamptz `json:"source_updated_at"`
+	SyncedAt              pgtype.Timestamptz `json:"synced_at"`
+}
+
 type HxcV1ActivationObservation struct {
 	ID                   int64              `json:"id"`
 	SourceID             int64              `json:"source_id"`

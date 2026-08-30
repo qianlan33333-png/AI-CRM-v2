@@ -206,9 +206,72 @@ func parseValue(field Field, operator Operator, raw any, pointer string, budget 
 			return nil, fieldError(pointer, ReasonInvalidValue)
 		}
 		return BoolValue{Value: value}, nil
+	case FieldHXCSubscriptionActive:
+		value, ok := raw.(bool)
+		if !ok {
+			return nil, fieldError(pointer, ReasonInvalidValue)
+		}
+		return BoolValue{Value: value}, nil
+	case FieldHXCDaysRemaining, FieldHXCUserMessages7D, FieldHXCUserMessages30D:
+		value, err := parseNonnegativeInt(raw, pointer)
+		return IntValue{Value: value}, err
+	case FieldHXCSubscriptionTier, FieldHXCLastCapability, FieldHXCBusinessStage, FieldHXCMainLineType, FieldHXCUserSegment, FieldHXCPainTag:
+		value, err := parseString(raw, pointer)
+		return StringValue{Value: value}, err
+	case FieldHXCFocusTopic:
+		return parseStringList(raw, pointer, budget)
 	default:
 		return nil, fieldError(pointer, ReasonUnknownField)
 	}
+}
+
+func parseNonnegativeInt(raw any, pointer string) (int64, error) {
+	number, ok := raw.(json.Number)
+	if !ok || strings.ContainsAny(number.String(), ".eE") {
+		return 0, fieldError(pointer, ReasonInvalidValue)
+	}
+	value, err := number.Int64()
+	if err != nil || value < 0 {
+		return 0, fieldError(pointer, ReasonInvalidValue)
+	}
+	return value, nil
+}
+
+func parseString(raw any, pointer string) (string, error) {
+	value, ok := raw.(string)
+	if !ok || value == "" || strings.TrimSpace(value) != value {
+		return "", fieldError(pointer, ReasonInvalidValue)
+	}
+	if exceedsStringLimit(value) {
+		return "", fieldError(pointer, ReasonLimitExceeded)
+	}
+	return value, nil
+}
+
+func parseStringList(raw any, pointer string, budget *parseBudget) (Value, error) {
+	array, ok := raw.(rawArray)
+	if !ok || len(array) == 0 {
+		return nil, fieldError(pointer, ReasonInvalidValue)
+	}
+	if len(array) > MaxListValues || budget.listValues+len(array) > MaxListValues {
+		return nil, fieldError(pointer, ReasonLimitExceeded)
+	}
+	budget.listValues += len(array)
+	values := make([]string, len(array))
+	for index, rawValue := range array {
+		value, err := parseString(rawValue, appendPointer(pointer, strconv.Itoa(index)))
+		if err != nil {
+			return nil, err
+		}
+		values[index] = value
+	}
+	sort.Strings(values)
+	for index := 1; index < len(values); index++ {
+		if values[index-1] == values[index] {
+			return nil, fieldError(pointer, ReasonNoncanonicalValue)
+		}
+	}
+	return StringListValue{Values: values}, nil
 }
 
 func parsePositiveInt(raw any, pointer string) (int64, error) {
@@ -280,7 +343,10 @@ func parseTimeValue(raw any, pointer string) (Value, error) {
 func knownField(value string) (Field, bool) {
 	field := Field(value)
 	switch field {
-	case FieldStageID, FieldOwnerStaffID, FieldChannelID, FieldTagID, FieldAddedAt, FieldLastInteractAt, FieldIsDeleted:
+	case FieldStageID, FieldOwnerStaffID, FieldChannelID, FieldTagID, FieldAddedAt, FieldLastInteractAt, FieldIsDeleted,
+		FieldHXCSubscriptionTier, FieldHXCSubscriptionActive, FieldHXCDaysRemaining, FieldHXCUserMessages7D,
+		FieldHXCUserMessages30D, FieldHXCLastCapability, FieldHXCBusinessStage, FieldHXCMainLineType,
+		FieldHXCUserSegment, FieldHXCFocusTopic, FieldHXCPainTag:
 		return field, true
 	default:
 		return "", false
@@ -298,6 +364,14 @@ func allowedOperator(field Field, value string) (Operator, bool) {
 		return operator, operator == OperatorBefore || operator == OperatorAfter
 	case FieldIsDeleted:
 		return operator, operator == OperatorEqual
+	case FieldHXCSubscriptionTier, FieldHXCLastCapability, FieldHXCBusinessStage, FieldHXCMainLineType, FieldHXCUserSegment, FieldHXCPainTag:
+		return operator, operator == OperatorEqual
+	case FieldHXCSubscriptionActive:
+		return operator, operator == OperatorEqual
+	case FieldHXCDaysRemaining, FieldHXCUserMessages7D, FieldHXCUserMessages30D:
+		return operator, operator == OperatorGTE || operator == OperatorLTE
+	case FieldHXCFocusTopic:
+		return operator, operator == OperatorHasAny
 	default:
 		return "", false
 	}

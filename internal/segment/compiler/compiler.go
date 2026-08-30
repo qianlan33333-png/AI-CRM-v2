@@ -15,18 +15,32 @@ import (
 type Opcode string
 
 const (
-	StageEqual         Opcode = "stage.equal"
-	StageAny           Opcode = "stage.any"
-	OwnerEqual         Opcode = "owner.equal"
-	OwnerAny           Opcode = "owner.any"
-	ChannelEqual       Opcode = "channel.equal"
-	ChannelAny         Opcode = "channel.any"
-	TagHasAny          Opcode = "tag.has_any"
-	AddedBefore        Opcode = "added.before"
-	AddedAfter         Opcode = "added.after"
-	LastInteractBefore Opcode = "last_interact.before"
-	LastInteractAfter  Opcode = "last_interact.after"
-	DeletedEqual       Opcode = "deleted.equal"
+	StageEqual                 Opcode = "stage.equal"
+	StageAny                   Opcode = "stage.any"
+	OwnerEqual                 Opcode = "owner.equal"
+	OwnerAny                   Opcode = "owner.any"
+	ChannelEqual               Opcode = "channel.equal"
+	ChannelAny                 Opcode = "channel.any"
+	TagHasAny                  Opcode = "tag.has_any"
+	AddedBefore                Opcode = "added.before"
+	AddedAfter                 Opcode = "added.after"
+	LastInteractBefore         Opcode = "last_interact.before"
+	LastInteractAfter          Opcode = "last_interact.after"
+	DeletedEqual               Opcode = "deleted.equal"
+	HXCSubscriptionTierEqual   Opcode = "hxc.subscription_tier.equal"
+	HXCSubscriptionActiveEqual Opcode = "hxc.subscription_active.equal"
+	HXCDaysRemainingGTE        Opcode = "hxc.days_remaining.gte"
+	HXCDaysRemainingLTE        Opcode = "hxc.days_remaining.lte"
+	HXCUserMessages7DGTE       Opcode = "hxc.user_messages_7d.gte"
+	HXCUserMessages7DLTE       Opcode = "hxc.user_messages_7d.lte"
+	HXCUserMessages30DGTE      Opcode = "hxc.user_messages_30d.gte"
+	HXCUserMessages30DLTE      Opcode = "hxc.user_messages_30d.lte"
+	HXCLastCapabilityEqual     Opcode = "hxc.last_capability.equal"
+	HXCBusinessStageEqual      Opcode = "hxc.business_stage.equal"
+	HXCMainLineTypeEqual       Opcode = "hxc.main_line_type.equal"
+	HXCUserSegmentEqual        Opcode = "hxc.user_segment.equal"
+	HXCFocusTopicAny           Opcode = "hxc.focus_topic.has_any"
+	HXCPainTagEqual            Opcode = "hxc.pain_tag.equal"
 )
 
 // Program is immutable after Compile returns. Its representation is private;
@@ -68,6 +82,8 @@ type bind struct {
 	integers  []int64
 	timestamp *time.Time
 	boolean   *bool
+	text      *string
+	texts     []string
 }
 
 type budget struct{ nodes int }
@@ -129,7 +145,7 @@ func compileChildren(children []dsl.Node, reference time.Time, depth int, used *
 func compilePredicate(predicate dsl.Predicate, reference time.Time) (node, error) {
 	switch value := predicate.Value.(type) {
 	case dsl.IntValue:
-		if value.Value <= 0 {
+		if value.Value < 0 || (value.Value == 0 && !hxcNumericField(predicate.Field)) {
 			return nil, unrepresentable()
 		}
 		opcode, ok := integerOpcode(predicate.Field, predicate.Operator)
@@ -168,17 +184,56 @@ func compilePredicate(predicate dsl.Predicate, reference time.Time) (node, error
 		instant := reference.AddDate(0, 0, -value.Days).UTC()
 		return leaf{opcode: opcode, bind: bind{timestamp: &instant}}, nil
 	case dsl.BoolValue:
-		if predicate.Field != dsl.FieldIsDeleted || predicate.Operator != dsl.OperatorEqual {
+		opcode := DeletedEqual
+		if predicate.Field == dsl.FieldHXCSubscriptionActive && predicate.Operator == dsl.OperatorEqual {
+			opcode = HXCSubscriptionActiveEqual
+		} else if predicate.Field != dsl.FieldIsDeleted || predicate.Operator != dsl.OperatorEqual {
 			return nil, unrepresentable()
 		}
 		boolean := value.Value
-		return leaf{opcode: DeletedEqual, bind: bind{boolean: &boolean}}, nil
+		return leaf{opcode: opcode, bind: bind{boolean: &boolean}}, nil
+	case dsl.StringValue:
+		opcode, ok := stringOpcode(predicate.Field, predicate.Operator)
+		if !ok || value.Value == "" {
+			return nil, unrepresentable()
+		}
+		text := value.Value
+		return leaf{opcode: opcode, bind: bind{text: &text}}, nil
+	case dsl.StringListValue:
+		if predicate.Field != dsl.FieldHXCFocusTopic || predicate.Operator != dsl.OperatorHasAny || !canonicalStringList(value.Values) {
+			return nil, unrepresentable()
+		}
+		return leaf{opcode: HXCFocusTopicAny, bind: bind{texts: append([]string(nil), value.Values...)}}, nil
 	default:
 		return nil, unrepresentable()
 	}
 }
 
 func integerOpcode(field dsl.Field, operator dsl.Operator) (Opcode, bool) {
+	if field == dsl.FieldHXCDaysRemaining {
+		if operator == dsl.OperatorGTE {
+			return HXCDaysRemainingGTE, true
+		}
+		if operator == dsl.OperatorLTE {
+			return HXCDaysRemainingLTE, true
+		}
+	}
+	if field == dsl.FieldHXCUserMessages7D {
+		if operator == dsl.OperatorGTE {
+			return HXCUserMessages7DGTE, true
+		}
+		if operator == dsl.OperatorLTE {
+			return HXCUserMessages7DLTE, true
+		}
+	}
+	if field == dsl.FieldHXCUserMessages30D {
+		if operator == dsl.OperatorGTE {
+			return HXCUserMessages30DGTE, true
+		}
+		if operator == dsl.OperatorLTE {
+			return HXCUserMessages30DLTE, true
+		}
+	}
 	if operator != dsl.OperatorEqual {
 		return "", false
 	}
@@ -192,6 +247,44 @@ func integerOpcode(field dsl.Field, operator dsl.Operator) (Opcode, bool) {
 	default:
 		return "", false
 	}
+}
+
+func hxcNumericField(field dsl.Field) bool {
+	return field == dsl.FieldHXCDaysRemaining || field == dsl.FieldHXCUserMessages7D || field == dsl.FieldHXCUserMessages30D
+}
+
+func stringOpcode(field dsl.Field, operator dsl.Operator) (Opcode, bool) {
+	if operator != dsl.OperatorEqual {
+		return "", false
+	}
+	switch field {
+	case dsl.FieldHXCSubscriptionTier:
+		return HXCSubscriptionTierEqual, true
+	case dsl.FieldHXCLastCapability:
+		return HXCLastCapabilityEqual, true
+	case dsl.FieldHXCBusinessStage:
+		return HXCBusinessStageEqual, true
+	case dsl.FieldHXCMainLineType:
+		return HXCMainLineTypeEqual, true
+	case dsl.FieldHXCUserSegment:
+		return HXCUserSegmentEqual, true
+	case dsl.FieldHXCPainTag:
+		return HXCPainTagEqual, true
+	default:
+		return "", false
+	}
+}
+
+func canonicalStringList(values []string) bool {
+	if len(values) == 0 || len(values) > dsl.MaxListValues || !sort.StringsAreSorted(values) {
+		return false
+	}
+	for index, value := range values {
+		if value == "" || (index > 0 && values[index-1] == value) {
+			return false
+		}
+	}
+	return true
 }
 func listOpcode(field dsl.Field, operator dsl.Operator) (Opcode, bool) {
 	switch field {
@@ -282,6 +375,10 @@ func canonicalBind(value bind) any {
 		return map[string]any{"timestamp": value.timestamp.UTC().Format(time.RFC3339Nano)}
 	case value.boolean != nil:
 		return map[string]any{"boolean": *value.boolean}
+	case value.text != nil:
+		return map[string]any{"text": *value.text}
+	case value.texts != nil:
+		return map[string]any{"texts": append([]string(nil), value.texts...)}
 	default:
 		return nil
 	}

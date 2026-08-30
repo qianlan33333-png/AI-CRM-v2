@@ -68,6 +68,67 @@ func (set *fakeQuerySet) DeletedEqual(_ context.Context, value bool) ([]int64, e
 	}
 	return set.result("deleted.equal", 1, 2, 3, 4, 5, 6)
 }
+func (set *fakeQuerySet) HXCSubscriptionTierEqual(context.Context, string) ([]int64, error) {
+	return set.result("hxc.tier", 2, 4, 6)
+}
+func (set *fakeQuerySet) HXCSubscriptionActiveEqual(context.Context, bool) ([]int64, error) {
+	return set.result("hxc.active", 2, 4)
+}
+func (set *fakeQuerySet) HXCDaysRemainingGTE(context.Context, int64) ([]int64, error) {
+	return set.result("hxc.days.gte", 2, 4)
+}
+func (set *fakeQuerySet) HXCDaysRemainingLTE(context.Context, int64) ([]int64, error) {
+	return set.result("hxc.days.lte", 6)
+}
+func (set *fakeQuerySet) HXCUserMessages7DGTE(context.Context, int64) ([]int64, error) {
+	return set.result("hxc.messages7.gte", 2, 4)
+}
+func (set *fakeQuerySet) HXCUserMessages7DLTE(context.Context, int64) ([]int64, error) {
+	return set.result("hxc.messages7.lte", 6)
+}
+func (set *fakeQuerySet) HXCUserMessages30DGTE(context.Context, int64) ([]int64, error) {
+	return set.result("hxc.messages30.gte", 2, 4)
+}
+func (set *fakeQuerySet) HXCUserMessages30DLTE(context.Context, int64) ([]int64, error) {
+	return set.result("hxc.messages30.lte", 6)
+}
+func (set *fakeQuerySet) HXCLastCapabilityEqual(context.Context, string) ([]int64, error) {
+	return set.result("hxc.capability", 2)
+}
+func (set *fakeQuerySet) HXCBusinessStageEqual(context.Context, string) ([]int64, error) {
+	return set.result("hxc.business", 2)
+}
+func (set *fakeQuerySet) HXCMainLineTypeEqual(context.Context, string) ([]int64, error) {
+	return set.result("hxc.mainline", 2)
+}
+func (set *fakeQuerySet) HXCUserSegmentEqual(context.Context, string) ([]int64, error) {
+	return set.result("hxc.segment", 2)
+}
+func (set *fakeQuerySet) HXCFocusTopicAny(context.Context, []string) ([]int64, error) {
+	return set.result("hxc.focus", 2, 4)
+}
+func (set *fakeQuerySet) HXCPainTagEqual(context.Context, string) ([]int64, error) {
+	return set.result("hxc.pain", 2)
+}
+
+func TestExecuteHXCFiltersUseMatchedOnlyQueryFamily(t *testing.T) {
+	ast, err := dsl.Parse([]byte(`{"and":[{"field":"hxc_subscription_tier","op":"eq","value":"pro"},{"field":"hxc_subscription_active","op":"eq","value":true},{"field":"hxc_focus_topic","op":"has_any","value":["growth"]}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	program, err := Compile(ast, reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := &fakeQuerySet{}
+	got, err := Execute(context.Background(), program, set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []int64{2, 4}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("HXC result = %v, want %v", got, want)
+	}
+}
 
 func TestExecuteLeafAndCombinationSemanticMatrix(t *testing.T) {
 	leaves := []struct {

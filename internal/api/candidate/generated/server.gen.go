@@ -17759,10 +17759,44 @@ type CustomerContextCustomer struct {
 	StageId        *int64     `json:"stage_id,omitempty"`
 }
 
+// CustomerContextHXC defines model for CustomerContextHXC.
+type CustomerContextHXC struct {
+	Available    bool                      `json:"available"`
+	LastSyncedAt *time.Time                `json:"last_synced_at"`
+	Status       *CustomerContextHXCStatus `json:"status"`
+}
+
+// CustomerContextHXCStatus defines model for CustomerContextHXCStatus.
+type CustomerContextHXCStatus struct {
+	BusinessStage         *string    `json:"business_stage"`
+	ConsultationLimit     int32      `json:"consultation_limit"`
+	ConsultationRemaining int32      `json:"consultation_remaining"`
+	ConsultationUsed      int32      `json:"consultation_used"`
+	CurrentPeriodUsed     int32      `json:"current_period_used"`
+	DaysRemaining         int32      `json:"days_remaining"`
+	FocusTopics           []string   `json:"focus_topics"`
+	LastCapability        *string    `json:"last_capability"`
+	LastUsedAt            *time.Time `json:"last_used_at"`
+	MainLineType          *string    `json:"main_line_type"`
+	MonthlyChatQuota      int32      `json:"monthly_chat_quota"`
+	PainTag               *string    `json:"pain_tag"`
+	Sessions30d           int64      `json:"sessions_30d"`
+	Sessions7d            int64      `json:"sessions_7d"`
+	SessionsTotal         int64      `json:"sessions_total"`
+	SourceUpdatedAt       time.Time  `json:"source_updated_at"`
+	SubscriptionExpiresAt *time.Time `json:"subscription_expires_at"`
+	SubscriptionTier      string     `json:"subscription_tier"`
+	UserMessages30d       int64      `json:"user_messages_30d"`
+	UserMessages7d        int64      `json:"user_messages_7d"`
+	UserMessagesTotal     int64      `json:"user_messages_total"`
+	UserSegment           *string    `json:"user_segment"`
+}
+
 // CustomerContextResponse defines model for CustomerContextResponse.
 type CustomerContextResponse struct {
 	Chat                     CustomerContextChatSummary                      `json:"chat"`
 	Customer                 CustomerContextCustomer                         `json:"customer"`
+	Hxc                      CustomerContextHXC                              `json:"hxc"`
 	NonAtomicSnapshot        CustomerContextResponseNonAtomicSnapshot        `json:"non_atomic_snapshot"`
 	RealExternalCallExecuted CustomerContextResponseRealExternalCallExecuted `json:"real_external_call_executed"`
 	Tags                     []CustomerContextTag                            `json:"tags"`
