@@ -96,6 +96,10 @@ func TestLoadEnablesWorkerOnlyWeComMessageArchiveConfiguration(t *testing.T) {
 	if fmt.Sprint(archive.Secret) != "[REDACTED]" || fmt.Sprintf("%#v", archive.Secret) != "[REDACTED]" {
 		t.Fatal("message archive secret was not redacted")
 	}
+	delete(values, weComMessageArchiveDefaultOwnerEnv)
+	if root, err = load(appruntime.RoleWorker, mapLookup(values)); err != nil || root.WeCom.MessageArchive.DefaultOwnerUserID != "" {
+		t.Fatalf("optional default owner config=%#v err=%v", root.WeCom.MessageArchive, err)
+	}
 
 	values[weComMessageArchivePermissionConfirmedEnv] = "false"
 	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || !strings.Contains(err.Error(), "wecom.message_archive.permission_confirmed") {

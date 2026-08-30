@@ -76,10 +76,10 @@ func TestSyncPersistsUnresolvedTextAndAdvancesPastUnsupportedMessages(t *testing
 		payloads: []map[string]any{
 			{"msgid": "msg-1", "msgtype": "text", "from": "wm_external", "tolist": []any{"staff-1"}, "msgtime": float64(1_700_000_000_000), "text": map[string]any{"content": "call 13800138000"}},
 			{"msgid": "msg-2", "msgtype": "image", "from": "staff-1", "tolist": []any{"wm_external"}, "msgtime": float64(1_700_000_000_001)},
-			{"msgid": "msg-3", "msgtype": "text", "from": "staff-1", "tolist": []any{}, "roomid": "wr_group", "msgtime": float64(1_700_000_000_002), "text": map[string]any{"content": "group update"}},
+			{"msgid": "msg-3", "msgtype": "text", "from": "wm_group_external", "tolist": []any{}, "roomid": "wr_group", "msgtime": float64(1_700_000_000_002), "text": map[string]any{"content": "group update"}},
 		},
 	}
-	service, err := NewService(immediateUOW{}, store, provider, resolverFake{result: identityport.ResolveResult{Status: identityport.ResolveNotFound}}, events, "ww-corp", "staff-fallback", 100, 2)
+	service, err := NewService(immediateUOW{}, store, provider, resolverFake{result: identityport.ResolveResult{Status: identityport.ResolveNotFound}}, events, "ww-corp", "", 100, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestSyncPersistsUnresolvedTextAndAdvancesPastUnsupportedMessages(t *testing
 	if result.RunID != 41 || result.CursorFrom != 0 || result.CursorTo != 3 || result.Fetched != 3 || result.Accepted != 2 || result.Inserted != 2 || result.Unresolved != 2 || result.PageCount != 1 {
 		t.Fatalf("result = %+v", result)
 	}
-	if len(store.records) != 2 || store.records[0].Content != "call [masked-phone]" || store.records[0].CustomerID != nil || store.records[0].ProviderSeq != 1 || store.records[1].ExternalUserID != "" || store.records[1].RoomID != "wr_group" {
+	if len(store.records) != 2 || store.records[0].Content != "call [masked-phone]" || store.records[0].CustomerID != nil || store.records[0].ProviderSeq != 1 || store.records[1].ExternalUserID != "wm_group_external" || store.records[1].OwnerUserID != "" || store.records[1].RoomID != "wr_group" {
 		t.Fatalf("records = %+v", store.records)
 	}
 	if store.finished != result || store.failure != "" || len(events.events) != 1 || events.events[0].Type != "wecom.message_archive_batch_persisted" {

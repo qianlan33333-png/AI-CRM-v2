@@ -89,7 +89,7 @@ type Service struct {
 }
 
 func NewService(uow platformport.UnitOfWork, store Store, provider Provider, identities IdentityResolver, events eventport.Appender, corpID, defaultOwner string, limit, maxPages int) (*Service, error) {
-	if uow == nil || store == nil || provider == nil || identities == nil || events == nil || !validID(corpID) || !validID(defaultOwner) || limit < 1 || limit > 1_000 || maxPages < 1 || maxPages > 10_000 {
+	if uow == nil || store == nil || provider == nil || identities == nil || events == nil || !validID(corpID) || defaultOwner != "" && !validID(defaultOwner) || limit < 1 || limit > 1_000 || maxPages < 1 || maxPages > 10_000 {
 		return nil, ErrInvalidConfiguration
 	}
 	return &Service{uow: uow, store: store, provider: provider, identities: identities, events: events, corpID: corpID, defaultOwner: defaultOwner, limit: limit, maxPages: maxPages, now: time.Now}, nil
@@ -247,7 +247,9 @@ func normalizeRecord(envelope EncryptedRecord, payload map[string]any, fallbackO
 		messageID = "seq-" + strconv.FormatInt(envelope.Seq, 10)
 	}
 	sentAt, ok := messageTime(payload["msgtime"])
-	if !ok || externalID != "" && !validID(externalID) || !validID(ownerID) || roomID != "" && !validID(roomID) || externalID == "" && roomID == "" || content == "" || len(content) > maximumText || len(strings.Join(recipients, ",")) > maximumPeerID {
+	if !ok || externalID == "" && roomID == "" || ownerID == "" && roomID == "" ||
+		externalID != "" && !validID(externalID) || ownerID != "" && (!validID(ownerID) || len(ownerID) > 256) ||
+		roomID != "" && !validID(roomID) || content == "" || len(content) > maximumText || len(strings.Join(recipients, ",")) > maximumPeerID {
 		return Record{}, false
 	}
 	encoded, err := json.Marshal(payload)

@@ -986,8 +986,12 @@ func parseWeComMessageArchive(lookup environmentLookup, problems *[]string) WeCo
 		}
 		return WeComMessageArchive{}
 	}
-	if presentCount != 9 || corpID == "" || secret == "" || privateKeyPath == "" || sdkPath == "" || pythonPath == "" || helperPath == "" || defaultOwner == "" {
-		*problems = append(*problems, "wecom.message_archive requires corp_id, secret, private_key_path, sdk_library_path, python_path, helper_path, default_owner_userid, timeout_seconds, and permission_confirmed together")
+	requiredCount := 8
+	if ownerPresent {
+		requiredCount++
+	}
+	if presentCount != requiredCount || corpID == "" || secret == "" || privateKeyPath == "" || sdkPath == "" || pythonPath == "" || helperPath == "" {
+		*problems = append(*problems, "wecom.message_archive requires corp_id, secret, private_key_path, sdk_library_path, python_path, helper_path, timeout_seconds, and permission_confirmed together")
 		return WeComMessageArchive{}
 	}
 	if !validWeComCorpID(corpID) {
@@ -1003,7 +1007,7 @@ func parseWeComMessageArchive(lookup environmentLookup, problems *[]string) WeCo
 			*problems = append(*problems, "wecom.message_archive."+candidate.name+" must be an absolute path")
 		}
 	}
-	if !validWeComDirectorySyncStaffUserID(defaultOwner) {
+	if ownerPresent && !validWeComDirectorySyncStaffUserID(defaultOwner) {
 		*problems = append(*problems, "wecom.message_archive.default_owner_userid is invalid")
 	}
 	timeoutSeconds, timeoutErr := strconv.Atoi(timeoutValue)
