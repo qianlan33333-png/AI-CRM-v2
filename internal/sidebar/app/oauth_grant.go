@@ -58,7 +58,6 @@ type OAuthStart struct {
 type OAuthCompletion struct {
 	Session  authport.BrowserSession
 	NextPath string
-	Context  ContextResult
 }
 
 // OAuthGrantService closes the sidebar-specific security chain around the
@@ -160,18 +159,11 @@ func (service *OAuthGrantService) Complete(ctx context.Context, code string, sta
 	if err != nil {
 		return service.rejectIssuedSession(ctx, session, mapOAuthError(err))
 	}
-	authorization, err := service.auth.Authorize(ctx, principal, authport.CapabilityCustomersRead)
+	_, err = service.auth.Authorize(ctx, principal, authport.CapabilityCustomersRead)
 	if err != nil {
 		return service.rejectIssuedSession(ctx, session, mapOAuthError(err))
 	}
-	contextResult, err := service.contexts.MintContext(ctx, principal, session.Session, true, claims.ExternalUserID)
-	if err != nil {
-		return service.rejectIssuedSession(ctx, session, err)
-	}
-	if contextResult.State == "ready" && !authorization.AllowsOwner(contextResult.OwnerStaffID) {
-		return service.rejectIssuedSession(ctx, session, ErrForbidden)
-	}
-	return OAuthCompletion{Session: session, NextPath: claim.NextPath, Context: contextResult}, nil
+	return OAuthCompletion{Session: session, NextPath: claim.NextPath}, nil
 }
 
 func (service *OAuthGrantService) rejectIssuedSession(ctx context.Context, session authport.BrowserSession, cause error) (OAuthCompletion, error) {
