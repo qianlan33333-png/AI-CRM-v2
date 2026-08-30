@@ -73,6 +73,8 @@ while [[ -n "$remaining_groups" ]]; do
       add_package ./internal/datamigration/...
       add_package ./acceptance/datamigration/...
       add_package ./cmd/aicrm-v1-import
+      add_package ./cmd/aicrm-whitelist-import
+      add_package ./cmd/aicrm-v2-cleanup
       add_package ./scripts/datamigration_manifest
       ;;
     adminops|ai|auth|automation|config|contact|coupon|events|externaleffects|gateway|groupops|identity|media|operationcycle|ops|order|outbound|product|pushcenter|radar|segment|stats|survey|wecom)

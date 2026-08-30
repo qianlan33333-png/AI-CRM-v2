@@ -68,7 +68,7 @@ type componentBuilders struct {
 }
 
 func components(role appruntime.Role, config appconfig.Root) (appruntime.Components, error) {
-	return buildComponents(role, config, componentBuilders{api: newAPIComponent, worker: newWorkerComponent})
+	return buildComponents(role, config, componentBuilders{api: newWhitelistAPIComponent, worker: newWhitelistWorkerComponent})
 }
 
 func buildComponents(role appruntime.Role, config appconfig.Root, builders componentBuilders) (appruntime.Components, error) {
