@@ -21,7 +21,7 @@ var domains = map[string]bool{
 	"gateway": true, "config": true, "events": true, "auth": true,
 	"stats": true, "product": true, "media": true, "coupon": true, "order": true, "ops": true, "adminops": true,
 	"operationcycle": true, "pushcenter": true, "customer360": true,
-	"hxc": true, "groupops": true, "campaign": true,
+	"hxc": true, "hxcsource": true, "groupops": true, "campaign": true,
 	"radar": true, "sidebar": true, "release": true, "externaleffects": true, "migration": true,
 }
 

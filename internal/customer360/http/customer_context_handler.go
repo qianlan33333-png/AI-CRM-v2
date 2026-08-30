@@ -148,6 +148,27 @@ func customerContextResponse(
 		Chat: generated.CustomerContextChatSummary{
 			Items: make([]generated.CustomerContextChatEntry, 0, len(result.Chat.Items)), LocalArchiveAvailable: result.Chat.LocalArchiveAvailable, Total: result.Chat.Total,
 		},
+		Hxc: generated.CustomerContextHXC{Available: result.HXC.Available, LastSyncedAt: cloneCustomerContextTime(result.HXC.LastSyncedAt)},
+	}
+	if result.HXC.Status != nil {
+		status := result.HXC.Status
+		if !result.HXC.Available || status.SubscriptionTier == "" || status.SourceUpdatedAt.IsZero() || status.DaysRemaining < 0 ||
+			status.MonthlyChatQuota < 0 || status.CurrentPeriodUsed < 0 || status.ConsultationLimit < 0 || status.ConsultationUsed < 0 || status.ConsultationRemaining < 0 ||
+			status.Sessions7D < 0 || status.Sessions30D < status.Sessions7D || status.SessionsTotal < status.Sessions30D ||
+			status.UserMessages7D < 0 || status.UserMessages30D < status.UserMessages7D || status.UserMessagesTotal < status.UserMessages30D {
+			return generated.CustomerContextResponse{}, errors.New("invalid hxc customer context")
+		}
+		response.Hxc.Status = &generated.CustomerContextHXCStatus{
+			SubscriptionTier: status.SubscriptionTier, SubscriptionExpiresAt: cloneCustomerContextTime(status.SubscriptionExpiresAt), DaysRemaining: status.DaysRemaining,
+			MonthlyChatQuota: status.MonthlyChatQuota, CurrentPeriodUsed: status.CurrentPeriodUsed,
+			ConsultationLimit: status.ConsultationLimit, ConsultationUsed: status.ConsultationUsed, ConsultationRemaining: status.ConsultationRemaining,
+			Sessions7d: status.Sessions7D, Sessions30d: status.Sessions30D, SessionsTotal: status.SessionsTotal,
+			UserMessages7d: status.UserMessages7D, UserMessages30d: status.UserMessages30D, UserMessagesTotal: status.UserMessagesTotal,
+			LastUsedAt: cloneCustomerContextTime(status.LastUsedAt), LastCapability: cloneCustomerContextString(status.LastCapability),
+			BusinessStage: cloneCustomerContextString(status.BusinessStage), MainLineType: cloneCustomerContextString(status.MainLineType),
+			UserSegment: cloneCustomerContextString(status.UserSegment), FocusTopics: append([]string{}, status.FocusTopics...),
+			PainTag: cloneCustomerContextString(status.PainTag), SourceUpdatedAt: status.SourceUpdatedAt.UTC(),
+		}
 	}
 	seenTags := make(map[int64]struct{}, len(result.Tags))
 	for _, tag := range result.Tags {

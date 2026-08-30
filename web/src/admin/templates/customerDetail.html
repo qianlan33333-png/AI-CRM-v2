@@ -29,6 +29,24 @@
               <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">最近互动</div><div style="font-size:13px;color:#646A73">{{ customerDetail.lastInteractAt }}</div></div>
             </div>
 
+            <div data-customer-hxc style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #EFF0F1"><div><h2 style="margin:0;font-size:14px;font-weight:600">黄小璨使用与权益</h2><p style="margin:2px 0 0;font-size:12px;color:#8F959E">只读当前状态，不含聊天正文</p></div><span style="font-size:12px;color:#8F959E">最后同步 {{ customerDetail.hxcLastSyncedAt }}</span></div>
+              <sc-if value="{{ customerDetail.hxcUnavailable }}"><div style="padding:18px 16px;color:#D46B08;font-size:13px">黄小璨数据暂不可用。</div></sc-if>
+              <sc-if value="{{ customerDetail.hxcEmpty }}"><div style="padding:18px 16px;color:#8F959E;font-size:13px">当前客户暂无已匹配的黄小璨账号。</div></sc-if>
+              <sc-if value="{{ customerDetail.hxcStatusAvailable }}">
+                <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 18px">
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">会员等级</div><div style="font-size:14px;font-weight:500">{{ customerDetail.hxcTier }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">到期 / 剩余天数</div><div style="font-size:13px">{{ customerDetail.hxcExpiresAt }} / {{ customerDetail.hxcDaysRemaining }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">当前周期聊天 已用 / 额度</div><div style="font-size:13px">{{ customerDetail.hxcChatUsage }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">咨询 已用 / 额度</div><div style="font-size:13px">{{ customerDetail.hxcConsultationUsage }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">会话 7天 / 30天 / 累计</div><div style="font-size:13px">{{ customerDetail.hxcSessions }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">消息 7天 / 30天 / 累计</div><div style="font-size:13px">{{ customerDetail.hxcMessages }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">最近使用</div><div style="font-size:13px">{{ customerDetail.hxcLastUsedAt }} · {{ customerDetail.hxcLastCapability }}</div></div>
+                  <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">结构化画像</div><div style="font-size:13px">{{ customerDetail.hxcProfile }}</div></div>
+                </div>
+              </sc-if>
+            </div>
+
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end">
               <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">姓名</span><input id="fCustomerName" value="{{ customer.item.name }}" style="height:32px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
               <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">阶段 ID（留空清除）</span><input id="fCustomerStage" value="{{ customer.item.stageId }}" list="customerStages" style="height:32px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>

@@ -42,12 +42,6 @@
   "group": "运营"
  },
  {
-  "key": "funnel",
-  "svg": "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" style=\"flex:none\"><path d=\"M2.6 3.2h10.8L9.4 8v4.6L6.6 14V8z\"/></svg>",
-  "label": "漏斗 / 数据看板",
-  "group": "运营"
- },
- {
   "key": "questionnaires",
   "svg": "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" style=\"flex:none\"><rect x=\"3\" y=\"2.2\" width=\"10\" height=\"11.6\" rx=\"1.6\"/><path d=\"M5.6 5.6h4.8M5.6 8h4.8M5.6 10.4h3\"/></svg>",
   "label": "问卷",

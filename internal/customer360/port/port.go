@@ -67,6 +67,37 @@ type ChatEntry struct {
 	SentAt      time.Time
 }
 
+type HXCCurrentStatus struct {
+	SubscriptionTier      string
+	SubscriptionExpiresAt *time.Time
+	DaysRemaining         int32
+	MonthlyChatQuota      int32
+	CurrentPeriodUsed     int32
+	ConsultationLimit     int32
+	ConsultationUsed      int32
+	ConsultationRemaining int32
+	Sessions7D            int64
+	Sessions30D           int64
+	SessionsTotal         int64
+	UserMessages7D        int64
+	UserMessages30D       int64
+	UserMessagesTotal     int64
+	LastUsedAt            *time.Time
+	LastCapability        *string
+	BusinessStage         *string
+	MainLineType          *string
+	UserSegment           *string
+	FocusTopics           []string
+	PainTag               *string
+	SourceUpdatedAt       time.Time
+}
+
+type HXCContext struct {
+	Available    bool
+	LastSyncedAt *time.Time
+	Status       *HXCCurrentStatus
+}
+
 // CustomerContext is not atomic: contact and local archive data are read from
 // independent local projections and each consumer must treat their timestamps
 // accordingly.
@@ -76,6 +107,7 @@ type CustomerContext struct {
 	Timeline           []TimelineEntry
 	TimelineNextCursor *string
 	Chat               ChatSummary
+	HXC                HXCContext
 }
 
 type Reader interface {

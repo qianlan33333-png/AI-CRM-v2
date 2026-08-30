@@ -1001,7 +1001,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerDetailService,
 		contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
 	)
-	customerContextService := customer360app.NewCustomerContextService(customer360Reader, messageArchiveService)
+	customerContextService := customer360app.NewCustomerContextService(customer360Reader, messageArchiveService, hxcstore.NewCurrentRepository(pool))
 	customerContextHandler, err := customer360http.NewCustomerContextHandler(customerContextService)
 	if err != nil {
 		pool.Close()

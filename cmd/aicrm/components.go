@@ -23,6 +23,10 @@ import (
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
 	groupopsworker "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/worker"
+	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
+	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
+	hxcworker "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/worker"
+	hxcsourcestore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxcsource/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
@@ -442,6 +446,31 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	if config.HXC.Enabled {
+		hxcSource, sourceErr := hxcsourcestore.NewMySQLCurrentSource(config.HXC.SourceDSN.Value())
+		if sourceErr != nil {
+			pool.Close()
+			return nil, sourceErr
+		}
+		hxcSync, syncErr := hxcapp.NewCurrentSyncService(
+			hxcSource,
+			identityapp.NewResolveService(platformstore.NewUnitOfWork(pool), identitystore.NewRepository()),
+			hxcstore.NewCurrentRepository(pool), platformstore.NewUnitOfWork(pool), config.HXC.UnionIDScope, time.Now,
+		)
+		if syncErr != nil {
+			pool.Close()
+			return nil, syncErr
+		}
+		hxcSyncWorker, workerErr := hxcworker.NewCurrentSyncWorker(hxcSync)
+		if workerErr != nil {
+			pool.Close()
+			return nil, workerErr
+		}
+		if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueSync, hxcSyncWorker); err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
 	if config.WeCom.Callback.Enabled || config.WeCom.DirectorySync.Enabled {
 		inboundJobs, jobErr := wecomstore.NewRiverJobInserter(pool)
 		if jobErr != nil {
@@ -598,7 +627,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	periodicPlan, err := schedulerPlan(workers, config.WeCom.DirectorySync, config.WeCom.CustomerAcquisition)
+	periodicPlan, err := schedulerPlan(workers, config.WeCom.DirectorySync, config.WeCom.CustomerAcquisition, config.HXC)
 	if err != nil {
 		pool.Close()
 		return nil, err

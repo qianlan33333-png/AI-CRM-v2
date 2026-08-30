@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	ClearHXCCurrentMatches(ctx context.Context) error
 	CountHistoricalHXCActivation(ctx context.Context, sourceTable string) (int64, error)
 	CountHistoricalHXCBatch(ctx context.Context) (int64, error)
 	CountHistoricalHXCChatJob(ctx context.Context) (int64, error)
@@ -29,6 +30,9 @@ type Querier interface {
 	CreateHistoricalHXCSendRecord(ctx context.Context, arg CreateHistoricalHXCSendRecordParams) (HxcV1SendRecordHistory, error)
 	CreateHistoricalHXCSenderConfig(ctx context.Context, arg CreateHistoricalHXCSenderConfigParams) (HxcV1SenderConfigHistory, error)
 	CreateHistoricalHXCSnapshot(ctx context.Context, arg CreateHistoricalHXCSnapshotParams) (HxcV1DashboardObservation, error)
+	DeleteExpiredHXCCurrentSyncRuns(ctx context.Context, now pgtype.Timestamptz) error
+	DeleteMissingHXCCurrent(ctx context.Context, hxcUserIds []string) error
+	GetHXCCurrentByCustomer(ctx context.Context, customerID pgtype.Int8) (HxcUserCurrent, error)
 	GetHistoricalHXCActivation(ctx context.Context, id int64) (HxcV1ActivationObservation, error)
 	GetHistoricalHXCBatch(ctx context.Context, id int64) (HxcV1ImportBatchHistory, error)
 	GetHistoricalHXCChatJob(ctx context.Context, id int64) (HxcV1ChatJobHistory, error)
@@ -38,6 +42,8 @@ type Querier interface {
 	GetHistoricalHXCSendRecord(ctx context.Context, id int64) (HxcV1SendRecordHistory, error)
 	GetHistoricalHXCSenderConfig(ctx context.Context, id int64) (HxcV1SenderConfigHistory, error)
 	GetHistoricalHXCSnapshot(ctx context.Context, id int64) (HxcV1DashboardObservation, error)
+	GetLastSuccessfulHXCCurrentSync(ctx context.Context) (pgtype.Timestamptz, error)
+	InsertHXCCurrentSyncRun(ctx context.Context, arg InsertHXCCurrentSyncRunParams) error
 	ListHistoricalHXCActivation(ctx context.Context, arg ListHistoricalHXCActivationParams) ([]HxcV1ActivationObservation, error)
 	ListHistoricalHXCBatch(ctx context.Context, arg ListHistoricalHXCBatchParams) ([]HxcV1ImportBatchHistory, error)
 	ListHistoricalHXCChatJob(ctx context.Context, arg ListHistoricalHXCChatJobParams) ([]HxcV1ChatJobHistory, error)
@@ -47,6 +53,7 @@ type Querier interface {
 	ListHistoricalHXCSendRecord(ctx context.Context, arg ListHistoricalHXCSendRecordParams) ([]HxcV1SendRecordHistory, error)
 	ListHistoricalHXCSenderConfig(ctx context.Context, arg ListHistoricalHXCSenderConfigParams) ([]HxcV1SenderConfigHistory, error)
 	ListHistoricalHXCSnapshot(ctx context.Context, arg ListHistoricalHXCSnapshotParams) ([]HxcV1DashboardObservation, error)
+	UpsertHXCCurrent(ctx context.Context, arg UpsertHXCCurrentParams) error
 }
 
 var _ Querier = (*Queries)(nil)

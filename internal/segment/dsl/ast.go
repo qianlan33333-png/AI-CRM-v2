@@ -60,13 +60,24 @@ func ErrorDetail(err error) (FieldError, bool) {
 type Field string
 
 const (
-	FieldStageID        Field = "stage_id"
-	FieldOwnerStaffID   Field = "owner_staff_id"
-	FieldChannelID      Field = "channel_id"
-	FieldTagID          Field = "tag_id"
-	FieldAddedAt        Field = "added_at"
-	FieldLastInteractAt Field = "last_interact_at"
-	FieldIsDeleted      Field = "is_deleted"
+	FieldStageID               Field = "stage_id"
+	FieldOwnerStaffID          Field = "owner_staff_id"
+	FieldChannelID             Field = "channel_id"
+	FieldTagID                 Field = "tag_id"
+	FieldAddedAt               Field = "added_at"
+	FieldLastInteractAt        Field = "last_interact_at"
+	FieldIsDeleted             Field = "is_deleted"
+	FieldHXCSubscriptionTier   Field = "hxc_subscription_tier"
+	FieldHXCSubscriptionActive Field = "hxc_subscription_active"
+	FieldHXCDaysRemaining      Field = "hxc_days_remaining"
+	FieldHXCUserMessages7D     Field = "hxc_user_messages_7d"
+	FieldHXCUserMessages30D    Field = "hxc_user_messages_30d"
+	FieldHXCLastCapability     Field = "hxc_last_capability"
+	FieldHXCBusinessStage      Field = "hxc_business_stage"
+	FieldHXCMainLineType       Field = "hxc_main_line_type"
+	FieldHXCUserSegment        Field = "hxc_user_segment"
+	FieldHXCFocusTopic         Field = "hxc_focus_topic"
+	FieldHXCPainTag            Field = "hxc_pain_tag"
 )
 
 type Operator string
@@ -77,6 +88,8 @@ const (
 	OperatorHasAny Operator = "has_any"
 	OperatorBefore Operator = "before"
 	OperatorAfter  Operator = "after"
+	OperatorGTE    Operator = "gte"
+	OperatorLTE    Operator = "lte"
 )
 
 // AST has exactly one root node. Node and Value are sealed so later slices
@@ -110,12 +123,16 @@ type IntListValue struct{ Values []int64 }
 type TimestampValue struct{ Value time.Time }
 type RelativeDaysValue struct{ Days int }
 type BoolValue struct{ Value bool }
+type StringValue struct{ Value string }
+type StringListValue struct{ Values []string }
 
 func (IntValue) value()          {}
 func (IntListValue) value()      {}
 func (TimestampValue) value()    {}
 func (RelativeDaysValue) value() {}
 func (BoolValue) value()         {}
+func (StringValue) value()       {}
+func (StringListValue) value()   {}
 
 // CanonicalJSON returns the normalized AST with sorted integer lists and
 // normalized UTC timestamps. Group child order is intentionally preserved.
@@ -163,6 +180,10 @@ func canonicalValue(value Value) any {
 		return fmt.Sprintf("-%dd", typed.Days)
 	case BoolValue:
 		return typed.Value
+	case StringValue:
+		return typed.Value
+	case StringListValue:
+		return append([]string(nil), typed.Values...)
 	default:
 		return nil
 	}

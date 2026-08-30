@@ -19156,8 +19156,82 @@ export interface CustomerContextResponse {
    */
   timeline_next_cursor: string | null;
   chat: CustomerContextChatSummary;
+  hxc: CustomerContextHXC;
   non_atomic_snapshot: boolean;
   real_external_call_executed: boolean;
+}
+
+export interface CustomerContextHXCStatus {
+  /** @maxLength 100 */
+  subscription_tier: string;
+  /** @nullable */
+  subscription_expires_at: string | null;
+  /** @minimum 0 */
+  days_remaining: number;
+  /** @minimum 0 */
+  monthly_chat_quota: number;
+  /** @minimum 0 */
+  current_period_used: number;
+  /** @minimum 0 */
+  consultation_limit: number;
+  /** @minimum 0 */
+  consultation_used: number;
+  /** @minimum 0 */
+  consultation_remaining: number;
+  /** @minimum 0 */
+  sessions_7d: number;
+  /** @minimum 0 */
+  sessions_30d: number;
+  /** @minimum 0 */
+  sessions_total: number;
+  /** @minimum 0 */
+  user_messages_7d: number;
+  /** @minimum 0 */
+  user_messages_30d: number;
+  /** @minimum 0 */
+  user_messages_total: number;
+  /** @nullable */
+  last_used_at: string | null;
+  /**
+   * @maxLength 100
+   * @nullable
+   */
+  last_capability: string | null;
+  /**
+   * @maxLength 100
+   * @nullable
+   */
+  business_stage: string | null;
+  /**
+   * @maxLength 100
+   * @nullable
+   */
+  main_line_type: string | null;
+  /**
+   * @maxLength 100
+   * @nullable
+   */
+  user_segment: string | null;
+  focus_topics: string[];
+  /**
+   * @maxLength 100
+   * @nullable
+   */
+  pain_tag: string | null;
+  source_updated_at: string;
+}
+
+/**
+ * @nullable
+ */
+export type CustomerContextHXCStatusProperty = CustomerContextHXCStatus | null;
+
+export interface CustomerContextHXC {
+  available: boolean;
+  /** @nullable */
+  last_synced_at: string | null;
+  /** @nullable */
+  status: CustomerContextHXCStatusProperty;
 }
 
 export type CustomerSurveyChoiceAnswerQuestionType =

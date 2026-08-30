@@ -26455,15 +26455,51 @@ components:
     CustomerContextResponse:
       type: object
       additionalProperties: false
-      required: [customer, tags, timeline, timeline_next_cursor, chat, non_atomic_snapshot, real_external_call_executed]
+      required: [customer, tags, timeline, timeline_next_cursor, chat, hxc, non_atomic_snapshot, real_external_call_executed]
       properties:
         customer: { $ref: "#/components/schemas/CustomerContextCustomer" }
         tags: { type: array, items: { $ref: "#/components/schemas/CustomerContextTag" } }
         timeline: { type: array, items: { $ref: "#/components/schemas/CustomerContextTimelineEntry" } }
         timeline_next_cursor: { type: string, minLength: 1, nullable: true }
         chat: { $ref: "#/components/schemas/CustomerContextChatSummary" }
+        hxc: { $ref: "#/components/schemas/CustomerContextHXC" }
         non_atomic_snapshot: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    CustomerContextHXCStatus:
+      type: object
+      additionalProperties: false
+      required: [subscription_tier, subscription_expires_at, days_remaining, monthly_chat_quota, current_period_used, consultation_limit, consultation_used, consultation_remaining, sessions_7d, sessions_30d, sessions_total, user_messages_7d, user_messages_30d, user_messages_total, last_used_at, last_capability, business_stage, main_line_type, user_segment, focus_topics, pain_tag, source_updated_at]
+      properties:
+        subscription_tier: { type: string, maxLength: 100 }
+        subscription_expires_at: { type: string, format: date-time, nullable: true }
+        days_remaining: { type: integer, format: int32, minimum: 0 }
+        monthly_chat_quota: { type: integer, format: int32, minimum: 0 }
+        current_period_used: { type: integer, format: int32, minimum: 0 }
+        consultation_limit: { type: integer, format: int32, minimum: 0 }
+        consultation_used: { type: integer, format: int32, minimum: 0 }
+        consultation_remaining: { type: integer, format: int32, minimum: 0 }
+        sessions_7d: { type: integer, format: int64, minimum: 0 }
+        sessions_30d: { type: integer, format: int64, minimum: 0 }
+        sessions_total: { type: integer, format: int64, minimum: 0 }
+        user_messages_7d: { type: integer, format: int64, minimum: 0 }
+        user_messages_30d: { type: integer, format: int64, minimum: 0 }
+        user_messages_total: { type: integer, format: int64, minimum: 0 }
+        last_used_at: { type: string, format: date-time, nullable: true }
+        last_capability: { type: string, maxLength: 100, nullable: true }
+        business_stage: { type: string, maxLength: 100, nullable: true }
+        main_line_type: { type: string, maxLength: 100, nullable: true }
+        user_segment: { type: string, maxLength: 100, nullable: true }
+        focus_topics: { type: array, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 100 } }
+        pain_tag: { type: string, maxLength: 100, nullable: true }
+        source_updated_at: { type: string, format: date-time }
+    CustomerContextHXC:
+      type: object
+      additionalProperties: false
+      required: [available, last_synced_at, status]
+      properties:
+        available: { type: boolean }
+        last_synced_at: { type: string, format: date-time, nullable: true }
+        status: { allOf: [{ $ref: "#/components/schemas/CustomerContextHXCStatus" }], nullable: true }
     CustomerSurveyChoiceAnswer:
       type: object
       additionalProperties: false

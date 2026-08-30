@@ -9,6 +9,7 @@ import (
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
+	hxcworker "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/worker"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformscheduler "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/scheduler"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
@@ -17,7 +18,7 @@ import (
 
 // schedulerPlan is the sole production catalog for periodic jobs. Functional
 // slices add definitions here only after their worker and queue are frozen.
-func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appconfig.WeComDirectorySync, customerAcquisition appconfig.WeComCustomerAcquisition) (*platformscheduler.Plan, error) {
+func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appconfig.WeComDirectorySync, customerAcquisition appconfig.WeComCustomerAcquisition, hxc appconfig.HXC) (*platformscheduler.Plan, error) {
 	dispatchSchedule, err := platformscheduler.Every(time.Second)
 	if err != nil {
 		return nil, err
@@ -75,6 +76,16 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 		definitions = append(definitions, platformscheduler.Definition{
 			ID: "contact.acquisition_asset.attempted_recovery", Queue: platformjobqueue.QueueCritical,
 			Schedule: recoverySchedule, Args: contactapp.ChannelAcquisitionAssetRecoveryJobArgs{}, RunOnStart: true,
+		})
+	}
+	if hxc.Enabled {
+		hxcSchedule, err := platformscheduler.Every(6 * time.Hour)
+		if err != nil {
+			return nil, err
+		}
+		definitions = append(definitions, platformscheduler.Definition{
+			ID: "hxc.current.sync", Queue: platformjobqueue.QueueSync,
+			Schedule: hxcSchedule, Args: hxcworker.CurrentSyncJobArgs{}, RunOnStart: true,
 		})
 	}
 	return platformscheduler.Build(workers, definitions)

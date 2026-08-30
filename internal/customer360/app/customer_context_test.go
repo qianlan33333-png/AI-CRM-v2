@@ -11,6 +11,7 @@ import (
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	customer360port "github.com/qianlan33333-png/AI-CRM-v2/internal/customer360/port"
+	hxcport "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/port"
 	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
@@ -35,6 +36,15 @@ type customerContextChatFake struct {
 	fn     func(wecomport.CustomerChatSummaryQuery) (wecomport.CustomerChatSummaryPage, error)
 	calls  int
 	inputs []wecomport.CustomerChatSummaryQuery
+}
+
+type customerContextHXCFake struct {
+	result hxcport.CurrentSnapshot
+	err    error
+}
+
+func (fake customerContextHXCFake) ReadCustomerCurrent(context.Context, contactport.CustomerID) (hxcport.CurrentSnapshot, error) {
+	return fake.result, fake.err
 }
 
 func (fake *customerContextChatFake) ListCustomerChatSummaries(_ context.Context, input wecomport.CustomerChatSummaryQuery) (wecomport.CustomerChatSummaryPage, error) {
@@ -113,6 +123,23 @@ func TestCustomerContextServiceMarksOnlyLocalArchiveUnavailable(t *testing.T) {
 	result, err := NewCustomerContextService(local, chats).ReadCustomerContext(context.Background(), customer360port.CustomerContextQuery{CustomerID: 41})
 	if err != nil || result.Customer.ID != 41 || result.Chat.LocalArchiveAvailable || result.Chat.Items != nil || result.Chat.Total != 0 {
 		t.Fatalf("context=%#v err=%v", result, err)
+	}
+}
+
+func TestCustomerContextServiceAddsRealHXCStatusAndKeepsFailureExplicit(t *testing.T) {
+	lastSync := customerContextTestTime(4)
+	expires := time.Date(2027, time.January, 1, 0, 0, 0, 0, time.UTC)
+	hxc := customerContextHXCFake{result: hxcport.CurrentSnapshot{Found: true, LastSyncedAt: &lastSync, Current: hxcport.Current{
+		SourceCurrent: hxcport.SourceCurrent{SubscriptionTier: "pro", SubscriptionExpiresAt: &expires, MonthlyChatQuota: 100, CurrentPeriodUsed: 12, ConsultationLimit: 10, ConsultationUsed: 3, Sessions7D: 1, Sessions30D: 2, SessionsTotal: 3, UserMessages7D: 2, UserMessages30D: 4, UserMessagesTotal: 8, FocusTopics: []string{"growth"}, SourceUpdatedAt: customerContextTestTime(3)},
+		CustomerID:    41, MatchState: hxcport.MatchStateMatched,
+	}}}
+	result, err := NewCustomerContextService(&customerContextLocalFake{result: customerContextTestLocal(41)}, &customerContextChatFake{result: customerContextTestChats()}, hxc).ReadCustomerContext(context.Background(), customer360port.CustomerContextQuery{CustomerID: 41})
+	if err != nil || !result.HXC.Available || result.HXC.Status == nil || result.HXC.Status.SubscriptionTier != "pro" || result.HXC.Status.ConsultationRemaining != 7 {
+		t.Fatalf("HXC context = %#v err=%v", result.HXC, err)
+	}
+	unavailable, err := NewCustomerContextService(&customerContextLocalFake{result: customerContextTestLocal(41)}, &customerContextChatFake{result: customerContextTestChats()}, customerContextHXCFake{result: hxcport.CurrentSnapshot{LastSyncedAt: &lastSync}, err: errors.New("postgres unavailable")}).ReadCustomerContext(context.Background(), customer360port.CustomerContextQuery{CustomerID: 41})
+	if err != nil || unavailable.HXC.Available || unavailable.HXC.LastSyncedAt == nil || unavailable.HXC.Status != nil {
+		t.Fatalf("unavailable HXC context = %#v err=%v", unavailable.HXC, err)
 	}
 }
 

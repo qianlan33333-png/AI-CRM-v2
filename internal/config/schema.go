@@ -69,6 +69,8 @@ const (
 	weChatShopRefundPermissionEnv     = "AICRM_WECHAT_SHOP_REFUND_PERMISSION_CONFIRMED"
 	weChatShopCallbackTokenEnv        = "AICRM_WECHAT_SHOP_CALLBACK_TOKEN"
 	weChatShopCallbackAESKeyEnv       = "AICRM_WECHAT_SHOP_CALLBACK_AES_KEY"
+	hxcSourceDSNEnv                   = "AICRM_HXC_SOURCE_DSN"
+	hxcUnionIDScopeEnv                = "AICRM_HXC_UNIONID_SCOPE"
 
 	legacySecretKeyEnv                        = "SECRET_KEY"
 	legacyWeChatShopCallbackTokenEnv          = "WECHAT_SHOP_CALLBACK_TOKEN"
@@ -325,6 +327,18 @@ type Identity struct {
 	HMACKey IdentityHMACKey
 }
 
+type HXCSourceDSN struct{ value string }
+
+func (dsn HXCSourceDSN) Value() string { return dsn.value }
+func (HXCSourceDSN) String() string    { return "[REDACTED]" }
+func (HXCSourceDSN) GoString() string  { return "[REDACTED]" }
+
+type HXC struct {
+	Enabled      bool
+	SourceDSN    HXCSourceDSN
+	UnionIDScope string
+}
+
 // APIClientJWTSecret is optional startup-only key material for the bounded
 // external API-client protocol. When absent, those routes remain fail-closed.
 type APIClientJWTSecret struct {
@@ -433,6 +447,7 @@ type Root struct {
 	WeCom              WeCom
 	Commerce           CommerceProviders
 	Identity           Identity
+	HXC                HXC
 	APIClient          APIClient
 	GroupOps           GroupOps
 	AIAudience         AIAudience
@@ -512,6 +527,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.LegacyHealth.ProductionEnvironment = legacyProductionEnvironment(lookup)
 	}
 	if needWorker {
+		root.HXC = parseHXC(lookup, &problems)
 		root.Commerce.WeChatShopOrder = parseWeChatShopOrderProvider(lookup, &problems)
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
 		root.Worker.Queues = QueueConcurrency{
@@ -544,6 +560,27 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		return Root{}, validationError{problems: problems}
 	}
 	return root, nil
+}
+
+func parseHXC(lookup environmentLookup, problems *[]string) HXC {
+	dsn, dsnPresent := lookup(hxcSourceDSNEnv)
+	scope, scopePresent := lookup(hxcUnionIDScopeEnv)
+	if !dsnPresent && !scopePresent {
+		return HXC{}
+	}
+	if !dsnPresent || !scopePresent || dsn == "" || scope == "" {
+		*problems = append(*problems, "hxc requires source_dsn and unionid_scope together")
+		return HXC{}
+	}
+	if len(dsn) > 2048 || strings.TrimSpace(dsn) != dsn || strings.ContainsAny(dsn, "\x00\r\n") {
+		*problems = append(*problems, "hxc.source_dsn is invalid")
+		return HXC{}
+	}
+	if !strings.HasPrefix(scope, "wechat-open-platform:") || len(scope) > 200 || strings.TrimSpace(scope) != scope || strings.ContainsAny(scope, "\x00\r\n\t ") {
+		*problems = append(*problems, "hxc.unionid_scope is invalid")
+		return HXC{}
+	}
+	return HXC{Enabled: true, SourceDSN: HXCSourceDSN{value: dsn}, UnionIDScope: scope}
 }
 
 func parseIdentityHMACKey(lookup environmentLookup, problems *[]string) IdentityHMACKey {
