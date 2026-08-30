@@ -168,7 +168,7 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 	valid := finalEditableProjectionProof{
 		ProductSourceCount: 29, ProductProjectedCount: 29, ProductReceiptBoundCount: 29,
 		ServicePeriodSourceCount: 2, ServicePeriodProjectedCount: 2,
-		ProductImageSourceCount: 46, ProductImageProjectedCount: 46,
+		ProductLegacyImageSourceCount: 46, ProductImageReferenceCount: 0,
 		AudienceSourceCount: 4, AudienceProjectedCount: 4,
 		AudienceGroupSourceCount: 1, AudienceGroupProjectedCount: 1,
 		AudienceSourceMembers: 517, AudienceMappedMembers: 517, AudienceProjectedMembers: 517,
@@ -181,7 +181,7 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 		func(value *finalEditableProjectionProof) { value.ProductProjectedCount-- },
 		func(value *finalEditableProjectionProof) { value.ProductReceiptBoundCount-- },
 		func(value *finalEditableProjectionProof) { value.ServicePeriodProjectedCount-- },
-		func(value *finalEditableProjectionProof) { value.ProductImageProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.ProductImageReferenceCount++ },
 		func(value *finalEditableProjectionProof) { value.AudienceProjectedCount-- },
 		func(value *finalEditableProjectionProof) { value.AudienceGroupProjectedCount-- },
 		func(value *finalEditableProjectionProof) { value.AudienceProjectedMembers-- },

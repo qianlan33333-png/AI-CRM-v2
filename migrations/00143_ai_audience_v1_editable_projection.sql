@@ -29,7 +29,8 @@ CREATE TABLE public.ai_audience_v1_editable_package_projections (
 
 -- Product configuration is restored separately from immutable payment/order
 -- history. The projection row prevents a replay from overwriting later V2
--- edits, while images_projected_at records the later page-slice attachment.
+-- edits, while legacy_materials_cleared_at proves old image/material references
+-- were deliberately excluded from the current Product.
 CREATE TABLE public.product_v1_editable_projections (
   product_id BIGINT PRIMARY KEY REFERENCES public.products(id) ON DELETE RESTRICT,
   source_id BIGINT NOT NULL UNIQUE,
@@ -38,12 +39,12 @@ CREATE TABLE public.product_v1_editable_projections (
   service_period_definition_id BIGINT UNIQUE
     REFERENCES public.product_service_period_history(id) ON DELETE RESTRICT,
   service_period_projected_at TIMESTAMPTZ,
-  images_projected_at TIMESTAMPTZ,
-  image_count INTEGER NOT NULL DEFAULT 0 CHECK (image_count >= 0),
+  legacy_materials_cleared_at TIMESTAMPTZ,
+  cleared_material_reference_count INTEGER NOT NULL DEFAULT 0 CHECK (cleared_material_reference_count >= 0),
   CONSTRAINT product_v1_editable_projection_times CHECK (
     configuration_projected_at > '-infinity'::timestamptz
     AND (service_period_projected_at IS NULL OR service_period_projected_at >= configuration_projected_at)
-    AND (images_projected_at IS NULL OR images_projected_at >= configuration_projected_at)
+    AND (legacy_materials_cleared_at IS NULL OR legacy_materials_cleared_at >= configuration_projected_at)
   )
 );
 

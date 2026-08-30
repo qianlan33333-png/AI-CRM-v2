@@ -12,21 +12,21 @@ import (
 )
 
 type finalEditableProjectionProof struct {
-	ProductSourceCount          int64  `json:"product_source_count"`
-	ProductProjectedCount       int64  `json:"product_projected_count"`
-	ProductReceiptBoundCount    int64  `json:"product_receipt_bound_count"`
-	ServicePeriodSourceCount    int64  `json:"service_period_source_count"`
-	ServicePeriodProjectedCount int64  `json:"service_period_projected_count"`
-	ProductImageSourceCount     int64  `json:"product_image_source_count"`
-	ProductImageProjectedCount  int64  `json:"product_image_projected_count"`
-	AudienceSourceCount         int64  `json:"audience_source_count"`
-	AudienceProjectedCount      int64  `json:"audience_projected_count"`
-	AudienceGroupSourceCount    int64  `json:"audience_group_source_count"`
-	AudienceGroupProjectedCount int64  `json:"audience_group_projected_count"`
-	AudienceSourceMembers       int64  `json:"audience_source_members"`
-	AudienceMappedMembers       int64  `json:"audience_mapped_members"`
-	AudienceProjectedMembers    int64  `json:"audience_projected_members"`
-	TargetDigest                string `json:"target_digest"`
+	ProductSourceCount            int64  `json:"product_source_count"`
+	ProductProjectedCount         int64  `json:"product_projected_count"`
+	ProductReceiptBoundCount      int64  `json:"product_receipt_bound_count"`
+	ServicePeriodSourceCount      int64  `json:"service_period_source_count"`
+	ServicePeriodProjectedCount   int64  `json:"service_period_projected_count"`
+	ProductLegacyImageSourceCount int64  `json:"product_legacy_image_source_count"`
+	ProductImageReferenceCount    int64  `json:"product_image_reference_count"`
+	AudienceSourceCount           int64  `json:"audience_source_count"`
+	AudienceProjectedCount        int64  `json:"audience_projected_count"`
+	AudienceGroupSourceCount      int64  `json:"audience_group_source_count"`
+	AudienceGroupProjectedCount   int64  `json:"audience_group_projected_count"`
+	AudienceSourceMembers         int64  `json:"audience_source_members"`
+	AudienceMappedMembers         int64  `json:"audience_mapped_members"`
+	AudienceProjectedMembers      int64  `json:"audience_projected_members"`
+	TargetDigest                  string `json:"target_digest"`
 }
 
 func verifyFinalEditableProjection(ctx context.Context, tx pgx.Tx, archiveRunID string) (finalEditableProjectionProof, error) {
@@ -45,8 +45,7 @@ WITH source AS (
   SELECT count(*) AS product_count,
          count(*) FILTER (WHERE receipt.target_id IS NOT NULL) AS receipt_bound,
          count(*) FILTER (WHERE projection.service_period_projected_at IS NOT NULL) AS service_period_projected,
-         count(*) FILTER (WHERE projection.images_projected_at IS NOT NULL) AS images_completed,
-         COALESCE(sum(projection.image_count),0)::bigint AS image_count
+         count(*) FILTER (WHERE projection.legacy_materials_cleared_at IS NOT NULL) AS materials_cleared
   FROM public.product_v1_editable_projections AS projection
   LEFT JOIN public.v1_domain_import_receipts AS receipt
     ON receipt.archive_run_id=$1 AND receipt.import_version=$2
@@ -69,17 +68,17 @@ WITH source AS (
 SELECT source.product_count, projected.product_count, projected.receipt_bound,
        service_period.source_count, projected.service_period_projected,
        page_slices.source_count,
-       CASE WHEN projected.images_completed=projected.product_count THEN projected.image_count ELSE -1 END,
+       CASE WHEN projected.materials_cleared=projected.product_count THEN product_images.projected_count ELSE -1 END,
        product_images.projected_count
 FROM source, projected, service_period, page_slices, product_images`, archiveRunID, staticImportVersion).Scan(
 		&proof.ProductSourceCount, &proof.ProductProjectedCount, &proof.ProductReceiptBoundCount,
 		&proof.ServicePeriodSourceCount, &proof.ServicePeriodProjectedCount,
-		&proof.ProductImageSourceCount, &proof.ProductImageProjectedCount, &actualProductImages)
+		&proof.ProductLegacyImageSourceCount, &proof.ProductImageReferenceCount, &actualProductImages)
 	if err != nil {
 		return finalEditableProjectionProof{}, err
 	}
-	if actualProductImages != proof.ProductImageProjectedCount {
-		return finalEditableProjectionProof{}, fmt.Errorf("editable product image projection count mismatch")
+	if actualProductImages != proof.ProductImageReferenceCount {
+		return finalEditableProjectionProof{}, fmt.Errorf("editable product material clear count mismatch")
 	}
 	deferredKeys := segmentapp.DeferredRedesignAudiencePackageKeys()
 	var actualAudienceSourceMembers, actualAudienceMappedMembers int64
@@ -125,7 +124,7 @@ SELECT projection.source_id,encode(projection.source_payload_digest,'hex'),proje
        item.product_code,item.name,item.description,item.price_minor,item.currency,item.stock_quantity,
        item.local_lifecycle,item.version,item.legacy_admin_projection::text,
        COALESCE(projection.service_period_definition_id,0),projection.service_period_projected_at IS NOT NULL,
-       projection.images_projected_at IS NOT NULL,projection.image_count,
+       projection.legacy_materials_cleared_at IS NOT NULL,projection.cleared_material_reference_count,
        COALESCE((SELECT jsonb_agg(jsonb_build_array(image.position,image.image_url) ORDER BY image.position)::text
                  FROM public.product_images AS image WHERE image.product_id=projection.product_id),'[]')
 FROM public.product_v1_editable_projections AS projection
@@ -197,8 +196,8 @@ func validateFinalEditableProjectionProof(proof finalEditableProjectionProof) er
 	if proof.ServicePeriodProjectedCount != proof.ServicePeriodSourceCount {
 		return fmt.Errorf("editable service-period definitions are incomplete")
 	}
-	if proof.ProductImageProjectedCount != proof.ProductImageSourceCount {
-		return fmt.Errorf("editable Product images are incomplete")
+	if proof.ProductImageReferenceCount != 0 {
+		return fmt.Errorf("editable Product retains legacy material references")
 	}
 	if proof.AudienceProjectedCount != proof.AudienceSourceCount || proof.AudienceGroupProjectedCount != proof.AudienceGroupSourceCount ||
 		proof.AudienceMappedMembers != proof.AudienceProjectedMembers {

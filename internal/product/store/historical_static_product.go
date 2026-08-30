@@ -77,9 +77,9 @@ VALUES ($1,$2,$3,$4)`, int64(projection.TargetProductID), projection.SourceID, p
 	return false, nil
 }
 
-type HistoricalProductImagesProjectionResult struct {
-	ProductsProjected int `json:"products_projected"`
-	ImagesProjected   int `json:"images_projected"`
+type HistoricalProductMaterialClearResult struct {
+	ProductsCleared   int `json:"products_cleared"`
+	ReferencesRemoved int `json:"references_removed"`
 	ProductsReplayed  int `json:"products_replayed"`
 }
 
@@ -151,119 +151,81 @@ WHERE history.product_id=projection.product_id AND projection.service_period_pro
 	return result, nil
 }
 
-func (store *HistoricalStaticProductStore) ProjectHistoricalEditableProductImages(ctx context.Context, archiveRunID, staticImportVersion, staticTailImportVersion string, at time.Time) (HistoricalProductImagesProjectionResult, error) {
-	if store == nil || store.tx == nil || ctx == nil || strings.TrimSpace(archiveRunID) == "" || strings.TrimSpace(staticImportVersion) == "" || strings.TrimSpace(staticTailImportVersion) == "" || at.IsZero() || at.Location() != time.UTC {
-		return HistoricalProductImagesProjectionResult{}, product.ErrHistoricalStaticProductInvalid
+func (store *HistoricalStaticProductStore) ClearHistoricalEditableProductMaterials(ctx context.Context, at time.Time) (HistoricalProductMaterialClearResult, error) {
+	if store == nil || store.tx == nil || ctx == nil || at.IsZero() || at.Location() != time.UTC {
+		return HistoricalProductMaterialClearResult{}, product.ErrHistoricalStaticProductInvalid
 	}
 	tx, err := store.tx(ctx)
 	if err != nil {
-		return HistoricalProductImagesProjectionResult{}, err
+		return HistoricalProductMaterialClearResult{}, err
 	}
 	if _, err = tx.Exec(ctx, `LOCK TABLE public.product_v1_editable_projections IN SHARE ROW EXCLUSIVE MODE`); err != nil {
-		return HistoricalProductImagesProjectionResult{}, err
-	}
-	var missingMappings int
-	err = tx.QueryRow(ctx, `
-WITH product_map AS (
-  SELECT (metadata->>'source_id')::bigint AS source_id, target_id::bigint AS product_id
-  FROM public.v1_domain_import_receipts
-  WHERE archive_run_id=$1 AND import_version=$2 AND table_id='public/wechat_pay_products'
-    AND target_table='products' AND disposition='import' AND verified
-), image_map AS (
-  SELECT (metadata->>'source_id')::bigint AS source_id, target_id::bigint AS image_id
-  FROM public.v1_domain_import_receipts
-  WHERE archive_run_id=$1 AND import_version=$2 AND table_id='public/image_library'
-    AND target_table='media_images' AND disposition='import' AND verified
-), eligible AS (
-  SELECT slice.id, product_map.product_id, image_map.image_id
-  FROM public.product_v1_page_slice_history AS slice
-  LEFT JOIN product_map ON product_map.source_id=slice.product_source_id
-  LEFT JOIN image_map ON image_map.source_id=slice.image_source_id
-  LEFT JOIN public.v1_domain_import_receipts AS receipt
-    ON receipt.archive_run_id=$1 AND receipt.import_version=$3
-   AND receipt.table_id='public/wechat_pay_product_page_slices'
-   AND receipt.target_table='product_v1_page_slice_history'
-   AND receipt.target_id=slice.id::text AND receipt.disposition='import' AND receipt.verified
-  WHERE slice.original_enabled
-    AND (product_map.product_id IS NULL OR image_map.image_id IS NULL OR receipt.target_id IS NULL)
-)
-SELECT count(*) FROM eligible`, archiveRunID, staticImportVersion, staticTailImportVersion).Scan(&missingMappings)
-	if err != nil {
-		return HistoricalProductImagesProjectionResult{}, err
-	}
-	if missingMappings != 0 {
-		return HistoricalProductImagesProjectionResult{}, product.ErrHistoricalStaticProductConflict
+		return HistoricalProductMaterialClearResult{}, err
 	}
 	var total, pending, unsafe int
 	err = tx.QueryRow(ctx, `
 SELECT count(*),
-       count(*) FILTER (WHERE projection.images_projected_at IS NULL),
-       count(*) FILTER (WHERE projection.images_projected_at IS NULL AND (item.version<>1 OR EXISTS(SELECT 1 FROM public.product_images AS image WHERE image.product_id=item.id)))
+       count(*) FILTER (WHERE projection.legacy_materials_cleared_at IS NULL),
+       count(*) FILTER (WHERE projection.legacy_materials_cleared_at IS NULL AND item.version<>1)
 FROM public.product_v1_editable_projections AS projection
 JOIN public.products AS item ON item.id=projection.product_id`).Scan(&total, &pending, &unsafe)
 	if err != nil {
-		return HistoricalProductImagesProjectionResult{}, err
+		return HistoricalProductMaterialClearResult{}, err
 	}
 	if total < 1 || unsafe != 0 {
-		return HistoricalProductImagesProjectionResult{}, product.ErrHistoricalStaticProductConflict
+		return HistoricalProductMaterialClearResult{}, product.ErrHistoricalStaticProductConflict
 	}
-	result := HistoricalProductImagesProjectionResult{ProductsReplayed: total - pending}
+	result := HistoricalProductMaterialClearResult{ProductsReplayed: total - pending}
 	if pending == 0 {
 		return result, nil
 	}
 	command, err := tx.Exec(ctx, `
-WITH product_map AS (
-  SELECT (metadata->>'source_id')::bigint AS source_id, target_id::bigint AS product_id
-  FROM public.v1_domain_import_receipts
-  WHERE archive_run_id=$1 AND import_version=$2 AND table_id='public/wechat_pay_products'
-    AND target_table='products' AND disposition='import' AND verified
-), image_map AS (
-  SELECT (metadata->>'source_id')::bigint AS source_id, target_id::bigint AS image_id
-  FROM public.v1_domain_import_receipts
-  WHERE archive_run_id=$1 AND import_version=$2 AND table_id='public/image_library'
-    AND target_table='media_images' AND disposition='import' AND verified
+UPDATE public.product_v1_editable_projections AS projection
+SET cleared_material_reference_count=(
+  SELECT count(*)::integer FROM public.product_images AS image WHERE image.product_id=projection.product_id
 )
-INSERT INTO public.product_images(product_id,position,image_url)
-SELECT product_map.product_id,
-       row_number() OVER (PARTITION BY product_map.product_id ORDER BY slice.sort_order,slice.source_id)::integer-1,
-       '/api/admin/image-library/'||image_map.image_id::text||'/variants/original'
-FROM public.product_v1_page_slice_history AS slice
-JOIN product_map ON product_map.source_id=slice.product_source_id
-JOIN image_map ON image_map.source_id=slice.image_source_id
-JOIN public.product_v1_editable_projections AS projection ON projection.product_id=product_map.product_id AND projection.images_projected_at IS NULL
-WHERE slice.original_enabled
-ORDER BY product_map.product_id,slice.sort_order,slice.source_id`, archiveRunID, staticImportVersion)
-	if err != nil {
-		return HistoricalProductImagesProjectionResult{}, err
+WHERE projection.legacy_materials_cleared_at IS NULL`)
+	if err != nil || command.RowsAffected() != int64(pending) {
+		if err != nil {
+			return HistoricalProductMaterialClearResult{}, err
+		}
+		return HistoricalProductMaterialClearResult{}, product.ErrHistoricalStaticProductConflict
 	}
-	result.ImagesProjected = int(command.RowsAffected())
+	command, err = tx.Exec(ctx, `
+DELETE FROM public.product_images AS image
+USING public.product_v1_editable_projections AS projection
+WHERE image.product_id=projection.product_id
+  AND projection.legacy_materials_cleared_at IS NULL`)
+	if err != nil {
+		return HistoricalProductMaterialClearResult{}, err
+	}
+	result.ReferencesRemoved = int(command.RowsAffected())
 	command, err = tx.Exec(ctx, `
 UPDATE public.products AS item
 SET legacy_admin_projection=jsonb_set(
   item.legacy_admin_projection,
   '{slices}',
-  COALESCE((SELECT jsonb_agg(jsonb_build_object('image_url',image.image_url) ORDER BY image.position) FROM public.product_images AS image WHERE image.product_id=item.id),'[]'::jsonb),
+  '[]'::jsonb,
   true)
 FROM public.product_v1_editable_projections AS projection
-WHERE projection.product_id=item.id AND projection.images_projected_at IS NULL`)
+WHERE projection.product_id=item.id AND projection.legacy_materials_cleared_at IS NULL`)
 	if err != nil || command.RowsAffected() != int64(pending) {
 		if err != nil {
-			return HistoricalProductImagesProjectionResult{}, err
+			return HistoricalProductMaterialClearResult{}, err
 		}
-		return HistoricalProductImagesProjectionResult{}, product.ErrHistoricalStaticProductConflict
+		return HistoricalProductMaterialClearResult{}, product.ErrHistoricalStaticProductConflict
 	}
 	command, err = tx.Exec(ctx, `
 UPDATE public.product_v1_editable_projections AS projection
-SET images_projected_at=$1,
-    image_count=(SELECT count(*)::integer FROM public.product_images AS image WHERE image.product_id=projection.product_id)
-WHERE projection.images_projected_at IS NULL`, at)
+SET legacy_materials_cleared_at=$1
+WHERE projection.legacy_materials_cleared_at IS NULL`, at)
 	if err != nil || command.RowsAffected() != int64(pending) {
 		if err != nil {
-			return HistoricalProductImagesProjectionResult{}, err
+			return HistoricalProductMaterialClearResult{}, err
 		}
-		return HistoricalProductImagesProjectionResult{}, product.ErrHistoricalStaticProductConflict
+		return HistoricalProductMaterialClearResult{}, product.ErrHistoricalStaticProductConflict
 	}
-	result.ProductsProjected = pending
+	result.ProductsCleared = pending
 	return result, nil
 }
 

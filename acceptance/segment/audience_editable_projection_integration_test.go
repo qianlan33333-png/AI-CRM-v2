@@ -1,4 +1,4 @@
-package store
+package segment_acceptance
 
 import (
 	"context"
@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	authfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store/acceptancefixture"
-	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/acceptancefixture"
+	authfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/auth"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
+	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 )
 
 func TestAudienceEditableProjectionPostgres(t *testing.T) {
@@ -42,10 +43,10 @@ VALUES (31,$1,NULL,'audience_huangxiaocan_active_not_ai_opc_not_paid','HXC defer
 RETURNING id`, historyGroup, at).Scan(&hxcHistoryPackage); err != nil {
 		t.Fatal(err)
 	}
-	if customerOne, err = contactfixture.CreateCustomer(ctx, pool, "audience-projection-one"); err != nil {
+	if customerOne, err = contactfixture.CreateCustomerRecord(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
-	if customerTwo, err = contactfixture.CreateCustomer(ctx, pool, "audience-projection-two"); err != nil {
+	if customerTwo, err = contactfixture.CreateCustomerRecord(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
 	if err = pool.QueryRow(ctx, `INSERT INTO segment_v1_audience_groups(source_id,name,created_at,updated_at) VALUES(10,'V1 active group',$1,$1) RETURNING id`, at).Scan(&historyGroup); err != nil {
@@ -71,7 +72,7 @@ VALUES ($1,$2,$3,'external_userid','active',$4,$4,$4,$4,$4,decode(repeat('22',32
 		}
 	}
 	uow := platformstore.NewUnitOfWork(pool)
-	service := segmentapp.NewAudienceEditableProjectionService(uow, NewAudienceEditableProjectionStore())
+	service := segmentapp.NewAudienceEditableProjectionService(uow, segmentstore.NewAudienceEditableProjectionStore())
 	first, err := service.Project(ctx, actorID, at)
 	if err != nil {
 		t.Fatal(err)
@@ -108,7 +109,7 @@ WHERE projection.package_history_id=$1`, historyPackage).Scan(&segmentID, &lifec
 		if txErr != nil {
 			return txErr
 		}
-		ids, queryErr := NewQuerySet(database).LegacyAudiencePackageSnapshot(tx, 14)
+		ids, queryErr := segmentstore.NewQuerySet(database).LegacyAudiencePackageSnapshot(tx, 14)
 		if queryErr != nil {
 			return queryErr
 		}

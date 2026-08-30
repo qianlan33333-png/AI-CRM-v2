@@ -17,10 +17,10 @@ import (
 )
 
 type finalEditableProjectionResult struct {
-	Products       v1domain.EditableProductProjectionResult             `json:"products"`
-	ServicePeriods productstore.HistoricalServicePeriodProjectionResult `json:"service_periods"`
-	ProductImages  productstore.HistoricalProductImagesProjectionResult `json:"product_images"`
-	Audiences      segmentapp.AudienceEditableProjectionResult          `json:"audiences"`
+	Products         v1domain.EditableProductProjectionResult             `json:"products"`
+	ServicePeriods   productstore.HistoricalServicePeriodProjectionResult `json:"service_periods"`
+	ProductMaterials productstore.HistoricalProductMaterialClearResult    `json:"product_materials"`
+	Audiences        segmentapp.AudienceEditableProjectionResult          `json:"audiences"`
 }
 
 func projectFinalEditableBusiness(ctx context.Context, pool *pgxpool.Pool, archive *v1archive.PostgresArchiveReader, archiveRunID string, actorID int64, at time.Time) (finalEditableProjectionResult, error) {
@@ -67,7 +67,7 @@ func projectFinalEditableBusiness(ctx context.Context, pool *pgxpool.Pool, archi
 		return finalEditableProjectionResult{}, err
 	}
 	if err = uow.Within(ctx, func(bound context.Context) error {
-		result.ProductImages, err = productstore.NewHistoricalStaticProductStore().ProjectHistoricalEditableProductImages(bound, archiveRunID, staticImportVersion, staticTailHistoryImportVersion, at)
+		result.ProductMaterials, err = productstore.NewHistoricalStaticProductStore().ClearHistoricalEditableProductMaterials(bound, at)
 		return err
 	}); err != nil {
 		return finalEditableProjectionResult{}, err
