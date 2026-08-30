@@ -1233,7 +1233,7 @@ console.log('admin/aiDetail.html?id=7（详情 + 抽屉）');
   // 整单批准（确认浮窗 → 级联）
   click(dom, d.querySelector('#dApprove'));
   await sleep(30);
-  ok('整单批准弹出确认浮窗', d.querySelector('#fb-mask').style.display === 'flex');
+  ok('整单批准弹出确认浮窗', d.querySelector('#fb-mask').hidden === false);
   click(dom, d.querySelector('#fb-ok'));
   await sleep(400);
   ok('批准后状态变「已批准」且按钮锁定', d.querySelector('#dStatus').textContent === '已批准' && d.querySelector('#dApprove').disabled);
@@ -2373,7 +2373,11 @@ console.log('sidebar/index.html');
 {
   const dom = await loadPage('sidebar/index.html');
   const d = dom.window.document;
-  ok('侧边栏渲染 375px 高密度壳', d.querySelector('#sidebar-workbench-root.sidebar-shell') && d.querySelector('.customer-card') && [...d.querySelectorAll('style')].some((style) => style.textContent.includes('width:min(375px,100vw)')));
+  const sidebarManifest = JSON.parse(fs.readFileSync(path.join(DIST, 'asset-manifest.json'), 'utf8'));
+  const sidebarHTML = fs.readFileSync(path.join(DIST, 'sidebar/index.html'), 'utf8');
+  ok('侧边栏渲染 375px 高密度壳且 CSP 下不依赖内联样式',
+    d.querySelector('#sidebar-workbench-root.sidebar-shell') && d.querySelector('.customer-card') &&
+    !d.querySelector('style') && sidebarHTML.includes(`href="../${sidebarManifest.entries.sidebarStyles}"`));
   ok('无 external_userid 时保持 agentConfig → getContext → getCurExternalContact → bootstrap 安全顺序',
     dom.window.__sidebarTest.wxInvokes.slice(0, 2).join('|') === 'getContext|getCurExternalContact' &&
     dom.window.__sidebarTest.requests[0]?.includes('/jssdk/agent-config') &&
@@ -2703,7 +2707,7 @@ console.log('admin/campaigns.html（目标人员 Customer360 链接）');
   click(recipient, doc.querySelector('#recipient-dispatch'));
   await sleep(20);
   ok('单客户受控动作在发起前明确本地 EER 与外部边界',
-    doc.querySelector('#fb-mask')?.style.display === 'flex' && doc.querySelector('#fb-body')?.textContent.includes('accepted/queued 不等于 Provider 发送或送达'));
+    doc.querySelector('#fb-mask')?.hidden === false && doc.querySelector('#fb-body')?.textContent.includes('accepted/queued 不等于 Provider 发送或送达'));
   click(recipient, doc.querySelector('#fb-ok'));
   await sleep(40);
   const recipientDispatchCall = recipient.window.__recipientCalls.find((call) => call.url.endsWith('/recipients/7/dispatch'));

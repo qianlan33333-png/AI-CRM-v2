@@ -55,6 +55,8 @@ grep -Eq '^[0-9a-f]{64}[[:space:]]+' "$temporary_directory/receipt" ||
 
 metadata="$(go version -m "$temporary_directory/aicrm")"
 source_sha="$(git rev-parse HEAD)"
+grep -Fq $'\tdep\tgolang.org/x/crypto/x509roots/fallback\t' <<<"$metadata" ||
+  fail 'scratch runtime binary must embed fallback CA roots for provider HTTPS'
 grep -Fq $'\tGOOS=linux' <<<"$metadata" || fail 'GOOS receipt mismatch'
 grep -Fq $'\tGOARCH=amd64' <<<"$metadata" || fail 'GOARCH receipt mismatch'
 [[ "$(go tool buildid "$temporary_directory/aicrm")" = "$source_sha" ]] ||
