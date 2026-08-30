@@ -1620,11 +1620,6 @@ export class AdminController extends PageBase {
 
   private saveChannelForm(): void {
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
-    const checked = (id: string): boolean => (document.getElementById(id) as HTMLInputElement | null)?.checked === true;
-    const ids = (id: string): number[] => value(id).split(/[\s,，]+/).filter(Boolean).map(Number);
-    let assignmentConfig: Record<string, unknown>;
-    try { assignmentConfig = JSON.parse(value('channelAssignmentConfig') || '{}') as Record<string, unknown>; }
-    catch { return toast('客服分配配置不是有效 JSON', true); }
     const carrierType = value('channelCarrier') === 'link' ? 'link' : 'qrcode';
     const linkUrl = value('channelLinkUrl');
     const customerChannel = value('channelCustomerChannel');
@@ -1635,13 +1630,9 @@ export class AdminController extends PageBase {
       carrier_type: carrierType,
       channel_name: value('channelName'), channel_code: value('channelCode'), scene_value: value('channelScene'), qr_url: value('channelQrUrl'),
       status: ['active', 'archived'].includes(value('channelStatus')) ? value('channelStatus') as 'active' | 'archived' : 'inactive',
-      owner_staff_id: value('channelOwner'), customer_channel: customerChannel, link_url: linkUrl, final_url: carrierType === 'link' ? buildChannelFinalUrl(linkUrl, customerChannel) : value('channelFinalUrl'),
-      welcome_message: value('channelWelcome'), welcome_image_library_ids: ids('channelImageIds'), welcome_miniprogram_library_ids: ids('channelMiniIds'), welcome_attachment_library_ids: ids('channelAttachmentIds'), welcome_group_invite_library_ids: ids('channelGroupInviteIds'),
-      auto_accept_friend: checked('channelAutoAccept'), entry_tag_id: value('channelTagId'), entry_tag_name: value('channelTagName'), entry_tag_group_name: value('channelTagGroup'),
-      assignment_mode: value('channelAssignmentMode') === 'multi_staff' ? 'multi_staff' : 'single_owner', assignment_strategy: value('channelAssignmentStrategy') === 'cap_switch' ? 'cap_switch' : 'ratio', overflow_policy: value('channelOverflow'), assignment_config_json: assignmentConfig,
+      customer_channel: customerChannel, link_url: linkUrl, final_url: carrierType === 'link' ? buildChannelFinalUrl(linkUrl, customerChannel) : value('channelFinalUrl'),
     };
     if (!input.channel_name || !input.channel_code) return toast('渠道名称和编码不能为空', true);
-    if ([...(input.welcome_image_library_ids || []), ...(input.welcome_miniprogram_library_ids || []), ...(input.welcome_attachment_library_ids || []), ...(input.welcome_group_invite_library_ids || [])].some((id) => !Number.isInteger(id) || id < 1)) return toast('素材引用必须是正整数 ID', true);
     void this.api.saveChannel(input).then(() => {
       toast('渠道当前配置已保存；员工、标签和素材保持未配置，未调用 Provider');
       this.goto('channels');
