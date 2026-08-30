@@ -482,12 +482,40 @@ function boot(): void {
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
       if (page === "config") {
-        const setupWizard =
-          stage.querySelector<HTMLElement>("#setup-wizard-card");
-        if (setupWizard) await mountSetupWizard(setupWizard);
-        const adminAccess =
-          stage.querySelector<HTMLElement>("#admin-access-card");
-        if (adminAccess) await mountAdminAccess(adminAccess);
+        const dialog = stage.querySelector<HTMLElement>(
+          "#config-extension-dialog",
+        );
+        const host = stage.querySelector<HTMLElement>("#config-extension-host");
+        const title = stage.querySelector<HTMLElement>(
+          "#config-extension-title",
+        );
+        const close = (): void => {
+          if (dialog) dialog.style.display = "none";
+          if (host) host.textContent = "";
+        };
+        stage
+          .querySelector<HTMLButtonElement>("#close-config-extension")
+          ?.addEventListener("click", close);
+        const open = (
+          label: string,
+          render: (root: HTMLElement) => Promise<void>,
+        ): void => {
+          if (!dialog || !host || !title) return;
+          title.textContent = label;
+          host.textContent = "正在读取配置…";
+          dialog.style.display = "flex";
+          void render(host).catch((error) => showLoadError(host, error));
+        };
+        stage
+          .querySelector<HTMLButtonElement>("#open-setup-wizard")
+          ?.addEventListener("click", () =>
+            open("企微接入基础配置", mountSetupWizard),
+          );
+        stage
+          .querySelector<HTMLButtonElement>("#open-admin-access")
+          ?.addEventListener("click", () =>
+            open("后台访问成员", mountAdminAccess),
+          );
       }
     })
     .catch((error) => showLoadError(stage, error));

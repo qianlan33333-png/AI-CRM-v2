@@ -34,6 +34,28 @@ import { ApiError } from '../../api/transport';
 const control = 'height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;background:#fff;color:#344054;font-size:13px';
 const button = 'height:32px;padding:0 12px;border:1px solid #D0D5DD;border-radius:6px;background:#fff;color:#344054;font-size:13px;cursor:pointer';
 const primary = button + ';border-color:#3370ff;background:#3370ff;color:#fff';
+
+function alignKimiWorkspace(stage: HTMLElement): void {
+  const workspace = stage.firstElementChild as HTMLElement | null;
+  if (!workspace) return;
+  workspace.style.padding = '0 0 20px';
+  workspace.style.gap = '12px';
+  const children = [...workspace.children] as HTMLElement[];
+  const header = children[0];
+  if (header) {
+    header.style.minHeight = '52px';
+    header.style.padding = '0 20px';
+    header.style.background = '#fff';
+    header.style.borderBottom = '1px solid #DEE0E3';
+    header.style.flex = 'none';
+    header.querySelector('h1')?.setAttribute('style', 'margin:2px 0 0;font-size:16px;line-height:22px;font-weight:600');
+  }
+  children.slice(1).forEach((section, index) => {
+    section.style.marginLeft = '20px';
+    section.style.marginRight = '20px';
+    if (index === 0) section.style.marginTop = '4px';
+  });
+}
 type CouponDraft = {
   id?: number;
   name: string;
@@ -112,6 +134,7 @@ export async function mountCouponForm(stage: HTMLElement): Promise<void> {
   };
   const render = (): void => {
     stage.innerHTML = couponFormHtml(draft, options, optionQuery, optionType);
+    alignKimiWorkspace(stage);
     stage.querySelector<HTMLButtonElement>('#coupon-back')?.addEventListener('click', () => { location.href = 'coupons.html'; });
     stage.querySelector<HTMLButtonElement>('#option-search')?.addEventListener('click', () => {
       snapshot(); optionQuery = valueOf(stage, 'option-query'); const type = valueOf(stage, 'option-type'); optionType = type === 'standard_product' || type === 'service_period' ? type : 'all';
@@ -146,6 +169,7 @@ export async function mountCouponData(stage: HTMLElement): Promise<void> {
   let sharePath = '';
   const render = (): void => {
     stage.innerHTML = couponDataHtml(coupon, claims, sharePath);
+    alignKimiWorkspace(stage);
     stage.querySelector<HTMLButtonElement>('#coupon-data-back')?.addEventListener('click', () => { location.href = 'coupons.html'; });
     stage.querySelector<HTMLButtonElement>('#coupon-data-edit')?.addEventListener('click', () => { location.href = `couponForm.html?id=${id}`; });
     stage.querySelector<HTMLButtonElement>('#claim-previous')?.addEventListener('click', () => { void listCouponClaimsDto(id, { limit: claims.limit, offset: Math.max(0, claims.offset - claims.limit) }).then((page) => { claims = page; render(); }).catch((error) => toast(error instanceof Error ? error.message : '领取记录读取失败', true)); });
@@ -222,6 +246,7 @@ export async function mountServicePeriodMemberGrid(stage: HTMLElement): Promise<
   const refreshGrid = async (): Promise<void> => { grid = await getServicePeriodMemberGridMetaDto(id); await reloadPage(); };
   const render = (): void => {
     stage.innerHTML = memberGridHtml(grid, page, filters, cursors.length - 1, detail, sharePath, id, staffOptions, staffDirectoryError).replace('外部分享：backend_blocked', `公开只读会员网格：${grid.externalShareEnabled ? '已开启' : '已关闭'}`);
+    alignKimiWorkspace(stage);
     stage.querySelector<HTMLButtonElement>('#member-grid-back')?.addEventListener('click', () => { location.href = 'spProducts.html'; });
     stage.querySelector<HTMLButtonElement>('#member-grid-apply')?.addEventListener('click', () => {
       const state = valueOf(stage, 'member-grid-state') as MemberGridState;
