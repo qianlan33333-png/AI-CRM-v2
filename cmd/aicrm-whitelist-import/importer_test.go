@@ -225,7 +225,7 @@ func TestWhitelistBaselinePreservesCurrentCapabilitiesWithoutHistoricalRows(t *t
 		"CREATE TABLE public.customers",
 		"CREATE TABLE public.source_subject_refs",
 		"CREATE TABLE public.products",
-		"CREATE TABLE public.order_refunds",
+		"CREATE TABLE public.order_refund_facts",
 		"CREATE TABLE public.hxc_user_current",
 		"CREATE TABLE public.river_job",
 		"CREATE TABLE public.tag_groups",

@@ -5,7 +5,7 @@
 -- AI-CRM V2 capability baseline v2. Business/history rows are intentionally
 -- empty; current product capabilities remain available for fresh imports.
 
-\restrict OMZTM9pxELxHaUQ8HrQ6iWt3w2S3Z0vdAF8AHBAWAt4Ld6oJMTWo4Ul7V6WzkPA
+\restrict YtoRNparmOaxFC9YOQyy28PR6CziXfGpt9q6Nv1SghSGo4ZXpkscgwQ7OSja8Px
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -11102,6 +11102,40 @@ ALTER TABLE public.order_provider_callback_receipts ALTER COLUMN id ADD GENERATE
 
 
 --
+-- Name: order_refund_facts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_refund_facts (
+    id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    provider text NOT NULL,
+    provider_refund_reference text NOT NULL,
+    amount_minor bigint NOT NULL,
+    currency character(3) NOT NULL,
+    status text NOT NULL,
+    reason text DEFAULT ''::text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    completed_at timestamp with time zone,
+    CONSTRAINT order_refund_facts_amount_minor_check CHECK ((amount_minor >= 0)),
+    CONSTRAINT order_refund_facts_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text))
+);
+
+
+--
+-- Name: order_refund_facts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.order_refund_facts ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.order_refund_facts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: order_refunds; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -18394,6 +18428,14 @@ COPY public.order_provider_callback_receipts (id, callback_kind, provider_event_
 
 
 --
+-- Data for Name: order_refund_facts; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.order_refund_facts (id, order_id, provider, provider_refund_reference, amount_minor, currency, status, reason, created_at, completed_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: order_refunds; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -20579,6 +20621,13 @@ SELECT pg_catalog.setval('public.order_payment_commands_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.order_provider_callback_receipts_id_seq', 1, false);
+
+
+--
+-- Name: order_refund_facts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.order_refund_facts_id_seq', 1, false);
 
 
 --
@@ -24575,6 +24624,22 @@ ALTER TABLE ONLY public.order_provider_callback_receipts
 
 ALTER TABLE ONLY public.order_provider_callback_receipts
     ADD CONSTRAINT order_provider_callback_receipts_provider_event_digest_key UNIQUE (provider_event_digest);
+
+
+--
+-- Name: order_refund_facts order_refund_facts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_refund_facts
+    ADD CONSTRAINT order_refund_facts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: order_refund_facts order_refund_facts_provider_provider_refund_reference_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_refund_facts
+    ADD CONSTRAINT order_refund_facts_provider_provider_refund_reference_key UNIQUE (provider, provider_refund_reference);
 
 
 --
@@ -31609,6 +31674,14 @@ ALTER TABLE ONLY public.order_provider_callback_receipts
 
 
 --
+-- Name: order_refund_facts order_refund_facts_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_refund_facts
+    ADD CONSTRAINT order_refund_facts_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.order_list_projections(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: order_refunds order_refunds_external_effect_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -32876,4 +32949,4 @@ ALTER TABLE ONLY public.whitelist_import_domain_receipts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict OMZTM9pxELxHaUQ8HrQ6iWt3w2S3Z0vdAF8AHBAWAt4Ld6oJMTWo4Ul7V6WzkPA
+\unrestrict YtoRNparmOaxFC9YOQyy28PR6CziXfGpt9q6Nv1SghSGo4ZXpkscgwQ7OSja8Px
