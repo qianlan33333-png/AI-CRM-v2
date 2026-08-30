@@ -86,7 +86,18 @@ func reconcileWhitelistTx(ctx context.Context, tx pgx.Tx, runID string) (reconci
 	    COALESCE(legacy_admin_projection->'lead_channel_id','null'::jsonb)<>'null'::jsonb OR
 	    COALESCE(legacy_admin_projection->'completion_target','null'::jsonb)<>'null'::jsonb OR
 	    COALESCE(legacy_admin_projection->'wecom_tagging','null'::jsonb) NOT IN ('null'::jsonb,'{}'::jsonb,'[]'::jsonb))+
-	  (SELECT count(*) FROM public.channels WHERE config ?| ARRAY['staff_id','staff_ids','employee_id','employee_ids','tag_id','tag_ids','welcome_material_id','welcome_material_ids','welcome_message','material_id','material_ids'])+
+	  (SELECT count(*) FROM public.channels WHERE
+	    COALESCE(config->'staff_id','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'staff_ids','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'employee_id','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'employee_ids','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'tag_id','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'tag_ids','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'welcome_material_id','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'welcome_material_ids','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'welcome_message','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'material_id','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb) OR
+	    COALESCE(config->'material_ids','null'::jsonb) NOT IN ('null'::jsonb,'""'::jsonb,'[]'::jsonb,'{}'::jsonb))+
   (SELECT count(*) FROM public.radar_links WHERE cover_image_id IS NOT NULL OR attachment_id IS NOT NULL)+
   (SELECT count(*) FROM public.automation_agent_configurations WHERE
     jsonb_array_length(COALESCE(fixed_content_package_json->'image_library_ids','[]'::jsonb))>0 OR

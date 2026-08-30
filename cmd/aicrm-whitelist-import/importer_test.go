@@ -123,6 +123,23 @@ func TestReconciliationAcceptsExplicitlyClearedProductReferences(t *testing.T) {
 	}
 }
 
+func TestReconciliationAcceptsEmptyChannelReferenceDefaults(t *testing.T) {
+	payload, err := os.ReadFile("reconcile.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := string(payload)
+	if strings.Contains(query, "channels WHERE config ?|") {
+		t.Fatal("reconciliation still treats empty channel reference keys as references")
+	}
+	for _, key := range []string{"staff_id", "tag_ids", "welcome_material_id", "welcome_message", "material_ids"} {
+		predicate := "COALESCE(config->'" + key + "','null'::jsonb) NOT IN ('null'::jsonb,'\"\"'::jsonb,'[]'::jsonb,'{}'::jsonb)"
+		if !strings.Contains(query, predicate) {
+			t.Fatalf("reconciliation is missing semantic channel predicate %s", key)
+		}
+	}
+}
+
 func TestQuestionnaireSubjectKeepsExistingCustomer(t *testing.T) {
 	resolution, err := resolveQuestionnaireRows([]questionnaireResolutionRow{{
 		submissionID: 7, matchCount: 1, existingCustomer: 42, unionID: "known", createdAt: time.Unix(1, 0).UTC(),
