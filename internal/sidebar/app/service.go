@@ -29,6 +29,31 @@ var (
 	ErrUnavailable      = errors.New("sidebar unavailable")
 )
 
+type bootstrapStageError struct {
+	stage string
+	err   error
+}
+
+func (err *bootstrapStageError) Error() string { return "sidebar bootstrap failed at " + err.stage }
+func (err *bootstrapStageError) Unwrap() error { return err.err }
+
+// BootstrapFailureStage returns a fixed, non-sensitive dependency stage for
+// operational diagnostics. It never includes customer or identity values.
+func BootstrapFailureStage(err error) string {
+	var staged *bootstrapStageError
+	if errors.As(err, &staged) {
+		return staged.stage
+	}
+	return "unknown"
+}
+
+func bootstrapFailure(stage string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &bootstrapStageError{stage: stage, err: err}
+}
+
 type CorpReader interface {
 	CorpID(context.Context) (string, error)
 }
@@ -292,7 +317,7 @@ func (service *Service) Bootstrap(ctx context.Context, principal authport.Princi
 		CustomerID: resolved.result.CustomerID, OwnerStaffID: resolved.result.OwnerStaffID, Principal: principal,
 	}, resolved.profile)
 	if err != nil {
-		return BootstrapResult{}, err
+		return BootstrapResult{}, bootstrapFailure("workbench", err)
 	}
 	result.Token = resolved.result.Token
 	result.ExpiresAt = resolved.result.ExpiresAt
@@ -318,18 +343,18 @@ func (service *Service) resolveContext(ctx context.Context, principal authport.P
 	}
 	corpID, err := service.corp.CorpID(ctx)
 	if err != nil || corpID == "" {
-		return resolvedContext{}, ErrUnavailable
+		return resolvedContext{}, bootstrapFailure("corp", ErrUnavailable)
 	}
 	resolved, err := service.identity.Resolve(ctx, identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:" + corpID, Value: externalUserID, Assurance: identityport.AssuranceVerified, Source: "sidebar"})
 	if err != nil {
-		return resolvedContext{}, ErrUnavailable
+		return resolvedContext{}, bootstrapFailure("identity", ErrUnavailable)
 	}
 	if resolved.Status != identityport.ResolveFound || resolved.CustomerID < 1 {
 		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
 	}
 	profile, err := service.profiles.ResolveSidebarProfile(ctx, resolved.CustomerID)
 	if err != nil {
-		return resolvedContext{}, mapDependencyError(err)
+		return resolvedContext{}, bootstrapFailure("profile", mapDependencyError(err))
 	}
 	if !principalAllowsOwner(principal, profile.OwnerStaffID) {
 		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
@@ -338,7 +363,7 @@ func (service *Service) resolveContext(ctx context.Context, principal authport.P
 	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
 	token, err := service.codec.encode(claims)
 	if err != nil {
-		return resolvedContext{}, err
+		return resolvedContext{}, bootstrapFailure("context_token", err)
 	}
 	return resolvedContext{
 		result:  ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Safety: localSafety()},
