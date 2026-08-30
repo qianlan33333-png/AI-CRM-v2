@@ -69,6 +69,35 @@ type CurrentSnapshot struct {
 	LastSyncedAt *time.Time
 }
 
+type DashboardRow struct {
+	HXCUserID         string
+	MatchState        MatchState
+	SubscriptionTier  string
+	CurrentPeriodUsed int32
+	MonthlyChatQuota  int32
+	UserMessages7D    int64
+	UserMessages30D   int64
+	LastUsedAt        *time.Time
+	LastCapability    *string
+	BusinessStage     *string
+	UserSegment       *string
+	SourceUpdatedAt   time.Time
+	SyncedAt          time.Time
+}
+
+type DashboardSnapshot struct {
+	Rows           []DashboardRow
+	Total          int64
+	MatchedCount   int64
+	UnmatchedCount int64
+	ConflictCount  int64
+	LastSyncedAt   *time.Time
+}
+
 type CurrentReader interface {
 	ReadCustomerCurrent(context.Context, contactport.CustomerID) (CurrentSnapshot, error)
+}
+
+type DashboardReader interface {
+	ReadDashboard(context.Context, int32) (DashboardSnapshot, error)
 }
