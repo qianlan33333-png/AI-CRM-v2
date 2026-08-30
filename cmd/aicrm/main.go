@@ -10,6 +10,7 @@ import (
 
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
+	_ "golang.org/x/crypto/x509roots/fallback"
 )
 
 func main() { os.Exit(run(os.Args[1:])) }

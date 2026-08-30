@@ -12,6 +12,7 @@ fail() {
 dockerfile="$(git show ':deploy/Dockerfile.runtime')"
 dockerignore="$(git show ':deploy/Dockerfile.runtime.dockerignore')"
 builder="$(git show ':scripts/build_release_binary.sh')"
+main_source="$(git show ':cmd/aicrm/main.go')"
 
 [[ "$(grep -Fxc 'FROM scratch' <<<"$dockerfile")" -eq 1 ]] ||
   fail 'runtime image must use the empty scratch base'
@@ -25,6 +26,8 @@ grep -Fq 'org.opencontainers.image.revision="${AICRM_SOURCE_SHA}"' <<<"$dockerfi
   fail 'runtime image added an executable or mutable layer instruction'
 [[ "$dockerignore" = $'**\n!aicrm' ]] ||
   fail 'runtime image context must expose only the release binary'
+grep -Fq '_ "golang.org/x/crypto/x509roots/fallback"' <<<"$main_source" ||
+  fail 'scratch runtime binary must embed fallback CA roots'
 
 for required in \
   'CGO_ENABLED=0 GOOS=linux GOARCH=amd64' \
@@ -57,6 +60,8 @@ metadata="$(go version -m "$temporary_directory/aicrm")"
 source_sha="$(git rev-parse HEAD)"
 grep -Fq $'\tGOOS=linux' <<<"$metadata" || fail 'GOOS receipt mismatch'
 grep -Fq $'\tGOARCH=amd64' <<<"$metadata" || fail 'GOARCH receipt mismatch'
+grep -Fq $'\tdep\tgolang.org/x/crypto/x509roots/fallback\t' <<<"$metadata" ||
+  fail 'runtime binary fallback CA roots receipt is missing'
 [[ "$(go tool buildid "$temporary_directory/aicrm")" = "$source_sha" ]] ||
   fail 'source SHA build ID mismatch'
 
