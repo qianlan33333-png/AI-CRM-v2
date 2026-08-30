@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	authfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/store/acceptancefixture"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 )
@@ -25,7 +27,7 @@ func TestAudienceEditableProjectionPostgres(t *testing.T) {
 	defer pool.Close()
 	at := time.Date(2026, 8, 30, 4, 0, 0, 0, time.UTC)
 	var actorID, customerOne, customerTwo, historyGroup, historyPackage, hxcHistoryPackage int64
-	err = pool.QueryRow(ctx, `INSERT INTO admin_users(auth_provider,wecom_corp_id,provider_subject_id,display_name,role) VALUES('wecom','projection-test','projection-test','projection-test','admin') RETURNING id`).Scan(&actorID)
+	actorID, err = authfixture.CreateAdminUser(ctx, pool, "audience-editable-projection-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,10 +42,10 @@ VALUES (31,$1,NULL,'audience_huangxiaocan_active_not_ai_opc_not_paid','HXC defer
 RETURNING id`, historyGroup, at).Scan(&hxcHistoryPackage); err != nil {
 		t.Fatal(err)
 	}
-	if err = pool.QueryRow(ctx, `INSERT INTO customers(name) VALUES('one') RETURNING id`).Scan(&customerOne); err != nil {
+	if customerOne, err = contactfixture.CreateCustomer(ctx, pool, "audience-projection-one"); err != nil {
 		t.Fatal(err)
 	}
-	if err = pool.QueryRow(ctx, `INSERT INTO customers(name) VALUES('two') RETURNING id`).Scan(&customerTwo); err != nil {
+	if customerTwo, err = contactfixture.CreateCustomer(ctx, pool, "audience-projection-two"); err != nil {
 		t.Fatal(err)
 	}
 	if err = pool.QueryRow(ctx, `INSERT INTO segment_v1_audience_groups(source_id,name,created_at,updated_at) VALUES(10,'V1 active group',$1,$1) RETURNING id`, at).Scan(&historyGroup); err != nil {
