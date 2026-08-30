@@ -12,6 +12,7 @@ import (
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
+	wecomarchive "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/archive"
 	"github.com/riverqueue/river"
 )
 
@@ -152,5 +153,19 @@ func TestSchedulerPlanAddsCH02RecoveryOnlyWhenProviderEnabled(t *testing.T) {
 	}
 	if jobs := plan.Jobs(); len(jobs) != 4 {
 		t.Fatalf("enabled scheduler jobs=%d, want 4", len(jobs))
+	}
+}
+
+func TestWhitelistMessageArchivePlanHasOneRegisteredSyncJob(t *testing.T) {
+	workers := platformjobqueue.NewWorkerRegistry()
+	if err := wecomarchive.RegisterWorker(workers, &wecomarchive.Service{}); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := whitelistMessageArchivePeriodicPlan(workers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jobs := plan.Jobs(); len(jobs) != 1 {
+		t.Fatalf("archive periodic jobs=%d, want 1", len(jobs))
 	}
 }

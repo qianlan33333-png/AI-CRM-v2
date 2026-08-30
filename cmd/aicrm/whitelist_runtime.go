@@ -12,12 +12,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
+	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
+	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	wecomarchive "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/archive"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 	"github.com/riverqueue/river"
@@ -118,14 +122,41 @@ func newWhitelistWorkerComponent(config appconfig.Root) (appruntime.Component, e
 			return nil, tagErr
 		}
 	}
-	client, err := platformjobqueue.NewClient(pool, platformjobqueue.QueueConcurrency{
+	if config.WeCom.MessageArchive.Enabled {
+		uow := platformstore.NewUnitOfWork(pool)
+		provider, providerErr := wecomarchive.NewSDKProvider(wecomarchive.SDKConfig{
+			CorpID: config.WeCom.MessageArchive.CorpID, ArchiveSecret: config.WeCom.MessageArchive.Secret.Value(),
+			PrivateKeyPath: config.WeCom.MessageArchive.PrivateKeyPath, SDKLibraryPath: config.WeCom.MessageArchive.SDKLibraryPath,
+			PythonPath: config.WeCom.MessageArchive.PythonPath, HelperPath: config.WeCom.MessageArchive.HelperPath,
+			Timeout: config.WeCom.MessageArchive.Timeout,
+		})
+		if providerErr != nil {
+			pool.Close()
+			return nil, providerErr
+		}
+		archiveService, serviceErr := wecomarchive.NewService(
+			uow, wecomstore.NewMessageArchiveSyncRepository(), provider,
+			identityapp.NewResolveService(uow, identitystore.NewRepository()), eventstore.NewAppender(),
+			config.WeCom.MessageArchive.CorpID, config.WeCom.MessageArchive.DefaultOwnerUserID,
+			wecomarchive.DefaultLimit, wecomarchive.DefaultPages,
+		)
+		if serviceErr != nil {
+			pool.Close()
+			return nil, serviceErr
+		}
+		if serviceErr = wecomarchive.RegisterWorker(workers, archiveService); serviceErr != nil {
+			pool.Close()
+			return nil, serviceErr
+		}
+	}
+	client, err := newWhitelistJobQueueClient(pool, platformjobqueue.QueueConcurrency{
 		Critical: queues.Critical,
 		Event:    queues.Event,
 		Outbound: queues.Outbound,
 		Sync:     queues.Sync,
 		Heavy:    queues.Heavy,
 		AI:       queues.AI,
-	}, workers)
+	}, workers, config.WeCom.MessageArchive.Enabled)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -261,6 +292,9 @@ func checkWhitelistReadiness(ctx context.Context, pool *pgxpool.Pool) error {
   to_regclass('public.media_miniprograms') IS NOT NULL AND
   to_regclass('public.group_ops_plans') IS NOT NULL AND
   to_regclass('public.admin_ops_config_categories') IS NOT NULL AND
+  to_regclass('public.wecom_message_archive_records') IS NOT NULL AND
+  to_regclass('public.wecom_message_archive_sync_state') IS NOT NULL AND
+  to_regclass('public.wecom_message_archive_sync_runs') IS NOT NULL AND
   to_regclass('public.hxc_user_current') IS NOT NULL`).Scan(&database, &schemaVersion, &riverVersion, &requiredTables)
 	if err != nil {
 		return errors.New("whitelist readiness query failed")

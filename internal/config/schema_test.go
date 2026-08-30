@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 )
@@ -72,6 +73,37 @@ func TestLoadEnablesHXCOnlyForCompleteWorkerConfiguration(t *testing.T) {
 	delete(values, hxcUnionIDScopeEnv)
 	if _, err := load(appruntime.RoleWorker, mapLookup(values)); err == nil || !strings.Contains(err.Error(), "hxc requires") {
 		t.Fatalf("partial HXC error = %v", err)
+	}
+}
+
+func TestLoadEnablesWorkerOnlyWeComMessageArchiveConfiguration(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", workerPoolMaxConnsEnv: "9",
+		criticalWorkersEnv: "2", eventWorkersEnv: "1", outboundWorkersEnv: "1", syncWorkersEnv: "1", heavyWorkersEnv: "1", aiWorkersEnv: "1",
+		weComMessageArchiveEnabledEnv: "true", weComMessageArchiveCorpIDEnv: "ww-corp", weComMessageArchiveSecretEnv: "archive-secret",
+		weComMessageArchivePrivateKeyPathEnv: "/run/secrets/wecom_archive_private_key.pem", weComMessageArchiveSDKLibraryPathEnv: "/opt/wecom/libWeWorkFinanceSdk_C.so",
+		weComMessageArchivePythonPathEnv: "/usr/bin/python3", weComMessageArchiveHelperPathEnv: "/opt/aicrm/wecom_archive_sdk_helper.py",
+		weComMessageArchiveDefaultOwnerEnv: "staff-1", weComMessageArchiveTimeoutSecondsEnv: "60", weComMessageArchivePermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil {
+		t.Fatal(err)
+	}
+	archive := root.WeCom.MessageArchive
+	if !archive.Enabled || archive.CorpID != "ww-corp" || archive.Secret.Value() != "archive-secret" || archive.Timeout != time.Minute || !archive.PermissionConfirmed {
+		t.Fatalf("message archive config = %#v", archive)
+	}
+	if fmt.Sprint(archive.Secret) != "[REDACTED]" || fmt.Sprintf("%#v", archive.Secret) != "[REDACTED]" {
+		t.Fatal("message archive secret was not redacted")
+	}
+
+	values[weComMessageArchivePermissionConfirmedEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || !strings.Contains(err.Error(), "wecom.message_archive.permission_confirmed") {
+		t.Fatalf("permission error = %v", err)
+	}
+	delete(values, weComMessageArchiveSDKLibraryPathEnv)
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || !strings.Contains(err.Error(), "wecom.message_archive requires") {
+		t.Fatalf("partial archive error = %v", err)
 	}
 }
 

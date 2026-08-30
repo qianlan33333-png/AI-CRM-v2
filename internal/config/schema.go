@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 )
@@ -90,6 +92,16 @@ const (
 	weComOutboundCorpIDEnv                         = "AICRM_WECOM_OUTBOUND_CORP_ID"
 	weComOutboundSecretEnv                         = "AICRM_WECOM_OUTBOUND_SECRET"
 	weComOutboundPermissionConfirmedEnv            = "AICRM_WECOM_OUTBOUND_PERMISSION_CONFIRMED"
+	weComMessageArchiveEnabledEnv                  = "AICRM_WECOM_MESSAGE_ARCHIVE_ENABLED"
+	weComMessageArchiveCorpIDEnv                   = "AICRM_WECOM_MESSAGE_ARCHIVE_CORP_ID"
+	weComMessageArchiveSecretEnv                   = "AICRM_WECOM_MESSAGE_ARCHIVE_SECRET"
+	weComMessageArchivePrivateKeyPathEnv           = "AICRM_WECOM_MESSAGE_ARCHIVE_PRIVATE_KEY_PATH"
+	weComMessageArchiveSDKLibraryPathEnv           = "AICRM_WECOM_MESSAGE_ARCHIVE_SDK_LIBRARY_PATH"
+	weComMessageArchivePythonPathEnv               = "AICRM_WECOM_MESSAGE_ARCHIVE_PYTHON_PATH"
+	weComMessageArchiveHelperPathEnv               = "AICRM_WECOM_MESSAGE_ARCHIVE_HELPER_PATH"
+	weComMessageArchiveDefaultOwnerEnv             = "AICRM_WECOM_MESSAGE_ARCHIVE_DEFAULT_OWNER_USERID"
+	weComMessageArchiveTimeoutSecondsEnv           = "AICRM_WECOM_MESSAGE_ARCHIVE_TIMEOUT_SECONDS"
+	weComMessageArchivePermissionConfirmedEnv      = "AICRM_WECOM_MESSAGE_ARCHIVE_PERMISSION_CONFIRMED"
 )
 
 // legacyProductionEnvironmentEnvs are the legacy production aliases. The v2
@@ -237,6 +249,28 @@ type WeComOutbound struct {
 	PermissionConfirmed bool
 }
 
+type WeComMessageArchiveSecret struct{ value string }
+
+func (secret WeComMessageArchiveSecret) Value() string { return secret.value }
+func (WeComMessageArchiveSecret) String() string       { return "[REDACTED]" }
+func (WeComMessageArchiveSecret) GoString() string     { return "[REDACTED]" }
+
+// WeComMessageArchive is worker-only, read-only Provider configuration. The
+// explicit permission assertion prevents an incomplete archive setup from
+// silently starting a cursor.
+type WeComMessageArchive struct {
+	Enabled             bool
+	CorpID              string
+	Secret              WeComMessageArchiveSecret
+	PrivateKeyPath      string
+	SDKLibraryPath      string
+	PythonPath          string
+	HelperPath          string
+	DefaultOwnerUserID  string
+	Timeout             time.Duration
+	PermissionConfirmed bool
+}
+
 // WeComSidebar is the independent OAuth and JSSDK configuration for the
 // embedded sidebar. It deliberately cannot reuse the administrator OAuth
 // callback, because the two browser protocols have different bindings.
@@ -257,6 +291,7 @@ type WeCom struct {
 	CustomerAcquisition WeComCustomerAcquisition
 	TagCatalog          WeComTagCatalog
 	Outbound            WeComOutbound
+	MessageArchive      WeComMessageArchive
 }
 
 // CommerceProviderSecret is intentionally opaque. Payment credentials must
@@ -545,6 +580,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.CustomerAcquisition = parseWeComCustomerAcquisition(lookup, &problems)
 		root.WeCom.TagCatalog = parseWeComTagCatalog(lookup, &problems)
 		root.WeCom.Outbound = parseWeComOutbound(lookup, &problems)
+		root.WeCom.MessageArchive = parseWeComMessageArchive(lookup, &problems)
 		if !needAPI {
 			root.WeCom.DirectorySync = parseWeComDirectorySync(lookup, &problems)
 			if root.WeCom.DirectorySync.Enabled {
@@ -918,6 +954,70 @@ func parseWeComOutbound(lookup environmentLookup, problems *[]string) WeComOutbo
 		*problems = append(*problems, "wecom.outbound.permission_confirmed must be true when enabled")
 	}
 	return WeComOutbound{Enabled: true, CorpID: corpID, Secret: WeComOutboundSecret{value: secret}, PermissionConfirmed: permission == "true"}
+}
+
+func parseWeComMessageArchive(lookup environmentLookup, problems *[]string) WeComMessageArchive {
+	enabled, enabledPresent := lookup(weComMessageArchiveEnabledEnv)
+	corpID, corpIDPresent := lookup(weComMessageArchiveCorpIDEnv)
+	secret, secretPresent := lookup(weComMessageArchiveSecretEnv)
+	privateKeyPath, privateKeyPresent := lookup(weComMessageArchivePrivateKeyPathEnv)
+	sdkPath, sdkPresent := lookup(weComMessageArchiveSDKLibraryPathEnv)
+	pythonPath, pythonPresent := lookup(weComMessageArchivePythonPathEnv)
+	helperPath, helperPresent := lookup(weComMessageArchiveHelperPathEnv)
+	defaultOwner, ownerPresent := lookup(weComMessageArchiveDefaultOwnerEnv)
+	timeoutValue, timeoutPresent := lookup(weComMessageArchiveTimeoutSecondsEnv)
+	permission, permissionPresent := lookup(weComMessageArchivePermissionConfirmedEnv)
+	presentCount := 0
+	for _, present := range []bool{corpIDPresent, secretPresent, privateKeyPresent, sdkPresent, pythonPresent, helperPresent, ownerPresent, timeoutPresent, permissionPresent} {
+		if present {
+			presentCount++
+		}
+	}
+	if !enabledPresent && presentCount == 0 {
+		return WeComMessageArchive{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wecom.message_archive.enabled must be true or false")
+		return WeComMessageArchive{}
+	}
+	if enabled == "false" {
+		if presentCount != 0 {
+			*problems = append(*problems, "wecom.message_archive configuration requires enabled=true")
+		}
+		return WeComMessageArchive{}
+	}
+	if presentCount != 9 || corpID == "" || secret == "" || privateKeyPath == "" || sdkPath == "" || pythonPath == "" || helperPath == "" || defaultOwner == "" {
+		*problems = append(*problems, "wecom.message_archive requires corp_id, secret, private_key_path, sdk_library_path, python_path, helper_path, default_owner_userid, timeout_seconds, and permission_confirmed together")
+		return WeComMessageArchive{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.message_archive.corp_id is invalid")
+	}
+	if len(secret) > 256 || strings.TrimSpace(secret) != secret {
+		*problems = append(*problems, "wecom.message_archive.secret is invalid")
+	}
+	for _, candidate := range []struct{ name, path string }{
+		{"private_key_path", privateKeyPath}, {"sdk_library_path", sdkPath}, {"python_path", pythonPath}, {"helper_path", helperPath},
+	} {
+		if !filepath.IsAbs(candidate.path) || strings.TrimSpace(candidate.path) != candidate.path || strings.ContainsAny(candidate.path, "\x00\r\n") {
+			*problems = append(*problems, "wecom.message_archive."+candidate.name+" must be an absolute path")
+		}
+	}
+	if !validWeComDirectorySyncStaffUserID(defaultOwner) {
+		*problems = append(*problems, "wecom.message_archive.default_owner_userid is invalid")
+	}
+	timeoutSeconds, timeoutErr := strconv.Atoi(timeoutValue)
+	if timeoutErr != nil || timeoutSeconds < 1 || timeoutSeconds > 300 || strconv.Itoa(timeoutSeconds) != timeoutValue {
+		*problems = append(*problems, "wecom.message_archive.timeout_seconds must be an integer from 1 to 300")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wecom.message_archive.permission_confirmed must be true when enabled")
+	}
+	return WeComMessageArchive{
+		Enabled: true, CorpID: corpID, Secret: WeComMessageArchiveSecret{value: secret}, PrivateKeyPath: privateKeyPath,
+		SDKLibraryPath: sdkPath, PythonPath: pythonPath, HelperPath: helperPath, DefaultOwnerUserID: defaultOwner,
+		Timeout: time.Duration(timeoutSeconds) * time.Second, PermissionConfirmed: permission == "true",
+	}
 }
 
 func parseWeComOutboundAPI(lookup environmentLookup, problems *[]string) WeComOutbound {

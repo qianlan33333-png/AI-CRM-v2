@@ -237,6 +237,8 @@ func TestWhitelistBaselinePreservesCurrentCapabilitiesWithoutHistoricalRows(t *t
 		"CREATE TABLE public.media_miniprograms",
 		"CREATE TABLE public.group_ops_plans",
 		"CREATE TABLE public.admin_ops_config_categories",
+		"CREATE TABLE public.wecom_message_archive_sync_state",
+		"CREATE TABLE public.wecom_message_archive_sync_runs",
 		"COPY public.product_catalog_counters",
 		"COPY public.order_list_projection_counters",
 		"COPY public.questionnaire_catalog_counters",

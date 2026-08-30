@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	AcceptMessageArchiveSyncReceipt(ctx context.Context, arg AcceptMessageArchiveSyncReceiptParams) (AcceptMessageArchiveSyncReceiptRow, error)
+	AdvanceMessageArchiveSyncState(ctx context.Context, arg AdvanceMessageArchiveSyncStateParams) (int64, error)
 	AdvanceWeComSyncState(ctx context.Context, arg AdvanceWeComSyncStateParams) (AdvanceWeComSyncStateRow, error)
 	ArchiveMissingWeComTagGroupProjections(ctx context.Context, providerGroupIds []string) error
 	ArchiveMissingWeComTagProjections(ctx context.Context, providerTagIds []string) error
@@ -28,9 +29,11 @@ type Querier interface {
 	CountWeComContactInbox(ctx context.Context, arg CountWeComContactInboxParams) (int64, error)
 	CreateHistoricalMessage(ctx context.Context, arg CreateHistoricalMessageParams) (WecomV1MessageHistory, error)
 	FailWeComContactInbox(ctx context.Context, arg FailWeComContactInboxParams) (FailWeComContactInboxRow, error)
+	FinishMessageArchiveSyncRun(ctx context.Context, arg FinishMessageArchiveSyncRunParams) (int64, error)
 	GetCustomerAcquisitionLinkReceipt(ctx context.Context, id int64) (WecomCustomerAcquisitionLinkReceipt, error)
 	GetCustomerAcquisitionLinkReceiptByKey(ctx context.Context, arg GetCustomerAcquisitionLinkReceiptByKeyParams) (WecomCustomerAcquisitionLinkReceipt, error)
 	GetHistoricalMessage(ctx context.Context, id int64) (WecomV1MessageHistory, error)
+	GetMessageArchiveSyncState(ctx context.Context) (GetMessageArchiveSyncStateRow, error)
 	GetWeComContactInboxByKey(ctx context.Context, arg GetWeComContactInboxByKeyParams) (GetWeComContactInboxByKeyRow, error)
 	GetWeComContactProfileEffect(ctx context.Context, effectID int64) (WecomContactProfileEffect, error)
 	GetWeComContactProfileEffectByIdempotency(ctx context.Context, arg GetWeComContactProfileEffectByIdempotencyParams) (WecomContactProfileEffect, error)
@@ -57,7 +60,10 @@ type Querier interface {
 	RecordWeComContactProfileEffectClaim(ctx context.Context, arg RecordWeComContactProfileEffectClaimParams) (WecomContactProfileEffect, error)
 	RecordWeComTagEffectClaim(ctx context.Context, arg RecordWeComTagEffectClaimParams) (WecomTagEffect, error)
 	ReserveMessageArchiveSyncReceipt(ctx context.Context, arg ReserveMessageArchiveSyncReceiptParams) (ReserveMessageArchiveSyncReceiptRow, error)
+	ResolveMessageArchiveRecords(ctx context.Context, scope string) (int64, error)
 	RestartCompletedWeComSyncState(ctx context.Context, syncKey string) (string, error)
+	StartMessageArchiveSyncRun(ctx context.Context, cursorFrom int64) (int64, error)
+	UpsertMessageArchiveRecord(ctx context.Context, arg UpsertMessageArchiveRecordParams) (UpsertMessageArchiveRecordRow, error)
 	UpsertWeComTagGroupProjection(ctx context.Context, arg UpsertWeComTagGroupProjectionParams) (int64, error)
 	UpsertWeComTagProjection(ctx context.Context, arg UpsertWeComTagProjectionParams) error
 }

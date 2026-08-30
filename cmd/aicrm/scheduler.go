@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
@@ -14,6 +15,7 @@ import (
 	platformscheduler "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/scheduler"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
+	wecomarchive "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/archive"
 )
 
 // schedulerPlan is the sole production catalog for periodic jobs. Functional
@@ -89,6 +91,31 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 		})
 	}
 	return platformscheduler.Build(workers, definitions)
+}
+
+func whitelistMessageArchivePeriodicPlan(workers *platformjobqueue.WorkerRegistry) (*platformscheduler.Plan, error) {
+	schedule, err := platformscheduler.Every(wecomarchive.SyncPeriod)
+	if err != nil {
+		return nil, err
+	}
+	plan, err := platformscheduler.Build(workers, []platformscheduler.Definition{{
+		ID: "wecom.message_archive.sync", Queue: platformjobqueue.QueueSync, Schedule: schedule, Args: wecomarchive.JobArgs{}, RunOnStart: true,
+	}})
+	if err != nil {
+		return nil, err
+	}
+	return plan, nil
+}
+
+func newWhitelistJobQueueClient(pool *pgxpool.Pool, concurrency platformjobqueue.QueueConcurrency, workers *platformjobqueue.WorkerRegistry, archiveEnabled bool) (*platformjobqueue.Client, error) {
+	if !archiveEnabled {
+		return platformjobqueue.NewClient(pool, concurrency, workers)
+	}
+	plan, err := whitelistMessageArchivePeriodicPlan(workers)
+	if err != nil {
+		return nil, err
+	}
+	return platformjobqueue.NewClient(pool, concurrency, workers, plan.Jobs()...)
 }
 
 func directorySyncPeriodicID(staffUserID string) string {
