@@ -3663,6 +3663,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/automation-agents", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.CreateAutomationAgent)},
 			{http.MethodDelete, "/api/admin/automation-agents/{agent_id}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.DeleteAutomationAgent)},
 			{http.MethodGet, "/api/admin/automation-agents/{agent_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.GetAutomationAgent)},
+			{http.MethodGet, "/api/admin/automation-agents/{agent_id}/precheck", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.PrecheckAutomationAgent)},
 			{http.MethodPatch, "/api/admin/automation-agents/{agent_id}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.UpdateAutomationAgent)},
 			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/activate", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.ActivateAutomationAgent)},
 			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/copy", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.CopyAutomationAgent)},

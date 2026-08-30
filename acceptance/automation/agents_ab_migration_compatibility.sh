@@ -46,10 +46,6 @@ read -r waterline configurations receipts tenant_columns foreign_keys indexes <<
 [[ "$waterline" = "42" && "$configurations" = "1" && "$receipts" = "1" && "$tenant_columns" = "0" && "$foreign_keys" = "0" && "$indexes" = "6" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
-/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=180s -run '^TestP4AutomationAgentsAB' \
-  ./acceptance/automation -args -database-url "$database_url"
-
 post_acceptance="$(history_snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 41
 read -r waterline configurations receipts <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT

@@ -11220,7 +11220,6 @@ export type LegacyAutomationAgentListItemStatus =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyAutomationAgentListItemStatus = {
-  active: "active",
   paused: "paused",
 } as const;
 
@@ -11245,6 +11244,8 @@ export interface LegacyAutomationAgentListItem {
   bound_package_name: LegacyAutomationAgentListItemBoundPackageName;
   fixed_material_summary: LegacyAutomationAgentMaterialSummary;
   status: LegacyAutomationAgentListItemStatus;
+  execution_enabled: boolean;
+  materials_configured: boolean;
   updated_at: string;
 }
 
@@ -11286,15 +11287,14 @@ export interface LegacyAutomationAgentDynamicCard {
 export interface LegacyAutomationAgentFixedContent {
   /** @maxLength 4000 */
   content_text: string;
-  /** @maxItems 3 */
+  /** @maxItems 0 */
   image_library_ids: number[];
-  /** @maxItems 1 */
+  /** @maxItems 0 */
   miniprogram_library_ids: number[];
-  /** @maxItems 9 */
+  /** @maxItems 0 */
   attachment_library_ids: number[];
-  /** @maxItems 1 */
+  /** @maxItems 0 */
   group_invite_library_ids: number[];
-  dynamic_miniprogram_card?: LegacyAutomationAgentDynamicCard;
 }
 
 export interface LegacyAutomationAgentFixedContentPreview {
@@ -11345,7 +11345,6 @@ export type LegacyAutomationAgentDetailStatus =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyAutomationAgentDetailStatus = {
-  active: "active",
   paused: "paused",
 } as const;
 
@@ -11357,6 +11356,10 @@ export const LegacyAutomationAgentDetailAutomationTypeLabel = {
   Agent_机器人: "Agent 机器人",
   固定话术: "固定话术",
 } as const;
+
+export type LegacyAutomationAgentDetailLegacyConfiguration = {
+  [key: string]: unknown;
+};
 
 export interface LegacyAutomationAgentDetail {
   /** @minimum 1 */
@@ -11379,6 +11382,8 @@ export interface LegacyAutomationAgentDetail {
   bound_package_name: LegacyAutomationAgentDetailBoundPackageName;
   fixed_material_summary: LegacyAutomationAgentMaterialSummary;
   status: LegacyAutomationAgentDetailStatus;
+  execution_enabled: boolean;
+  materials_configured: boolean;
   updated_at: string;
   automation_type_label: LegacyAutomationAgentDetailAutomationTypeLabel;
   /** @maxLength 20000 */
@@ -11396,6 +11401,7 @@ export interface LegacyAutomationAgentDetail {
   has_unpublished_changes: boolean;
   fixed_content_package: LegacyAutomationAgentFixedContent;
   fixed_content_package_preview: LegacyAutomationAgentFixedContentPreview;
+  legacy_configuration: LegacyAutomationAgentDetailLegacyConfiguration;
 }
 
 export interface LegacyAutomationAgentDetailResponse {
@@ -11417,9 +11423,12 @@ export type LegacyAutomationAgentCreateRequestStatus =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyAutomationAgentCreateRequestStatus = {
-  active: "active",
   paused: "paused",
 } as const;
+
+export type LegacyAutomationAgentCreateRequestLegacyConfiguration = {
+  [key: string]: unknown;
+};
 
 export interface LegacyAutomationAgentCreateRequest {
   /**
@@ -11440,6 +11449,7 @@ export interface LegacyAutomationAgentCreateRequest {
   /** @maxLength 20000 */
   task_prompt?: string;
   fixed_content_package?: LegacyAutomationAgentFixedContent;
+  legacy_configuration?: LegacyAutomationAgentCreateRequestLegacyConfiguration;
 }
 
 export type LegacyAutomationAgentUpdateRequestAutomationType =
@@ -11456,9 +11466,12 @@ export type LegacyAutomationAgentUpdateRequestStatus =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyAutomationAgentUpdateRequestStatus = {
-  active: "active",
   paused: "paused",
 } as const;
+
+export type LegacyAutomationAgentUpdateRequestLegacyConfiguration = {
+  [key: string]: unknown;
+};
 
 export interface LegacyAutomationAgentUpdateRequest {
   /**
@@ -11473,6 +11486,7 @@ export interface LegacyAutomationAgentUpdateRequest {
   /** @maxLength 20000 */
   task_prompt?: string;
   fixed_content_package?: LegacyAutomationAgentFixedContent;
+  legacy_configuration?: LegacyAutomationAgentUpdateRequestLegacyConfiguration;
 }
 
 export interface LegacyAutomationAgentFixedContentRequest {
@@ -11498,6 +11512,29 @@ export interface LegacyAutomationAgentArchiveResponse {
   agent: LegacyAutomationAgentArchiveResult;
 }
 
+export type LegacyAutomationAgentPrecheckResponseReasonsItem =
+  (typeof LegacyAutomationAgentPrecheckResponseReasonsItem)[keyof typeof LegacyAutomationAgentPrecheckResponseReasonsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAutomationAgentPrecheckResponseReasonsItem = {
+  prompt_unconfigured: "prompt_unconfigured",
+  material_unconfigured: "material_unconfigured",
+  execution_disabled: "execution_disabled",
+} as const;
+
+export interface LegacyAutomationAgentPrecheckResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  agent_id: number;
+  configuration_ready: boolean;
+  materials_configured: boolean;
+  execution_enabled: boolean;
+  can_activate: boolean;
+  /** @minItems 2 */
+  reasons: LegacyAutomationAgentPrecheckResponseReasonsItem[];
+  real_external_call_executed: boolean;
+}
+
 export type LegacyAutomationAgentErrorError =
   (typeof LegacyAutomationAgentErrorError)[keyof typeof LegacyAutomationAgentErrorError];
 
@@ -11506,6 +11543,7 @@ export const LegacyAutomationAgentErrorError = {
   invalid_agent_payload: "invalid_agent_payload",
   agent_not_found: "agent_not_found",
   automation_agent_conflict: "automation_agent_conflict",
+  automation_execution_disabled: "automation_execution_disabled",
   authentication_required: "authentication_required",
   permission_denied: "permission_denied",
   automation_agent_unavailable: "automation_agent_unavailable",
@@ -45180,18 +45218,78 @@ export const saveLegacyAutomationAgentFixedContent = async (
 };
 
 /**
- * @summary Activate one local automation-agent configuration without running it
+ * @summary Check current local configuration before a separately authorized future activation
  */
-export type activateLegacyAutomationAgentResponse200 = {
-  data: LegacyAutomationAgentDetailResponse;
+export type precheckLegacyAutomationAgentResponse200 = {
+  data: LegacyAutomationAgentPrecheckResponse;
   status: 200;
 };
 
-export type activateLegacyAutomationAgentResponse400 = {
-  data: LegacyAutomationAgentError;
-  status: 400;
+export type precheckLegacyAutomationAgentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
 };
 
+export type precheckLegacyAutomationAgentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type precheckLegacyAutomationAgentResponse404 = {
+  data: LegacyAutomationAgentError;
+  status: 404;
+};
+
+export type precheckLegacyAutomationAgentResponse503 = {
+  data: LegacyAutomationAgentError;
+  status: 503;
+};
+
+export type precheckLegacyAutomationAgentResponseSuccess =
+  precheckLegacyAutomationAgentResponse200 & {
+    headers: Headers;
+  };
+export type precheckLegacyAutomationAgentResponseError = (
+  | precheckLegacyAutomationAgentResponse401
+  | precheckLegacyAutomationAgentResponse403
+  | precheckLegacyAutomationAgentResponse404
+  | precheckLegacyAutomationAgentResponse503
+) & {
+  headers: Headers;
+};
+
+export type precheckLegacyAutomationAgentResponse =
+  | precheckLegacyAutomationAgentResponseSuccess
+  | precheckLegacyAutomationAgentResponseError;
+
+export const getPrecheckLegacyAutomationAgentUrl = (agentId: number) => {
+  return `/api/admin/automation-agents/${agentId}/precheck`;
+};
+
+export const precheckLegacyAutomationAgent = async (
+  agentId: number,
+  options?: RequestInit,
+): Promise<precheckLegacyAutomationAgentResponse> => {
+  const res = await fetch(getPrecheckLegacyAutomationAgentUrl(agentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: precheckLegacyAutomationAgentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as precheckLegacyAutomationAgentResponse;
+};
+
+/**
+ * @summary Reject activation while whitelist automation execution is disabled
+ */
 export type activateLegacyAutomationAgentResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
@@ -45217,12 +45315,7 @@ export type activateLegacyAutomationAgentResponse503 = {
   status: 503;
 };
 
-export type activateLegacyAutomationAgentResponseSuccess =
-  activateLegacyAutomationAgentResponse200 & {
-    headers: Headers;
-  };
 export type activateLegacyAutomationAgentResponseError = (
-  | activateLegacyAutomationAgentResponse400
   | activateLegacyAutomationAgentResponse401
   | activateLegacyAutomationAgentResponse403
   | activateLegacyAutomationAgentResponse404
@@ -45233,8 +45326,7 @@ export type activateLegacyAutomationAgentResponseError = (
 };
 
 export type activateLegacyAutomationAgentResponse =
-  | activateLegacyAutomationAgentResponseSuccess
-  | activateLegacyAutomationAgentResponseError;
+  activateLegacyAutomationAgentResponseError;
 
 export const getActivateLegacyAutomationAgentUrl = (agentId: number) => {
   return `/api/admin/automation-agents/${agentId}/activate`;

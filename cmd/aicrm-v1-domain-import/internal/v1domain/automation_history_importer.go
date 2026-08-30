@@ -121,6 +121,27 @@ func (importer *AutomationHistoryImporter) Import(ctx context.Context, archiveRu
 	return result, nil
 }
 
+// EditableAgents decrypts the already sealed source rows only for the final
+// one-time projection. It does not write, activate, publish, or execute them.
+func (importer *AutomationHistoryImporter) EditableAgents(ctx context.Context, archiveRunID string) ([]v1automationhistory.EditableAgent, error) {
+	if importer == nil || ctx == nil || importer.archive == nil || importer.journal == nil || importer.journal.ValidateAutomationHistoryImportScope(archiveRunID) != nil {
+		return nil, ErrInvalidScope
+	}
+	configs, err := importer.readAutomationHistoryRows(ctx, archiveRunID, automationHistoryConfigTable)
+	if err != nil {
+		return nil, err
+	}
+	prompts, err := importer.readAutomationHistoryRows(ctx, archiveRunID, automationHistoryPromptTable)
+	if err != nil {
+		return nil, err
+	}
+	agents, err := importer.readAutomationHistoryRows(ctx, archiveRunID, automationHistoryAgentTable)
+	if err != nil {
+		return nil, err
+	}
+	return v1automationhistory.AdaptEditableAgents(automationHistoryPayloads(configs), automationHistoryPayloads(prompts), automationHistoryPayloads(agents))
+}
+
 func (importer *AutomationHistoryImporter) importSOP(ctx context.Context, row v1archive.ArchivedRow, decision v1automationhistory.Result[v1automationhistory.SOPTemplateFact]) (bool, bool, error) {
 	if reason := automationHistoryDecisionReason(row, decision.Disposition, decision.Fact != nil, "invalid_automation_sop_history"); reason != "" {
 		return importer.quarantineAutomationHistory(ctx, automationport.AutomationHistorySOP, row, reason)

@@ -25,7 +25,7 @@ const (
 	finalMigrationManifestPath = "docs/release/final-v1-domain-migration-manifest.json"
 	finalManifestDomainCount   = 40
 	finalManifestSchemaFrom    = 132
-	finalManifestSchemaTo      = 144
+	finalManifestSchemaTo      = 145
 	finalVerificationModel     = "36_immutable_domain_reconciliations_then_editable_projection_then_read_only_aggregate"
 )
 

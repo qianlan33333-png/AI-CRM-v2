@@ -1,8 +1,5 @@
 -- name: ListAutomationAgents :many
-SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-       draft_task_prompt, published_role_prompt, published_task_prompt,
-       draft_version, published_version, fixed_content_package_json, created_by,
-       updated_by, created_at, updated_at
+SELECT automation_agent_configurations.*
 FROM automation_agent_configurations
 WHERE status <> 'archived'
   AND (sqlc.arg(automation_type)::text = '' OR automation_type = sqlc.arg(automation_type)::text)
@@ -19,34 +16,26 @@ FROM automation_agent_configurations
 ORDER BY id ASC;
 
 -- name: GetAutomationAgent :one
-SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-       draft_task_prompt, published_role_prompt, published_task_prompt,
-       draft_version, published_version, fixed_content_package_json, created_by,
-       updated_by, created_at, updated_at
+SELECT automation_agent_configurations.*
 FROM automation_agent_configurations WHERE id = sqlc.arg(id) AND status <> 'archived';
 
 -- name: LockAutomationAgent :one
-SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-       draft_task_prompt, published_role_prompt, published_task_prompt,
-       draft_version, published_version, fixed_content_package_json, created_by,
-       updated_by, created_at, updated_at
+SELECT automation_agent_configurations.*
 FROM automation_agent_configurations WHERE id = sqlc.arg(id) FOR UPDATE;
 
 -- name: CreateAutomationAgent :one
 INSERT INTO automation_agent_configurations (
   agent_name, agent_code, automation_type, status, draft_role_prompt,
   draft_task_prompt, published_role_prompt, published_task_prompt,
-  draft_version, published_version, fixed_content_package_json, created_by,
+  draft_version, published_version, fixed_content_package_json, legacy_configuration_json, execution_enabled, created_by,
   updated_by, created_at, updated_at
 ) VALUES (
   sqlc.arg(agent_name), sqlc.arg(agent_code), sqlc.arg(automation_type), sqlc.arg(status),
   sqlc.arg(draft_role_prompt), sqlc.arg(draft_task_prompt), sqlc.arg(published_role_prompt),
   sqlc.arg(published_task_prompt), sqlc.arg(draft_version), sqlc.arg(published_version),
-  sqlc.arg(fixed_content_package_json), sqlc.arg(created_by), sqlc.arg(updated_by),
+  sqlc.arg(fixed_content_package_json), sqlc.arg(legacy_configuration_json), sqlc.arg(execution_enabled), sqlc.arg(created_by), sqlc.arg(updated_by),
   sqlc.arg(created_at), sqlc.arg(updated_at)
-) RETURNING id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-  draft_task_prompt, published_role_prompt, published_task_prompt, draft_version,
-  published_version, fixed_content_package_json, created_by, updated_by, created_at, updated_at;
+) RETURNING *;
 
 -- name: UpdateAutomationAgent :one
 UPDATE automation_agent_configurations SET
@@ -55,11 +44,11 @@ UPDATE automation_agent_configurations SET
   draft_task_prompt = sqlc.arg(draft_task_prompt), published_role_prompt = sqlc.arg(published_role_prompt),
   published_task_prompt = sqlc.arg(published_task_prompt), draft_version = sqlc.arg(draft_version),
   published_version = sqlc.arg(published_version), fixed_content_package_json = sqlc.arg(fixed_content_package_json),
+  legacy_configuration_json = sqlc.arg(legacy_configuration_json),
+  execution_enabled = sqlc.arg(execution_enabled),
   updated_by = sqlc.arg(updated_by), updated_at = sqlc.arg(updated_at)
 WHERE id = sqlc.arg(id)
-RETURNING id, agent_name, agent_code, automation_type, status, draft_role_prompt,
-  draft_task_prompt, published_role_prompt, published_task_prompt, draft_version,
-  published_version, fixed_content_package_json, created_by, updated_by, created_at, updated_at;
+RETURNING *;
 
 -- name: ListAutomationAgentCodesByCopyPrefix :many
 SELECT agent_code FROM automation_agent_configurations

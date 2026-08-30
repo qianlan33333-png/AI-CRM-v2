@@ -204,7 +204,7 @@ func (r *AgentRepository) Create(ctx context.Context, item automationport.Agent,
 	if e != nil {
 		return automationport.Agent{}, e
 	}
-	row, e := q.CreateAutomationAgent(ctx, automationdb.CreateAutomationAgentParams{AgentName: item.AgentName, AgentCode: item.AgentCode, AutomationType: string(item.AutomationType), Status: string(item.Status), DraftRolePrompt: item.DraftRolePrompt, DraftTaskPrompt: item.DraftTaskPrompt, PublishedRolePrompt: item.PublishedRolePrompt, PublishedTaskPrompt: item.PublishedTaskPrompt, DraftVersion: item.DraftVersion, PublishedVersion: item.PublishedVersion, FixedContentPackageJson: raw, CreatedBy: item.CreatedBy, UpdatedBy: item.UpdatedBy, CreatedAt: stamp(now), UpdatedAt: stamp(now)})
+	row, e := q.CreateAutomationAgent(ctx, automationdb.CreateAutomationAgentParams{AgentName: item.AgentName, AgentCode: item.AgentCode, AutomationType: string(item.AutomationType), Status: string(item.Status), DraftRolePrompt: item.DraftRolePrompt, DraftTaskPrompt: item.DraftTaskPrompt, PublishedRolePrompt: item.PublishedRolePrompt, PublishedTaskPrompt: item.PublishedTaskPrompt, DraftVersion: item.DraftVersion, PublishedVersion: item.PublishedVersion, FixedContentPackageJson: raw, LegacyConfigurationJson: item.LegacyConfiguration, ExecutionEnabled: item.ExecutionEnabled, CreatedBy: item.CreatedBy, UpdatedBy: item.UpdatedBy, CreatedAt: stamp(now), UpdatedAt: stamp(now)})
 	if e != nil {
 		return automationport.Agent{}, e
 	}
@@ -219,7 +219,7 @@ func (r *AgentRepository) Update(ctx context.Context, item automationport.Agent,
 	if e != nil {
 		return automationport.Agent{}, e
 	}
-	row, e := q.UpdateAutomationAgent(ctx, automationdb.UpdateAutomationAgentParams{AgentName: item.AgentName, AutomationType: string(item.AutomationType), Status: string(item.Status), DraftRolePrompt: item.DraftRolePrompt, DraftTaskPrompt: item.DraftTaskPrompt, PublishedRolePrompt: item.PublishedRolePrompt, PublishedTaskPrompt: item.PublishedTaskPrompt, DraftVersion: item.DraftVersion, PublishedVersion: item.PublishedVersion, FixedContentPackageJson: raw, UpdatedBy: item.UpdatedBy, UpdatedAt: stamp(now), ID: int64(item.ID)})
+	row, e := q.UpdateAutomationAgent(ctx, automationdb.UpdateAutomationAgentParams{AgentName: item.AgentName, AutomationType: string(item.AutomationType), Status: string(item.Status), DraftRolePrompt: item.DraftRolePrompt, DraftTaskPrompt: item.DraftTaskPrompt, PublishedRolePrompt: item.PublishedRolePrompt, PublishedTaskPrompt: item.PublishedTaskPrompt, DraftVersion: item.DraftVersion, PublishedVersion: item.PublishedVersion, FixedContentPackageJson: raw, LegacyConfigurationJson: item.LegacyConfiguration, ExecutionEnabled: item.ExecutionEnabled, UpdatedBy: item.UpdatedBy, UpdatedAt: stamp(now), ID: int64(item.ID)})
 	if e != nil {
 		return automationport.Agent{}, e
 	}
@@ -284,13 +284,13 @@ func (r *AgentRepository) Complete(ctx context.Context, id int64, snapshot json.
 
 func mapAgent(row automationdb.AutomationAgentConfiguration) (automationport.Agent, error) {
 	var content automationport.FixedContentPackage
-	if !json.Valid(row.FixedContentPackageJson) || json.Unmarshal(row.FixedContentPackageJson, &content) != nil {
+	if !json.Valid(row.FixedContentPackageJson) || json.Unmarshal(row.FixedContentPackageJson, &content) != nil || !json.Valid(row.LegacyConfigurationJson) {
 		return automationport.Agent{}, automationapp.ErrAgentUnavailable
 	}
 	if !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
 		return automationport.Agent{}, automationapp.ErrAgentUnavailable
 	}
-	return automationport.Agent{ID: automationport.AgentID(row.ID), AgentName: row.AgentName, AgentCode: row.AgentCode, AutomationType: automationport.AutomationType(row.AutomationType), Status: automationport.AgentStatus(row.Status), DraftRolePrompt: row.DraftRolePrompt, DraftTaskPrompt: row.DraftTaskPrompt, PublishedRolePrompt: row.PublishedRolePrompt, PublishedTaskPrompt: row.PublishedTaskPrompt, DraftVersion: row.DraftVersion, PublishedVersion: row.PublishedVersion, FixedContentPackage: content, CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}, nil
+	return automationport.Agent{ID: automationport.AgentID(row.ID), AgentName: row.AgentName, AgentCode: row.AgentCode, AutomationType: automationport.AutomationType(row.AutomationType), Status: automationport.AgentStatus(row.Status), ExecutionEnabled: row.ExecutionEnabled, DraftRolePrompt: row.DraftRolePrompt, DraftTaskPrompt: row.DraftTaskPrompt, PublishedRolePrompt: row.PublishedRolePrompt, PublishedTaskPrompt: row.PublishedTaskPrompt, DraftVersion: row.DraftVersion, PublishedVersion: row.PublishedVersion, FixedContentPackage: content, LegacyConfiguration: append(json.RawMessage(nil), row.LegacyConfigurationJson...), CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}, nil
 }
 func mapAgentReceipt(row automationdb.AutomationAgentOperationReceipt) (automationapp.Receipt, error) {
 	if len(row.KeyDigest) != 32 || len(row.PayloadDigest) != 32 {

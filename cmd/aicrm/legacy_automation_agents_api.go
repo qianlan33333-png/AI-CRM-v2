@@ -116,7 +116,7 @@ func (handler *Handler) CreateAutomationAgent(w http.ResponseWriter, r *http.Req
 		writeAutomationAgentFailure(w, http.StatusGone, "webhook_configuration_retired", platformhttp.CodeMalformedRequest)
 		return
 	}
-	if !automationAgentExactBody(body, "agent_name", "agent_code", "automation_type", "status", "role_prompt", "task_prompt", "fixed_content_package") {
+	if !automationAgentExactBody(body, "agent_name", "agent_code", "automation_type", "status", "role_prompt", "task_prompt", "fixed_content_package", "legacy_configuration") {
 		writeAutomationAgentError(w, automationapp.ErrInvalidAgent)
 		return
 	}
@@ -154,6 +154,32 @@ func (handler *Handler) GetAutomationAgent(w http.ResponseWriter, r *http.Reques
 	}
 	writeAutomationAgentJSON(w, http.StatusOK, map[string]any{"ok": true, "agent": automationAgentDetail(item)})
 }
+func (handler *Handler) PrecheckAutomationAgent(w http.ResponseWriter, r *http.Request) {
+	service := handler.automationAgentService(w)
+	if service == nil {
+		return
+	}
+	id, err := automationAgentID(r)
+	if err != nil {
+		writeAutomationAgentError(w, err)
+		return
+	}
+	item, err := service.Get(r.Context(), id)
+	if err != nil {
+		writeAutomationAgentError(w, err)
+		return
+	}
+	configurationReady := strings.TrimSpace(item.DraftRolePrompt) != "" || strings.TrimSpace(item.DraftTaskPrompt) != "" || strings.TrimSpace(item.FixedContentPackage.ContentText) != ""
+	reasons := []string{"material_unconfigured", "execution_disabled"}
+	if !configurationReady {
+		reasons = append([]string{"prompt_unconfigured"}, reasons...)
+	}
+	writeAutomationAgentJSON(w, http.StatusOK, map[string]any{
+		"ok": true, "agent_id": item.ID, "configuration_ready": configurationReady,
+		"materials_configured": false, "execution_enabled": false, "can_activate": false,
+		"reasons": reasons, "real_external_call_executed": false,
+	})
+}
 func (handler *Handler) UpdateAutomationAgent(w http.ResponseWriter, r *http.Request) {
 	service := handler.automationAgentService(w)
 	if service == nil {
@@ -173,7 +199,7 @@ func (handler *Handler) UpdateAutomationAgent(w http.ResponseWriter, r *http.Req
 		writeAutomationAgentFailure(w, http.StatusGone, "webhook_configuration_retired", platformhttp.CodeMalformedRequest)
 		return
 	}
-	if !automationAgentExactBody(body, "agent_name", "automation_type", "status", "role_prompt", "task_prompt", "fixed_content_package") || len(body) == 0 {
+	if !automationAgentExactBody(body, "agent_name", "automation_type", "status", "role_prompt", "task_prompt", "fixed_content_package", "legacy_configuration") || len(body) == 0 {
 		writeAutomationAgentError(w, automationapp.ErrInvalidAgent)
 		return
 	}
@@ -198,7 +224,20 @@ func (handler *Handler) DeleteAutomationAgent(w http.ResponseWriter, r *http.Req
 	handler.automationAgentStatus(w, r, automationport.AgentStatusArchived, true)
 }
 func (handler *Handler) ActivateAutomationAgent(w http.ResponseWriter, r *http.Request) {
-	handler.automationAgentStatus(w, r, automationport.AgentStatusActive, false)
+	service := handler.automationAgentService(w)
+	if service == nil {
+		return
+	}
+	id, err := automationAgentID(r)
+	if err != nil {
+		writeAutomationAgentError(w, err)
+		return
+	}
+	if _, err = service.Get(r.Context(), id); err != nil {
+		writeAutomationAgentError(w, err)
+		return
+	}
+	writeAutomationAgentError(w, automationapp.ErrAgentExecutionDisabled)
 }
 func (handler *Handler) PauseAutomationAgent(w http.ResponseWriter, r *http.Request) {
 	handler.automationAgentStatus(w, r, automationport.AgentStatusPaused, false)
@@ -377,7 +416,7 @@ func automationAgentCreateCommand(body map[string]json.RawMessage, actor int64, 
 	} else if present {
 		kind = automationport.AutomationType(value)
 	}
-	status := automationport.AgentStatusActive
+	status := automationport.AgentStatusPaused
 	if value, present, e := automationAgentString(body, "status"); e != nil {
 		return automationport.CreateCommand{}, e
 	} else if present {
@@ -387,7 +426,11 @@ func automationAgentCreateCommand(body map[string]json.RawMessage, actor int64, 
 	if err != nil {
 		return automationport.CreateCommand{}, err
 	}
-	return automationport.CreateCommand{Agent: automationport.Agent{AgentName: name, AgentCode: code, AutomationType: kind, Status: status, DraftRolePrompt: role, DraftTaskPrompt: task, FixedContentPackage: content}, Actor: actor, IdempotencyKey: key}, nil
+	legacy, _, err := automationAgentObject(body, "legacy_configuration")
+	if err != nil {
+		return automationport.CreateCommand{}, err
+	}
+	return automationport.CreateCommand{Agent: automationport.Agent{AgentName: name, AgentCode: code, AutomationType: kind, Status: status, DraftRolePrompt: role, DraftTaskPrompt: task, FixedContentPackage: content, LegacyConfiguration: legacy}, Actor: actor, IdempotencyKey: key}, nil
 }
 func automationAgentUpdateCommand(id automationport.AgentID, body map[string]json.RawMessage, actor int64, key string) (automationport.UpdateCommand, error) {
 	result := automationport.UpdateCommand{ID: id, Actor: actor, IdempotencyKey: key}
@@ -423,6 +466,11 @@ func automationAgentUpdateCommand(id automationport.AgentID, body map[string]jso
 	} else if present {
 		result.FixedContentPackage = &content
 	}
+	if legacy, present, err := automationAgentObject(body, "legacy_configuration"); err != nil {
+		return result, err
+	} else if present {
+		result.LegacyConfiguration = &legacy
+	}
 	return result, nil
 }
 func automationAgentString(body map[string]json.RawMessage, field string) (string, bool, error) {
@@ -455,6 +503,16 @@ func automationAgentContent(body map[string]json.RawMessage, field string) (auto
 	}
 	return value, true, nil
 }
+func automationAgentObject(body map[string]json.RawMessage, field string) (json.RawMessage, bool, error) {
+	raw, present := body[field]
+	if !present {
+		return nil, false, nil
+	}
+	if len(raw) < 2 || raw[0] != '{' || !json.Valid(raw) {
+		return nil, false, automationapp.ErrInvalidAgent
+	}
+	return append(json.RawMessage(nil), raw...), true, nil
+}
 func automationAgentActorAndKey(r *http.Request) (authport.Principal, string, error) {
 	if r == nil {
 		return authport.Principal{}, "", authport.ErrUnauthorized
@@ -481,7 +539,7 @@ func automationAgentID(r *http.Request) (automationport.AgentID, error) {
 }
 
 func automationAgentSummary(item automationport.Agent) map[string]any {
-	return map[string]any{"id": item.ID, "automation_type": item.AutomationType, "agent_code": item.AgentCode, "agent_name": item.AgentName, "bound_package_key": "", "bound_package_id": nil, "bound_package_name": "", "fixed_material_summary": automationContentSummary(item.FixedContentPackage), "status": item.Status, "updated_at": item.UpdatedAt}
+	return map[string]any{"id": item.ID, "automation_type": item.AutomationType, "agent_code": item.AgentCode, "agent_name": item.AgentName, "bound_package_key": "", "bound_package_id": nil, "bound_package_name": "", "fixed_material_summary": automationContentSummary(item.FixedContentPackage), "status": item.Status, "execution_enabled": false, "materials_configured": false, "updated_at": item.UpdatedAt}
 }
 func automationAgentDetail(item automationport.Agent) map[string]any {
 	result := automationAgentSummary(item)
@@ -498,6 +556,7 @@ func automationAgentDetail(item automationport.Agent) map[string]any {
 	result["has_unpublished_changes"] = item.DraftVersion != item.PublishedVersion || item.DraftRolePrompt != item.PublishedRolePrompt || item.DraftTaskPrompt != item.PublishedTaskPrompt
 	result["fixed_content_package"] = automationContentPayload(item.FixedContentPackage)
 	result["fixed_content_package_preview"] = map[string]any{"content_text": item.FixedContentPackage.ContentText, "material_summary": automationContentSummary(item.FixedContentPackage), "materials": []any{}}
+	result["legacy_configuration"] = item.LegacyConfiguration
 	return result
 }
 func automationContentPayload(content automationport.FixedContentPackage) map[string]any {
@@ -527,6 +586,8 @@ func writeAutomationAgentError(w http.ResponseWriter, err error) {
 		writeAutomationAgentFailure(w, http.StatusNotFound, "agent_not_found", platformhttp.CodeNotFound)
 	case errors.Is(err, automationapp.ErrAgentConflict):
 		writeAutomationAgentFailure(w, http.StatusConflict, "automation_agent_conflict", platformhttp.CodeConflict)
+	case errors.Is(err, automationapp.ErrAgentExecutionDisabled):
+		writeAutomationAgentFailure(w, http.StatusConflict, "automation_execution_disabled", platformhttp.CodeConflict)
 	case errors.Is(err, authport.ErrUnauthenticated):
 		writeAutomationAgentFailure(w, http.StatusUnauthorized, "authentication_required", platformhttp.CodeUnauthenticated)
 	case errors.Is(err, authport.ErrUnauthorized):
