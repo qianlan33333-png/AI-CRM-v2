@@ -188,6 +188,15 @@ func TestSettingsCopyIsStrongTypedAndSecretFree(t *testing.T) {
 	t.Fatal("settings copy spec is missing")
 }
 
+func TestIdentitySequenceResetIncludesImportedAdminSessions(t *testing.T) {
+	for _, table := range identitySequenceTables {
+		if table == "admin_sessions" {
+			return
+		}
+	}
+	t.Fatal("admin_sessions sequence is not reset after whitelist import")
+}
+
 func TestWhitelistBaselineContainsOnlyCurrentBusinessBoundary(t *testing.T) {
 	payload, err := os.ReadFile("../../schema/whitelist_baseline.sql")
 	if err != nil {

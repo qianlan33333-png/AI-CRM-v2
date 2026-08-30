@@ -64,6 +64,12 @@ expect_failure "$fixture_directory" 'missing public survey backend route'
 
 fixture_directory="$(new_fixture)"
 cleanup_directories+=("$fixture_directory")
+sed -i.bak '/redir \* \/admin\/products\.html 308/d' "$fixture_directory/deploy/Caddyfile"
+rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
+expect_failure "$fixture_directory" 'missing whitelist admin landing route'
+
+fixture_directory="$(new_fixture)"
+cleanup_directories+=("$fixture_directory")
 sed -i.bak '/encode zstd gzip/d' "$fixture_directory/deploy/Caddyfile"
 rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
 expect_failure "$fixture_directory" 'missing response compression'

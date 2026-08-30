@@ -923,8 +923,10 @@ func validateTarget(ctx context.Context, target pgx.Tx, allowTestName bool) erro
 	return nil
 }
 
+var identitySequenceTables = []string{"admin_sessions", "admin_users", "channels", "products", "order_list_projections", "product_local_entitlements", "questionnaires", "questionnaire_questions", "questionnaire_options", "questionnaire_submissions", "questionnaire_submission_answers", "service_period_member_views", "service_period_members", "radar_links", "ai_audience_package_groups", "segments", "automation_agent_configurations", "customers"}
+
 func resetIdentitySequences(ctx context.Context, target pgx.Tx) error {
-	tables := []string{"admin_users", "channels", "products", "order_list_projections", "product_local_entitlements", "questionnaires", "questionnaire_questions", "questionnaire_options", "questionnaire_submissions", "questionnaire_submission_answers", "service_period_member_views", "service_period_members", "radar_links", "ai_audience_package_groups", "segments", "automation_agent_configurations", "customers"}
+	tables := append([]string(nil), identitySequenceTables...)
 	sort.Strings(tables)
 	for _, table := range tables {
 		var sequence pgtype.Text
