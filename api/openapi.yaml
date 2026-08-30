@@ -21674,7 +21674,7 @@ components:
     ServicePeriodProduct:
       type: object
       additionalProperties: false
-      required: [service_product_id, product_code, name, description, price_minor, currency, stock_quantity, lifecycle, enabled, archived, version, created_at, updated_at]
+      required: [service_product_id, product_code, name, description, price_minor, currency, stock_quantity, images, admin_projection, lifecycle, enabled, archived, version, created_at, updated_at]
       properties:
         service_product_id: { type: integer, format: int64, minimum: 1 }
         product_code: { type: string, minLength: 1, maxLength: 200 }
@@ -21683,6 +21683,8 @@ components:
         price_minor: { type: integer, format: int64, minimum: 0 }
         currency: { type: string, pattern: '^[A-Z]{3}$' }
         stock_quantity: { type: integer, format: int32, minimum: 0 }
+        images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        admin_projection: {$ref: "#/components/schemas/ProductAdminProjection"}
         lifecycle: { type: string, enum: [draft, enabled, disabled, archived] }
         enabled: { type: boolean }
         archived: { type: boolean }
@@ -21727,10 +21729,12 @@ components:
         price_minor: { type: integer, format: int64, minimum: 0 }
         currency: { type: string, minLength: 3, maxLength: 3 }
         stock_quantity: { type: integer, format: int32, minimum: 0 }
+        images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        admin_projection: {$ref: "#/components/schemas/ProductAdminProjection"}
     ServicePeriodProductUpdateRequest:
       type: object
       additionalProperties: false
-      required: [expected_version, name, description, price_minor, currency, stock_quantity]
+      required: [expected_version, name, description, price_minor, currency, stock_quantity, images, admin_projection]
       properties:
         expected_version: { type: integer, format: int64, minimum: 1 }
         name: { type: string, minLength: 1, maxLength: 200 }
@@ -21738,6 +21742,8 @@ components:
         price_minor: { type: integer, format: int64, minimum: 0 }
         currency: { type: string, minLength: 3, maxLength: 3 }
         stock_quantity: { type: integer, format: int32, minimum: 0 }
+        images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        admin_projection: {$ref: "#/components/schemas/ProductAdminProjection"}
     ServicePeriodVersionRequest:
       type: object
       additionalProperties: false
@@ -25900,7 +25906,7 @@ components:
     Product:
       type: object
       additionalProperties: false
-      required: [id, product_code, name, description, price_minor, currency, stock_quantity, images, created_by, created_at, updated_at, version]
+      required: [id, product_code, name, description, price_minor, currency, stock_quantity, images, admin_projection, created_by, created_at, updated_at, version]
       properties:
         id: {type: integer, format: int64, minimum: 1}
         product_code: {type: string, minLength: 1, maxLength: 200}
@@ -25910,6 +25916,7 @@ components:
         currency: {type: string, pattern: '^[A-Z]{3}$'}
         stock_quantity: {type: integer, format: int32, minimum: 0}
         images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        admin_projection: {$ref: "#/components/schemas/ProductAdminProjection"}
         created_by: {type: integer, format: int64, minimum: 1}
         created_at: {type: string, format: date-time}
         updated_at: {type: string, format: date-time}
@@ -25921,6 +25928,25 @@ components:
       properties:
         items: {type: array, items: {$ref: "#/components/schemas/Product"}}
         next_cursor: {type: string}
+    ProductAdminProjection:
+      type: object
+      additionalProperties: false
+      required: [schema_version, status, enabled, buy_button_text, require_mobile, lead_qr_title, lead_qr_subtitle, completion_redirect_enabled, completion_redirect_url, wecom_tagging, slices]
+      properties:
+        schema_version: {type: integer, enum: [1]}
+        status: {type: string, minLength: 1, maxLength: 64}
+        enabled: {type: boolean}
+        buy_button_text: {type: string, maxLength: 2048}
+        require_mobile: {type: boolean}
+        lead_program_id: {type: integer, format: int64, minimum: 1, nullable: true}
+        lead_channel_id: {type: integer, format: int64, minimum: 1, nullable: true}
+        lead_qr_title: {type: string, maxLength: 2048}
+        lead_qr_subtitle: {type: string, maxLength: 2048}
+        completion_redirect_enabled: {type: boolean}
+        completion_redirect_url: {type: string, maxLength: 2048}
+        completion_target: {type: object, nullable: true, additionalProperties: true}
+        wecom_tagging: {type: object, additionalProperties: true}
+        slices: {type: array, maxItems: 20, items: {type: object, additionalProperties: true}}
     LocalProductLifecycleVersionRequest:
       type: object
       additionalProperties: false
@@ -26010,10 +26036,11 @@ components:
         currency: {type: string, pattern: '^[A-Z]{3}$'}
         stock_quantity: {type: integer, format: int32, minimum: 0}
         images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        admin_projection: {$ref: "#/components/schemas/ProductAdminProjection"}
     UpdateProductRequest:
       type: object
       additionalProperties: false
-      required: [expected_version, name, description, price_minor, currency, stock_quantity]
+      required: [expected_version, name, description, price_minor, currency, stock_quantity, images, admin_projection]
       properties:
         expected_version: {type: integer, format: int64, minimum: 1}
         name: {type: string, minLength: 1, maxLength: 200}
@@ -26021,6 +26048,8 @@ components:
         price_minor: {type: integer, format: int64, minimum: 0}
         currency: {type: string, pattern: '^[A-Z]{3}$'}
         stock_quantity: {type: integer, format: int32, minimum: 0}
+        images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        admin_projection: {$ref: "#/components/schemas/ProductAdminProjection"}
     GrantProductLocalEntitlementRequest:
       type: object
       additionalProperties: false
@@ -26749,7 +26778,7 @@ components:
       properties:
         field:
           type: string
-          enum: [stage_id, owner_staff_id, channel_id, tag_id, added_at, last_interact_at, is_deleted]
+          enum: [stage_id, owner_staff_id, channel_id, tag_id, added_at, last_interact_at, is_deleted, legacy_audience_package_source_id]
         op:
           type: string
           enum: [eq, in, has_any, before, after]

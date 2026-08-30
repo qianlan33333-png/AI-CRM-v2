@@ -56,6 +56,9 @@ func (set *QuerySet) LastInteractAfter(ctx context.Context, instant time.Time) (
 func (set *QuerySet) DeletedEqual(ctx context.Context, value bool) ([]int64, error) {
 	return set.queries.SelectSegmentDeletedEqual(ctx, value)
 }
+func (set *QuerySet) LegacyAudiencePackageSnapshot(ctx context.Context, sourceID int64) ([]int64, error) {
+	return set.queries.SelectLegacyAudiencePackageSnapshot(ctx, sourceID)
+}
 func (set *QuerySet) HXCSubscriptionTierEqual(ctx context.Context, value string) ([]int64, error) {
 	return set.queries.SelectSegmentHXCSubscriptionTierEqual(ctx, value)
 }

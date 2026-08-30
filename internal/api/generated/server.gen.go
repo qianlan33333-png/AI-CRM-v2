@@ -59,13 +59,14 @@ func (e ReleaseCutoverStep) Valid() bool {
 
 // Defines values for SegmentDefinitionPredicateField.
 const (
-	AddedAt        SegmentDefinitionPredicateField = "added_at"
-	ChannelId      SegmentDefinitionPredicateField = "channel_id"
-	IsDeleted      SegmentDefinitionPredicateField = "is_deleted"
-	LastInteractAt SegmentDefinitionPredicateField = "last_interact_at"
-	OwnerStaffId   SegmentDefinitionPredicateField = "owner_staff_id"
-	StageId        SegmentDefinitionPredicateField = "stage_id"
-	TagId          SegmentDefinitionPredicateField = "tag_id"
+	AddedAt                       SegmentDefinitionPredicateField = "added_at"
+	ChannelId                     SegmentDefinitionPredicateField = "channel_id"
+	IsDeleted                     SegmentDefinitionPredicateField = "is_deleted"
+	LastInteractAt                SegmentDefinitionPredicateField = "last_interact_at"
+	LegacyAudiencePackageSourceId SegmentDefinitionPredicateField = "legacy_audience_package_source_id"
+	OwnerStaffId                  SegmentDefinitionPredicateField = "owner_staff_id"
+	StageId                       SegmentDefinitionPredicateField = "stage_id"
+	TagId                         SegmentDefinitionPredicateField = "tag_id"
 )
 
 // Valid indicates whether the value is a known member of the SegmentDefinitionPredicateField enum.
@@ -78,6 +79,8 @@ func (e SegmentDefinitionPredicateField) Valid() bool {
 	case IsDeleted:
 		return true
 	case LastInteractAt:
+		return true
+	case LegacyAudiencePackageSourceId:
 		return true
 	case OwnerStaffId:
 		return true

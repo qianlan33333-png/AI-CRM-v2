@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -61,12 +62,13 @@ func TestLocalMutationHandlerMapsFrozenCommandsAndClosedDTOs(t *testing.T) {
 	}
 
 	update := httptest.NewRecorder()
-	handler.UpdateProduct(update, localRequest(t, http.MethodPut, `{"expected_version":1,"name":"更新","description":"说明","price_minor":2,"currency":"CNY","stock_quantity":3}`, authport.CapabilityProductsWrite, true, true), 8)
-	if update.Code != http.StatusOK || products.command != (productport.UpdateCommand{ID: 8, ExpectedVersion: 1, Name: "更新", Description: "说明", PriceMinor: 2, Currency: "CNY", StockQuantity: 3, Actor: 7, IdempotencyKey: "local-operation-key-7"}) {
+	projection := productapp.DefaultLegacyAdminProjection()
+	handler.UpdateProduct(update, localRequest(t, http.MethodPut, `{"expected_version":1,"name":"更新","description":"说明","price_minor":2,"currency":"CNY","stock_quantity":3,"images":["https://cdn.example.test/product.png"],"admin_projection":`+string(projection)+`}`, authport.CapabilityProductsWrite, true, true), 8)
+	if update.Code != http.StatusOK || !reflect.DeepEqual(products.command, productport.UpdateCommand{ID: 8, ExpectedVersion: 1, Name: "更新", Description: "说明", PriceMinor: 2, Currency: "CNY", StockQuantity: 3, Images: []string{"https://cdn.example.test/product.png"}, LegacyAdminProjection: projection, Actor: 7, IdempotencyKey: "local-operation-key-7"}) {
 		t.Fatalf("update status=%d command=%+v body=%s", update.Code, products.command, update.Body.String())
 	}
 	var product map[string]any
-	if err = json.Unmarshal(update.Body.Bytes(), &product); err != nil || len(product) != 12 || product["version"] != float64(2) || product["legacy_admin_projection"] != nil {
+	if err = json.Unmarshal(update.Body.Bytes(), &product); err != nil || len(product) != 13 || product["version"] != float64(2) || product["legacy_admin_projection"] != nil || product["admin_projection"] == nil {
 		t.Fatalf("product response=%v err=%v", product, err)
 	}
 
@@ -217,7 +219,7 @@ func localRequest(t *testing.T, method, body string, capability authport.Capabil
 
 func localHTTPProduct() productport.Product {
 	now := time.Date(2026, 8, 20, 9, 0, 0, 0, time.UTC)
-	return productport.Product{ID: 8, ProductCode: "SKU-8", Name: "产品", Description: "说明", PriceMinor: 2, Currency: "CNY", StockQuantity: 3, Images: []string{}, CreatedBy: 7, CreatedAt: now, UpdatedAt: now, Version: 2}
+	return productport.Product{ID: 8, ProductCode: "SKU-8", Name: "产品", Description: "说明", PriceMinor: 2, Currency: "CNY", StockQuantity: 3, Images: []string{}, CreatedBy: 7, CreatedAt: now, UpdatedAt: now, Version: 2, LegacyAdminProjection: productapp.DefaultLegacyAdminProjection()}
 }
 
 func localHTTPEntitlement(state string) productport.LocalEntitlement {

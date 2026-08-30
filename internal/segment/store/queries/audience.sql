@@ -80,3 +80,12 @@ SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state 
 
 -- name: SelectSegmentHXCPainTagEqual :many
 SELECT COALESCE(customer_id, 0)::bigint FROM hxc_user_current WHERE match_state = 'matched' AND pain_tag = sqlc.arg(value)::text ORDER BY customer_id;
+
+-- name: SelectLegacyAudiencePackageSnapshot :many
+SELECT DISTINCT COALESCE(member.customer_id, 0)::bigint AS customer_id
+FROM segment_v1_audience_members AS member
+JOIN segment_v1_audience_packages AS package ON package.id = member.package_history_id
+JOIN customers AS customer ON customer.id = member.customer_id
+WHERE package.source_id = sqlc.arg(source_id)::bigint
+  AND member.customer_id IS NOT NULL
+ORDER BY customer_id;

@@ -78,6 +78,9 @@ const (
 	FieldHXCUserSegment        Field = "hxc_user_segment"
 	FieldHXCFocusTopic         Field = "hxc_focus_topic"
 	FieldHXCPainTag            Field = "hxc_pain_tag"
+	// FieldLegacyAudiencePackageSourceID selects a verified V1 membership
+	// snapshot already mapped to V2 customer IDs. It never evaluates V1 SQL.
+	FieldLegacyAudiencePackageSourceID Field = "legacy_audience_package_source_id"
 )
 
 type Operator string

@@ -27,7 +27,7 @@ importer="$repository_root/cmd/aicrm-v1-domain-import"
 [[ -z "${AICRM_V1_ARCHIVE_SOURCE_DATABASE_URL:-}" ]] || fail 'V1 archive source database URL must be unset'
 [[ -z "${AICRM_DM01_SOURCE_DATABASE_URL:-}" ]] || fail 'DM01 source database URL must be unset'
 
-for version in $(seq 132 142); do
+for version in $(seq 132 144); do
   matches=("$migrations"/"$(printf '%05d' "$version")"_*.sql)
   [[ -f "${matches[0]:-}" && ! -L "${matches[0]:-}" ]] || fail "required migration $version is missing"
 done
@@ -44,10 +44,10 @@ while IFS= read -r file; do
   version=$((10#$version))
   [[ -z "$latest" || "$version" -gt "$latest" ]] && latest="$version"
 done < <(find "$migrations" -maxdepth 1 -type f -name '*.sql' -print)
-[[ "$latest" = '142' ]] || fail "final schema must be 142, found ${latest:-none}"
+[[ "$latest" = '144' ]] || fail "final schema must be 144, found ${latest:-none}"
 
 grep -Fq '"from": 132' "$manifest" || fail 'manifest must start from schema 132'
-grep -Fq '"to": 142' "$manifest" || fail 'manifest must end at schema 142'
+grep -Fq '"to": 144' "$manifest" || fail 'manifest must end at schema 144'
 if grep -Eq '"domain"[[:space:]]*:[[:space:]]*"all"' "$manifest"; then
   fail 'manifest must enumerate domains and cannot use domain=all'
 fi
@@ -63,5 +63,5 @@ done < <(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "
 if [[ "$mode" = '--render' ]]; then
   cat "$manifest"
 else
-  printf 'final-v1-domain-migration-plan: PASS (schema=132->142 domains=%s)\n' "$domain_count"
+  printf 'final-v1-domain-migration-plan: PASS (schema=132->144 domains=%s)\n' "$domain_count"
 fi

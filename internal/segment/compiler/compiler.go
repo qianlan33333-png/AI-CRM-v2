@@ -15,32 +15,33 @@ import (
 type Opcode string
 
 const (
-	StageEqual                 Opcode = "stage.equal"
-	StageAny                   Opcode = "stage.any"
-	OwnerEqual                 Opcode = "owner.equal"
-	OwnerAny                   Opcode = "owner.any"
-	ChannelEqual               Opcode = "channel.equal"
-	ChannelAny                 Opcode = "channel.any"
-	TagHasAny                  Opcode = "tag.has_any"
-	AddedBefore                Opcode = "added.before"
-	AddedAfter                 Opcode = "added.after"
-	LastInteractBefore         Opcode = "last_interact.before"
-	LastInteractAfter          Opcode = "last_interact.after"
-	DeletedEqual               Opcode = "deleted.equal"
-	HXCSubscriptionTierEqual   Opcode = "hxc.subscription_tier.equal"
-	HXCSubscriptionActiveEqual Opcode = "hxc.subscription_active.equal"
-	HXCDaysRemainingGTE        Opcode = "hxc.days_remaining.gte"
-	HXCDaysRemainingLTE        Opcode = "hxc.days_remaining.lte"
-	HXCUserMessages7DGTE       Opcode = "hxc.user_messages_7d.gte"
-	HXCUserMessages7DLTE       Opcode = "hxc.user_messages_7d.lte"
-	HXCUserMessages30DGTE      Opcode = "hxc.user_messages_30d.gte"
-	HXCUserMessages30DLTE      Opcode = "hxc.user_messages_30d.lte"
-	HXCLastCapabilityEqual     Opcode = "hxc.last_capability.equal"
-	HXCBusinessStageEqual      Opcode = "hxc.business_stage.equal"
-	HXCMainLineTypeEqual       Opcode = "hxc.main_line_type.equal"
-	HXCUserSegmentEqual        Opcode = "hxc.user_segment.equal"
-	HXCFocusTopicAny           Opcode = "hxc.focus_topic.has_any"
-	HXCPainTagEqual            Opcode = "hxc.pain_tag.equal"
+	StageEqual                    Opcode = "stage.equal"
+	StageAny                      Opcode = "stage.any"
+	OwnerEqual                    Opcode = "owner.equal"
+	OwnerAny                      Opcode = "owner.any"
+	ChannelEqual                  Opcode = "channel.equal"
+	ChannelAny                    Opcode = "channel.any"
+	TagHasAny                     Opcode = "tag.has_any"
+	AddedBefore                   Opcode = "added.before"
+	AddedAfter                    Opcode = "added.after"
+	LastInteractBefore            Opcode = "last_interact.before"
+	LastInteractAfter             Opcode = "last_interact.after"
+	DeletedEqual                  Opcode = "deleted.equal"
+	LegacyAudiencePackageSnapshot Opcode = "legacy_audience_package.snapshot"
+	HXCSubscriptionTierEqual      Opcode = "hxc.subscription_tier.equal"
+	HXCSubscriptionActiveEqual    Opcode = "hxc.subscription_active.equal"
+	HXCDaysRemainingGTE           Opcode = "hxc.days_remaining.gte"
+	HXCDaysRemainingLTE           Opcode = "hxc.days_remaining.lte"
+	HXCUserMessages7DGTE          Opcode = "hxc.user_messages_7d.gte"
+	HXCUserMessages7DLTE          Opcode = "hxc.user_messages_7d.lte"
+	HXCUserMessages30DGTE         Opcode = "hxc.user_messages_30d.gte"
+	HXCUserMessages30DLTE         Opcode = "hxc.user_messages_30d.lte"
+	HXCLastCapabilityEqual        Opcode = "hxc.last_capability.equal"
+	HXCBusinessStageEqual         Opcode = "hxc.business_stage.equal"
+	HXCMainLineTypeEqual          Opcode = "hxc.main_line_type.equal"
+	HXCUserSegmentEqual           Opcode = "hxc.user_segment.equal"
+	HXCFocusTopicAny              Opcode = "hxc.focus_topic.has_any"
+	HXCPainTagEqual               Opcode = "hxc.pain_tag.equal"
 )
 
 // Program is immutable after Compile returns. Its representation is private;
@@ -244,6 +245,8 @@ func integerOpcode(field dsl.Field, operator dsl.Operator) (Opcode, bool) {
 		return OwnerEqual, true
 	case dsl.FieldChannelID:
 		return ChannelEqual, true
+	case dsl.FieldLegacyAudiencePackageSourceID:
+		return LegacyAudiencePackageSnapshot, true
 	default:
 		return "", false
 	}

@@ -60,6 +60,7 @@ type ServicePeriodStoreUpdate struct {
 	PriceMinor            int64
 	Currency              string
 	StockQuantity         int32
+	Images                []string
 	LegacyAdminProjection json.RawMessage
 }
 
@@ -192,7 +193,7 @@ func (service *ServicePeriodService) CreateServicePeriodProduct(ctx context.Cont
 			return nil
 		}
 
-		projection, projectionErr := servicePeriodProjectionForLifecycle(nil, productport.ServicePeriodDraft)
+		projection, projectionErr := servicePeriodProjectionForLifecycle(normalized.AdminProjection, productport.ServicePeriodDraft)
 		if projectionErr != nil {
 			return projectionErr
 		}
@@ -203,7 +204,7 @@ func (service *ServicePeriodService) CreateServicePeriodProduct(ctx context.Cont
 			PriceMinor:            normalized.PriceMinor,
 			Currency:              normalized.Currency,
 			StockQuantity:         normalized.StockQuantity,
-			Images:                []string{},
+			Images:                append([]string(nil), normalized.Images...),
 			LegacyAdminProjection: projection,
 			Actor:                 normalized.Actor,
 			IdempotencyKey:        normalized.IdempotencyKey,
@@ -242,7 +243,15 @@ func (service *ServicePeriodService) UpdateServicePeriodProduct(ctx context.Cont
 			if projected.Archived {
 				return ServicePeriodStoreUpdate{}, "", false, ErrConflict
 			}
-			projection, projectionErr := servicePeriodProjectionForLifecycle(current.LegacyAdminProjection, projected.Lifecycle)
+			projectionSource := normalized.AdminProjection
+			if len(projectionSource) == 0 {
+				projectionSource = current.LegacyAdminProjection
+			}
+			images := normalized.Images
+			if images == nil {
+				images = current.Images
+			}
+			projection, projectionErr := servicePeriodProjectionForLifecycle(projectionSource, projected.Lifecycle)
 			if projectionErr != nil {
 				return ServicePeriodStoreUpdate{}, "", false, projectionErr
 			}
@@ -254,6 +263,7 @@ func (service *ServicePeriodService) UpdateServicePeriodProduct(ctx context.Cont
 				PriceMinor:            normalized.PriceMinor,
 				Currency:              normalized.Currency,
 				StockQuantity:         normalized.StockQuantity,
+				Images:                append([]string(nil), images...),
 				LegacyAdminProjection: projection,
 			}, projected.Lifecycle, true, nil
 		},
@@ -362,7 +372,7 @@ func (service *ServicePeriodService) CopyServicePeriodProduct(ctx context.Contex
 		if sourceProjection.Version != normalized.ExpectedVersion {
 			return ErrConflict
 		}
-		projection, projectionErr := servicePeriodProjectionForLifecycle(nil, productport.ServicePeriodDraft)
+		projection, projectionErr := servicePeriodProjectionForLifecycle(source.LegacyAdminProjection, productport.ServicePeriodDraft)
 		if projectionErr != nil {
 			return projectionErr
 		}
@@ -455,7 +465,7 @@ func (service *ServicePeriodService) updateServicePeriod(ctx context.Context, wr
 				return updateErr
 			}
 			result, updateErr = projectServicePeriodProduct(updated)
-			if updateErr != nil || result.Version != projected.Version+1 || result.ServiceProductID != projected.ServiceProductID || result.ProductCode != projected.ProductCode || !result.CreatedAt.Equal(projected.CreatedAt) || result.Lifecycle != target {
+			if updateErr != nil || result.Version != projected.Version+1 || result.ServiceProductID != projected.ServiceProductID || result.ProductCode != projected.ProductCode || !result.CreatedAt.Equal(projected.CreatedAt) || result.Lifecycle != target || !reflect.DeepEqual(result.Images, storeUpdate.Images) || !jsonEquivalent(result.AdminProjection, storeUpdate.LegacyAdminProjection) {
 				return ErrUnavailable
 			}
 			if appendErr := service.appendServicePeriodEvent(tx, eventport.EvProductUpdated, write.action, result, 0, write.actor, actorScope, write.idempotencyKey, now); appendErr != nil {
@@ -558,6 +568,8 @@ func projectServicePeriodProduct(product productport.Product) (productport.Servi
 		PriceMinor:       product.PriceMinor,
 		Currency:         product.Currency,
 		StockQuantity:    product.StockQuantity,
+		Images:           append([]string(nil), product.Images...),
+		AdminProjection:  append(json.RawMessage(nil), product.LegacyAdminProjection...),
 		Lifecycle:        lifecycle,
 		Enabled:          enabled,
 		Archived:         lifecycle == productport.ServicePeriodArchived,
@@ -648,9 +660,14 @@ func servicePeriodProjectionForLifecycle(raw json.RawMessage, lifecycle productp
 func validServicePeriodSnapshot(product productport.ServicePeriodProduct) bool {
 	if product.ServiceProductID < 1 || product.ProductCode == "" || len(product.ProductCode) > 200 || strings.TrimSpace(product.ProductCode) != product.ProductCode ||
 		product.Name == "" || len(product.Name) > 200 || strings.TrimSpace(product.Name) != product.Name || len(product.Description) > 10000 ||
-		product.PriceMinor < 0 || product.StockQuantity < 0 || len(product.Currency) != 3 || product.Currency != strings.ToUpper(product.Currency) ||
+		product.PriceMinor < 0 || product.StockQuantity < 0 || len(product.Currency) != 3 || product.Currency != strings.ToUpper(product.Currency) || len(product.Images) > 20 || !IsServicePeriodProjection(product.AdminProjection) ||
 		product.Version < 1 || product.CreatedAt.IsZero() || product.UpdatedAt.IsZero() || product.UpdatedAt.Before(product.CreatedAt) {
 		return false
+	}
+	for _, imageURL := range product.Images {
+		if strings.TrimSpace(imageURL) != imageURL || imageURL == "" || len(imageURL) > 2048 {
+			return false
+		}
 	}
 	switch product.Lifecycle {
 	case productport.ServicePeriodDraft, productport.ServicePeriodDisabled:
@@ -665,22 +682,38 @@ func validServicePeriodSnapshot(product productport.ServicePeriodProduct) bool {
 }
 
 func normalizeServicePeriodCreate(command productport.CreateServicePeriodProductCommand) (productport.CreateServicePeriodProductCommand, [32]byte, error) {
+	command.Images = append([]string(nil), command.Images...)
 	command.ProductCode = strings.TrimSpace(command.ProductCode)
 	command.Name = strings.TrimSpace(command.Name)
 	command.Description = strings.TrimSpace(command.Description)
 	command.Currency = strings.ToUpper(strings.TrimSpace(command.Currency))
 	if command.Actor < 1 || command.ProductCode == "" || len(command.ProductCode) > 200 || command.Name == "" || len(command.Name) > 200 ||
-		len(command.Description) > 10000 || command.PriceMinor < 0 || command.StockQuantity < 0 || len(command.Currency) != 3 || !validIdempotencyKey(command.IdempotencyKey) {
+		len(command.Description) > 10000 || command.PriceMinor < 0 || command.StockQuantity < 0 || len(command.Currency) != 3 || len(command.Images) > 20 || !validIdempotencyKey(command.IdempotencyKey) {
 		return productport.CreateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
 	}
+	for index := range command.Images {
+		command.Images[index] = strings.TrimSpace(command.Images[index])
+		if command.Images[index] == "" || len(command.Images[index]) > 2048 {
+			return productport.CreateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
+		}
+	}
+	var err error
+	if len(command.AdminProjection) > 0 {
+		command.AdminProjection, err = CanonicalLegacyAdminProjection(command.AdminProjection)
+		if err != nil {
+			return productport.CreateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
+		}
+	}
 	raw, err := json.Marshal(struct {
-		ProductCode   string `json:"product_code"`
-		Name          string `json:"name"`
-		Description   string `json:"description"`
-		PriceMinor    int64  `json:"price_minor"`
-		Currency      string `json:"currency"`
-		StockQuantity int32  `json:"stock_quantity"`
-	}{command.ProductCode, command.Name, command.Description, command.PriceMinor, command.Currency, command.StockQuantity})
+		ProductCode     string          `json:"product_code"`
+		Name            string          `json:"name"`
+		Description     string          `json:"description"`
+		PriceMinor      int64           `json:"price_minor"`
+		Currency        string          `json:"currency"`
+		StockQuantity   int32           `json:"stock_quantity"`
+		Images          []string        `json:"images"`
+		AdminProjection json.RawMessage `json:"admin_projection"`
+	}{command.ProductCode, command.Name, command.Description, command.PriceMinor, command.Currency, command.StockQuantity, command.Images, command.AdminProjection})
 	if err != nil {
 		return productport.CreateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
 	}
@@ -688,22 +721,38 @@ func normalizeServicePeriodCreate(command productport.CreateServicePeriodProduct
 }
 
 func normalizeServicePeriodUpdate(command productport.UpdateServicePeriodProductCommand) (productport.UpdateServicePeriodProductCommand, [32]byte, error) {
+	command.Images = append([]string(nil), command.Images...)
 	command.Name = strings.TrimSpace(command.Name)
 	command.Description = strings.TrimSpace(command.Description)
 	command.Currency = strings.ToUpper(strings.TrimSpace(command.Currency))
 	if !validServicePeriodWriteIdentity(command.ID, command.ExpectedVersion, command.Actor, command.IdempotencyKey) ||
-		command.Name == "" || len(command.Name) > 200 || len(command.Description) > 10000 || command.PriceMinor < 0 || command.StockQuantity < 0 || len(command.Currency) != 3 {
+		command.Name == "" || len(command.Name) > 200 || len(command.Description) > 10000 || command.PriceMinor < 0 || command.StockQuantity < 0 || len(command.Currency) != 3 || len(command.Images) > 20 {
 		return productport.UpdateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
 	}
+	for index := range command.Images {
+		command.Images[index] = strings.TrimSpace(command.Images[index])
+		if command.Images[index] == "" || len(command.Images[index]) > 2048 {
+			return productport.UpdateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
+		}
+	}
+	var err error
+	if len(command.AdminProjection) > 0 {
+		command.AdminProjection, err = CanonicalLegacyAdminProjection(command.AdminProjection)
+		if err != nil {
+			return productport.UpdateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
+		}
+	}
 	raw, err := json.Marshal(struct {
-		ID              productport.ID `json:"service_product_id"`
-		ExpectedVersion int64          `json:"expected_version"`
-		Name            string         `json:"name"`
-		Description     string         `json:"description"`
-		PriceMinor      int64          `json:"price_minor"`
-		Currency        string         `json:"currency"`
-		StockQuantity   int32          `json:"stock_quantity"`
-	}{command.ID, command.ExpectedVersion, command.Name, command.Description, command.PriceMinor, command.Currency, command.StockQuantity})
+		ID              productport.ID  `json:"service_product_id"`
+		ExpectedVersion int64           `json:"expected_version"`
+		Name            string          `json:"name"`
+		Description     string          `json:"description"`
+		PriceMinor      int64           `json:"price_minor"`
+		Currency        string          `json:"currency"`
+		StockQuantity   int32           `json:"stock_quantity"`
+		Images          []string        `json:"images"`
+		AdminProjection json.RawMessage `json:"admin_projection"`
+	}{command.ID, command.ExpectedVersion, command.Name, command.Description, command.PriceMinor, command.Currency, command.StockQuantity, command.Images, command.AdminProjection})
 	if err != nil {
 		return productport.UpdateServicePeriodProductCommand{}, [32]byte{}, ErrInvalidProduct
 	}
@@ -766,6 +815,7 @@ func unchangedServicePeriodUpdate(current productport.Product, expectedVersion i
 		PriceMinor:            current.PriceMinor,
 		Currency:              current.Currency,
 		StockQuantity:         current.StockQuantity,
+		Images:                append([]string(nil), current.Images...),
 		LegacyAdminProjection: projection,
 	}
 }

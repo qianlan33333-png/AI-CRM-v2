@@ -130,6 +130,10 @@ func TestExecuteHXCFiltersUseMatchedOnlyQueryFamily(t *testing.T) {
 	}
 }
 
+func (set *fakeQuerySet) LegacyAudiencePackageSnapshot(context.Context, int64) ([]int64, error) {
+	return set.result("legacy-audience.snapshot", 1, 4, 8)
+}
+
 func TestExecuteLeafAndCombinationSemanticMatrix(t *testing.T) {
 	leaves := []struct {
 		definition string
@@ -148,6 +152,7 @@ func TestExecuteLeafAndCombinationSemanticMatrix(t *testing.T) {
 		{`{"field":"last_interact_at","op":"after","value":"2026-08-01T00:00:00Z"}`, []int64{2, 4, 6, 8}},
 		{`{"field":"is_deleted","op":"eq","value":true}`, []int64{7, 8}},
 		{`{"field":"is_deleted","op":"eq","value":false}`, []int64{1, 2, 3, 4, 5, 6}},
+		{`{"field":"legacy_audience_package_source_id","op":"eq","value":14}`, []int64{1, 4, 8}},
 	}
 	cases := make([]struct {
 		definition string
@@ -168,8 +173,8 @@ func TestExecuteLeafAndCombinationSemanticMatrix(t *testing.T) {
 			)
 		}
 	}
-	if len(cases) != 61 {
-		t.Fatalf("semantic matrix = %d, want 61", len(cases))
+	if len(cases) != 62 {
+		t.Fatalf("semantic matrix = %d, want 62", len(cases))
 	}
 	for index, test := range cases {
 		t.Run(fmt.Sprintf("case-%02d", index+1), func(t *testing.T) {

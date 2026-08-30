@@ -31,6 +31,23 @@ import { getAcceptOutboundCampaignHandoffUrl, getDispatchOutboundCampaignHandoff
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
+const productAdminProjection = {
+  schema_version: 1 as const,
+  status: 'draft',
+  enabled: false,
+  buy_button_text: '',
+  require_mobile: false,
+  lead_program_id: null,
+  lead_channel_id: null,
+  lead_qr_title: '',
+  lead_qr_subtitle: '',
+  completion_redirect_enabled: false,
+  completion_redirect_url: '',
+  completion_target: null,
+  wecom_tagging: {},
+  slices: [],
+};
+const servicePeriodAdminProjection = (lifecycle: 'draft' | 'enabled' | 'disabled' | 'archived' = 'draft') => ({ ...productAdminProjection, status: `service_period_${lifecycle}`, enabled: lifecycle === 'enabled' });
 
 export async function runAdminAdapterTests(): Promise<void> {
   // URL factories are generated from api/openapi.yaml; generated callers use GET for every read below.
@@ -153,8 +170,8 @@ export async function runAdminAdapterTests(): Promise<void> {
     if (request.input.endsWith('/member-grid/schema')) return new Response(JSON.stringify({ service_product_id: 8, columns: Array.from({ length: 12 }, (_, index) => ({ key: index === 0 ? 'display_name' : 'state', label: `列${index + 1}`, type: 'string', nullable: false })) }), { status: 200 });
     if (request.input.endsWith('/member-views')) return new Response(JSON.stringify({ product_id: 8, views: [{ id: 'default', name: '默认视图', source: 'built_in', read_only: true }] }), { status: 200 });
     if (request.input.endsWith('/member-grid/share-settings')) return new Response(JSON.stringify({ service_product_id: 8, saved_views: [], collaborators: [], external_share_supported: true, external_share_enabled: false, external_share_version: 0, real_external_call_executed: false, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false }), { status: 200 });
-    if (request.input === '/api/admin/service-period-products') return new Response(JSON.stringify({ items: [{ service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' }] }), { status: 200 });
-    if (request.input === '/api/admin/service-period-products/8') return new Response(JSON.stringify({ product: { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' } }), { status: 200 });
+    if (request.input === '/api/admin/service-period-products') return new Response(JSON.stringify({ items: [{ service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, images: [], admin_projection: servicePeriodAdminProjection('enabled'), lifecycle: 'enabled', version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' }] }), { status: 200 });
+    if (request.input === '/api/admin/service-period-products/8') return new Response(JSON.stringify({ product: { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, images: [], admin_projection: servicePeriodAdminProjection('enabled'), lifecycle: 'enabled', version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' } }), { status: 200 });
     throw new Error(`unexpected member grid request: ${request.input}`);
   };
   try {
@@ -347,8 +364,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   const historicalOrder = orderDetailDto({ id: 12, record_origin: 'v1_history', merchant_order_no: 'WX-H-12', provider: 'wechat', product_name: '历史营', amount_yuan: '99.00', status: 'paid', currency: 'CNY', historical_refunds: [{ id: 31, order_id: 12, source_refund_id: 801, refund_number: 'R-801', provider_refund_id: '', transaction_id: 'TX-12', status: 'refunded', amount_minor: 1990, order_amount_minor: 9900, currency: 'CNY', reason: '历史退款', created_at: '2026-08-28T00:00:00Z', updated_at: '2026-08-28T00:00:00Z' }] });
   assert(historicalOrder.recordOrigin === 'v1_history' && historicalOrder.historicalRefunds?.[0]?.amount === '¥19.90 CNY' && historicalOrder.historicalRefunds?.[0]?.reason === '历史退款', 'historical order detail maps only read-only refund fields');
   try { orderDetailDto({ id: 12, record_origin: 'v1_history', historical_refunds: [{ order_id: 99, amount_minor: 1, order_amount_minor: 1, currency: 'CNY', status: 'refunded', reason: '' }] }); assert(false, 'mismatched historical refund accepted'); } catch { /* expected: mismatched order binding remains closed */ }
-  assert(productPageDto({ id: 1, name: '商品', status: 'active' }).tone === 'ok', 'product response mapping');
-  assert(serviceProductPageDto({ id: 2, name: '周期', status: 'disabled' }).tone === 'gray', 'service product response mapping');
+  assert(productPageDto({ id: 1, name: '商品', status: 'active', admin_projection: { ...productAdminProjection, status: 'active', enabled: true } }).tone === 'ok', 'product response mapping');
+  assert(serviceProductPageDto({ id: 2, name: '周期', status: 'disabled', images: [], admin_projection: servicePeriodAdminProjection('disabled') }).tone === 'gray', 'service product response mapping');
   const couponProjection = couponPageDto({ name: '券', code: 'C', status: 'published', availability_status: 'active' });
   assert(couponProjection.status === 'published' && couponProjection.availabilityStatus === 'active' && couponProjection.tone === 'ok', 'coupon response mapping preserves lifecycle and availability separately');
   assert(imagePageDto({ id: 11, file_name: 'a.png', enabled: false }).resourceId === '11', 'image response mapping keeps resource id');
@@ -418,7 +435,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   globalThis.fetch = async (input, init) => {
     gridCalls.push({ input: String(input), init });
     const path = new URL('http://localhost' + String(input)).pathname;
-    const product = { service_product_id: 8, product_code: 'SP-8', name: '季度', description: '说明', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'draft', enabled: false, archived: false, version: 3, created_at: '', updated_at: '' };
+    const product = { service_product_id: 8, product_code: 'SP-8', name: '季度', description: '说明', price_minor: 398000, currency: 'CNY', stock_quantity: 5, images: [], admin_projection: servicePeriodAdminProjection(), lifecycle: 'draft', enabled: false, archived: false, version: 3, created_at: '', updated_at: '' };
     const body = path.endsWith('/member-grid/access') ? { product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false }
       : path.endsWith('/member-grid/schema') ? { service_product_id: 8, columns: gridColumns }
         : path.endsWith('/member-views') ? { product_id: 8, views: [{ id: 'all-members', name: '全部成员', source: 'built_in', read_only: true }] }
@@ -620,6 +637,7 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(audienceCalls[0].init?.method === 'GET' && audienceCalls[1].input.endsWith('/packages/6') && audienceCalls[1].init?.method === 'PATCH', 'audience CAS read/update methods');
     const audienceBody = JSON.parse(String(audienceCalls[1].init?.body));
     assert(audienceBody.expected_version === 3 && audienceBody.definition.field === 'stage_id' && audienceBody.refresh_cron === '0 2 * * *', 'audience request DTO/CAS mapping');
+    assert(Boolean(new Headers(audienceCalls[1].init?.headers).get('Idempotency-Key')), 'audience mutation carries idempotency evidence');
   } finally { globalThis.fetch = savedFetch; }
 
   const groupOpsCalls: Array<{ input: string; init?: RequestInit }> = [];
@@ -739,11 +757,33 @@ export async function runAdminAdapterTests(): Promise<void> {
   } finally { globalThis.fetch = savedFetch; }
 
   let productWrite: RequestInit | undefined;
-  globalThis.fetch = async (_input, init) => { productWrite = init; return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程', description: '说明', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: [], created_by: 1, created_at: '', updated_at: '', version: 1 }), { status: 201 }); };
+  globalThis.fetch = async (_input, init) => { productWrite = init; return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程', description: '说明', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: [], admin_projection: productAdminProjection, created_by: 1, created_at: '', updated_at: '', version: 1 }), { status: 201 }); };
   try {
     const productSaved = await saveProductDto({ code: 'P-21', name: '课程', description: '说明', price: '199.00', currency: 'CNY', stockQuantity: 9 });
-    assert(productSaved.resourceId === 21 && productSaved.price === '199.00' && productWrite?.method === 'POST', 'product create method/response mapping');
+    assert(productSaved.resourceId === 21 && productSaved.price === '199.00' && productWrite?.method === 'POST' && new Headers(productWrite.headers).has('Idempotency-Key'), 'product create method/response mapping');
     assert(JSON.parse(String(productWrite.body)).price_minor === 19900, 'product price request mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const productUpdateCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    productUpdateCalls.push({ input: String(input), init });
+    if (init?.method === 'GET') return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程', description: '说明', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: [], admin_projection: productAdminProjection, version: 1 }), { status: 200 });
+    if (String(input).endsWith('/external-push')) return new Response(JSON.stringify({ product_id: 21, enabled: true, configuration_reference: 'push-course-21', updated_at: '2026-08-30T00:00:00Z' }), { status: 200 });
+    return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程新版', description: '完整页面', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: ['https://cdn.example.test/course.png'], admin_projection: { ...productAdminProjection, buy_button_text: '立即购买', require_mobile: true, completion_redirect_enabled: true, completion_redirect_url: 'https://example.test/complete', wecom_tagging: { tag_ids: ['tag-1'] } }, version: 2 }), { status: 200 });
+  };
+  try {
+    const updated = await saveProductDto({
+      id: 21, code: 'P-21', name: '课程新版', description: '完整页面', price: '199.00', currency: 'CNY', stockQuantity: 9,
+      images: ['https://cdn.example.test/course.png'],
+      adminProjection: { schemaVersion: 1, status: 'draft', enabled: false, buyButtonText: '立即购买', requireMobile: true, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: true, completionRedirectUrl: 'https://example.test/complete', completionTarget: null, wecomTagging: { tag_ids: ['tag-1'] }, slices: [] },
+      externalPush: { enabled: true, configurationReference: 'push-course-21' },
+    });
+    const updateBody = JSON.parse(String(productUpdateCalls[1].init?.body));
+    const pushBody = JSON.parse(String(productUpdateCalls[2].init?.body));
+    assert(productUpdateCalls[0].init?.method === 'GET' && productUpdateCalls[1].init?.method === 'PUT' && new Headers(productUpdateCalls[1].init?.headers).has('Idempotency-Key') && productUpdateCalls[2].init?.method === 'PUT', 'product complete edit uses idempotent CAS update then external-push save');
+    assert(updateBody.images[0] === 'https://cdn.example.test/course.png' && updateBody.admin_projection.buy_button_text === '立即购买' && updateBody.admin_projection.wecom_tagging.tag_ids[0] === 'tag-1', 'product complete edit sends page and post-purchase configuration');
+    assert(pushBody.enabled === true && pushBody.configuration_reference === 'push-course-21' && new Headers(productUpdateCalls[2].init?.headers).has('Idempotency-Key'), 'product external-push binding uses real idempotent write');
+    assert(updated.images?.[0] === 'https://cdn.example.test/course.png' && updated.externalPush?.enabled === true, 'product complete edit maps saved response');
   } finally { globalThis.fetch = savedFetch; }
 
   const couponCalls: Array<{ input: string; init?: RequestInit }> = [];
@@ -764,14 +804,17 @@ export async function runAdminAdapterTests(): Promise<void> {
   const serviceCalls: Array<{ input: string; init?: RequestInit }> = [];
   globalThis.fetch = async (input, init) => {
     serviceCalls.push({ input: String(input), init });
-    const product = { service_product_id: 8, product_code: 'SP-8', name: '季度', description: '说明', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'draft', enabled: false, archived: false, version: 3, created_at: '', updated_at: '' };
+    const product = { service_product_id: 8, product_code: 'SP-8', name: '季度', description: '说明', price_minor: 398000, currency: 'CNY', stock_quantity: 5, images: [], admin_projection: servicePeriodAdminProjection(), lifecycle: 'draft', enabled: false, archived: false, version: 3, created_at: '', updated_at: '' };
+    if (String(input).endsWith('/external-push')) return new Response(JSON.stringify({ product_id: 8, product_kind: 'service_period', enabled: true, configuration_reference: 'service-paid-8', updated_at: '2026-08-30T00:00:00Z' }), { status: 200 });
     return new Response(JSON.stringify(init?.method === 'GET' ? { ok: true, product } : { ok: true, product: { ...product, name: '季度新版', version: 4 } }), { status: 200 });
   };
   try {
-    const serviceSaved = await saveServiceProductDto({ id: 8, code: 'SP-8', name: '季度新版', description: '说明', price: '3980.00', currency: 'CNY', stockQuantity: 5 });
-    assert(serviceSaved.name === '季度新版' && serviceSaved.version === 4, 'service product update response mapping');
-    assert(serviceCalls[0].init?.method === 'GET' && serviceCalls[1].init?.method === 'PUT', 'service product CAS read/update methods');
-    assert(JSON.parse(String(serviceCalls[1].init?.body)).expected_version === 3, 'service product CAS version mapping');
+    const serviceSaved = await saveServiceProductDto({ id: 8, code: 'SP-8', name: '季度新版', description: '说明', price: '3980.00', currency: 'CNY', stockQuantity: 5, images: ['https://cdn.example.test/period.png'], adminProjection: { schemaVersion: 1, status: 'service_period_draft', enabled: false, buyButtonText: '立即订阅', requireMobile: true, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: { tag_ids: ['period-tag'] }, slices: [] }, externalPush: { enabled: true, configurationReference: 'service-paid-8' } });
+    assert(serviceSaved.name === '季度新版' && serviceSaved.version === 4 && serviceSaved.externalPush?.enabled === true, 'service product update response mapping');
+    assert(serviceCalls[0].init?.method === 'GET' && serviceCalls[1].init?.method === 'PUT' && serviceCalls[2].init?.method === 'PUT', 'service product CAS and external-push update methods');
+    const serviceBody = JSON.parse(String(serviceCalls[1].init?.body));
+    assert(serviceBody.expected_version === 3 && serviceBody.images[0].endsWith('/period.png') && serviceBody.admin_projection.buy_button_text === '立即订阅', 'service product complete page configuration mapping');
+    assert(JSON.parse(String(serviceCalls[2].init?.body)).configuration_reference === 'service-paid-8' && new Headers(serviceCalls[2].init?.headers).has('Idempotency-Key'), 'service product external-push binding is real and idempotent');
   } finally { globalThis.fetch = savedFetch; }
 
   let ownerCreate: { input: string; init?: RequestInit } | undefined;

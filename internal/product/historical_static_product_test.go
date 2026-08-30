@@ -118,6 +118,10 @@ func (store *historicalStaticProductMemoryStore) InsertHistoricalStaticProduct(_
 	return stored, nil
 }
 
+func (store *historicalStaticProductMemoryStore) ProjectHistoricalEditableProduct(_ context.Context, _ HistoricalEditableProductProjection) (bool, error) {
+	return false, nil
+}
+
 type historicalStaticProductMemoryJournal struct {
 	receipts map[string]HistoricalStaticProductReceipt
 	records  int

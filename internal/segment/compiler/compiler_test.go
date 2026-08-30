@@ -32,6 +32,7 @@ func TestCompileLeafFamiliesAndStableProgram(t *testing.T) {
 		{"last interact after", `{"field":"last_interact_at","op":"after","value":"2026-08-12T00:00:00Z"}`, `"last_interact.after"`},
 		{"deleted true", `{"field":"is_deleted","op":"eq","value":true}`, `"deleted.equal"`},
 		{"deleted false", `{"field":"is_deleted","op":"eq","value":false}`, `"deleted.equal"`},
+		{"legacy audience snapshot", `{"field":"legacy_audience_package_source_id","op":"eq","value":14}`, `"legacy_audience_package.snapshot"`},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {

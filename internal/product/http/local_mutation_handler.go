@@ -44,29 +44,32 @@ func NewLocalMutationHandler(products LocalMutationApplication, entitlements Loc
 }
 
 type UpdateProductRequest struct {
-	ExpectedVersion int64  `json:"expected_version"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	PriceMinor      int64  `json:"price_minor"`
-	Currency        string `json:"currency"`
-	StockQuantity   int32  `json:"stock_quantity"`
+	ExpectedVersion int64           `json:"expected_version"`
+	Name            string          `json:"name"`
+	Description     string          `json:"description"`
+	PriceMinor      int64           `json:"price_minor"`
+	Currency        string          `json:"currency"`
+	StockQuantity   int32           `json:"stock_quantity"`
+	Images          []string        `json:"images"`
+	AdminProjection json.RawMessage `json:"admin_projection"`
 }
 
 // ProductResponse is the closed browser DTO for the native product mutation.
 // It intentionally excludes the legacy compatibility projection.
 type ProductResponse struct {
-	ID            int64    `json:"id"`
-	ProductCode   string   `json:"product_code"`
-	Name          string   `json:"name"`
-	Description   string   `json:"description"`
-	PriceMinor    int64    `json:"price_minor"`
-	Currency      string   `json:"currency"`
-	StockQuantity int32    `json:"stock_quantity"`
-	Images        []string `json:"images"`
-	CreatedBy     int64    `json:"created_by"`
-	CreatedAt     string   `json:"created_at"`
-	UpdatedAt     string   `json:"updated_at"`
-	Version       int64    `json:"version"`
+	ID              int64           `json:"id"`
+	ProductCode     string          `json:"product_code"`
+	Name            string          `json:"name"`
+	Description     string          `json:"description"`
+	PriceMinor      int64           `json:"price_minor"`
+	Currency        string          `json:"currency"`
+	StockQuantity   int32           `json:"stock_quantity"`
+	Images          []string        `json:"images"`
+	AdminProjection json.RawMessage `json:"admin_projection"`
+	CreatedBy       int64           `json:"created_by"`
+	CreatedAt       string          `json:"created_at"`
+	UpdatedAt       string          `json:"updated_at"`
+	Version         int64           `json:"version"`
 }
 
 type GrantProductLocalEntitlementRequest struct {
@@ -108,6 +111,7 @@ func (h *LocalMutationHandler) UpdateProduct(w http.ResponseWriter, r *http.Requ
 		ID: productport.ID(productID), ExpectedVersion: body.ExpectedVersion,
 		Name: body.Name, Description: body.Description, PriceMinor: body.PriceMinor,
 		Currency: body.Currency, StockQuantity: body.StockQuantity,
+		Images: body.Images, LegacyAdminProjection: body.AdminProjection,
 		Actor: principal.AdminUserID, IdempotencyKey: key,
 	})
 	if err != nil {
@@ -276,7 +280,7 @@ func localProductResponse(product productport.Product) (ProductResponse, error) 
 	if !validLocalProduct(product) {
 		return ProductResponse{}, productapp.ErrUnavailable
 	}
-	return ProductResponse{ID: int64(product.ID), ProductCode: product.ProductCode, Name: product.Name, Description: product.Description, PriceMinor: product.PriceMinor, Currency: product.Currency, StockQuantity: product.StockQuantity, Images: append([]string(nil), product.Images...), CreatedBy: product.CreatedBy, CreatedAt: product.CreatedAt.UTC().Format(timeRFC3339Nano), UpdatedAt: product.UpdatedAt.UTC().Format(timeRFC3339Nano), Version: product.Version}, nil
+	return ProductResponse{ID: int64(product.ID), ProductCode: product.ProductCode, Name: product.Name, Description: product.Description, PriceMinor: product.PriceMinor, Currency: product.Currency, StockQuantity: product.StockQuantity, Images: append([]string(nil), product.Images...), AdminProjection: append(json.RawMessage(nil), product.LegacyAdminProjection...), CreatedBy: product.CreatedBy, CreatedAt: product.CreatedAt.UTC().Format(timeRFC3339Nano), UpdatedAt: product.UpdatedAt.UTC().Format(timeRFC3339Nano), Version: product.Version}, nil
 }
 
 func localEntitlementResponse(item productport.LocalEntitlement) (LocalEntitlementResponse, error) {

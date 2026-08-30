@@ -3,6 +3,7 @@ package product_acceptance
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -48,7 +49,7 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 		t.Fatalf("create=%+v err=%v", created, err)
 	}
 	replayedCreate, err := service.CreateServicePeriodProduct(ctx, createCommand)
-	if err != nil || replayedCreate != created {
+	if err != nil || !reflect.DeepEqual(replayedCreate, created) {
 		t.Fatalf("create replay=%+v err=%v want=%+v", replayedCreate, err, created)
 	}
 	createCommand.PriceMinor++
@@ -158,7 +159,7 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 	}
 
 	loadedArchived, err := service.GetServicePeriodProduct(ctx, archived.ServiceProductID)
-	if err != nil || loadedArchived != archived {
+	if err != nil || !reflect.DeepEqual(loadedArchived, archived) {
 		t.Fatalf("archived readback=%+v err=%v want=%+v", loadedArchived, err, archived)
 	}
 	ordinaryAfter, err := ordinary.ListLegacy(ctx, 1, 0)

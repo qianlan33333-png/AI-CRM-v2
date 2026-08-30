@@ -1491,9 +1491,27 @@ export class AdminController extends PageBase {
     const prefix = kind === 'product' ? 'pf' : 'spf';
     const value = (name: string): string => (document.getElementById(prefix + name) as HTMLInputElement | HTMLTextAreaElement | null)?.value.trim() || '';
     const id = Number(this.qs().get('id') || '') || undefined;
-    const input = { id, code: value('Code'), name: value('Name'), description: value('Description'), price: value('Price'), currency: value('Currency') || 'CNY', stockQuantity: Number(value('Stock')) };
+    const input: import('../api/admin').ProductWriteInput = { id, code: value('Code'), name: value('Name'), description: value('Description'), price: value('Price'), currency: value('Currency') || 'CNY', stockQuantity: Number(value('Stock')) };
     if (!input.code || !input.name) { toast('商品编码和名称不能为空', true); return; }
     if (!Number.isInteger(input.stockQuantity) || input.stockQuantity < 0) { toast('库存必须是非负整数', true); return; }
+    {
+      const current = kind === 'product' ? this.db.rows.products.find((row) => row.resourceId === id) : this.db.rows.spProducts.find((row) => row.resourceId === id);
+      const projection = current?.adminProjection || { schemaVersion: 1 as const, status: 'draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] };
+      const optionalID = (name: string): number | null => { const raw = value(name); if (!raw) return null; const parsed = Number(raw); if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error(`${name} 必须是正整数`); return parsed; };
+      try {
+        const images = value('Images').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        if (images.length > 20 || images.some((url) => url.length > 2048 || (!url.startsWith('/') && !/^https:\/\//.test(url)))) throw new Error('页面素材最多 20 条，且必须是同源路径或 HTTPS 地址');
+        const completionTarget = value('CompletionTarget') ? JSON.parse(value('CompletionTarget')) as Record<string, unknown> : null;
+        const wecomTagging = value('WecomTagging') ? JSON.parse(value('WecomTagging')) as Record<string, unknown> : {};
+        if ((completionTarget !== null && (Array.isArray(completionTarget) || typeof completionTarget !== 'object')) || Array.isArray(wecomTagging) || typeof wecomTagging !== 'object') throw new Error('跳转和企微标签配置必须是 JSON 对象');
+        input.images = images;
+        input.adminProjection = { ...projection, buyButtonText: value('BuyButtonText'), requireMobile: value('RequireMobile') === 'true', leadProgramId: optionalID('LeadProgramId'), leadChannelId: optionalID('LeadChannelId'), leadQrTitle: value('LeadQrTitle'), leadQrSubtitle: value('LeadQrSubtitle'), completionRedirectEnabled: value('CompletionRedirectEnabled') === 'true', completionRedirectUrl: value('CompletionRedirectUrl'), completionTarget, wecomTagging };
+        const pushEnabled = value('ExternalPushEnabled') === 'true';
+        const configurationReference = value('ExternalPushReference');
+        if (pushEnabled && !/^[A-Za-z0-9._:-]{1,128}$/.test(configurationReference)) throw new Error('启用外推时必须填写 1-128 位配置引用');
+        input.externalPush = { enabled: pushEnabled, configurationReference };
+      } catch (error) { toast(error instanceof Error ? error.message : '商品运营配置无效', true); return; }
+    }
     const action = kind === 'product' ? this.api.saveProduct(input) : this.api.saveServiceProduct(input);
     void action.then((saved) => {
       toast(`${kind === 'product' ? '普通' : '周期'}商品已保存，服务端版本 ${saved.version || '—'}`);
@@ -2332,15 +2350,25 @@ export class AdminController extends PageBase {
       },
       productFormPage: {
         title: productFormValue ? '编辑普通商品' : '创建普通商品',
-        item: productFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0 },
+        item: productFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0, images: [], adminProjection: { schemaVersion: 1, status: 'draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] }, externalPush: { enabled: false, configurationReference: '', updatedAt: '' } },
+        imagesText: (productFormValue?.images || []).join('\n'),
+        completionTargetText: productFormValue?.adminProjection?.completionTarget ? JSON.stringify(productFormValue.adminProjection.completionTarget, null, 2) : '',
+        wecomTaggingText: JSON.stringify(productFormValue?.adminProjection?.wecomTagging || {}, null, 2),
+        requireMobileOff: productFormValue?.adminProjection?.requireMobile !== true,
+        completionRedirectOff: productFormValue?.adminProjection?.completionRedirectEnabled !== true,
+        externalPushOff: productFormValue?.externalPush?.enabled !== true,
         save: () => this.saveCommerceProduct('product'),
-        blocked: () => this.blocked('页面素材、购买后动作、企微标签与外推配置没有等价商品 DTO'),
       },
       spProductFormPage: {
         title: serviceFormValue ? '编辑周期商品' : '创建周期商品',
-        item: serviceFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0 },
+        item: serviceFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0, images: [], adminProjection: { schemaVersion: 1, status: 'service_period_draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] }, externalPush: { enabled: false, configurationReference: '', updatedAt: '' } },
+        imagesText: (serviceFormValue?.images || []).join('\n'),
+        completionTargetText: serviceFormValue?.adminProjection?.completionTarget ? JSON.stringify(serviceFormValue.adminProjection.completionTarget, null, 2) : '',
+        wecomTaggingText: JSON.stringify(serviceFormValue?.adminProjection?.wecomTagging || {}, null, 2),
+        requireMobileOff: serviceFormValue?.adminProjection?.requireMobile !== true,
+        completionRedirectOff: serviceFormValue?.adminProjection?.completionRedirectEnabled !== true,
+        externalPushOff: serviceFormValue?.externalPush?.enabled !== true,
         save: () => this.saveCommerceProduct('service'),
-        blocked: () => this.blocked('页面素材、购买后动作与外推 URL 不属于周期商品核心写入 DTO'),
       },
       couponFormPage: {
         title: couponFormValue ? '编辑优惠券' : '创建优惠券',

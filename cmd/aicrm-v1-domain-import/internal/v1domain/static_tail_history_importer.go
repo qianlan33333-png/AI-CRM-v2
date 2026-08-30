@@ -54,8 +54,9 @@ func (result StaticTailHistoryImportResult) SourceCount() int {
 	return total
 }
 
-// StaticTailHistoryImporter writes 54 sealed V1 facts. It has no current
-// product/media/operation-cycle write path, external effect, or Provider use.
+// StaticTailHistoryImporter writes 54 sealed V1 facts. The command layer may
+// subsequently project verified product page slices into current Product data;
+// this importer itself has no current write path or external effect.
 type StaticTailHistoryImporter struct {
 	archive       ArchiveSource
 	uow           UnitOfWork

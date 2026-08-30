@@ -45,7 +45,7 @@ func TestFinalMigrationManifestRegistersExactlyFortyDomains(t *testing.T) {
 			t.Fatalf("non-shared reconciliation scope %s covers %#v", version, domains)
 		}
 	}
-	if finalVerificationModel != "36_current_domain_reconciliations_then_read_only_aggregate" {
+	if finalVerificationModel != "36_immutable_domain_reconciliations_then_editable_projection_then_read_only_aggregate" {
 		t.Fatalf("unexpected verification model %q", finalVerificationModel)
 	}
 	short := manifest
@@ -161,6 +161,47 @@ func TestFinalIdentityProofRejectsEmptyOrPartiallyVerifiedRun(t *testing.T) {
 	}
 	if err := validateFinalIdentityProof(finalIdentityProof{DM01RunID: 1, MappingCount: 2, VerifiedMapping: 2}); err != nil {
 		t.Fatalf("complete identity proof rejected: %v", err)
+	}
+}
+
+func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T) {
+	valid := finalEditableProjectionProof{
+		ProductSourceCount: 29, ProductProjectedCount: 29, ProductReceiptBoundCount: 29,
+		ServicePeriodSourceCount: 2, ServicePeriodProjectedCount: 2,
+		ProductLegacyImageSourceCount: 46, ProductImageReferenceCount: 0, ProductLegacyReferenceCount: 0,
+		AudienceSourceCount: 4, AudienceProjectedCount: 4,
+		AudienceIdentitySkippedCount: 0,
+		AudienceGroupSourceCount:     1, AudienceGroupProjectedCount: 1,
+		AudienceSourceMembers: 517, AudienceMappedMembers: 517, AudienceProjectedMembers: 517,
+		TargetDigest: strings.Repeat("01", 32),
+	}
+	if err := validateFinalEditableProjectionProof(valid); err != nil {
+		t.Fatalf("complete editable projection rejected: %v", err)
+	}
+	for _, mutate := range []func(*finalEditableProjectionProof){
+		func(value *finalEditableProjectionProof) { value.ProductProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.ProductReceiptBoundCount-- },
+		func(value *finalEditableProjectionProof) { value.ServicePeriodProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.ProductImageReferenceCount++ },
+		func(value *finalEditableProjectionProof) { value.ProductLegacyReferenceCount++ },
+		func(value *finalEditableProjectionProof) { value.AudienceProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.AudienceIdentitySkippedCount++ },
+		func(value *finalEditableProjectionProof) { value.AudienceGroupProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.AudienceMappedMembers-- },
+		func(value *finalEditableProjectionProof) { value.AudienceProjectedMembers-- },
+		func(value *finalEditableProjectionProof) { value.TargetDigest = "broken" },
+	} {
+		candidate := valid
+		mutate(&candidate)
+		if err := validateFinalEditableProjectionProof(candidate); err == nil {
+			t.Fatalf("incomplete editable projection accepted: %+v", candidate)
+		}
+	}
+	withSkipped := valid
+	withSkipped.AudienceSourceCount = 6
+	withSkipped.AudienceIdentitySkippedCount = 2
+	if err := validateFinalEditableProjectionProof(withSkipped); err != nil {
+		t.Fatalf("explicitly skipped Audience packages rejected: %v", err)
 	}
 }
 

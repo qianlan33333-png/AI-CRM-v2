@@ -41,6 +41,7 @@ type Querier interface {
 	// fact may be physically deleted. Product images may cascade with the draft;
 	// financial/order/entitlement facts never do.
 	DeleteLocalProductIfSafe(ctx context.Context, command []byte) (int64, error)
+	DeleteProductImages(ctx context.Context, productID int64) error
 	GetEntitlementOperationReceipt(ctx context.Context, arg GetEntitlementOperationReceiptParams) (GetEntitlementOperationReceiptRow, error)
 	GetHistoricalMemberUsage(ctx context.Context, id int64) (ProductV1MemberUsageHistory, error)
 	GetHistoricalMemberView(ctx context.Context, id int64) (ProductV1MemberViewHistory, error)

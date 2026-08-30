@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -95,6 +96,12 @@ func (s *productTestStore) Update(_ context.Context, command productport.UpdateC
 			return productport.Product{}, ErrConflict
 		}
 		product.Name, product.Description, product.PriceMinor, product.Currency, product.StockQuantity = command.Name, command.Description, command.PriceMinor, command.Currency, command.StockQuantity
+		if command.Images != nil {
+			product.Images = append([]string(nil), command.Images...)
+		}
+		if len(command.LegacyAdminProjection) > 0 {
+			product.LegacyAdminProjection = append([]byte(nil), command.LegacyAdminProjection...)
+		}
 		product.Version, product.UpdatedAt = product.Version+1, now
 		s.products[index] = product
 		return product, nil
@@ -323,10 +330,10 @@ func TestUpdateUsesProductVersionCASAndOperationScopedReceipt(t *testing.T) {
 	events := &productTestEvents{}
 	service := NewService(&productTestUoW{}, store, events)
 	service.now = func() time.Time { return time.Date(2026, 8, 20, 9, 0, 0, 0, time.UTC) }
-	command := productport.UpdateCommand{ID: 1, ExpectedVersion: 1, Name: "更新商品", Description: "更新说明", PriceMinor: 2999, Currency: "cny", StockQuantity: 3, Actor: 7, IdempotencyKey: "product-update-idempotency-001"}
+	command := productport.UpdateCommand{ID: 1, ExpectedVersion: 1, Name: "更新商品", Description: "更新说明", PriceMinor: 2999, Currency: "cny", StockQuantity: 3, Images: []string{"https://cdn.example.test/product.png"}, LegacyAdminProjection: json.RawMessage(`{"schema_version":1,"status":"draft","enabled":false,"buy_button_text":"立即购买","require_mobile":true}`), Actor: 7, IdempotencyKey: "product-update-idempotency-001"}
 
 	first, err := service.Update(context.Background(), command)
-	if err != nil || first.Version != 2 || first.Name != "更新商品" || len(events.events) != 1 {
+	if err != nil || first.Version != 2 || first.Name != "更新商品" || len(first.Images) != 1 || first.Images[0] != "https://cdn.example.test/product.png" || !strings.Contains(string(first.LegacyAdminProjection), `"buy_button_text":"立即购买"`) || len(events.events) != 1 {
 		t.Fatalf("first Update() product=%+v error=%v events=%d", first, err, len(events.events))
 	}
 	replayed, err := service.Update(context.Background(), command)
