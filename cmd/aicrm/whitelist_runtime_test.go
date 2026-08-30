@@ -11,9 +11,9 @@ import (
 	"github.com/riverqueue/river"
 )
 
-func TestWhitelistGatewayExposesOnlyFrozenBusinessRoutes(t *testing.T) {
+func TestWhitelistGatewayExposesCurrentCapabilitiesWithoutExternalExecution(t *testing.T) {
 	next := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) { writer.WriteHeader(http.StatusNoContent) })
-	handler := whitelistGateway(next, func(context.Context) error { return nil })
+	handler := whitelistGateway(next, func(context.Context) error { return nil }, whitelistCapabilities{weComTagCatalogSync: true})
 	for _, test := range []struct {
 		method string
 		path   string
@@ -31,6 +31,17 @@ func TestWhitelistGatewayExposesOnlyFrozenBusinessRoutes(t *testing.T) {
 		{http.MethodGet, "/api/admin/orders", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/hxc-current", http.StatusNoContent},
 		{http.MethodPost, "/api/admin/hxc-current", http.StatusNotFound},
+		{http.MethodGet, "/api/v1/customers", http.StatusNoContent},
+		{http.MethodGet, "/api/v1/tag-groups", http.StatusNoContent},
+		{http.MethodPost, "/api/admin/wecom/tags/sync", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/wecom/tags", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/coupons", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/image-library", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/attachment-library", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/miniprogram-library", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/automation-conversion/group-ops/plans", http.StatusNoContent},
+		{http.MethodPost, "/api/admin/automation-conversion/group-ops/plans/1/run-due", http.StatusNotFound},
+		{http.MethodGet, "/api/admin/config/app-settings", http.StatusNoContent},
 		{http.MethodGet, "/api/sidebar/v2/jssdk/agent-config", http.StatusNoContent},
 		{http.MethodPost, "/api/sidebar/v2/bootstrap", http.StatusNoContent},
 		{http.MethodGet, "/api/sidebar/v2/timeline", http.StatusNoContent},
@@ -59,7 +70,7 @@ func TestWhitelistGatewayExposesOnlyFrozenBusinessRoutes(t *testing.T) {
 }
 
 func TestWhitelistGatewayRejectedRouteReturnsJSON(t *testing.T) {
-	handler := whitelistGateway(http.NotFoundHandler(), func(context.Context) error { return nil })
+	handler := whitelistGateway(http.NotFoundHandler(), func(context.Context) error { return nil }, whitelistCapabilities{})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/admin/messages", nil))
 	if response.Code != http.StatusNotFound {
@@ -77,7 +88,7 @@ func TestWhitelistGatewayRejectedRouteReturnsJSON(t *testing.T) {
 	}
 }
 
-func TestWhitelistWorkerHasOnlyInertFailClosedKind(t *testing.T) {
+func TestWhitelistWorkerAlwaysHasInertFailClosedKind(t *testing.T) {
 	if got := (whitelistInertJobArgs{}).Kind(); got != "aicrm_whitelist_inert_v1" {
 		t.Fatalf("kind=%q", got)
 	}
@@ -90,7 +101,7 @@ func TestWhitelistWorkerHasOnlyInertFailClosedKind(t *testing.T) {
 
 func TestWhitelistReadinessFailsClosed(t *testing.T) {
 	next := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) { writer.WriteHeader(http.StatusNoContent) })
-	handler := whitelistGateway(next, func(context.Context) error { return errors.New("wrong schema") })
+	handler := whitelistGateway(next, func(context.Context) error { return errors.New("wrong schema") }, whitelistCapabilities{})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/readyz", nil))
 	if response.Code != http.StatusServiceUnavailable || response.Body.String() != "{\"status\":\"not_ready\"}\n" {
@@ -106,8 +117,26 @@ func TestWhitelistRouteAllowlistHasNoExternalExecution(t *testing.T) {
 		"/api/admin/ai-audience/packages/1/send-records",
 		"/api/sidebar/v2/materials/image/1/temporary-media",
 	} {
-		if whitelistRouteAllowed(http.MethodPost, path) {
+		if whitelistRouteAllowed(http.MethodPost, path, whitelistCapabilities{weComTagCatalogSync: true}) {
 			t.Fatalf("external execution route is allowed: %s", path)
+		}
+	}
+}
+
+func TestWhitelistTagCatalogSyncRequiresExplicitReadOnlyCapability(t *testing.T) {
+	if whitelistRouteAllowed(http.MethodPost, "/api/admin/wecom/tags/sync", whitelistCapabilities{}) {
+		t.Fatal("tag catalog sync is allowed while the read-only capability is disabled")
+	}
+	if !whitelistRouteAllowed(http.MethodPost, "/api/admin/wecom/tags/sync", whitelistCapabilities{weComTagCatalogSync: true}) {
+		t.Fatal("tag catalog sync is blocked while the read-only capability is enabled")
+	}
+	for _, path := range []string{
+		"/api/admin/wecom/tags/live/mark",
+		"/api/admin/wecom/tags/live/unmark",
+		"/api/admin/wecom/tag-effects/effect-1/reconcile",
+	} {
+		if whitelistRouteAllowed(http.MethodPost, path, whitelistCapabilities{weComTagCatalogSync: true}) {
+			t.Fatalf("tag mutation route is allowed: %s", path)
 		}
 	}
 }

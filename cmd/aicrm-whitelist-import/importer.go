@@ -899,8 +899,8 @@ WHERE run.run_id=$1`, archiveRunID).Scan(&snapshotDigest, &tableCount, &rowCount
 func validateTarget(ctx context.Context, target pgx.Tx, allowTestName bool) error {
 	var database string
 	var version int
-	if err := target.QueryRow(ctx, `SELECT current_database(),version FROM public.whitelist_schema_version WHERE singleton`).Scan(&database, &version); err != nil || version != 1 {
-		return errors.New("target whitelist schema version 1 is required")
+	if err := target.QueryRow(ctx, `SELECT current_database(),version FROM public.whitelist_schema_version WHERE singleton`).Scan(&database, &version); err != nil || version != 2 {
+		return errors.New("target whitelist schema version 2 is required")
 	}
 	if database != "aicrm_v2_core" && !allowTestName {
 		return errors.New("target database must be named aicrm_v2_core")

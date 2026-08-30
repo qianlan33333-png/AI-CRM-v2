@@ -37,13 +37,16 @@ runtime_value() {
 for external_flag in \
   AICRM_WECOM_OUTBOUND_ENABLED \
   AICRM_WECOM_CUSTOMER_ACQUISITION_ENABLED \
-  AICRM_WECOM_TAG_CATALOG_ENABLED \
   AICRM_WECOM_DIRECTORY_SYNC_ENABLED \
   AICRM_WECHAT_PAY_ENABLED \
   AICRM_WECHAT_SHOP_ORDER_SYNC_ENABLED \
   AICRM_WECHAT_SHOP_REFUND_ENABLED; do
   [[ "$(runtime_value "$external_flag")" = false ]] || fail "$external_flag must be false"
 done
+case "$(runtime_value AICRM_WECOM_TAG_CATALOG_ENABLED)" in
+  true|false) ;;
+  *) fail 'AICRM_WECOM_TAG_CATALOG_ENABLED must be true or false' ;;
+esac
 
 script_directory="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 repository_root="$(CDPATH= cd -- "$script_directory/.." && pwd -P)"

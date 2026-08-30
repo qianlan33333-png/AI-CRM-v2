@@ -12,24 +12,46 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
+	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 	"github.com/riverqueue/river"
 )
+
+type whitelistCapabilities struct {
+	weComTagCatalogSync bool
+}
 
 var whitelistRoutePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/v1/products(?:/[1-9][0-9]*(?:/local-entitlements)?)?$`),
 	regexp.MustCompile(`^/api/v1/product-entitlements/[1-9][0-9]*$`),
 	regexp.MustCompile(`^/api/v1/segments(?:/[1-9][0-9]*(?:/members)?)?$`),
+	regexp.MustCompile(`^/api/v1/customers(?:/[1-9][0-9]*(?:/(?:stage|context|chat-activity|survey-answers|activity-analytics|tags/[1-9][0-9]*))?)?$`),
+	regexp.MustCompile(`^/api/v1/stages(?:/[1-9][0-9]*)?$`),
+	regexp.MustCompile(`^/api/v1/tag-groups(?:/reorder|/[1-9][0-9]*)?$`),
+	regexp.MustCompile(`^/api/v1/tags(?:/reorder|/[1-9][0-9]*)?$`),
+	regexp.MustCompile(`^/api/v1/contact-owner-reassignments/(?:template|previews(?:/[1-9][0-9]*(?:/(?:execute|errors\.csv|results\.csv))?)?)$`),
 	regexp.MustCompile(`^/api/admin/wechat-pay/products(?:/[1-9][0-9]*(?:/(?:enable|disable|copy))?)?$`),
 	regexp.MustCompile(`^/api/admin/service-period-products(?:/[1-9][0-9]*(?:/(?:enable|disable|copy|members(?:/[^/]+(?:/fields)?)?|member-views(?:/[1-9][0-9]*)?))?)?$`),
 	regexp.MustCompile(`^/api/admin/orders$`),
+	regexp.MustCompile(`^/api/admin/coupons(?:/product-options|/[1-9][0-9]*(?:/(?:publish|stop|archive|claims|copy|share))?)?$`),
+	regexp.MustCompile(`^/api/admin/image-library(?:/.*)?$`),
+	regexp.MustCompile(`^/api/admin/attachment-library(?:/.*)?$`),
+	regexp.MustCompile(`^/api/admin/miniprogram-library(?:/.*)?$`),
+	regexp.MustCompile(`^/api/admin/wecom/(?:tag-groups(?:/[1-9][0-9]*)?|tags(?:/[1-9][0-9]*|/live/gate|/sync)?)$`),
 	regexp.MustCompile(`^/api/admin/questionnaires(?:/preflight|/[1-9][0-9]*(?:/(?:duplicate|disable|enable|results|submissions))?)?$`),
 	regexp.MustCompile(`^/api/admin/radar-links(?:/new/options|/[1-9][0-9]*(?:/(?:enable|disable))?)?$`),
 	regexp.MustCompile(`^/api/admin/channels(?:/[1-9][0-9]*)?$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/(?:package-groups(?:/[1-9][0-9]*)?|packages(?:/[1-9][0-9]*(?:/(?:copy|pause|configuration|configuration-preview|configuration-materialize|members))?)?)$`),
+	regexp.MustCompile(`^/api/admin/ai-audience/operation-members$`),
+	regexp.MustCompile(`^/api/admin/automation-conversion/group-ops/plans(?:/.*)?$`),
 	regexp.MustCompile(`^/api/admin/automation-agents(?:/[1-9][0-9]*(?:/(?:fixed-content|precheck|activate|copy|pause|publish))?)?$`),
+	regexp.MustCompile(`^/api/admin/config/(?:app-settings|categories(?:/[^/]+(?:/(?:enabled|settings|check))?)?|push-capabilities|releases)$`),
 	regexp.MustCompile(`^/api/admin/hxc-current$`),
 	regexp.MustCompile(`^/api/sidebar/context-token$`),
 	regexp.MustCompile(`^/api/sidebar/v2/(?:oauth/(?:start|callback)|jssdk/agent-config|bootstrap|timeline|chat-activity|other-staff-chats|workbench|profile|phone-binding|questionnaires|orders|periodic-orders(?:/[1-9][0-9]*/members/[^/]+/remark)?|shareable-products|materials(?:/image/[1-9][0-9]*/(?:thumbnail|preview))?|coupons)$`),
@@ -46,7 +68,7 @@ func newWhitelistAPIComponent(config appconfig.Root) (appruntime.Component, erro
 	}
 	api.server.Handler = whitelistGateway(api.server.Handler, func(ctx context.Context) error {
 		return checkWhitelistReadiness(ctx, api.pool)
-	})
+	}, whitelistCapabilities{weComTagCatalogSync: config.WeCom.TagCatalog.Enabled})
 	return api, nil
 }
 
@@ -65,6 +87,35 @@ func newWhitelistWorkerComponent(config appconfig.Root) (appruntime.Component, e
 	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueCritical, &whitelistInertWorker{}); err != nil {
 		pool.Close()
 		return nil, err
+	}
+	if config.WeCom.TagCatalog.Enabled {
+		uow := platformstore.NewUnitOfWork(pool)
+		externalEffectsRuntime, runtimeErr := eer.NewService(externaleffectsstore.NewRepository(pool, uow))
+		if runtimeErr != nil {
+			pool.Close()
+			return nil, runtimeErr
+		}
+		tagJobs, tagErr := wecomtag.NewRiverJobInserter(pool)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+		tagEffects, tagErr := wecomtag.NewService(
+			uow, wecomstore.NewTagEffectRepository(pool), externalEffectsRuntime, tagJobs, weComTagEffectCorpID(config),
+		)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+		tagProvider, tagErr := newWeComTagCatalogProvider(config.WeCom.TagCatalog, &http.Client{Timeout: 5 * time.Second}, time.Now)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+		if tagErr = wecomtag.RegisterWorker(workers, tagEffects, tagProvider); tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
 	}
 	client, err := platformjobqueue.NewClient(pool, platformjobqueue.QueueConcurrency{
 		Critical: queues.Critical,
@@ -95,7 +146,7 @@ func (*whitelistInertWorker) Work(context.Context, *river.Job[whitelistInertJobA
 	return river.JobCancel(errors.New("whitelist inert job cannot execute"))
 }
 
-func whitelistGateway(next http.Handler, readinessCheck func(context.Context) error) http.Handler {
+func whitelistGateway(next http.Handler, readinessCheck func(context.Context) error, capabilities whitelistCapabilities) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method == http.MethodGet && request.URL.Path == "/readyz" {
 			ctx, cancel := context.WithTimeout(request.Context(), 2*time.Second)
@@ -108,10 +159,10 @@ func whitelistGateway(next http.Handler, readinessCheck func(context.Context) er
 			}
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
-			_, _ = writer.Write([]byte("{\"status\":\"ready\",\"schema\":\"aicrm-v2-core/v1\"}\n"))
+			_, _ = writer.Write([]byte("{\"status\":\"ready\",\"schema\":\"aicrm-v2-core/v2\"}\n"))
 			return
 		}
-		if whitelistRouteAllowed(request.Method, request.URL.Path) {
+		if whitelistRouteAllowed(request.Method, request.URL.Path, capabilities) {
 			next.ServeHTTP(writer, request)
 			return
 		}
@@ -124,12 +175,15 @@ func whitelistGateway(next http.Handler, readinessCheck func(context.Context) er
 	})
 }
 
-func whitelistRouteAllowed(method, path string) bool {
+func whitelistRouteAllowed(method, path string, capabilities whitelistCapabilities) bool {
 	if method == http.MethodGet && (path == "/healthz" || path == "/api/v1/auth/session" || path == "/login" || path == "/logout" || path == "/auth/wecom/start" || path == "/auth/wecom/callback") {
 		return true
 	}
 	if method == http.MethodOptions && (path == "/login" || path == "/logout" || path == "/auth/wecom/start" || path == "/auth/wecom/callback") {
 		return true
+	}
+	if path == "/api/admin/wecom/tags/sync" {
+		return capabilities.weComTagCatalogSync && method == http.MethodPost
 	}
 	for _, pattern := range whitelistRoutePatterns {
 		if pattern.MatchString(path) {
@@ -150,6 +204,10 @@ func whitelistMethodAllowed(method, path string) bool {
 		return method == http.MethodPut
 	}
 	if strings.HasPrefix(path, "/api/sidebar/v2/") {
+		return method == http.MethodGet
+	}
+	if strings.Contains(path, "/automation-conversion/group-ops/plans/") &&
+		(strings.Contains(path, "/run-due") || strings.Contains(path, "/executions/") && strings.HasSuffix(path, "/reconcile")) {
 		return method == http.MethodGet
 	}
 	if path == "/api/admin/orders" || path == "/api/admin/hxc-current" || regexp.MustCompile(`^/api/admin/orders/`).MatchString(path) ||
@@ -191,11 +249,19 @@ func checkWhitelistReadiness(ctx context.Context, pool *pgxpool.Pool) error {
   to_regclass('public.channels') IS NOT NULL AND
   to_regclass('public.segments') IS NOT NULL AND
   to_regclass('public.automation_agent_configurations') IS NOT NULL AND
+  to_regclass('public.tag_groups') IS NOT NULL AND
+  to_regclass('public.tags') IS NOT NULL AND
+  to_regclass('public.coupons') IS NOT NULL AND
+  to_regclass('public.media_images') IS NOT NULL AND
+  to_regclass('public.media_attachments') IS NOT NULL AND
+  to_regclass('public.media_miniprograms') IS NOT NULL AND
+  to_regclass('public.group_ops_plans') IS NOT NULL AND
+  to_regclass('public.admin_ops_config_categories') IS NOT NULL AND
   to_regclass('public.hxc_user_current') IS NOT NULL`).Scan(&database, &schemaVersion, &riverVersion, &requiredTables)
 	if err != nil {
 		return errors.New("whitelist readiness query failed")
 	}
-	if database != "aicrm_v2_core" || schemaVersion != 1 || riverVersion < 6 || !requiredTables {
+	if database != "aicrm_v2_core" || schemaVersion != 2 || riverVersion < 6 || !requiredTables {
 		return fmt.Errorf("whitelist runtime is incompatible")
 	}
 	return nil

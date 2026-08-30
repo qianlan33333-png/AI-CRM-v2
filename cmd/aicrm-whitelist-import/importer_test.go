@@ -214,7 +214,7 @@ func TestIdentitySequenceResetIncludesImportedAdminSessions(t *testing.T) {
 	t.Fatal("admin_sessions sequence is not reset after whitelist import")
 }
 
-func TestWhitelistBaselineContainsOnlyCurrentBusinessBoundary(t *testing.T) {
+func TestWhitelistBaselinePreservesCurrentCapabilitiesWithoutHistoricalRows(t *testing.T) {
 	payload, err := os.ReadFile("../../schema/whitelist_baseline.sql")
 	if err != nil {
 		t.Fatal(err)
@@ -225,26 +225,41 @@ func TestWhitelistBaselineContainsOnlyCurrentBusinessBoundary(t *testing.T) {
 		"CREATE TABLE public.customers",
 		"CREATE TABLE public.source_subject_refs",
 		"CREATE TABLE public.products",
-		"CREATE TABLE public.order_refund_facts",
+		"CREATE TABLE public.order_refunds",
 		"CREATE TABLE public.hxc_user_current",
 		"CREATE TABLE public.river_job",
-		"INSERT INTO public.product_catalog_counters",
-		"INSERT INTO public.order_list_projection_counters",
-		"INSERT INTO public.questionnaire_catalog_counters",
+		"CREATE TABLE public.tag_groups",
+		"CREATE TABLE public.tags",
+		"CREATE TABLE public.coupons",
+		"CREATE TABLE public.media_images",
+		"CREATE TABLE public.media_attachments",
+		"CREATE TABLE public.media_miniprograms",
+		"CREATE TABLE public.group_ops_plans",
+		"CREATE TABLE public.admin_ops_config_categories",
+		"COPY public.product_catalog_counters",
+		"COPY public.order_list_projection_counters",
+		"COPY public.questionnaire_catalog_counters",
 	} {
 		if !strings.Contains(schema, required) {
 			t.Errorf("baseline is missing %s", required)
 		}
 	}
-	for _, forbidden := range []string{
-		"CREATE TABLE public.campaigns",
-		"CREATE TABLE public.wecom_message_archive",
-		"CREATE TABLE public.order_historical_refunds",
-		"CREATE TABLE public.radar_link_events",
-		"CREATE TABLE public.staff",
+	for _, historicalTable := range []string{
+		"campaigns",
+		"wecom_message_archive",
+		"order_historical_refunds",
+		"radar_link_events",
+		"staff",
 	} {
-		if strings.Contains(schema, forbidden) {
-			t.Errorf("baseline contains forbidden history table %s", forbidden)
+		copyStart := strings.Index(schema, "COPY public."+historicalTable+" ")
+		if copyStart < 0 {
+			continue
+		}
+		copyBody := schema[copyStart:]
+		dataStart := strings.Index(copyBody, "\n")
+		dataEnd := strings.Index(copyBody, "\n\\.\n")
+		if dataStart < 0 || dataEnd < 0 || strings.TrimSpace(copyBody[dataStart:dataEnd]) != "" {
+			t.Errorf("baseline contains historical rows for %s", historicalTable)
 		}
 	}
 }
