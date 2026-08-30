@@ -58,6 +58,21 @@ func (repository *UploadRepository) ListImageRows(
 	return imageListReadFromGeneratedRows(rows)
 }
 
+func (repository *UploadRepository) CountEnabledImages(ctx context.Context) (int64, error) {
+	if repository == nil || ctx == nil {
+		return 0, errInvalidImageListRepository
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	count, err := mediadb.New(tx).CountEnabledMediaImages(ctx)
+	if err != nil || count < 0 {
+		return 0, errInvalidImageListRepository
+	}
+	return count, nil
+}
+
 func imageListReadFromGeneratedRows(rows []mediadb.ListMediaImagePageRow) (mediaapp.ImageListRead, error) {
 	result := mediaapp.ImageListRead{Rows: []mediaapp.ImageListRow{}}
 	seen := false

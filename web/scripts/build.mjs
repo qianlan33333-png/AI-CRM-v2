@@ -1,62 +1,57 @@
-/**
- * AI-CRM 前端构建脚本
- * 1. 屏幕模板 sc-for/sc-if → <template data-sc-*>（表安全的运行时指令）
- * 2. 后台：每屏生成独立 HTML（静态导航 shell + active 高亮 + 屏幕模板 + 全局浮层）
- * 3. 侧边栏 / H5：各自 shell
- * 4. esbuild 打包三端 TS 入口 → dist/assets/*.js
- * 5. 生成索引页（dist/index.html / admin / h5）
- */
+/** Build all browser surfaces as deterministic, content-hashed ESM assets. */
 import { build } from 'esbuild';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const REPOSITORY = path.dirname(ROOT);
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
+const ASSETS = path.join(DIST, 'assets');
 
-fs.rmSync(DIST, { recursive: true, force: true });
-
-const read = (p) => fs.readFileSync(p, 'utf8');
-const write = (p, s) => {
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, s);
+const read = (file) => fs.readFileSync(file, 'utf8');
+const write = (file, contents) => {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, contents);
 };
 
-/* ---------- sc-* 模板转换（与原型 support.js 同规则） ---------- */
 function transform(html) {
-  let out = html
-    .replace(
-      /<sc-for\s+([^>]*?)list="([^"]*)"([^>]*?)as="([^"]*)"([^>]*)>/g,
-      (_m, _a, list, _b, as) => `<template data-sc-for="${list}" data-as="${as}">`,
-    )
+  let output = html
+    .replace(/<sc-for\s+([^>]*?)list="([^"]*)"([^>]*?)as="([^"]*)"([^>]*)>/g, (_match, _a, list, _b, as) => `<template data-sc-for="${list}" data-as="${as}">`)
     .replace(/<\/sc-for>/g, '</template>')
-    .replace(/<sc-if\s+([^>]*?)value="([^"]*)"([^>]*)>/g, (_m, _a, val) => `<template data-sc-if="${val}">`)
+    .replace(/<sc-if\s+([^>]*?)value="([^"]*)"([^>]*)>/g, (_match, _a, value) => `<template data-sc-if="${value}">`)
     .replace(/<\/sc-if>/g, '</template>');
-  if (out.includes('<sc-for') || out.includes('<sc-if')) {
-    out = out
-      .replace(/<sc-for([^>]*)>/g, (_m, attrs) => {
-        const list = (attrs.match(/list="([^"]*)"/) || [])[1] || '';
-        const as = (attrs.match(/as="([^"]*)"/) || [])[1] || 'item';
+  if (output.includes('<sc-for') || output.includes('<sc-if')) {
+    output = output
+      .replace(/<sc-for([^>]*)>/g, (_match, attributes) => {
+        const list = (attributes.match(/list="([^"]*)"/) || [])[1] || '';
+        const as = (attributes.match(/as="([^"]*)"/) || [])[1] || 'item';
         return `<template data-sc-for="${list}" data-as="${as}">`;
       })
-      .replace(/<sc-if([^>]*)>/g, (_m, attrs) => {
-        const val = (attrs.match(/value="([^"]*)"/) || [])[1] || '';
-        return `<template data-sc-if="${val}">`;
+      .replace(/<sc-if([^>]*)>/g, (_match, attributes) => {
+        const value = (attributes.match(/value="([^"]*)"/) || [])[1] || '';
+        return `<template data-sc-if="${value}">`;
       });
   }
-  return out;
+  return output;
 }
 
-/* ---------- 数据 ---------- */
 const registry = JSON.parse(read(path.join(SRC, 'admin/registry.json')));
 const navItems = JSON.parse(read(path.join(SRC, 'admin/nav.json')));
 const h5Registry = JSON.parse(read(path.join(SRC, 'h5/registry.json')));
+const packageJson = JSON.parse(read(path.join(REPOSITORY, 'package.json')));
+const richPages = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData', 'campaigns']);
 
-/** 富交互页（sections/* TS 模块渲染，不走模板） */
-const RICH = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData', 'campaigns']);
+function sourceSHA() {
+  if (process.env.AICRM_SOURCE_SHA) return process.env.AICRM_SOURCE_SHA;
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPOSITORY, encoding: 'utf8' }).trim();
+}
 
-/* ---------- 后台导航 ---------- */
 function navHtml(activeNav) {
   let html = '';
   let lastGroup = null;
@@ -65,241 +60,190 @@ function navHtml(activeNav) {
       html += `<div class="side-grp">${item.group}</div>\n`;
       lastGroup = item.group;
     }
-    const on = item.key === activeNav ? ' on' : '';
-    html += `<a class="nav-item${on}" href="${item.key}.html">${item.svg}<span>${item.label}</span></a>\n`;
+    html += `<a class="nav-item${item.key === activeNav ? ' on' : ''}" href="${item.key}.html">${item.svg}<span>${item.label}</span></a>\n`;
   }
   return html;
 }
 
-function adminShell(screen, { rich }) {
+function moduleScript(relative, entry) {
+  return `<script type="module" src="${relative}${entry}"></script>`;
+}
+
+function stylesheet(relative, entry) {
+  return `<link rel="stylesheet" href="${relative}${entry}">`;
+}
+
+function adminShell(screen, assets, rich) {
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${screen.label} · AI-CRM 管理后台</title>
-<link rel="stylesheet" href="../assets/tokens.css">
-${rich ? '<link rel="stylesheet" href="../assets/labs.css">' : ''}
+${stylesheet('../', assets.tokens)}
+${rich ? stylesheet('../', assets.labs) : ''}
 </head>
 <body data-page="${screen.key}">
 <div class="shell">
   <aside class="side">
-    <div class="side-brand">
-      <div class="mark">CRM</div>
-      <div><div class="name">客户管理后台</div><div class="en">ADMIN CONSOLE</div></div>
-    </div>
-    <nav class="side-nav">
-${navHtml(screen.nav)}    </nav>
-    <div class="side-user">
-      <div class="avatar">运</div>
-      <div><div class="n">运营管理员</div><div class="s">退出登录</div></div>
-    </div>
+    <div class="side-brand"><div class="mark">CRM</div><div><div class="name">客户管理后台</div><div class="en">ADMIN CONSOLE</div></div></div>
+    <nav class="side-nav">${navHtml(screen.nav)}</nav>
+    <div class="side-user"><div class="avatar">运</div><div><div class="n">运营管理员</div><div class="s">退出登录</div></div></div>
   </aside>
   <main id="stage" class="stage${rich ? ' rich' : ''}"></main>
 </div>
-<script src="../assets/admin.js"></script>
+${moduleScript('../', assets.admin)}
 </body>
 </html>
 `;
 }
 
-function adminPage(screen) {
-  if (RICH.has(screen.key)) return adminShell(screen, { rich: true });
-  const tpl = transform(read(path.join(SRC, 'admin/templates', screen.key + '.html')));
-  const shell = adminShell(screen, { rich: false });
-  return shell.replace(
-    '<script src="../assets/admin.js"></script>',
-    `<template id="tpl">\n${tpl}\n</template>\n<script src="../assets/admin.js"></script>`,
-  );
+function adminPage(screen, assets) {
+  const rich = richPages.has(screen.key);
+  const shell = adminShell(screen, assets, rich);
+  if (rich) return shell;
+  const template = transform(read(path.join(SRC, 'admin/templates', `${screen.key}.html`)));
+  return shell.replace(moduleScript('../', assets.admin), `<template id="tpl">\n${template}\n</template>\n${moduleScript('../', assets.admin)}`);
 }
 
-/* ---------- H5 页面 ---------- */
-function h5Page(screen) {
-  const tpl = transform(read(path.join(SRC, 'h5/templates', screen.key + '.html')));
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${screen.title} · AI-CRM 用户端</title>
-<link rel="stylesheet" href="../assets/tokens.css">
-</head>
-<body data-page="${screen.key}">
-<div class="h5-backdrop">
-  <div>
-    <div class="phone"><div id="screen" class="phone-screen"></div></div>
-    <div style="text-align:center;margin-top:14px;font-size:12px;color:#8F959E"><a href="index.html">← 全部屏幕</a></div>
-  </div>
-</div>
-<template id="tpl">
-${tpl}
-</template>
-<script src="../assets/h5.js"></script>
-</body>
-</html>
-`;
+function h5Page(screen, assets) {
+  const template = transform(read(path.join(SRC, 'h5/templates', `${screen.key}.html`)));
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${screen.title} · AI-CRM 用户端</title>${stylesheet('../', assets.tokens)}</head><body data-page="${screen.key}"><div class="h5-backdrop"><div><div class="phone"><div id="screen" class="phone-screen"></div></div><div style="text-align:center;margin-top:14px;font-size:12px;color:#8F959E"><a href="index.html">← 全部屏幕</a></div></div></div><template id="tpl">${template}</template>${moduleScript('../', assets.h5)}</body></html>\n`;
 }
 
-/* ---------- 侧边栏 ---------- */
-function sidebarPage() {
-  const tpl = read(path.join(SRC, 'sidebar/templates/index.html'));
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>企微侧边栏 · AI-CRM</title>
-<link rel="stylesheet" href="../assets/tokens.css">
-</head>
-<body>
-${tpl}
-<script src="../assets/sidebar.js"></script>
-</body>
-</html>
-`;
+function sidebarPage(assets) {
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>企微侧边栏 · AI-CRM</title>${stylesheet('../', assets.tokens)}</head><body>${read(path.join(SRC, 'sidebar/templates/index.html'))}${moduleScript('../', assets.sidebar)}</body></html>\n`;
 }
 
-function memberGridSharePage() {
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
-<title>Member Grid 公开会员网格</title>
-<link rel="stylesheet" href="../assets/tokens.css">
-</head>
-<body><div id="stage" class="ix-wrap"></div><script src="../assets/memberGridShare.js"></script></body>
-</html>
-`;
+function memberGridSharePage(assets) {
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Member Grid 公开会员网格</title>${stylesheet('../', assets.tokens)}</head><body><div id="stage" class="ix-wrap"></div>${moduleScript('../', assets.memberGridShare)}</body></html>\n`;
 }
 
-/* ---------- 索引页 ---------- */
-function topIndex() {
-  const adminLinks = registry.screens
-    .map((s) => `<a href="admin/${s.key}.html">${s.label}${s.level === '二级' ? ' · 二级' : ''}</a>`)
-    .join('\n');
-  const h5Links = h5Registry.map((s) => `<a href="h5/${s.key}.html">${s.title}</a>`).join('\n');
-  const navCount = registry.screens.filter((s) => s.isNav).length;
-  const subCount = registry.screens.length - navCount;
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI-CRM 前端 · TypeScript 版</title>
-<link rel="stylesheet" href="assets/tokens.css">
-</head>
-<body>
-<div class="ix-wrap">
-  <h1 class="ix-title">AI-CRM 全新前端 · TypeScript 实现</h1>
-  <p class="ix-sub">管理后台 ${registry.screens.length} 屏 / 企微侧边栏 / 用户端 H5 ${h5Registry.length} 屏 · 真实 API 接入 · 缺失能力显式关闭</p>
-  <div class="ix-grid">
-    <a class="ix-card" href="admin/customers.html"><h2>管理后台 →</h2><p>${navCount} 个一级页 + ${subCount} 个二级页 · 雷达 / AI 助手 / 漏斗全真交互</p></a>
-    <a class="ix-card" href="sidebar/index.html"><h2>企微侧边栏 →</h2><p>销售工作台 · 客户画像 / 快捷话术 / 跟进记录</p></a>
-    <a class="ix-card" href="h5/index.html"><h2>用户端 H5 →</h2><p>问卷作答 · 测评报告 · 报名支付落地 12 屏</p></a>
-  </div>
-  <div class="ix-sec">管理后台 · 全部页面</div>
-  <div class="ix-list">
-${adminLinks}
-  </div>
-  <div class="ix-sec">用户端 H5 · 全部屏幕</div>
-  <div class="ix-list">
-${h5Links}
-  </div>
-</div>
-</body>
-</html>
-`;
+function topIndex(assets) {
+  const adminLinks = registry.screens.map((screen) => `<a href="admin/${screen.key}.html">${screen.label}${screen.level === '二级' ? ' · 二级' : ''}</a>`).join('\n');
+  const h5Links = h5Registry.map((screen) => `<a href="h5/${screen.key}.html">${screen.title}</a>`).join('\n');
+  const navCount = registry.screens.filter((screen) => screen.isNav).length;
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI-CRM 前端 · TypeScript 版</title>${stylesheet('', assets.tokens)}</head><body><div class="ix-wrap"><h1 class="ix-title">AI-CRM 全新前端 · TypeScript 实现</h1><p class="ix-sub">管理后台 ${registry.screens.length} 屏 / 企微侧边栏 / 用户端 H5 ${h5Registry.length} 屏</p><div class="ix-grid"><a class="ix-card" href="admin/customers.html"><h2>管理后台 →</h2><p>${navCount} 个一级页 + ${registry.screens.length - navCount} 个二级页</p></a><a class="ix-card" href="sidebar/index.html"><h2>企微侧边栏 →</h2><p>销售工作台</p></a><a class="ix-card" href="h5/index.html"><h2>用户端 H5 →</h2><p>问卷与报名支付</p></a></div><div class="ix-sec">管理后台 · 全部页面</div><div class="ix-list">${adminLinks}</div><div class="ix-sec">用户端 H5 · 全部屏幕</div><div class="ix-list">${h5Links}</div></div></body></html>\n`;
 }
 
-function h5Index() {
-  const groups = { Q: '问卷作答流程', S: '报名 / 续费落地' };
-  let html = '';
-  for (const [g, label] of Object.entries(groups)) {
-    html += `<div class="ix-sec">${label}</div><div class="ix-list">\n`;
-    html += h5Registry
-      .filter((s) => s.group === g)
-      .map((s) => `<a href="${s.key}.html">${s.title}</a>`)
-      .join('\n');
-    html += '\n</div>\n';
+function h5Index(assets) {
+  let sections = '';
+  for (const [group, label] of Object.entries({ Q: '问卷作答流程', S: '报名 / 续费落地' })) {
+    const links = h5Registry.filter((screen) => screen.group === group).map((screen) => `<a href="${screen.key}.html">${screen.title}</a>`).join('\n');
+    sections += `<div class="ix-sec">${label}</div><div class="ix-list">${links}</div>`;
   }
-  return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>用户端 H5 · AI-CRM</title>
-<link rel="stylesheet" href="../assets/tokens.css">
-</head>
-<body>
-<div class="ix-wrap">
-  <h1 class="ix-title">用户端 H5</h1>
-  <p class="ix-sub">12 屏 · <a href="../index.html">← 返回总索引</a></p>
-  ${html}
-</div>
-</body>
-</html>
-`;
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>用户端 H5 · AI-CRM</title>${stylesheet('../', assets.tokens)}</head><body><div class="ix-wrap"><h1 class="ix-title">用户端 H5</h1><p class="ix-sub">12 屏 · <a href="../index.html">← 返回总索引</a></p>${sections}</div></body></html>\n`;
 }
 
-const adminIndex = `<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=customers.html">
-<title>AI-CRM 管理后台</title></head>
-<body style="font-family:sans-serif;padding:40px">正在进入管理后台… <a href="customers.html">手动进入</a></body></html>
-`;
+function outputPath(output) {
+  return path.relative(DIST, path.resolve(REPOSITORY, output)).split(path.sep).join('/');
+}
 
-/* ---------- 执行 ---------- */
+function fileMetadata(contents) {
+  return {
+    bytes: contents.byteLength,
+    gzip_bytes: gzipSync(contents, { level: 9 }).byteLength,
+    sha256: crypto.createHash('sha256').update(contents).digest('hex'),
+  };
+}
+
+function createManifest(metafile, entries) {
+  const files = {};
+  for (const [output, metadata] of Object.entries(metafile.outputs)) {
+    const relative = outputPath(output);
+    const absolute = path.join(DIST, relative);
+    const contents = fs.readFileSync(absolute);
+    files[relative] = {
+      ...fileMetadata(contents),
+      entry_point: metadata.entryPoint ? path.relative(REPOSITORY, path.resolve(REPOSITORY, metadata.entryPoint)).split(path.sep).join('/') : undefined,
+      imports: metadata.imports.map((item) => ({ path: outputPath(item.path), kind: item.kind })),
+      inputs: Object.keys(metadata.inputs).map((input) => path.relative(REPOSITORY, path.resolve(REPOSITORY, input)).split(path.sep).join('/')).sort(),
+    };
+  }
+  return {
+    version: 1,
+    source_sha: sourceSHA(),
+    tools: {
+      node: packageJson.engines.node,
+      npm: packageJson.engines.npm,
+      esbuild: packageJson.devDependencies.esbuild,
+      orval: packageJson.devDependencies.orval,
+    },
+    entries,
+    files: Object.fromEntries(Object.entries(files).sort(([left], [right]) => left.localeCompare(right))),
+  };
+}
+
+function createReleaseFiles() {
+  const files = {};
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(absolute);
+      else if (entry.isFile() && entry.name !== 'asset-manifest.json') {
+        const relative = path.relative(DIST, absolute).split(path.sep).join('/');
+        files[relative] = fileMetadata(fs.readFileSync(absolute));
+      }
+    }
+  };
+  walk(DIST);
+  return Object.fromEntries(Object.entries(files).sort(([left], [right]) => left.localeCompare(right)));
+}
+
 async function main() {
   fs.rmSync(DIST, { recursive: true, force: true });
-
-  // 后台 34 屏
-  for (const s of registry.screens) {
-    write(path.join(DIST, 'admin', s.key + '.html'), adminPage(s));
-  }
-  write(path.join(DIST, 'admin/index.html'), adminIndex);
-
-  // H5 12 屏 + 索引
-  for (const s of h5Registry) {
-    write(path.join(DIST, 'h5', s.key + '.html'), h5Page(s));
-  }
-  write(path.join(DIST, 'h5/index.html'), h5Index());
-
-  // 侧边栏
-  write(path.join(DIST, 'sidebar/index.html'), sidebarPage());
-
-  // Member Grid 公开只读分享
-  write(path.join(DIST, 'member-grid-share/index.html'), memberGridSharePage());
-
-  // 总索引
-  write(path.join(DIST, 'index.html'), topIndex());
-
-  // 样式
-  write(path.join(DIST, 'assets/tokens.css'), read(path.join(SRC, 'shared/ui/tokens.css')));
-  write(path.join(DIST, 'assets/labs.css'), read(path.join(SRC, 'admin/sections/labs.css')));
-
-  // TS 打包
-  await build({
+  const result = await build({
     entryPoints: {
       admin: path.join(SRC, 'admin/main.ts'),
       h5: path.join(SRC, 'h5/main.ts'),
       sidebar: path.join(SRC, 'sidebar/main.ts'),
       memberGridShare: path.join(SRC, 'public/main.ts'),
+      tokens: path.join(SRC, 'shared/ui/tokens.css'),
+      labs: path.join(SRC, 'admin/sections/labs.css'),
     },
     bundle: true,
-    format: 'iife',
+    format: 'esm',
+    splitting: true,
     target: 'es2020',
-    outdir: path.join(DIST, 'assets'),
-    minify: false,
+    outdir: ASSETS,
+    entryNames: '[name]-[hash]',
+    chunkNames: 'chunks/[name]-[hash]',
+    assetNames: 'files/[name]-[hash]',
+    minify: true,
+    metafile: true,
     logLevel: 'warning',
   });
 
-  const count = registry.screens.length + h5Registry.length + 4;
-  console.log(`✓ build done: ${count} pages + 4 bundles → dist/`);
+  const entries = {};
+  for (const [output, metadata] of Object.entries(result.metafile.outputs)) {
+    if (!metadata.entryPoint) continue;
+    const name = Object.entries({
+      admin: path.join(SRC, 'admin/main.ts'), h5: path.join(SRC, 'h5/main.ts'),
+      sidebar: path.join(SRC, 'sidebar/main.ts'), memberGridShare: path.join(SRC, 'public/main.ts'),
+      tokens: path.join(SRC, 'shared/ui/tokens.css'), labs: path.join(SRC, 'admin/sections/labs.css'),
+    }).find(([, entry]) => path.resolve(REPOSITORY, metadata.entryPoint) === entry)?.[0];
+    if (name) entries[name] = outputPath(output);
+  }
+  for (const required of ['admin', 'h5', 'sidebar', 'memberGridShare', 'tokens', 'labs']) {
+    if (!entries[required]) throw new Error(`missing build entry: ${required}`);
+  }
+
+  const manifest = createManifest(result.metafile, entries);
+
+  for (const screen of registry.screens) write(path.join(DIST, 'admin', `${screen.key}.html`), adminPage(screen, entries));
+  write(path.join(DIST, 'admin/index.html'), '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=customers.html"><title>AI-CRM 管理后台</title></head><body>正在进入管理后台… <a href="customers.html">手动进入</a></body></html>\n');
+  for (const screen of h5Registry) write(path.join(DIST, 'h5', `${screen.key}.html`), h5Page(screen, entries));
+  write(path.join(DIST, 'h5/index.html'), h5Index(entries));
+  write(path.join(DIST, 'sidebar/index.html'), sidebarPage(entries));
+  write(path.join(DIST, 'member-grid-share/index.html'), memberGridSharePage(entries));
+  write(path.join(DIST, 'index.html'), topIndex(entries));
+  manifest.release_files = createReleaseFiles();
+  write(path.join(DIST, 'asset-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+
+  console.log(`✓ build done: ${registry.screens.length + h5Registry.length + 4} pages + ${Object.keys(entries).length} hashed entries → dist/`);
 }
 
-main().catch((e) => {
-  console.error(e);
+main().catch((error) => {
+  console.error(error);
   process.exit(1);
 });

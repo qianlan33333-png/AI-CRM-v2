@@ -1,8 +1,34 @@
 import {
-  getHXCHistoryActivation, getHXCHistoryBatch, getHXCHistoryChatJob, getHXCHistoryLead, getHXCHistoryMemberUsage, getHXCHistoryMeta, getHXCHistorySendRecord, getHXCHistorySenderConfig, getHXCHistorySnapshot,
-  listHXCHistoryActivation, listHXCHistoryBatch, listHXCHistoryChatJob, listHXCHistoryLead, listHXCHistoryMemberUsage, listHXCHistoryMeta, listHXCHistorySendRecord, listHXCHistorySenderConfig, listHXCHistorySnapshot,
-  type HXCHistoryActivation, type HXCHistoryBatch, type HXCHistoryChatJob, type HXCHistoryLead, type HXCHistoryMemberUsage, type HXCHistoryMeta, type HXCHistorySendRecord, type HXCHistorySenderConfig, type HXCHistorySnapshot,
-} from './generated/health';
+  getHXCHistoryActivation,
+  getHXCHistoryBatch,
+  getHXCHistoryChatJob,
+  getHXCHistoryLead,
+  getHXCHistoryMemberUsage,
+  getHXCHistoryMeta,
+  getHXCHistorySendRecord,
+  getHXCHistorySenderConfig,
+  getHXCHistorySnapshot,
+  listHXCHistoryActivation,
+  listHXCHistoryBatch,
+  listHXCHistoryChatJob,
+  listHXCHistoryLead,
+  listHXCHistoryMemberUsage,
+  listHXCHistoryMeta,
+  listHXCHistorySendRecord,
+  listHXCHistorySenderConfig,
+  listHXCHistorySnapshot,
+} from "./generated/p4-hxc-history/p4-hxc-history";
+import {
+  type HXCHistoryActivation,
+  type HXCHistoryBatch,
+  type HXCHistoryChatJob,
+  type HXCHistoryLead,
+  type HXCHistoryMemberUsage,
+  type HXCHistoryMeta,
+  type HXCHistorySendRecord,
+  type HXCHistorySenderConfig,
+  type HXCHistorySnapshot,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type HxcHistoryKind = 'meta' | 'snapshot' | 'activation' | 'lead' | 'batch' | 'sender_config' | 'send_record' | 'member_usage' | 'chat_job';

@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ const bodyLimit = 32 << 10
 const (
 	sidebarOAuthBindingCookie = "aicrm_sidebar_oauth_binding"
 	sidebarOAuthCookiePath    = "/api/sidebar/v2/oauth/"
-	defaultSidebarOAuthNext   = "/sidebar/bind-mobile"
+	defaultSidebarOAuthNext   = "/sidebar/"
 )
 
 type Handler struct{ service *sidebarapp.Service }
@@ -153,6 +154,24 @@ func (handler *Handler) MintContext(writer http.ResponseWriter, request *http.Re
 	principal, authenticated := authport.PrincipalFromContext(request.Context())
 	session, _ := authport.SessionFromContext(request.Context())
 	result, err := handler.service.MintContext(request.Context(), principal, session, authenticated, body.ExternalUserID)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, result)
+}
+
+func (handler *Handler) Bootstrap(writer http.ResponseWriter, request *http.Request) {
+	var body struct {
+		ExternalUserID string `json:"external_userid"`
+	}
+	if err := decodeBody(writer, request, &body); err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	principal, authenticated := authport.PrincipalFromContext(request.Context())
+	session, _ := authport.SessionFromContext(request.Context())
+	result, err := handler.service.Bootstrap(request.Context(), principal, session, authenticated, body.ExternalUserID)
 	if err != nil {
 		writeError(writer, request, err)
 		return
@@ -476,7 +495,18 @@ func sidebarOAuthStartInput(request *http.Request) (externalUserID, nextPath str
 	if len(request.URL.Query()) == 2 && len(request.URL.Query()["next"]) != 1 {
 		return "", "", sidebarapp.ErrOAuthAttemptInvalid
 	}
+	if !validSidebarNextPath(nextPath) {
+		return "", "", sidebarapp.ErrOAuthAttemptInvalid
+	}
 	return externalUserID, nextPath, nil
+}
+
+func validSidebarNextPath(value string) bool {
+	parsed, err := url.ParseRequestURI(value)
+	if err != nil || parsed.IsAbs() || parsed.Host != "" || parsed.Fragment != "" {
+		return false
+	}
+	return parsed.Path == "/sidebar/" || parsed.Path == "/sidebar/index.html"
 }
 
 func sidebarOAuthCallbackInput(request *http.Request) (code, state string, err error) {

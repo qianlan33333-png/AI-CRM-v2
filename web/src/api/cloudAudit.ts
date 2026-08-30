@@ -1,4 +1,4 @@
-import { listCloudOrchestratorAudit } from './generated/health';
+import { listCloudOrchestratorAudit } from "./generated/p4-cloud-campaign/p4-cloud-campaign";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 type Value = Record<string, unknown>;

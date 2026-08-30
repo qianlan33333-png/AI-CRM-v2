@@ -44,8 +44,9 @@ type TemporaryMediaPreparer interface {
 }
 
 type ServiceOptions struct {
-	Products ShareableProductCatalog
-	Media    TemporaryMediaPreparer
+	Products  ShareableProductCatalog
+	Media     TemporaryMediaPreparer
+	Workbench WorkbenchReader
 }
 
 type ShareableProductResult struct {

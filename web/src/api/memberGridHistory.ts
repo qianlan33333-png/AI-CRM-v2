@@ -1,7 +1,13 @@
 import {
-  getMemberUsageHistory, getMemberViewHistory, listMemberUsageHistory, listMemberViewHistory,
-  type MemberUsageHistoryItem, type MemberViewHistoryItem,
-} from './generated/health';
+  getMemberUsageHistory,
+  getMemberViewHistory,
+  listMemberUsageHistory,
+  listMemberViewHistory,
+} from "./generated/p4-member-grid-history/p4-member-grid-history";
+import {
+  type MemberUsageHistoryItem,
+  type MemberViewHistoryItem,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type MemberGridHistoryKind = 'view' | 'usage';

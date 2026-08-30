@@ -22,6 +22,7 @@ type Querier interface {
 	CountServicePeriodHistoryDefinitions(ctx context.Context) (int64, error)
 	CountServicePeriodHistoryEntitlements(ctx context.Context, definitionID int64) (int64, error)
 	CountServicePeriodHistoryEvents(ctx context.Context, definitionID int64) (int64, error)
+	CountServicePeriodMembersByCustomer(ctx context.Context, customerID int64) (int64, error)
 	CountServicePeriodProductRows(ctx context.Context) (int64, error)
 	CreateHistoricalMemberUsage(ctx context.Context, arg CreateHistoricalMemberUsageParams) (ProductV1MemberUsageHistory, error)
 	CreateHistoricalMemberView(ctx context.Context, arg CreateHistoricalMemberViewParams) (ProductV1MemberViewHistory, error)

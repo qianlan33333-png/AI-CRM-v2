@@ -13432,6 +13432,27 @@ func (e SidebarAgentConfigSignatureSignatureType) Valid() bool {
 	}
 }
 
+// Defines values for SidebarBootstrapResponseState.
+const (
+	SidebarBootstrapResponseStateCustomerNotBound      SidebarBootstrapResponseState = "customer_not_bound"
+	SidebarBootstrapResponseStateReady                 SidebarBootstrapResponseState = "ready"
+	SidebarBootstrapResponseStateViewerSessionRequired SidebarBootstrapResponseState = "viewer_session_required"
+)
+
+// Valid indicates whether the value is a known member of the SidebarBootstrapResponseState enum.
+func (e SidebarBootstrapResponseState) Valid() bool {
+	switch e {
+	case SidebarBootstrapResponseStateCustomerNotBound:
+		return true
+	case SidebarBootstrapResponseStateReady:
+		return true
+	case SidebarBootstrapResponseStateViewerSessionRequired:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SidebarChatActivityItemChatType.
 const (
 	SidebarChatActivityItemChatTypeGroup   SidebarChatActivityItemChatType = "group"
@@ -13452,19 +13473,19 @@ func (e SidebarChatActivityItemChatType) Valid() bool {
 
 // Defines values for SidebarContextResponseState.
 const (
-	CustomerNotBound      SidebarContextResponseState = "customer_not_bound"
-	Ready                 SidebarContextResponseState = "ready"
-	ViewerSessionRequired SidebarContextResponseState = "viewer_session_required"
+	SidebarContextResponseStateCustomerNotBound      SidebarContextResponseState = "customer_not_bound"
+	SidebarContextResponseStateReady                 SidebarContextResponseState = "ready"
+	SidebarContextResponseStateViewerSessionRequired SidebarContextResponseState = "viewer_session_required"
 )
 
 // Valid indicates whether the value is a known member of the SidebarContextResponseState enum.
 func (e SidebarContextResponseState) Valid() bool {
 	switch e {
-	case CustomerNotBound:
+	case SidebarContextResponseStateCustomerNotBound:
 		return true
-	case Ready:
+	case SidebarContextResponseStateReady:
 		return true
-	case ViewerSessionRequired:
+	case SidebarContextResponseStateViewerSessionRequired:
 		return true
 	default:
 		return false
@@ -23523,6 +23544,20 @@ type SidebarAgentConfigSignature struct {
 // SidebarAgentConfigSignatureSignatureType defines model for SidebarAgentConfigSignature.SignatureType.
 type SidebarAgentConfigSignatureSignatureType string
 
+// SidebarBootstrapResponse defines model for SidebarBootstrapResponse.
+type SidebarBootstrapResponse struct {
+	ContextToken *string                       `json:"context_token,omitempty"`
+	CustomerId   *int64                        `json:"customer_id,omitempty"`
+	ExpiresAt    *time.Time                    `json:"expires_at,omitempty"`
+	OwnerStaffId *int64                        `json:"owner_staff_id,omitempty"`
+	Safety       SidebarSafety                 `json:"safety"`
+	State        SidebarBootstrapResponseState `json:"state"`
+	Workbench    *SidebarWorkbenchResponse     `json:"workbench,omitempty"`
+}
+
+// SidebarBootstrapResponseState defines model for SidebarBootstrapResponse.State.
+type SidebarBootstrapResponseState string
+
 // SidebarChatActivityItem defines model for SidebarChatActivityItem.
 type SidebarChatActivityItem struct {
 	ChatType    SidebarChatActivityItemChatType `json:"chat_type"`
@@ -26375,6 +26410,11 @@ type MintSidebarContextJSONBody struct {
 	ExternalUserid string `json:"external_userid"`
 }
 
+// BootstrapSidebarJSONBody defines parameters for BootstrapSidebar.
+type BootstrapSidebarJSONBody struct {
+	ExternalUserid string `json:"external_userid"`
+}
+
 // ListSidebarChatActivityParams defines parameters for ListSidebarChatActivity.
 type ListSidebarChatActivityParams struct {
 	ChatType *ListSidebarChatActivityParamsChatType `form:"chat_type,omitempty" json:"chat_type,omitempty"`
@@ -27289,6 +27329,9 @@ type ReceiveWechatShopRefundCallbackJSONRequestBody = WechatShopRefundCallbackEn
 
 // MintSidebarContextJSONRequestBody defines body for MintSidebarContext for application/json ContentType.
 type MintSidebarContextJSONRequestBody MintSidebarContextJSONBody
+
+// BootstrapSidebarJSONRequestBody defines body for BootstrapSidebar for application/json ContentType.
+type BootstrapSidebarJSONRequestBody BootstrapSidebarJSONBody
 
 // UpdateSidebarPeriodicRemarkJSONRequestBody defines body for UpdateSidebarPeriodicRemark for application/json ContentType.
 type UpdateSidebarPeriodicRemarkJSONRequestBody UpdateSidebarPeriodicRemarkJSONBody
@@ -29409,6 +29452,9 @@ type ServerInterface interface {
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(w http.ResponseWriter, r *http.Request)
+	// Resolve one local customer, mint a scoped token, and return the first workbench projection
+	// (POST /api/sidebar/v2/bootstrap)
+	BootstrapSidebar(w http.ResponseWriter, r *http.Request)
 	// Read the bound customer's safe local chat-activity metadata
 	// (GET /api/sidebar/v2/chat-activity)
 	ListSidebarChatActivity(w http.ResponseWriter, r *http.Request, params ListSidebarChatActivityParams)
@@ -31488,6 +31534,12 @@ func (_ Unimplemented) ReceiveWechatShopRefundCallback(w http.ResponseWriter, r 
 // Resolve one local customer and mint a short-lived owner-scoped sidebar token
 // (POST /api/sidebar/context-token)
 func (_ Unimplemented) MintSidebarContext(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Resolve one local customer, mint a scoped token, and return the first workbench projection
+// (POST /api/sidebar/v2/bootstrap)
+func (_ Unimplemented) BootstrapSidebar(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -46726,6 +46778,20 @@ func (siw *ServerInterfaceWrapper) MintSidebarContext(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// BootstrapSidebar operation middleware
+func (siw *ServerInterfaceWrapper) BootstrapSidebar(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BootstrapSidebar(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListSidebarChatActivity operation middleware
 func (siw *ServerInterfaceWrapper) ListSidebarChatActivity(w http.ResponseWriter, r *http.Request) {
 
@@ -53793,6 +53859,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/sidebar/context-token", wrapper.MintSidebarContext)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/sidebar/v2/bootstrap", wrapper.BootstrapSidebar)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/chat-activity", wrapper.ListSidebarChatActivity)
@@ -71344,6 +71413,59 @@ func (response MintSidebarContext503JSONResponse) VisitMintSidebarContextRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type BootstrapSidebarRequestObject struct {
+	Body *BootstrapSidebarJSONRequestBody
+}
+
+type BootstrapSidebarResponseObject interface {
+	VisitBootstrapSidebarResponse(w http.ResponseWriter) error
+}
+
+type BootstrapSidebar200JSONResponse SidebarBootstrapResponse
+
+func (response BootstrapSidebar200JSONResponse) VisitBootstrapSidebarResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BootstrapSidebar400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response BootstrapSidebar400JSONResponse) VisitBootstrapSidebarResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BootstrapSidebar401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response BootstrapSidebar401JSONResponse) VisitBootstrapSidebarResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BootstrapSidebar403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response BootstrapSidebar403JSONResponse) VisitBootstrapSidebarResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BootstrapSidebar503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response BootstrapSidebar503JSONResponse) VisitBootstrapSidebarResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListSidebarChatActivityRequestObject struct {
 	Params ListSidebarChatActivityParams
 }
@@ -78701,6 +78823,9 @@ type StrictServerInterface interface {
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(ctx context.Context, request MintSidebarContextRequestObject) (MintSidebarContextResponseObject, error)
+	// Resolve one local customer, mint a scoped token, and return the first workbench projection
+	// (POST /api/sidebar/v2/bootstrap)
+	BootstrapSidebar(ctx context.Context, request BootstrapSidebarRequestObject) (BootstrapSidebarResponseObject, error)
 	// Read the bound customer's safe local chat-activity metadata
 	// (GET /api/sidebar/v2/chat-activity)
 	ListSidebarChatActivity(ctx context.Context, request ListSidebarChatActivityRequestObject) (ListSidebarChatActivityResponseObject, error)
@@ -87318,6 +87443,37 @@ func (sh *strictHandler) MintSidebarContext(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(MintSidebarContextResponseObject); ok {
 		if err := validResponse.VisitMintSidebarContextResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BootstrapSidebar operation middleware
+func (sh *strictHandler) BootstrapSidebar(w http.ResponseWriter, r *http.Request) {
+	var request BootstrapSidebarRequestObject
+
+	var body BootstrapSidebarJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BootstrapSidebar(ctx, request.(BootstrapSidebarRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BootstrapSidebar")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BootstrapSidebarResponseObject); ok {
+		if err := validResponse.VisitBootstrapSidebarResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -115,6 +115,11 @@ ORDER BY updated_at DESC, service_product_id DESC, member_ref DESC
 LIMIT sqlc.arg(row_limit)
 OFFSET sqlc.arg(row_offset);
 
+-- name: CountServicePeriodMembersByCustomer :one
+SELECT count(*)::bigint
+FROM public.service_period_members
+WHERE customer_id = sqlc.arg(customer_id);
+
 -- name: ReserveServicePeriodMemberReceipt :one
 INSERT INTO public.service_period_member_operation_receipts (
   operation, actor_scope, key_digest, payload_digest, state, created_at

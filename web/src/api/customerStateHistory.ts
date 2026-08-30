@@ -5,10 +5,12 @@ import {
   listCustomerStateHistoryChange,
   listCustomerStateHistoryClassTermTagMapping,
   listCustomerStateHistorySnapshot,
+} from "./generated/p4-customer-state-history/p4-customer-state-history";
+import {
   type CustomerStateHistoryChange,
   type CustomerStateHistoryClassTermTagMapping,
   type CustomerStateHistorySnapshot,
-} from './generated/health';
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type CustomerStateHistoryKind = 'snapshot' | 'change' | 'term_tag';

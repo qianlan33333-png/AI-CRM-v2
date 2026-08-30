@@ -1,41 +1,47 @@
 import {
   bindSidebarPhone,
-  getSidebarMaterialThumbnailStatus,
-  getGetSidebarMaterialThumbnailPreviewUrl,
-  getSidebarAgentConfig,
+  bootstrapSidebar,
   getCompleteSidebarOAuthUrl,
-  getStartSidebarOAuthUrl,
+  getSidebarAgentConfig,
   getSidebarWorkbench,
-  listSidebarChatActivity,
-  listSidebarOtherStaffChats,
-  listSidebarMaterials,
-  listSidebarOrders,
-  listSidebarPeriodicOrders,
-  listSidebarQuestionnaires,
-  listSidebarShareableProducts,
-  listSidebarTimeline,
+  getStartSidebarOAuthUrl,
   mintSidebarContext,
-  prepareSidebarImageTemporaryMedia,
-  updateSidebarPeriodicRemark,
   updateSidebarProfile,
-  type SidebarChatActivityResponse,
-  type SidebarOtherStaffChatResponse,
-  type SidebarAgentConfigSignature,
-  type SidebarContextResponse,
-  type SidebarMaterialResponse,
-  type SidebarOrderResponse,
-  type SidebarPeriodicOrderResponse,
-  type SidebarPeriodicRemarkResponse,
-  type SidebarPhoneBindingResponse,
-  type SidebarQuestionnaireResponse,
-  type SidebarShareableProductResponse,
-  type SidebarProfileUpdateResponse,
-  type SidebarTemporaryMediaResponse,
-  type SidebarThumbnailPendingResponse,
-  type SidebarTimelineResponse,
-  type SidebarWorkbenchResponse,
-} from "./generated/health";
-import { apiRequestOptions, request, unwrapGenerated } from "./transport";
+} from "./generated/p4-sidebar-core/p4-sidebar-core";
+import type {
+  BindSidebarPhoneBody,
+  BootstrapSidebarBody,
+  CompleteSidebarOAuthParams,
+  ListSidebarChatActivityParams,
+  ListSidebarMaterialsParams,
+  ListSidebarOrdersParams,
+  ListSidebarPeriodicOrdersParams,
+  ListSidebarQuestionnairesParams,
+  ListSidebarShareableProductsParams,
+  ListSidebarTimelineParams,
+  MintSidebarContextBody,
+  SidebarAgentConfigSignature,
+  SidebarBootstrapResponse,
+  SidebarChatActivityResponse,
+  SidebarContextResponse,
+  SidebarMaterialResponse,
+  SidebarOrderResponse,
+  SidebarOtherStaffChatResponse,
+  SidebarPeriodicOrderResponse,
+  SidebarPeriodicRemarkResponse,
+  SidebarPhoneBindingResponse,
+  SidebarProfileUpdateResponse,
+  SidebarQuestionnaireResponse,
+  SidebarShareableProductResponse,
+  SidebarTemporaryMediaResponse,
+  SidebarThumbnailPendingResponse,
+  SidebarTimelineResponse,
+  SidebarWorkbenchResponse,
+  StartSidebarOAuthParams,
+  UpdateSidebarPeriodicRemarkBody,
+  UpdateSidebarProfileBody,
+} from "./generated/health.schemas";
+import { apiRequestOptions, unwrapGenerated } from "./transport";
 
 function scopedOptions(
   contextToken: string,
@@ -55,46 +61,29 @@ export function newSidebarIdempotencyKey(scope: string): string {
 }
 
 export const sidebarApi = {
-  mintContext: async (body: Parameters<typeof mintSidebarContext>[0]) =>
+  mintContext: async (body: MintSidebarContextBody) =>
     unwrapGenerated(
       await mintSidebarContext(body, apiRequestOptions()),
     ) as SidebarContextResponse,
+  bootstrap: async (body: BootstrapSidebarBody, signal?: AbortSignal) =>
+    unwrapGenerated(
+      await bootstrapSidebar(body, apiRequestOptions({ signal })),
+    ) as SidebarBootstrapResponse,
   agentConfig: async (url: string) =>
     unwrapGenerated(
       await getSidebarAgentConfig({ url }, apiRequestOptions()),
     ) as SidebarAgentConfigSignature,
-  // OAuth is a browser navigation protocol. Building the generated URL without
-  // prefetching avoids creating duplicate state/binding records before redirect.
-  oauthStartUrl: (params: Parameters<typeof getStartSidebarOAuthUrl>[0]) =>
+  oauthStartUrl: (params: StartSidebarOAuthParams) =>
     getStartSidebarOAuthUrl(params),
-  oauthCallbackUrl: (
-    params: Parameters<typeof getCompleteSidebarOAuthUrl>[0],
-  ) => getCompleteSidebarOAuthUrl(params),
+  oauthCallbackUrl: (params: CompleteSidebarOAuthParams) =>
+    getCompleteSidebarOAuthUrl(params),
   workbench: async (contextToken: string) =>
     unwrapGenerated(
       await getSidebarWorkbench(scopedOptions(contextToken)),
     ) as SidebarWorkbenchResponse,
-  timeline: async (
-    contextToken: string,
-    params?: Parameters<typeof listSidebarTimeline>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarTimeline(params, scopedOptions(contextToken)),
-    ) as SidebarTimelineResponse,
-  chatActivity: async (
-    contextToken: string,
-    params?: Parameters<typeof listSidebarChatActivity>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarChatActivity(params, scopedOptions(contextToken)),
-    ) as SidebarChatActivityResponse,
-  otherStaffChats: async (contextToken: string) =>
-    unwrapGenerated(
-      await listSidebarOtherStaffChats(scopedOptions(contextToken)),
-    ) as SidebarOtherStaffChatResponse,
   profile: async (
     contextToken: string,
-    body: Parameters<typeof updateSidebarProfile>[0],
+    body: UpdateSidebarProfileBody,
     idempotencyKey = newSidebarIdempotencyKey("sidebar-profile"),
   ) =>
     unwrapGenerated(
@@ -107,7 +96,7 @@ export const sidebarApi = {
     ) as SidebarProfileUpdateResponse,
   bindPhone: async (
     contextToken: string,
-    body: Parameters<typeof bindSidebarPhone>[0],
+    body: BindSidebarPhoneBody,
     idempotencyKey = newSidebarIdempotencyKey("sidebar-phone"),
   ) =>
     unwrapGenerated(
@@ -118,86 +107,147 @@ export const sidebarApi = {
         }),
       ),
     ) as SidebarPhoneBindingResponse,
+
+  timeline: async (
+    contextToken: string,
+    params?: ListSidebarTimelineParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadTimeline } = await import("../sidebar/tabs/timeline");
+    return (await loadTimeline(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarTimelineResponse;
+  },
+  chatActivity: async (
+    contextToken: string,
+    params?: ListSidebarChatActivityParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadChatActivity } = await import("../sidebar/tabs/chat");
+    return (await loadChatActivity(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarChatActivityResponse;
+  },
+  otherStaffChats: async (contextToken: string, signal?: AbortSignal) => {
+    const { loadOtherStaffChats } = await import("../sidebar/tabs/chat");
+    return (await loadOtherStaffChats(
+      contextToken,
+      signal,
+    )) as SidebarOtherStaffChatResponse;
+  },
   questionnaires: async (
     contextToken: string,
-    params?: Parameters<typeof listSidebarQuestionnaires>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarQuestionnaires(params, scopedOptions(contextToken)),
-    ) as SidebarQuestionnaireResponse,
+    params?: ListSidebarQuestionnairesParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadQuestionnaires } =
+      await import("../sidebar/tabs/questionnaires");
+    return (await loadQuestionnaires(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarQuestionnaireResponse;
+  },
   orders: async (
     contextToken: string,
-    params?: Parameters<typeof listSidebarOrders>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarOrders(params, scopedOptions(contextToken)),
-    ) as SidebarOrderResponse,
+    params?: ListSidebarOrdersParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadOrders } = await import("../sidebar/tabs/orders");
+    return (await loadOrders(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarOrderResponse;
+  },
   periodicOrders: async (
     contextToken: string,
-    params?: Parameters<typeof listSidebarPeriodicOrders>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarPeriodicOrders(params, scopedOptions(contextToken)),
-    ) as SidebarPeriodicOrderResponse,
+    params?: ListSidebarPeriodicOrdersParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadPeriodicOrders } =
+      await import("../sidebar/tabs/periodic-orders");
+    return (await loadPeriodicOrders(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarPeriodicOrderResponse;
+  },
   updateRemark: async (
     contextToken: string,
     serviceProductId: number,
     memberRef: string,
-    body: Parameters<typeof updateSidebarPeriodicRemark>[2],
+    body: UpdateSidebarPeriodicRemarkBody,
     idempotencyKey = newSidebarIdempotencyKey("sidebar-periodic-remark"),
-  ) =>
-    unwrapGenerated(
-      await updateSidebarPeriodicRemark(
-        serviceProductId,
-        memberRef,
-        body,
-        scopedOptions(contextToken, {
-          headers: { "Idempotency-Key": idempotencyKey },
-        }),
-      ),
-    ) as SidebarPeriodicRemarkResponse,
+  ) => {
+    const { savePeriodicRemark } =
+      await import("../sidebar/tabs/periodic-orders");
+    return (await savePeriodicRemark(
+      contextToken,
+      serviceProductId,
+      memberRef,
+      body,
+      idempotencyKey,
+    )) as SidebarPeriodicRemarkResponse;
+  },
   materials: async (
     contextToken: string,
-    params?: Parameters<typeof listSidebarMaterials>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarMaterials(params, scopedOptions(contextToken)),
-    ) as SidebarMaterialResponse,
+    params?: ListSidebarMaterialsParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadMaterials } = await import("../sidebar/tabs/materials");
+    return (await loadMaterials(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarMaterialResponse;
+  },
   shareableProducts: async (
     contextToken: string,
-    params?: Parameters<typeof listSidebarShareableProducts>[0],
-  ) =>
-    unwrapGenerated(
-      await listSidebarShareableProducts(params, scopedOptions(contextToken)),
-    ) as SidebarShareableProductResponse,
+    params?: ListSidebarShareableProductsParams,
+    signal?: AbortSignal,
+  ) => {
+    const { loadProducts } = await import("../sidebar/tabs/products");
+    return (await loadProducts(
+      contextToken,
+      params,
+      signal,
+    )) as SidebarShareableProductResponse;
+  },
   prepareTemporaryImage: async (
     contextToken: string,
     imageId: number,
     idempotencyKey: string,
-  ) =>
-    unwrapGenerated(
-      await prepareSidebarImageTemporaryMedia(
-        imageId,
-        scopedOptions(contextToken, {
-          headers: { "Idempotency-Key": idempotencyKey },
-        }),
-      ),
-    ) as SidebarTemporaryMediaResponse,
-  thumbnail: async (contextToken: string, imageId: number) =>
-    unwrapGenerated(
-      await getSidebarMaterialThumbnailStatus(
-        imageId,
-        scopedOptions(contextToken),
-      ),
-    ) as SidebarThumbnailPendingResponse,
-  thumbnailPreview: async (contextToken: string, imageId: number) => {
-    // Orval 7.21 currently parses multi-content binary responses as JSON even
-    // though it emits Blob types. Keep the generated URL and shared transport,
-    // then read the successful response as bytes.
-    const response = await request(
-      getGetSidebarMaterialThumbnailPreviewUrl(imageId),
-      scopedOptions(contextToken),
-    );
-    return response.blob();
+  ) => {
+    const { prepareTemporaryImage } = await import("../sidebar/tabs/products");
+    return (await prepareTemporaryImage(
+      contextToken,
+      imageId,
+      idempotencyKey,
+    )) as SidebarTemporaryMediaResponse;
+  },
+  thumbnail: async (
+    contextToken: string,
+    imageId: number,
+    signal?: AbortSignal,
+  ) => {
+    const { loadThumbnailStatus } = await import("../sidebar/tabs/materials");
+    return (await loadThumbnailStatus(
+      contextToken,
+      imageId,
+      signal,
+    )) as SidebarThumbnailPendingResponse;
+  },
+  thumbnailPreview: async (
+    contextToken: string,
+    imageId: number,
+    signal?: AbortSignal,
+  ) => {
+    const { loadThumbnailPreview } = await import("../sidebar/tabs/materials");
+    return loadThumbnailPreview(contextToken, imageId, signal);
   },
 };

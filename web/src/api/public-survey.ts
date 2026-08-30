@@ -2,10 +2,12 @@ import {
   getPublicSurveyDefinition,
   queryPublicSurveySubmissionResult,
   submitPublicSurvey,
+} from "./generated/p4-survey/p4-survey";
+import {
   type PublicSurveyDefinition,
   type PublicSurveyResult,
   type PublicSurveySubmissionRequest,
-} from './generated/health';
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export async function readPublicSurvey(slug: string): Promise<PublicSurveyDefinition> {

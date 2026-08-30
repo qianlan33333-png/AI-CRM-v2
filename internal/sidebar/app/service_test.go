@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -102,6 +103,14 @@ type surveyFake struct {
 	customerID contactport.CustomerID
 	limit      int32
 	calls      int
+	count      int
+	countCalls int
+	countErr   error
+}
+
+func (fake *surveyFake) CountCustomerSurveyAnswers(_ context.Context, customerID contactport.CustomerID) (int, error) {
+	fake.customerID, fake.countCalls = customerID, fake.countCalls+1
+	return fake.count, fake.countErr
 }
 
 func (fake *surveyFake) ListCustomerSurveyAnswers(_ context.Context, customerID contactport.CustomerID, limit int32) (surveyport.CustomerSurveyAnswerPage, error) {
@@ -110,9 +119,20 @@ func (fake *surveyFake) ListCustomerSurveyAnswers(_ context.Context, customerID 
 }
 
 type orderFake struct {
-	page  orderport.Page
-	err   error
-	calls int
+	page       orderport.Page
+	err        error
+	calls      int
+	count      int64
+	countCalls int
+	countErr   error
+}
+
+func (fake *orderFake) CountCustomer(_ context.Context, customerID int64) (int64, error) {
+	fake.countCalls++
+	if customerID != 41 {
+		return 0, errors.New("unscoped order count")
+	}
+	return fake.count, fake.countErr
 }
 
 func (fake *orderFake) List(_ context.Context, filter orderport.Filter) (orderport.Page, error) {
@@ -130,6 +150,17 @@ type memberFake struct {
 	listQuery  PeriodicListQuery
 	getErr     error
 	listErr    error
+	count      int
+	countCalls int
+	countErr   error
+}
+
+func (fake *memberFake) CountCustomer(_ context.Context, customerID int64) (int, error) {
+	fake.countCalls++
+	if customerID != 41 {
+		return 0, ErrForbidden
+	}
+	return fake.count, fake.countErr
 }
 
 func (fake *memberFake) Get(context.Context, int64, string) (PeriodicMember, error) {
@@ -157,6 +188,14 @@ type mediaFake struct {
 	exists                bool
 	listCalls, facetCalls int
 	query                 mediaport.ImageListQuery
+	count                 int64
+	countCalls            int
+	countErr              error
+}
+
+func (fake *mediaFake) CountEnabledImages(context.Context) (int64, error) {
+	fake.countCalls++
+	return fake.count, fake.countErr
 }
 
 func (fake *mediaFake) ListImages(_ context.Context, query mediaport.ImageListQuery) (mediaport.ImageListPage, error) {
@@ -194,6 +233,53 @@ func TestContextTokenBindsViewerOwnerCorpAndExpiry(t *testing.T) {
 	service.now = func() time.Time { return result.ExpiresAt }
 	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, result.Token); !errors.Is(err, ErrTokenExpired) {
 		t.Fatalf("expiry error=%v, want expired token", err)
+	}
+}
+
+func TestBootstrapReusesResolvedProfileAndOmitsPIIForNonReadyStates(t *testing.T) {
+	service, staff := sidebarTestService(t)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staff}
+	result, err := service.Bootstrap(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
+	profiles := service.profiles.(*profileFake)
+	if err != nil || result.State != "ready" || result.Token == "" || result.Workbench == nil || result.Workbench.Profile.CustomerID != 41 || profiles.resolveCalls != 1 || profiles.readCalls != 0 {
+		t.Fatalf("Bootstrap() result=%+v profile=%+v err=%v", result, profiles, err)
+	}
+
+	viewer, err := service.Bootstrap(context.Background(), authport.Principal{}, "", false, "wm_external_41")
+	raw, _ := json.Marshal(viewer)
+	if err != nil || viewer.State != "viewer_session_required" || viewer.Workbench != nil || stringContains(string(raw), "customer_id") || stringContains(string(raw), "owner_staff_id") || stringContains(string(raw), "context_token") {
+		t.Fatalf("viewer result=%+v json=%s err=%v", viewer, raw, err)
+	}
+}
+
+func TestBootstrapMatchesContextTokenAndWorkbenchTwoStepResult(t *testing.T) {
+	legacy, staff := sidebarTestService(t)
+	legacy.surveys.(*surveyFake).count = 27
+	legacy.orders.(*orderFake).count = 31
+	legacy.members.(*memberFake).count = 8
+	legacy.media.(*mediaFake).count = 19
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staff}
+	contextResult, err := legacy.MintContext(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope, err := legacy.VerifyContext(context.Background(), principal, sidebarTestSession, contextResult.Token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workbench, err := legacy.Workbench(context.Background(), scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	combined, _ := sidebarTestService(t)
+	combined.surveys.(*surveyFake).count = 27
+	combined.orders.(*orderFake).count = 31
+	combined.members.(*memberFake).count = 8
+	combined.media.(*mediaFake).count = 19
+	bootstrap, err := combined.Bootstrap(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
+	if err != nil || bootstrap.State != contextResult.State || bootstrap.Token != contextResult.Token || !bootstrap.ExpiresAt.Equal(contextResult.ExpiresAt) || bootstrap.CustomerID != contextResult.CustomerID || bootstrap.OwnerStaffID != contextResult.OwnerStaffID || bootstrap.Workbench == nil || !reflect.DeepEqual(*bootstrap.Workbench, workbench) {
+		t.Fatalf("bootstrap=%+v context=%+v workbench=%+v err=%v", bootstrap, contextResult, workbench, err)
 	}
 }
 
@@ -276,19 +362,35 @@ func TestWorkbenchFailsClosedWhenAnyAggregateDependencyFails(t *testing.T) {
 			case "profile":
 				service.profiles.(*profileFake).readErr = contactport.ErrSidebarProfileUnavailable
 			case "questionnaire":
-				service.surveys.(*surveyFake).err = errors.New("survey unavailable")
+				service.surveys.(*surveyFake).countErr = errors.New("survey unavailable")
 			case "order":
-				service.orders.(*orderFake).err = errors.New("order unavailable")
+				service.orders.(*orderFake).countErr = errors.New("order unavailable")
 			case "periodic":
-				service.members.(*memberFake).listErr = ErrUnavailable
+				service.members.(*memberFake).countErr = ErrUnavailable
 			case "material":
-				service.media.(*mediaFake).listErr = errors.New("media unavailable")
+				service.media.(*mediaFake).countErr = errors.New("media unavailable")
 			}
 			result, err := service.Workbench(context.Background(), Scope{CustomerID: 41, OwnerStaffID: staff})
 			if !errors.Is(err, ErrUnavailable) || result != (WorkbenchResult{}) {
 				t.Fatalf("result=%+v error=%v", result, err)
 			}
 		})
+	}
+}
+
+func TestWorkbenchUsesCountOnlyReadersWithoutLoadingBusinessRows(t *testing.T) {
+	service, staff := sidebarTestService(t)
+	surveys := service.surveys.(*surveyFake)
+	orders := service.orders.(*orderFake)
+	members := service.members.(*memberFake)
+	media := service.media.(*mediaFake)
+	surveys.count, orders.count, members.count, media.count = 27, 31, 8, 19
+	result, err := service.Workbench(context.Background(), Scope{CustomerID: 41, OwnerStaffID: staff})
+	if err != nil || result.QuestionnaireCount != 27 || result.OrderCount != 31 || result.PeriodicOrderCount != 8 || result.MaterialCount != 19 {
+		t.Fatalf("Workbench() result=%+v err=%v", result, err)
+	}
+	if surveys.calls != 0 || orders.calls != 0 || members.listQuery != (PeriodicListQuery{}) || media.listCalls != 0 || surveys.countCalls != 1 || orders.countCalls != 1 || members.countCalls != 1 || media.countCalls != 1 {
+		t.Fatalf("unexpected aggregate reads survey=%+v order=%+v member=%+v media=%+v", surveys, orders, members, media)
 	}
 }
 

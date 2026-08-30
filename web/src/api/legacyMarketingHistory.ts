@@ -1,8 +1,13 @@
 import {
-  getLegacyMarketingHistoryState, getLegacyMarketingHistoryValue,
-  listLegacyMarketingHistoryStates, listLegacyMarketingHistoryValues,
-  type LegacyMarketingHistoryState, type LegacyMarketingHistoryValue,
-} from './generated/health';
+  getLegacyMarketingHistoryState,
+  getLegacyMarketingHistoryValue,
+  listLegacyMarketingHistoryStates,
+  listLegacyMarketingHistoryValues,
+} from "./generated/p4-legacy-marketing-history/p4-legacy-marketing-history";
+import {
+  type LegacyMarketingHistoryState,
+  type LegacyMarketingHistoryValue,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { LegacyMarketingHistoryState, LegacyMarketingHistoryValue };

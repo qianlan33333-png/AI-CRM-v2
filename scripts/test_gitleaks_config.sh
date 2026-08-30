@@ -14,7 +14,7 @@ command -v gitleaks >/dev/null 2>&1 || fail "gitleaks is required"
 
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/gitleaks-config.XXXXXX")"
 trap 'rm -rf "$fixture"' EXIT HUP INT TERM
-generated_dir="$fixture/web/src/api/generated"
+generated_dir="$fixture/web/src/api/generated/health"
 mkdir -p "$generated_dir"
 
 version_core='0.2.0'

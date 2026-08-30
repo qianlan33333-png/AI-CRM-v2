@@ -1,7 +1,8 @@
 import {
-  getOutboundTaskHistory, listOutboundTaskHistory,
-  type OutboundTaskHistory,
-} from './generated/health';
+  getOutboundTaskHistory,
+  listOutboundTaskHistory,
+} from "./generated/p4-outbound-task-history/p4-outbound-task-history";
+import { type OutboundTaskHistory } from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { OutboundTaskHistory };

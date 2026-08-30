@@ -275,6 +275,26 @@ func (service *Service) ListCustomer(ctx context.Context, query memberport.Custo
 	return memberport.CustomerListResult{Items: items, Limit: query.Limit, Offset: query.Offset, HasMore: hasMore}, nil
 }
 
+func (service *Service) CountCustomer(ctx context.Context, customerID int64) (int64, error) {
+	if !ready(service) || ctx == nil || customerID < 1 {
+		return 0, memberport.ErrInvalidInput
+	}
+	store, ok := service.store.(memberport.CustomerCounterStore)
+	if !ok {
+		return 0, memberport.ErrUnavailable
+	}
+	var count int64
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		var readErr error
+		count, readErr = store.CountCustomer(tx, customerID)
+		return readErr
+	})
+	if err != nil || count < 0 {
+		return 0, classify(err)
+	}
+	return count, nil
+}
+
 var _ memberport.CustomerReader = (*Service)(nil)
 
 func (service *Service) Export(ctx context.Context, query memberport.ExportQuery) (memberport.ExportResult, error) {

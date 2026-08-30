@@ -1,7 +1,8 @@
 import {
-  getBroadcastJobHistory, listBroadcastJobHistory,
-  type BroadcastJobHistory,
-} from './generated/health';
+  getBroadcastJobHistory,
+  listBroadcastJobHistory,
+} from "./generated/p4-broadcast-job-history/p4-broadcast-job-history";
+import { type BroadcastJobHistory } from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { BroadcastJobHistory };

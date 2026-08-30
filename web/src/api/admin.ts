@@ -1,38 +1,315 @@
 /** Current Go OpenAPI -> Kimi Admin DTO boundary. No page imports generated data. */
 import {
-  addCustomerTag, getCustomer, getCustomerContext, listCustomerSurveyAnswers, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
-  getChannelHistory, getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
-  getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
-  getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
-  getServicePeriodMember, getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
-  getServicePeriodProduct, getServicePeriodProductShare, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
-  listAdminOpsCategories, listCustomers, listLegacyAttachments, listLegacyChannelEntrants, listLegacyChannels, listLegacyCouponClaims,
-  listLegacyCouponProductOptions, listLegacyCoupons, getLegacyImageList, listLegacyMiniPrograms, listLegacyOrders, listLegacyRefunds, listLegacyWechatOrderExternalEffects,
-  listLegacyQuestionnaireSubmissions, listLegacyQuestionnaires, listLegacyWecomTagGroups, listLegacyWecomTags,
-  listProductLocalEntitlements, listProducts, listServicePeriodMemberViews, listServicePeriodMembers, queryServicePeriodMemberGrid,
-  listServicePeriodProducts, listSurveyQuestionnaireExternalPushLogs,
-  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, archiveServicePeriodProduct, copyAIAudiencePackage, copyLegacyWechatPayProduct, copyServicePeriodProduct, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createProduct, createRadarLink, createServicePeriodProduct, createServicePeriodMemberGridCollaborator, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, deleteServicePeriodMemberGridCollaborator, disableLegacyWechatPayProduct, disableRadarLink, disableServicePeriodProduct, enableLegacyWechatPayProduct, enableRadarLink, enableServicePeriodProduct, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getGetLegacyImageVariantUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateProduct, updateRadarLink, updateServicePeriodMemberFields, updateServicePeriodMemberGridCollaborator, updateServicePeriodProduct, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannel, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
-} from './generated/health';
-import { listSurveyExternalPushLogs } from './generated/health';
-import { setServicePeriodMemberGridExternalShare } from './generated/health';
-import { completeMediaAttachmentMultipartUpload, initiateMediaAttachmentMultipartUpload, putMediaAttachmentMultipartPart } from './generated/health';
-import { getExportRadarLinkEventsUrl } from './generated/health';
-import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, refreshLegacyHXCDirectory, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
-import { getLegacyAppSettingsResource, saveLegacyAppSettingsResource } from './generated/health';
-import { getAdminOpsPushCapabilities, listAdminOpsReleases } from './generated/health';
-import { archiveLegacyCoupon, copyLegacyCoupon, createLegacyCoupon, deleteLegacyCoupon, deleteLegacyWechatPayProduct, publishLegacyCoupon, stopLegacyCoupon, updateLegacyCoupon, type CouponUpsertRequest } from './generated/health';
-import { createLegacyQuestionnaire, deleteLegacyQuestionnaire, disableLegacyQuestionnaire, duplicateLegacyQuestionnaire, enableLegacyQuestionnaire, publishQuestionnairePublicDefinition, updateLegacyQuestionnaire, type LegacyQuestionnaireCreateRequest } from './generated/health';
-import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteRequest } from './generated/health';
-import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, listAIAudienceTemplates, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, previewAIAudienceTemplate, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, saveAIAudienceTemplateConfiguration, updateAIAudiencePackage, type AIAudiencePackageSender, type AIAudienceTemplateParameters, type AIAudienceTemplatePreviewRequest, type AIAudienceTemplateSaveRequest, type SegmentDefinition } from './generated/health';
-import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, getGroupOpsWebhookDescriptor, listAIAudienceOperationMembers, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, previewGroupOpsRunDue, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
-import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignMembers, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview, type CloudCampaignMemberStatusStatus, type ListCloudCampaignMembersParams } from './generated/health';
-import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, dispatchOutboundCampaignRecipient, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
-import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
-import { getWechatPayProductExternalPush, saveWechatPayProductExternalPush, type ProductAdminProjection as ApiProductAdminProjection } from './generated/health';
-import { getServicePeriodProductExternalPush, saveServicePeriodProductExternalPush } from './generated/health';
-import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
+  addCustomerTag,
+  getCustomer,
+  getCustomerContext,
+  removeCustomerTag,
+  setCustomerStage,
+  updateCustomer,
+  listCustomers,
+} from "./generated/p3-contact/p3-contact";
+import { listCustomerSurveyAnswers } from "./generated/p4-customer-360/p4-customer-360";
+import { listStages } from "./generated/p2-stages/p2-stages";
+import {
+  getChannelHistory,
+  getLegacyChannel,
+  listLegacyChannelEntrants,
+  listLegacyChannels,
+} from "./generated/p4-channel-compat/p4-channel-compat";
+import {
+  getLegacyAttachment,
+  getLegacyImage,
+  getLegacyImageFacets,
+  getLegacyMiniProgram,
+  listLegacyAttachments,
+  getLegacyImageList,
+  listLegacyMiniPrograms,
+  createLegacyMiniProgram,
+  deleteLegacyAttachment,
+  deleteLegacyImage,
+  deleteLegacyMiniProgram,
+  getDownloadLegacyAttachmentUrl,
+  getGetLegacyImageVariantUrl,
+  updateLegacyAttachment,
+  updateLegacyImage,
+  updateLegacyMiniProgram,
+  uploadLegacyAttachment,
+  uploadLegacyImage,
+} from "./generated/p4-media-compat/p4-media-compat";
+import {
+  getLegacyCoupon,
+  getLegacyCouponShare,
+  listLegacyCouponClaims,
+  listLegacyCouponProductOptions,
+  listLegacyCoupons,
+} from "./generated/p4-coupon-compat/p4-coupon-compat";
+import {
+  getLegacyOrder,
+  getLegacyOrderItems,
+  listLegacyOrders,
+  listLegacyRefunds,
+  listLegacyWechatOrderExternalEffects,
+} from "./generated/p4-order-compat/p4-order-compat";
+import {
+  getLegacyQuestionnaire,
+  getLegacyQuestionnaireResults,
+  getSurveyOperations,
+  getSurveyOperationsPageData,
+  getSurveySafeSubmissionAnalysis,
+  listLegacyQuestionnaireSubmissions,
+  listLegacyQuestionnaires,
+  listSurveyQuestionnaireExternalPushLogs,
+} from "./generated/p4-survey-compat/p4-survey-compat";
+import {
+  getAdminOpsCategory,
+  listAdminOpsCategories,
+} from "./generated/p4-adminops-safe/p4-adminops-safe";
+import {
+  getContactOwnerReassignmentPreview,
+  executeContactOwnerReassignmentPreview,
+  getCreateContactOwnerReassignmentPreviewUrl,
+  getDownloadContactOwnerReassignmentErrorsUrl,
+  getDownloadContactOwnerReassignmentResultsUrl,
+  getDownloadContactOwnerReassignmentTemplateUrl,
+} from "./generated/p4-contact-owner-reassignment/p4-contact-owner-reassignment";
+import {
+  getLegacyWecomTag,
+  getLegacyWecomTagExecutionGate,
+  getLegacyWecomTagGroup,
+  listLegacyWecomTagGroups,
+  listLegacyWecomTags,
+  archiveLegacyWecomTag,
+  archiveLegacyWecomTagGroup,
+  createLegacyWecomTag,
+  createLegacyWecomTagGroup,
+  queueLegacyWecomTagSync,
+  updateLegacyWecomTagGroupPatch,
+  updateLegacyWecomTagPatch,
+} from "./generated/p4-tag-compat/p4-tag-compat";
+import {
+  getProduct,
+  listProducts,
+  copyLegacyWechatPayProduct,
+  createProduct,
+  disableLegacyWechatPayProduct,
+  enableLegacyWechatPayProduct,
+  updateProduct,
+} from "./generated/p4-product/p4-product";
+import {
+  getServicePeriodMember,
+  getServicePeriodMemberGridAccess,
+  getServicePeriodMemberGridSchema,
+  getServicePeriodMemberGridShareSettings,
+  listServicePeriodMemberViews,
+  listServicePeriodMembers,
+  queryServicePeriodMemberGrid,
+  createServicePeriodMemberGridCollaborator,
+  deleteServicePeriodMemberGridCollaborator,
+  updateServicePeriodMemberFields,
+  updateServicePeriodMemberGridCollaborator,
+} from "./generated/p4-service-period-member-grid/p4-service-period-member-grid";
+import {
+  getServicePeriodProduct,
+  getServicePeriodProductShare,
+  listServicePeriodProducts,
+  archiveServicePeriodProduct,
+  copyServicePeriodProduct,
+  createServicePeriodProduct,
+  disableServicePeriodProduct,
+  enableServicePeriodProduct,
+  updateServicePeriodProduct,
+} from "./generated/p4-service-period-products/p4-service-period-products";
+import {
+  getServicePeriodProductExternalPush,
+  getWechatPayProductExternalPush,
+  saveServicePeriodProductExternalPush,
+  saveWechatPayProductExternalPush,
+} from "./generated/p4-commerce-external-push/p4-commerce-external-push";
+import { listProductLocalEntitlements } from "./generated/p4-product-entitlement/p4-product-entitlement";
+import {
+  activateAIAudiencePackage,
+  archiveAIAudiencePackage,
+  copyAIAudiencePackage,
+  createAIAudiencePackageGroup,
+  deleteAIAudiencePackageGroup,
+  getAIAudiencePackage,
+  listAIAudiencePackageGroups,
+  listAIAudiencePackages,
+  pauseAIAudiencePackage,
+  updateAIAudiencePackageGroup,
+} from "./generated/p4-ai-audience/p4-ai-audience";
+import {
+  createRadarLink,
+  disableRadarLink,
+  enableRadarLink,
+  getRadarLink,
+  getRadarLinkShareProjection,
+  listRadarLinkEvents,
+  listRadarLinks,
+  updateRadarLink,
+} from "./generated/p4-radar/p4-radar";
+import {
+  type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview,
+  type Customer as ApiCustomer,
+  type LegacyChannel,
+  type LegacyChannelListItem,
+  type LegacyQuestionnaire,
+  type ProductAdminProjection as ApiProductAdminProjection,
+  type RadarLink as ApiRadarLink,
+} from "./generated/health.schemas";
+import { listSurveyExternalPushLogs } from "./generated/p4-survey-compat/p4-survey-compat";
+import { setServicePeriodMemberGridExternalShare } from "./generated/p4-service-period-member-grid/p4-service-period-member-grid";
+import {
+  completeMediaAttachmentMultipartUpload,
+  initiateMediaAttachmentMultipartUpload,
+  putMediaAttachmentMultipartPart,
+} from "./generated/p4-media-content-delivery/p4-media-content-delivery";
+import { getExportRadarLinkEventsUrl } from "./generated/p4-radar/p4-radar";
+import {
+  archiveLegacyHXCSendConfig,
+  getLegacyHXCSendConfig,
+  refreshLegacyHXCDirectory,
+  reorderLegacyHXCSendConfigs,
+  upsertLegacyHXCSendConfig,
+} from "./generated/p4-hxc-compat/p4-hxc-compat";
+import { type LegacyHXCSenderConfig } from "./generated/health.schemas";
+import {
+  getLegacyAppSettingsResource,
+  saveLegacyAppSettingsResource,
+} from "./generated/p4-config-settings-compat/p4-config-settings-compat";
+import {
+  getAdminOpsPushCapabilities,
+  listAdminOpsReleases,
+} from "./generated/p4-adminops-safe/p4-adminops-safe";
+import {
+  archiveLegacyCoupon,
+  copyLegacyCoupon,
+  createLegacyCoupon,
+  deleteLegacyCoupon,
+  publishLegacyCoupon,
+  stopLegacyCoupon,
+  updateLegacyCoupon,
+} from "./generated/p4-coupon-compat/p4-coupon-compat";
+import { deleteLegacyWechatPayProduct } from "./generated/p4-product/p4-product";
+import { type CouponUpsertRequest } from "./generated/health.schemas";
+import {
+  createLegacyQuestionnaire,
+  deleteLegacyQuestionnaire,
+  disableLegacyQuestionnaire,
+  duplicateLegacyQuestionnaire,
+  enableLegacyQuestionnaire,
+  updateLegacyQuestionnaire,
+} from "./generated/p4-survey-compat/p4-survey-compat";
+import { publishQuestionnairePublicDefinition } from "./generated/p4-survey/p4-survey";
+import { type LegacyQuestionnaireCreateRequest } from "./generated/health.schemas";
+import {
+  createLegacyChannel,
+  updateLegacyChannel,
+} from "./generated/p4-channel-compat/p4-channel-compat";
+import { type LegacyChannelWriteRequest } from "./generated/health.schemas";
+import {
+  deleteAIAudienceAutomationBinding,
+  getAIAudienceAutomationBinding,
+  getAIAudienceConfigurationVersion,
+  getAIAudiencePackageSenders,
+  listAIAudiencePackageMembers,
+  listAIAudienceTemplates,
+  materializeAIAudienceConfiguration,
+  previewAIAudienceConfiguration,
+  previewAIAudienceTemplate,
+  putAIAudienceAutomationBinding,
+  putAIAudienceConfigurationVersion,
+  replaceAIAudiencePackageSenders,
+  saveAIAudienceTemplateConfiguration,
+  updateAIAudiencePackage,
+} from "./generated/p4-ai-audience/p4-ai-audience";
+import {
+  type AIAudiencePackageSender,
+  type AIAudienceTemplateParameters,
+  type AIAudienceTemplatePreviewRequest,
+  type AIAudienceTemplateSaveRequest,
+  type SegmentDefinition,
+} from "./generated/health.schemas";
+import {
+  activateGroupOpsPlan,
+  addGroupOpsPlanGroupAsset,
+  addGroupOpsPlanMember,
+  addGroupOpsPlanNode,
+  archiveGroupOpsPlan,
+  createGroupOpsPlan,
+  deleteGroupOpsPlan,
+  getGroupOpsPlan,
+  getGroupOpsWebhookDescriptor,
+  listGroupOpsExecutions,
+  listGroupOpsPlans,
+  pauseGroupOpsPlan,
+  previewGroupOpsPlanContent,
+  previewGroupOpsRunDue,
+  putGroupOpsWebhookDescriptor,
+  removeGroupOpsPlanGroupAsset,
+  removeGroupOpsPlanMember,
+  removeGroupOpsPlanNode,
+  updateGroupOpsPlan,
+  updateGroupOpsPlanNode,
+} from "./generated/p4-group-ops/p4-group-ops";
+import { listAIAudienceOperationMembers } from "./generated/p4-ai-audience/p4-ai-audience";
+import { type GroupOpsNodeRequest } from "./generated/health.schemas";
+import {
+  deleteCloudCampaign,
+  getCloudCampaign,
+  listCloudCampaigns,
+} from "./generated/p4-cloud-campaign/p4-cloud-campaign";
+import {
+  getCloudCampaignTouchPlan,
+  listCloudCampaignMembers,
+  listCloudCampaignPlans,
+  listCloudCampaignTouchPlans,
+} from "./generated/p4-campaign-initiation/p4-campaign-initiation";
+import {
+  getCloudCampaignTouchPlanRecipient,
+  getCloudCampaignTouchPlanRecipientReview,
+  getCloudCampaignTouchPlanReview,
+  listCloudCampaignTouchPlanRecipients,
+  mutateCloudCampaignTouchPlanRecipientReview,
+  mutateCloudCampaignTouchPlanReview,
+} from "./generated/p4-campaign-review-handoff/p4-campaign-review-handoff";
+import {
+  type CloudCampaignMemberStatusStatus,
+  type ListCloudCampaignMembersParams,
+} from "./generated/health.schemas";
+import {
+  acceptOutboundCampaignHandoff,
+  dispatchOutboundCampaignHandoff,
+  dispatchOutboundCampaignRecipient,
+  getOutboundCampaignDispatchReconciliation,
+  getOutboundCampaignHandoffSummary,
+  reconcileOutboundCampaignHandoff,
+} from "./generated/p4-outbound-operations/p4-outbound-operations";
+import {
+  createLegacyRefundIntent,
+  createLegacyWechatRefundIntent,
+} from "./generated/p4-order-compat/p4-order-compat";
+import {
+  queueSurveyExternalPushTest,
+  saveSurveyCompletionOperations,
+  saveSurveyExternalPushOperations,
+} from "./generated/p4-survey-compat/p4-survey-compat";
+import { type WechatShopRefundRequest } from "./generated/health.schemas";
+import {
+  getChannelAcquisitionAsset,
+  getChannelAcquisitionPreview,
+  listChannelAcquisitionAssets,
+  listChannelAcquisitionStaff,
+  publishChannelAcquisitionAsset,
+  updateChannelAcquisitionAssignees,
+} from "./generated/p4-channel/p4-channel";
+import {
+  type ChannelAcquisitionAssignmentRequest,
+  type ChannelAcquisitionAssetPublishRequest,
+} from "./generated/health.schemas";
+import { getCreateLegacyWechatOrderExportUrl } from "./generated/p4-order-compat/p4-order-compat";
+import { type LegacyWechatOrderExportRequest } from "./generated/health.schemas";
 import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, ProductAdminProjection, ProductExternalPush, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
-import { getCreateLegacyWechatOrderExportUrl, type LegacyWechatOrderExportRequest } from './generated/health';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;

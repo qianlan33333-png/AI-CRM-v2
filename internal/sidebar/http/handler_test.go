@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -125,6 +126,42 @@ func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
 	missing := call()
 	if missing.Code != http.StatusNotFound || missing.Header().Get("X-Thumbnail-Status") != "" {
 		t.Fatalf("missing response=%d headers=%v body=%s", missing.Code, missing.Header(), missing.Body.String())
+	}
+}
+
+func TestBootstrapHTTPReturnsWorkbenchOnlyForAuthorizedViewer(t *testing.T) {
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	profiles := thumbnailProfiles{contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer-private", UpdatedAt: time.Now().UTC()}}
+	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, &thumbnailMedia{}, []byte("01234567890123456789012345678901"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := func(ctx context.Context) *httptest.ResponseRecorder {
+		request := httptest.NewRequest(http.MethodPost, "/api/sidebar/v2/bootstrap", strings.NewReader(`{"external_userid":"wm_external_41"}`)).WithContext(ctx)
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		handler.Bootstrap(response, request)
+		return response
+	}
+
+	unauthenticated := call(context.Background())
+	if unauthenticated.Code != http.StatusOK || !strings.Contains(unauthenticated.Body.String(), `"state":"viewer_session_required"`) {
+		t.Fatalf("unauthenticated response=%d body=%s", unauthenticated.Code, unauthenticated.Body.String())
+	}
+	for _, forbidden := range []string{"customer-private", `"customer_id"`, `"owner_staff_id"`, `"context_token"`, `"workbench"`} {
+		if strings.Contains(unauthenticated.Body.String(), forbidden) {
+			t.Fatalf("unauthenticated response leaked %q: %s", forbidden, unauthenticated.Body.String())
+		}
+	}
+
+	authorizedContext := authport.WithAuthenticatedSession(context.Background(), principal, "sidebar-test-session")
+	ready := call(authorizedContext)
+	if ready.Code != http.StatusOK || !strings.Contains(ready.Body.String(), `"state":"ready"`) || !strings.Contains(ready.Body.String(), `"context_token"`) || !strings.Contains(ready.Body.String(), `"workbench"`) || !strings.Contains(ready.Body.String(), "customer-private") {
+		t.Fatalf("ready response=%d body=%s", ready.Code, ready.Body.String())
 	}
 }
 

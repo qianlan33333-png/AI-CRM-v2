@@ -196,3 +196,7 @@ type Store interface {
 type CustomerStore interface {
 	ListCustomer(context.Context, CustomerListQuery) ([]domain.Member, error)
 }
+
+type CustomerCounterStore interface {
+	CountCustomer(context.Context, int64) (int64, error)
+}

@@ -2,11 +2,11 @@
 	admin off
 }
 
-aa.youcangogogo.com {
+(aicrm-security) {
+	encode zstd gzip
 	header {
 		-Server
-		Cache-Control "no-store"
-		Content-Security-Policy "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self'"
+		Content-Security-Policy "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self' https://res.wx.qq.com; style-src 'self'"
 		Cross-Origin-Opener-Policy "same-origin"
 		Cross-Origin-Resource-Policy "same-origin"
 		Permissions-Policy "camera=(), geolocation=(), microphone=()"
@@ -16,16 +16,43 @@ aa.youcangogogo.com {
 		X-Frame-Options "DENY"
 	}
 
-	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
-	handle @backend {
-		reverse_proxy 127.0.0.1:8080
-	}
-
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
 
+	@html path / /index.html /admin /admin/ /admin/*.html /sidebar /sidebar/ /sidebar/*.html /h5 /h5/ /h5/*.html /member-grid-share /member-grid-share/ /member-grid-share/*.html
+	header @html Cache-Control "no-cache, must-revalidate"
+
+	@release_manifest path /asset-manifest.json
+	header @release_manifest Cache-Control "no-cache, must-revalidate"
+}
+
+aa.youcangogogo.com {
+	import aicrm-security
+
+	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
+	handle @backend {
+		header Cache-Control "private, no-store"
+		reverse_proxy 127.0.0.1:8080
+	}
+
 	handle {
 		root * /var/www/aicrm/current
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+id-dev.youcangogogo.com {
+	import aicrm-security
+
+	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
+	handle @backend {
+		header Cache-Control "private, no-store"
+		reverse_proxy 127.0.0.1:18124
+	}
+
+	handle {
+		root * /var/www/aicrm/id-dev-current
 		try_files {path} /index.html
 		file_server
 	}

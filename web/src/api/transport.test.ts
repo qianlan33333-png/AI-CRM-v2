@@ -5,13 +5,59 @@ import {
   unwrapGenerated,
 } from "./transport";
 import { sidebarApi } from "./sidebar";
-import { profileReceiptSteps } from "../sidebar/main";
+import {
+  profileReceiptSteps,
+  SidebarBootstrapCoordinator,
+} from "../sidebar/main";
 
 function assert(ok: unknown, message: string): asserts ok {
   if (!ok) throw new Error(message);
 }
 
 export async function runTransportContractTests(): Promise<void> {
+  const coordinator = new SidebarBootstrapCoordinator<string>();
+  const signals: AbortSignal[] = [];
+  let firstResolve: (value: string) => void = () => undefined;
+  let secondResolve: (value: string) => void = () => undefined;
+  const first = coordinator.run("external-1", (signal) => {
+    signals.push(signal);
+    return new Promise<string>((resolve) => {
+      firstResolve = resolve;
+    });
+  });
+  const duplicate = coordinator.run("external-1", () =>
+    Promise.reject(new Error("duplicate request must not start")),
+  );
+  assert(
+    first === duplicate && signals.length === 1,
+    "same Sidebar customer bootstrap must be single-flight",
+  );
+  const second = coordinator.run("external-2", (signal) => {
+    signals.push(signal);
+    return new Promise<string>((resolve) => {
+      secondResolve = resolve;
+    });
+  });
+  assert(
+    Number(signals.length) === 2 && signals[0].aborted,
+    "Sidebar customer switch must abort the previous bootstrap",
+  );
+  firstResolve("stale");
+  try {
+    await first;
+    throw new Error("stale Sidebar bootstrap was accepted");
+  } catch (error) {
+    assert(
+      error instanceof Error && error.name === "AbortError",
+      "stale Sidebar bootstrap response must be rejected",
+    );
+  }
+  secondResolve("fresh");
+  assert(
+    (await second) === "fresh",
+    "latest Sidebar bootstrap response must remain usable",
+  );
+
   const options = apiRequestOptions(
     { method: "POST", headers: { "X-Request-ID": "test" } },
     "csrf_token=legacy; aicrm_csrf=token%201; session=x",

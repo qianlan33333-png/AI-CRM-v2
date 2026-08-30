@@ -56,6 +56,13 @@ FROM questionnaire_submissions s
 ORDER BY s.submitted_at DESC, s.id DESC
 LIMIT sqlc.arg(row_limit)::integer;
 
+-- name: ListRecentCustomerAnswerIdentityCandidates :many
+SELECT s.id, s.questionnaire_id, s.unionid, s.external_userid, s.mobile,
+       s.total_score, s.submitted_at
+FROM questionnaire_submissions s
+ORDER BY s.submitted_at DESC, s.id DESC
+LIMIT sqlc.arg(row_limit)::integer;
+
 -- name: ListQuestionnaireSubmissionExportRows :many
 SELECT s.id, s.questionnaire_id, s.respondent_key, s.openid, s.unionid, s.external_userid,
        s.customer_name, s.follow_user_userid, s.matched_by, s.mobile,

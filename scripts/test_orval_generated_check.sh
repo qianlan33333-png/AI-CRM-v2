@@ -55,14 +55,14 @@ run_check "$valid_fixture" >/dev/null || fail "valid generated client was reject
 
 tampered_fixture="$(make_fixture tampered)"
 printf '%s\n' '// forbidden generated edit' \
-  >>"$tampered_fixture/web/src/api/generated/health.ts"
+  >>"$tampered_fixture/web/src/api/generated/health/health.ts"
 commit_fixture "$tampered_fixture" tampered
 if run_check "$tampered_fixture" >/dev/null 2>&1; then
   fail "committed generated-client drift was accepted"
 fi
 
 missing_fixture="$(make_fixture missing)"
-git -C "$missing_fixture" rm -q web/src/api/generated/health.ts
+git -C "$missing_fixture" rm -q web/src/api/generated/health/health.ts
 git -C "$missing_fixture" -c user.name=AI-CRM -c user.email=fixture.invalid \
   commit -q -m missing
 if run_check "$missing_fixture" >/dev/null 2>&1; then

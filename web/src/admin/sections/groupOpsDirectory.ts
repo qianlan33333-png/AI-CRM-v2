@@ -1,5 +1,5 @@
 import { readGroupOpsDirectory, readGroupOpsOwners, refreshGroupOpsDirectory } from '../../api/groupOpsDirectory';
-import type { GroupOpsDirectoryPage } from '../../api/generated/health';
+import type { GroupOpsDirectoryPage } from "../../api/generated/health.schemas";
 import { confirmBox } from '../../shared/ui/feedback';
 import { esc } from './util';
 

@@ -1,7 +1,13 @@
 import {
-  getOwnerMigrationResultHistory, getSidebarProfileHistory, listOwnerMigrationResultHistory, listSidebarProfileHistory,
-  type OwnerMigrationResultHistoryItem, type SidebarProfileHistoryItem,
-} from './generated/health';
+  getOwnerMigrationResultHistory,
+  getSidebarProfileHistory,
+  listOwnerMigrationResultHistory,
+  listSidebarProfileHistory,
+} from "./generated/p4-contact-history/p4-contact-history";
+import {
+  type OwnerMigrationResultHistoryItem,
+  type SidebarProfileHistoryItem,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { OwnerMigrationResultHistoryItem, SidebarProfileHistoryItem };

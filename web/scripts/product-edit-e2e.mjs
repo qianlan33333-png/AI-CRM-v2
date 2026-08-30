@@ -2,10 +2,11 @@ import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-let html = fs.readFileSync(path.join(root, 'dist/admin/productForm.html'), 'utf8');
-html = html.replace(/<script src="[^"]*assets\/admin\.js"><\/script>/, () => `<script>${fs.readFileSync(path.join(root, 'dist/assets/admin.js'), 'utf8')}</script>`);
+const html = fs.readFileSync(path.join(root, 'dist/admin/productForm.html'), 'utf8');
+const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
 const calls = [];
 const projection = {
   schema_version: 1, status: 'draft', enabled: false, buy_button_text: '购买课程', require_mobile: false,
@@ -19,7 +20,7 @@ const product = (patch = {}) => ({
 });
 const json = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(body) });
 const dom = new JSDOM(html, {
-  url: 'http://localhost/admin/productForm.html?id=21', runScripts: 'dangerously', pretendToBeVisual: true,
+  url: 'http://localhost/admin/productForm.html?id=21', runScripts: 'outside-only', pretendToBeVisual: true,
   beforeParse(window) {
     window.__AICRM_TEST_MOCK__ = false;
     window.document.cookie = `aicrm_csrf=${'c'.repeat(43)}`;
@@ -39,6 +40,7 @@ const dom = new JSDOM(html, {
     };
   },
 });
+dom.window.eval(bundle);
 await new Promise((resolve) => setTimeout(resolve, 60));
 const document = dom.window.document;
 if (!document.querySelector('#pfImages') || !document.querySelector('#pfWecomTagging') || !document.querySelector('#pfExternalPushReference') || document.body.textContent.includes('后端能力未就绪')) throw new Error('普通商品完整编辑表单未渲染');

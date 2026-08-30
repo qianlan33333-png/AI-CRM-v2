@@ -90,6 +90,18 @@ type sidebarMemberSource interface {
 	Get(context.Context, int64, string) (memberdomain.Member, error)
 	UpdateFields(context.Context, memberport.UpdateFieldsCommand) (memberdomain.Member, error)
 	ListCustomer(context.Context, memberport.CustomerListQuery) (memberport.CustomerListResult, error)
+	CountCustomer(context.Context, int64) (int64, error)
+}
+
+func (adapter sidebarMemberAdapter) CountCustomer(ctx context.Context, customerID int64) (int, error) {
+	if adapter.source == nil {
+		return 0, sidebarapp.ErrUnavailable
+	}
+	count, err := adapter.source.CountCustomer(ctx, customerID)
+	if err != nil || count < 0 || count > int64(^uint(0)>>1) {
+		return 0, sidebarMemberError(err)
+	}
+	return int(count), nil
 }
 
 type sidebarMemberAdapter struct{ source sidebarMemberSource }

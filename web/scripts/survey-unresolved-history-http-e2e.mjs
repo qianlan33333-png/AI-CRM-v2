@@ -2,11 +2,12 @@ import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dist = path.join(root, 'dist');
 const pageFile = path.join(dist, 'admin/questionnaires.html');
-const bundleFile = path.join(dist, 'assets/admin.js');
+const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
 const wait = () => new Promise((resolve) => setTimeout(resolve, 20));
 let passed = 0;
 const ok = (value, message) => { if (!value) throw new Error(message); passed++; };
@@ -17,9 +18,9 @@ const page = (items, total, limit, offset) => ({ ...source, items, total, limit,
 const response = (body, status = 200) => ({ status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(body) });
 
 async function load(query, mode = 'normal') {
-  if (!fs.existsSync(pageFile) || !fs.existsSync(bundleFile)) throw new Error('run npm run build before survey unresolved HTTP e2e');
+  if (!fs.existsSync(pageFile)) throw new Error('run npm run build before survey unresolved HTTP e2e');
   let html = fs.readFileSync(pageFile, 'utf8');
-  html = html.replace(/<script src="\.\.\/assets\/admin\.js"><\/script>/, () => `<script>${fs.readFileSync(bundleFile, 'utf8')}</script>`);
+  html = html.replace(/<script type="module" src="\.\.\/assets\/admin-[^"]+\.js"><\/script>/, () => `<script>${bundle}</script>`);
   const calls = [];
   const dom = new JSDOM(html, {
     url: `http://localhost/admin/questionnaires.html?${query}`,

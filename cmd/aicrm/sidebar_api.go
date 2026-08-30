@@ -12,6 +12,10 @@ func (handler *candidateHandler) MintSidebarContext(writer http.ResponseWriter, 
 	handler.sidebar.MintContext(writer, request)
 }
 
+func (handler *candidateHandler) BootstrapSidebar(writer http.ResponseWriter, request *http.Request) {
+	handler.sidebar.Bootstrap(writer, request)
+}
+
 func (handler *candidateHandler) GetSidebarWorkbench(writer http.ResponseWriter, request *http.Request, params api.GetSidebarWorkbenchParams) {
 	handler.sidebar.Workbench(writer, request, string(params.XSidebarContextToken))
 }

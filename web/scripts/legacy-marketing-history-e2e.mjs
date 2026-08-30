@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const output = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-legacy-marketing-history-'));
 const entry = path.join(root, 'src/admin/sections/legacyMarketingHistory.ts');
 const dist = path.join(root, 'dist');
 const pageFile = path.join(dist, 'admin/automation.html');
-const bundleFile = path.join(dist, 'assets/admin.js');
 const saved = { fetch: globalThis.fetch, document: globalThis.document, window: globalThis.window };
 let passed = 0;
 const ok = (value, message) => { if (!value) throw new Error(message); passed++; };
@@ -60,9 +60,9 @@ try {
   await sleep(10);
   ok(stage.querySelector('[role="alert"]')?.textContent.includes('未显示历史数据，也未回退 Mock') && !stage.textContent.includes('高价值'), 'failed reads clear prior content without Mock fallback');
   const boot = async (mode = 'normal') => {
-    if (!fs.existsSync(pageFile) || !fs.existsSync(bundleFile)) throw new Error('run npm run build before legacy marketing HTTP e2e');
-    const bundle = fs.readFileSync(bundleFile, 'utf8').replace(/<\/script/gi, '<\\/script');
-    const html = fs.readFileSync(pageFile, 'utf8').replace(/<script src="\.\.\/assets\/admin\.js"><\/script>/, () => `<script>${bundle}</script>`);
+    if (!fs.existsSync(pageFile)) throw new Error('run npm run build before legacy marketing HTTP e2e');
+    const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
+    const html = fs.readFileSync(pageFile, 'utf8').replace(/<script type="module" src="\.\.\/assets\/admin-[^"]+\.js"><\/script>/, () => `<script>${bundle}</script>`);
     const bootCalls = [];
     const bootDOM = new JSDOM(html, {
       url: 'http://localhost/admin/automation.html?legacy_marketing_history=1', runScripts: 'dangerously', pretendToBeVisual: true,

@@ -19,9 +19,6 @@ import type { AdminDbWithMiniProgramList, AdminReadContext, ChannelWriteInput, C
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText } from './sections/util';
-import { downloadQr, renderQr } from './sections/qr';
-import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
-import { openGroupOpsDirectory } from './sections/groupOpsDirectory';
 import { createWeComAcquisitionLink, deleteWeComAcquisitionLink, getWeComAcquisitionLink, listWeComAcquisitionLinks, reconcileWeComAcquisitionLink, updateWeComAcquisitionLink, type CustomerAcquisitionLink, type CustomerAcquisitionLinkInput, type WeComAcquisitionLinkWriteResult } from '../api/wecomAcquisitionLinks';
 
 const ACCENT = '#3370ff';
@@ -526,15 +523,18 @@ export class AdminController extends PageBase {
       toast(`后端能力未就绪：${kind}暂无可用公开分享地址`, true);
       return;
     }
+    const shareUrl = path ? new URL(path, location.origin).toString() : 'https://mock.invalid/s/' + code;
     this.setState({
       modal: 'share',
       shareKind: kind,
       shareTitle: title,
       shareCode: code,
-      shareUrl: path ? new URL(path, location.origin).toString() : 'https://mock.invalid/s/' + code,
+      shareUrl,
     });
-    const el = document.getElementById('shareQrBox');
-    if (el) renderQr(el, this.state.shareUrl, `${kind}分享`);
+    void import('./sections/qr').then(({ renderQr }) => {
+      const el = document.getElementById('shareQrBox');
+      if (el && this.state.modal === 'share' && this.state.shareUrl === shareUrl) renderQr(el, shareUrl, `${kind}分享`);
+    }).catch(() => toast('二维码模块加载失败', true));
   }
 
   copyShareLink(): void {
@@ -1274,7 +1274,8 @@ export class AdminController extends PageBase {
     const file = input?.files?.[0];
     if (!file) { toast('请先选择 CSV 或 Excel 文件', true); return; }
     this.setState({ saving: true, migFileName: file.name });
-    void ownerReassignmentCsvFromFile(file)
+    void import('./ownerReassignmentFile')
+      .then(({ ownerReassignmentCsvFromFile }) => ownerReassignmentCsvFromFile(file))
       .then((csv) => this.api.createOwnerReassignmentPreview(csv))
       .then((preview) => {
         this.setState({ saving: false, migPreview: preview, migConfirmed: false });
@@ -1658,7 +1659,7 @@ export class AdminController extends PageBase {
   private openGroupOpsDirectory(): void {
     if (this.api.mode !== 'http') return toast('群目录需要真实 HTTP 与可信 owner_staff_id；测试 Mock 不提供目录刷新', true);
     const textarea = document.getElementById('groupOpsAssets') as HTMLTextAreaElement | null;
-    void openGroupOpsDirectory(textarea ? { selected: textarea.value.split(/[\s,，]+/).filter(Boolean) } : {}).then((selected) => {
+    void import('./sections/groupOpsDirectory').then(({ openGroupOpsDirectory }) => openGroupOpsDirectory(textarea ? { selected: textarea.value.split(/[\s,，]+/).filter(Boolean) } : {})).then((selected) => {
       if (!textarea || selected === null) return;
       textarea.value = selected.join('\n');
       toast('已更新待保存群选择；点击保存完整计划后写入，未发送群消息');
@@ -2023,7 +2024,7 @@ export class AdminController extends PageBase {
       url: s.shareUrl,
       copyLink: () => this.copyShareLink(),
       preview: () => this.previewShareLink(),
-      saveQr: () => downloadQr(s.shareUrl, `${s.shareCode || 'share'}-qr.svg`),
+      saveQr: () => { void import('./sections/qr').then(({ downloadQr }) => downloadQr(s.shareUrl, `${s.shareCode || 'share'}-qr.svg`)).catch(() => toast('二维码模块加载失败', true)); },
       close: () => this.closeModal(),
     };
 

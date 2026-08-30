@@ -1,7 +1,15 @@
 import {
-  listGroupOpsHistoryPlans, listGroupOpsHistoryDirectory, listGroupOpsHistoryGroups, listGroupOpsHistoryNodes,
-  type GroupOpsHistoryPlanPage, type GroupOpsHistoryDirectoryPage, type GroupOpsHistoryGroupPage, type GroupOpsHistoryNodePage,
-} from './generated/health';
+  listGroupOpsHistoryPlans,
+  listGroupOpsHistoryDirectory,
+  listGroupOpsHistoryGroups,
+  listGroupOpsHistoryNodes,
+} from "./generated/p4-groupops-history/p4-groupops-history";
+import {
+  type GroupOpsHistoryPlanPage,
+  type GroupOpsHistoryDirectoryPage,
+  type GroupOpsHistoryGroupPage,
+  type GroupOpsHistoryNodePage,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type GroupOpsHistoryPage = GroupOpsHistoryPlanPage | GroupOpsHistoryDirectoryPage | GroupOpsHistoryGroupPage | GroupOpsHistoryNodePage;

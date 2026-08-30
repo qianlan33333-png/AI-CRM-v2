@@ -215,6 +215,21 @@ type WorkbenchResult struct {
 	Safety             Safety                     `json:"safety"`
 }
 
+type BootstrapResult struct {
+	State        string           `json:"state"`
+	Token        string           `json:"context_token,omitempty"`
+	ExpiresAt    time.Time        `json:"expires_at,omitempty"`
+	CustomerID   int64            `json:"customer_id,omitempty"`
+	OwnerStaffID int64            `json:"owner_staff_id,omitempty"`
+	Workbench    *WorkbenchResult `json:"workbench,omitempty"`
+	Safety       Safety           `json:"safety"`
+}
+
+type resolvedContext struct {
+	result  ContextResult
+	profile contactport.SidebarProfile
+}
+
 type Service struct {
 	corp           CorpReader
 	identity       IdentityResolver
@@ -224,6 +239,7 @@ type Service struct {
 	orders         orderport.Query
 	members        MemberApplication
 	media          mediaport.ImageLibraryReader
+	workbench      WorkbenchReader
 	variants       mediaport.ImageVariantReader
 	products       ShareableProductCatalog
 	temporaryMedia TemporaryMediaPreparer
@@ -240,57 +256,94 @@ func NewService(corp CorpReader, identity IdentityResolver, phones PhoneBinder, 
 	if corp == nil || identity == nil || phones == nil || profiles == nil || surveys == nil || orders == nil || members == nil || media == nil {
 		return nil, ErrUnavailable
 	}
-	service := &Service{corp: corp, identity: identity, phones: phones, profiles: profiles, surveys: surveys, orders: orders, members: members, media: media, codec: codec, now: time.Now, tokenTTL: 15 * time.Minute}
+	service := &Service{corp: corp, identity: identity, phones: phones, profiles: profiles, surveys: surveys, orders: orders, members: members, media: media, workbench: domainWorkbenchReader{surveys: surveys, orders: orders, members: members, media: media}, codec: codec, now: time.Now, tokenTTL: 15 * time.Minute}
 	if len(options) > 1 {
 		return nil, ErrUnavailable
 	}
 	if len(options) == 1 {
 		service.products = options[0].Products
 		service.temporaryMedia = options[0].Media
+		if options[0].Workbench != nil {
+			service.workbench = options[0].Workbench
+		}
 	}
 	service.variants, _ = media.(mediaport.ImageVariantReader)
 	return service, nil
 }
 
 func (service *Service) MintContext(ctx context.Context, principal authport.Principal, session authport.SessionRef, authenticated bool, externalUserID string) (ContextResult, error) {
+	resolved, err := service.resolveContext(ctx, principal, session, authenticated, externalUserID)
+	return resolved.result, err
+}
+
+func (service *Service) Bootstrap(ctx context.Context, principal authport.Principal, session authport.SessionRef, authenticated bool, externalUserID string) (BootstrapResult, error) {
+	resolved, err := service.resolveContext(ctx, principal, session, authenticated, externalUserID)
+	if err != nil {
+		return BootstrapResult{}, err
+	}
+	result := BootstrapResult{
+		State:  resolved.result.State,
+		Safety: resolved.result.Safety,
+	}
+	if resolved.result.State != "ready" {
+		return result, nil
+	}
+	workbench, err := service.workbenchWithProfile(ctx, Scope{
+		CustomerID: resolved.result.CustomerID, OwnerStaffID: resolved.result.OwnerStaffID, Principal: principal,
+	}, resolved.profile)
+	if err != nil {
+		return BootstrapResult{}, err
+	}
+	result.Token = resolved.result.Token
+	result.ExpiresAt = resolved.result.ExpiresAt
+	result.CustomerID = resolved.result.CustomerID
+	result.OwnerStaffID = resolved.result.OwnerStaffID
+	result.Workbench = &workbench
+	return result, nil
+}
+
+func (service *Service) resolveContext(ctx context.Context, principal authport.Principal, session authport.SessionRef, authenticated bool, externalUserID string) (resolvedContext, error) {
 	if !validExternalUserID(externalUserID) {
-		return ContextResult{}, ErrInvalidInput
+		return resolvedContext{}, ErrInvalidInput
 	}
 	if !authenticated {
-		return ContextResult{State: "viewer_session_required", Safety: localSafety()}, nil
+		return resolvedContext{result: ContextResult{State: "viewer_session_required", Safety: localSafety()}}, nil
 	}
 	if !validPrincipal(principal) {
-		return ContextResult{}, ErrInvalidInput
+		return resolvedContext{}, ErrInvalidInput
 	}
 	sessionFingerprint, err := service.codec.sessionFingerprint(session)
 	if err != nil {
-		return ContextResult{}, ErrViewerSession
+		return resolvedContext{}, ErrViewerSession
 	}
 	corpID, err := service.corp.CorpID(ctx)
 	if err != nil || corpID == "" {
-		return ContextResult{}, ErrUnavailable
+		return resolvedContext{}, ErrUnavailable
 	}
 	resolved, err := service.identity.Resolve(ctx, identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:" + corpID, Value: externalUserID, Assurance: identityport.AssuranceVerified, Source: "sidebar"})
 	if err != nil {
-		return ContextResult{}, ErrUnavailable
+		return resolvedContext{}, ErrUnavailable
 	}
 	if resolved.Status != identityport.ResolveFound || resolved.CustomerID < 1 {
-		return ContextResult{State: "customer_not_bound", Safety: localSafety()}, nil
+		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
 	}
 	profile, err := service.profiles.ResolveSidebarProfile(ctx, resolved.CustomerID)
 	if err != nil {
-		return ContextResult{}, mapDependencyError(err)
+		return resolvedContext{}, mapDependencyError(err)
 	}
 	if !principalAllowsOwner(principal, profile.OwnerStaffID) {
-		return ContextResult{State: "customer_not_bound", Safety: localSafety()}, nil
+		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
 	}
 	now := service.now().UTC().Truncate(time.Second)
 	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
 	token, err := service.codec.encode(claims)
 	if err != nil {
-		return ContextResult{}, err
+		return resolvedContext{}, err
 	}
-	return ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Safety: localSafety()}, nil
+	return resolvedContext{
+		result:  ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Safety: localSafety()},
+		profile: profile,
+	}, nil
 }
 
 func (service *Service) VerifyContext(ctx context.Context, principal authport.Principal, session authport.SessionRef, token string) (Scope, error) {
@@ -472,23 +525,15 @@ func (service *Service) Workbench(ctx context.Context, scope Scope) (WorkbenchRe
 	if err != nil {
 		return WorkbenchResult{}, err
 	}
-	questionnaires, err := service.Questionnaires(ctx, scope, 20)
+	return service.workbenchWithProfile(ctx, scope, profile.Profile)
+}
+
+func (service *Service) workbenchWithProfile(ctx context.Context, scope Scope, profile contactport.SidebarProfile) (WorkbenchResult, error) {
+	counts, err := service.workbench.Read(ctx, contactport.CustomerID(scope.CustomerID))
 	if err != nil {
 		return WorkbenchResult{}, err
 	}
-	orders, err := service.Orders(ctx, scope, 1, 0)
-	if err != nil {
-		return WorkbenchResult{}, err
-	}
-	periodic, err := service.PeriodicOrders(ctx, scope, 100, 0)
-	if err != nil {
-		return WorkbenchResult{}, err
-	}
-	materials, err := service.Materials(ctx, mediaport.ImageListQuery{Limit: 1, EnabledOnly: true})
-	if err != nil {
-		return WorkbenchResult{}, err
-	}
-	return WorkbenchResult{Profile: profile.Profile, QuestionnaireCount: len(questionnaires.Items), OrderCount: orders.Total, PeriodicOrderCount: len(periodic.Items), MaterialCount: materials.Total, Safety: localSafety()}, nil
+	return WorkbenchResult{Profile: profile, QuestionnaireCount: counts.Questionnaires, OrderCount: counts.Orders, PeriodicOrderCount: counts.PeriodicOrders, MaterialCount: counts.Materials, Safety: localSafety()}, nil
 }
 
 func validPrincipal(value authport.Principal) bool {

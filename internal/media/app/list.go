@@ -54,6 +54,10 @@ type ImageListStore interface {
 	ListImageRows(context.Context, ImageListFilter, int64, int64) (ImageListRead, error)
 }
 
+type ImageCountStore interface {
+	CountEnabledImages(context.Context) (int64, error)
+}
+
 func (service *Service) ListImages(ctx context.Context, query mediaport.ImageListQuery) (mediaport.ImageListPage, error) {
 	limit, offset := clampImageListPage(query.Limit, query.Offset)
 	empty := emptyImageListPage(limit, offset)
@@ -91,6 +95,26 @@ func (service *Service) ListImages(ctx context.Context, query mediaport.ImageLis
 		items = append(items, projectImageListItem(row))
 	}
 	return mediaport.ImageListPage{Items: items, Total: read.Total, Limit: limit, Offset: offset}, nil
+}
+
+func (service *Service) CountEnabledImages(ctx context.Context) (int64, error) {
+	if service == nil || ctx == nil || service.uow == nil || service.store == nil {
+		return 0, ErrListUnavailable
+	}
+	store, ok := service.store.(ImageCountStore)
+	if !ok {
+		return 0, ErrListUnavailable
+	}
+	var count int64
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		var readErr error
+		count, readErr = store.CountEnabledImages(tx)
+		return readErr
+	})
+	if err != nil || count < 0 {
+		return 0, ErrListUnavailable
+	}
+	return count, nil
 }
 
 func (service *Service) LocalImageExists(ctx context.Context, imageID int64) (bool, error) {

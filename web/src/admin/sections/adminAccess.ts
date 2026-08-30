@@ -1,9 +1,11 @@
 import {
   listAdminAccessMembers,
   saveAdminAccessMembers,
+} from "../../api/generated/p4-setup-wizard/p4-setup-wizard";
+import {
   type AdminAccessReadResponse,
   type AdminAccessSaveResponse,
-} from '../../api/generated/health';
+} from "../../api/generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from '../../api/transport';
 import { esc } from './util';
 

@@ -47,13 +47,22 @@ grep -Eq '^CapabilityBoundingSet=.*CAP_(SYS_ADMIN|DAC_OVERRIDE|NET_ADMIN)' "$ser
   fail 'broad edge capabilities are forbidden'
 
 require_caddy $'\tadmin off'
+require_caddy '(aicrm-security) {'
+require_caddy $'\tencode zstd gzip'
 require_caddy 'aa.youcangogogo.com {'
+require_caddy 'id-dev.youcangogogo.com {'
 require_caddy $'\t@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz'
 require_caddy $'\t\treverse_proxy 127.0.0.1:8080'
+require_caddy $'\t\treverse_proxy 127.0.0.1:18124'
 require_caddy $'\t\ttry_files {path} /index.html'
 require_caddy $'\t\tfile_server'
 require_caddy $'\t\troot * /var/www/aicrm/current'
-require_caddy $'\t\tContent-Security-Policy "default-src '\''self'\''; base-uri '\''none'\''; connect-src '\''self'\''; font-src '\''self'\''; form-action '\''self'\''; frame-ancestors '\''none'\''; img-src '\''self'\'' data:; object-src '\''none'\''; script-src '\''self'\''; style-src '\''self'\''"'
+require_caddy $'\t\troot * /var/www/aicrm/id-dev-current'
+require_caddy $'\theader @assets Cache-Control "public, max-age=31536000, immutable"'
+require_caddy $'\theader @html Cache-Control "no-cache, must-revalidate"'
+require_caddy $'\theader @release_manifest Cache-Control "no-cache, must-revalidate"'
+require_caddy $'\t\theader Cache-Control "private, no-store"'
+require_caddy $'\t\tContent-Security-Policy "default-src '\''self'\''; base-uri '\''none'\''; connect-src '\''self'\''; font-src '\''self'\''; form-action '\''self'\''; frame-ancestors '\''none'\''; img-src '\''self'\'' data:; object-src '\''none'\''; script-src '\''self'\'' https://res.wx.qq.com; style-src '\''self'\''"'
 require_caddy $'\t\tStrict-Transport-Security "max-age=31536000; includeSubDomains"'
 require_caddy $'\t\tX-Content-Type-Options "nosniff"'
 require_caddy $'\t\tX-Frame-Options "DENY"'
@@ -62,5 +71,9 @@ grep -Eq '^[[:space:]]*reverse_proxy[[:space:]]+[^1]' "$caddy_file" &&
   fail 'only the literal loopback backend may be proxied'
 grep -Eq '^[[:space:]]*tls[[:space:]]+(internal|off)' "$caddy_file" &&
   fail 'public TLS may not be disabled or replaced by an internal issuer'
+grep -Eq '^[[:space:]]*Cache-Control "no-store"[[:space:]]*$' "$caddy_file" &&
+  fail 'global no-store is forbidden'
+grep -Eq '/var/www/aicrm/[0-9a-f]{40}(/|$)' "$caddy_file" &&
+  fail 'Caddy must use stable release symlinks instead of SHA paths'
 
 printf 'g2-web-edge-contract: PASS\n'

@@ -7,6 +7,7 @@
 import { newSidebarIdempotencyKey, sidebarApi } from "../api/sidebar";
 import type {
   SidebarAgentConfigSignature,
+  SidebarBootstrapResponse,
   SidebarChatActivityResponse,
   SidebarOtherStaffChatResponse,
   SidebarMaterialResponse,
@@ -25,10 +26,13 @@ import type {
   SidebarTimelineResponse,
   SidebarWorkbenchResponse,
   UpdateSidebarProfileBodyPatch,
-} from "../api/generated/health";
+} from "../api/generated/health.schemas";
 import { initFeedback } from "../shared/ui/feedback";
 
 const SDK_TIMEOUT_MS = 5000;
+const SDK_CACHE_MAX_MS = 5 * 60 * 1000;
+const SDK_CACHE_SAFETY_MS = 30 * 1000;
+const SDK_CACHE_KEY = "aicrm.sidebar.jssdk.agent-config.v1";
 const PROFILE_SAVE_DEBOUNCE_MS = 520;
 
 export const PROFILE_FIELDS = [
@@ -50,6 +54,7 @@ const PROFILE_LABELS: Record<ProfileField, string> = {
 
 type BoundSidebarApi = Pick<
   typeof sidebarApi,
+  | "bootstrap"
   | "mintContext"
   | "agentConfig"
   | "oauthStartUrl"
@@ -104,9 +109,6 @@ type TemporaryMediaOperation = {
   requiresManualConfirmation: boolean;
 };
 
-const TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX =
-  "aicrm.sidebar.temporary-media-operation.v1:";
-
 type SidebarTab =
   | "profile"
   | "questionnaires"
@@ -117,6 +119,41 @@ type SidebarTab =
   | "periodic_orders"
   | "products"
   | "materials";
+
+export class SidebarBootstrapCoordinator<T> {
+  private flight: {
+    externalUserId: string;
+    generation: number;
+    controller: AbortController;
+    promise: Promise<T>;
+  } | null = null;
+  private generation = 0;
+
+  run(
+    externalUserId: string,
+    request: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    if (this.flight?.externalUserId === externalUserId)
+      return this.flight.promise;
+    this.flight?.controller.abort();
+    const generation = ++this.generation;
+    const controller = new AbortController();
+    const promise = request(controller.signal).then((value) => {
+      if (generation !== this.generation) {
+        const error = new Error("Sidebar 客户上下文已切换，已拒绝过期响应。");
+        error.name = "AbortError";
+        throw error;
+      }
+      return value;
+    });
+    this.flight = { externalUserId, generation, controller, promise };
+    const clear = () => {
+      if (this.flight?.promise === promise) this.flight = null;
+    };
+    void promise.then(clear, clear);
+    return promise;
+  }
+}
 
 function isSidebarTab(value: string | undefined): value is SidebarTab {
   return (
@@ -313,6 +350,11 @@ export class SidebarController {
     TemporaryMediaOperation
   >();
   private jssdkReady = false;
+  private degradedReady = false;
+  private initializationVersion = 0;
+  private tabRequestController = new AbortController();
+  private readonly bootstrapCoordinator =
+    new SidebarBootstrapCoordinator<SidebarBootstrapResponse>();
   private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
   private readonly thumbnailURLs = new Map<number, string>();
   private phoneBindingLoading = false;
@@ -382,8 +424,7 @@ export class SidebarController {
         return;
       }
       const materialFilter = target.dataset.materialFilter as
-        | MaterialFilter
-        | undefined;
+        MaterialFilter | undefined;
       if (materialFilter && materialFilter in this.materialFilters)
         this.materialFilters[materialFilter] = target.value;
       const memberRef = target.dataset.periodicRemark;
@@ -484,6 +525,8 @@ export class SidebarController {
   }
 
   private async initialize(): Promise<void> {
+    const initializationVersion = ++this.initializationVersion;
+    this.cancelTabRequests();
     this.setContextStatus("正在识别当前客户并准备本地上下文…");
     this.renderTabs(false);
     const query = new URLSearchParams(
@@ -491,14 +534,15 @@ export class SidebarController {
     );
     let externalUserid = this.queryExternalUserid(query);
 
+    let sdkPromise: Promise<boolean>;
     if (externalUserid) {
       this.externalUserId = externalUserid;
-      // A query-bound customer can still use the local context path when the
-      // browser is outside WeCom; SDK errors remain visible instead of blocking
-      // the real local API call.
-      await this.prepareJssdk();
+      // The query already identifies the customer. Local bootstrap and JSSDK
+      // preparation are independent and start together.
+      sdkPromise = this.prepareJssdk();
     } else {
       const sdkReady = await this.prepareJssdk();
+      if (initializationVersion !== this.initializationVersion) return;
       if (sdkReady) {
         try {
           externalUserid = await this.resolveExternalUseridFromWx();
@@ -510,6 +554,7 @@ export class SidebarController {
           return;
         }
       }
+      sdkPromise = Promise.resolve(sdkReady);
     }
 
     if (!externalUserid) {
@@ -522,27 +567,47 @@ export class SidebarController {
     this.externalUserId = externalUserid;
     this.setContextStatus("正在读取客户范围的本地工作台…");
     try {
-      const context = await this.api.mintContext({
-        external_userid: externalUserid,
-      });
-      if (context.state === "viewer_session_required") {
+      const bootstrap = await this.bootstrap(externalUserid);
+      if (initializationVersion !== this.initializationVersion) return;
+      if (bootstrap.state === "viewer_session_required") {
         this.renderViewerSessionRequired();
         return;
       }
-      if (context.state === "customer_not_bound") {
+      if (bootstrap.state === "customer_not_bound") {
         this.renderContextError("当前员工无权查看该客户，客户上下文未建立。");
         return;
       }
-      if (context.state !== "ready" || !context.context_token) {
+      if (
+        bootstrap.state !== "ready" ||
+        !bootstrap.context_token ||
+        !bootstrap.workbench
+      ) {
         this.renderContextError(
-          `Sidebar 上下文不可用：${context.state || "unknown"}`,
+          `Sidebar 上下文不可用：${bootstrap.state || "unknown"}`,
         );
         return;
       }
-      this.contextToken = context.context_token;
-      const workbench = await this.api.workbench(this.contextToken);
-      this.renderWorkbench(workbench);
+      this.contextToken = bootstrap.context_token;
+      this.degradedReady = false;
+      this.renderWorkbench(bootstrap.workbench);
+      if (externalUserid) {
+        this.setContextStatus(
+          "客户画像已就绪；企微 JSSDK 正在并行初始化。",
+          "warn",
+        );
+      }
+      const sdkReady = await sdkPromise;
+      if (initializationVersion !== this.initializationVersion) return;
+      this.degradedReady = !sdkReady;
+      this.renderActiveContent();
+      this.setContextStatus(
+        sdkReady
+          ? "客户范围工作台已就绪：当前数据来自本地 CRM；真实企微外部效果仍需单独回执。"
+          : "degraded_ready：客户画像和本地只读能力可用；企微 JSSDK 未就绪，发送按钮已禁用。",
+        sdkReady ? "" : "warn",
+      );
     } catch (error) {
+      if (initializationVersion !== this.initializationVersion) return;
       const status = errorStatus(error);
       const message =
         status === 401
@@ -552,6 +617,25 @@ export class SidebarController {
             : errorMessage(error, "Sidebar 工作台读取失败");
       this.renderContextError(message);
     }
+  }
+
+  private bootstrap(externalUserId: string): Promise<SidebarBootstrapResponse> {
+    return this.bootstrapCoordinator.run(externalUserId, (signal) =>
+      this.api.bootstrap({ external_userid: externalUserId }, signal),
+    );
+  }
+
+  private cancelTabRequests(): void {
+    this.tabRequestController.abort();
+    this.tabRequestController = new AbortController();
+    this.questionnaireRequestVersion += 1;
+    this.timelineRequestVersion += 1;
+    this.chatActivityRequestVersion += 1;
+    this.otherStaffChatsRequestVersion += 1;
+    this.ordersRequestVersion += 1;
+    this.periodicOrdersRequestVersion += 1;
+    this.productsRequestVersion += 1;
+    this.materialsRequestVersion += 1;
   }
 
   private queryExternalUserid(query: URLSearchParams): string {
@@ -598,11 +682,15 @@ export class SidebarController {
     }
     this.setSdkStatus("loading", "读取 JSSDK…");
     try {
-      const config = await withTimeout(
-        this.api.agentConfig(url),
-        SDK_TIMEOUT_MS,
-        "JSSDK 配置读取超时，请重试。",
-      );
+      let config = this.cachedAgentConfig(url);
+      if (!config) {
+        config = await withTimeout(
+          this.api.agentConfig(url),
+          SDK_TIMEOUT_MS,
+          "JSSDK 配置读取超时，请重试。",
+        );
+        this.cacheAgentConfig(config);
+      }
       this.validateAgentConfig(config);
       await withTimeout(
         this.configureAgent(wx, config),
@@ -620,6 +708,53 @@ export class SidebarController {
         "error",
       );
       return false;
+    }
+  }
+
+  private cachedAgentConfig(url: string): SidebarAgentConfigSignature | null {
+    const storage = this.doc.defaultView?.sessionStorage;
+    if (!storage) return null;
+    try {
+      const raw = storage.getItem(SDK_CACHE_KEY);
+      if (!raw) return null;
+      const cached = JSON.parse(raw) as {
+        url?: unknown;
+        usable_until?: unknown;
+        config?: SidebarAgentConfigSignature;
+      };
+      if (
+        cached.url !== url ||
+        typeof cached.usable_until !== "number" ||
+        cached.usable_until <= Date.now() ||
+        !cached.config ||
+        cached.config.url !== url
+      ) {
+        storage.removeItem(SDK_CACHE_KEY);
+        return null;
+      }
+      this.validateAgentConfig(cached.config);
+      return cached.config;
+    } catch {
+      storage.removeItem(SDK_CACHE_KEY);
+      return null;
+    }
+  }
+
+  private cacheAgentConfig(config: SidebarAgentConfigSignature): void {
+    const storage = this.doc.defaultView?.sessionStorage;
+    if (!storage || config.url !== this.currentPageUrl()) return;
+    const providerExpiry = Date.parse(config.ticket_expires_at);
+    const usableUntil =
+      Math.min(providerExpiry, Date.now() + SDK_CACHE_MAX_MS) -
+      SDK_CACHE_SAFETY_MS;
+    if (!Number.isFinite(providerExpiry) || usableUntil <= Date.now()) return;
+    try {
+      storage.setItem(
+        SDK_CACHE_KEY,
+        JSON.stringify({ url: config.url, usable_until: usableUntil, config }),
+      );
+    } catch {
+      // A session without storage remains correct; it only loses the short cache.
     }
   }
 
@@ -751,9 +886,7 @@ export class SidebarController {
     this.setContextStatus("正在接收 OAuth 回调并建立员工会话…");
     try {
       const route = this.api.oauthCallbackUrl({ code, state });
-      this.setContextStatus(
-        "OAuth 回调正在由服务端验证，尚未确认员工会话…",
-      );
+      this.setContextStatus("OAuth 回调正在由服务端验证，尚未确认员工会话…");
       this.navigate(route);
       return true;
     } catch (error) {
@@ -937,18 +1070,38 @@ export class SidebarController {
     this.activeTab = tab;
     this.renderTabs(true);
     this.renderActiveContent();
-    if (tab === "questionnaires" && !this.questionnaires)
+    if (
+      tab === "questionnaires" &&
+      !this.questionnaires &&
+      !this.questionnaireLoading
+    )
       void this.loadQuestionnaires();
-    else if (tab === "timeline" && !this.timeline) void this.loadTimeline();
-    else if (tab === "chat_activity" && !this.chatActivity)
+    else if (tab === "timeline" && !this.timeline && !this.timelineLoading)
+      void this.loadTimeline();
+    else if (
+      tab === "chat_activity" &&
+      !this.chatActivity &&
+      !this.chatActivityLoading
+    )
       void this.loadChatActivity();
-    else if (tab === "other_staff_messages" && !this.otherStaffChats)
+    else if (
+      tab === "other_staff_messages" &&
+      !this.otherStaffChats &&
+      !this.otherStaffChatsLoading
+    )
       void this.loadOtherStaffChats();
-    else if (tab === "orders" && !this.orders) void this.loadOrders();
-    else if (tab === "periodic_orders" && !this.periodicOrders)
+    else if (tab === "orders" && !this.orders && !this.ordersLoading)
+      void this.loadOrders();
+    else if (
+      tab === "periodic_orders" &&
+      !this.periodicOrders &&
+      !this.periodicOrdersLoading
+    )
       void this.loadPeriodicOrders();
-    else if (tab === "products" && !this.products) void this.loadProducts();
-    else if (tab === "materials" && !this.materials) void this.loadMaterials();
+    else if (tab === "products" && !this.products && !this.productsLoading)
+      void this.loadProducts();
+    else if (tab === "materials" && !this.materials && !this.materialsLoading)
+      void this.loadMaterials();
   }
 
   private renderActiveContent(): void {
@@ -1195,7 +1348,8 @@ export class SidebarController {
     );
     note.dataset.sidebarSafety = "local";
     panel.append(note);
-    if (safety.local_only !== true) note.textContent = "安全声明异常，未执行外部调用。";
+    if (safety.local_only !== true)
+      note.textContent = "安全声明异常，未执行外部调用。";
   }
 
   private appendRetry(
@@ -1204,7 +1358,9 @@ export class SidebarController {
     action: string,
     label: string,
   ): void {
-    panel.append(createElement(this.doc, "div", "sidebar-status error", message));
+    panel.append(
+      createElement(this.doc, "div", "sidebar-status error", message),
+    );
     const controls = createElement(this.doc, "div", "context-actions");
     const retry = createElement(this.doc, "button", "btn primary", label);
     retry.type = "button";
@@ -1227,9 +1383,11 @@ export class SidebarController {
     this.questionnaireError = null;
     this.renderActiveContent();
     try {
-      const response = await this.api.questionnaires(this.contextToken, {
-        limit: 100,
-      });
+      const response = await this.api.questionnaires(
+        this.contextToken,
+        { limit: 100 },
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.questionnaireRequestVersion) return;
       this.validateQuestionnaires(response);
       this.questionnaires = response;
@@ -1299,7 +1457,12 @@ export class SidebarController {
             : status === 403
               ? "当前账号无权查看该客户，问卷读取已安全关闭。"
               : `问卷读取失败：${errorMessage(this.questionnaireError, "请稍后重试。")}`;
-        this.appendRetry(panel, message, "retry-questionnaires", "重试读取问卷");
+        this.appendRetry(
+          panel,
+          message,
+          "retry-questionnaires",
+          "重试读取问卷",
+        );
       } else {
         this.appendLoading(panel, "正在读取问卷答案…");
       }
@@ -1409,15 +1572,17 @@ export class SidebarController {
     if (!append) this.timeline = null;
     if (this.activeTab === "timeline") this.renderActiveContent();
     try {
-      const response = await this.api.timeline(this.contextToken, {
-        cursor,
-        limit: 20,
-      });
+      const response = await this.api.timeline(
+        this.contextToken,
+        { cursor, limit: 20 },
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.timelineRequestVersion) return;
       this.validateTimeline(response);
-      this.timeline = append && this.timeline
-        ? { ...response, items: [...this.timeline.items, ...response.items] }
-        : response;
+      this.timeline =
+        append && this.timeline
+          ? { ...response, items: [...this.timeline.items, ...response.items] }
+          : response;
     } catch (error) {
       if (requestVersion !== this.timelineRequestVersion) return;
       this.timelineError = error;
@@ -1465,9 +1630,16 @@ export class SidebarController {
         card.dataset.timelineEventId = String(item.id);
         card.append(
           createElement(this.doc, "div", "item-title", item.event_type),
-          createElement(this.doc, "div", "item-meta", `发生时间 ${item.occurred_at}`),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `发生时间 ${item.occurred_at}`,
+          ),
         );
-        const relatedTab = ["survey.submitted", "survey_submitted"].includes(item.event_type)
+        const relatedTab = ["survey.submitted", "survey_submitted"].includes(
+          item.event_type,
+        )
           ? "questionnaires"
           : item.event_type.startsWith("order.")
             ? "orders"
@@ -1480,9 +1652,10 @@ export class SidebarController {
             relatedTab === "questionnaires" ? "查看相关问卷" : "查看相关订单",
           ) as HTMLButtonElement;
           related.type = "button";
-          related.dataset.sidebarAction = relatedTab === "questionnaires"
-            ? "open-related-questionnaires"
-            : "open-related-orders";
+          related.dataset.sidebarAction =
+            relatedTab === "questionnaires"
+              ? "open-related-questionnaires"
+              : "open-related-orders";
           markBound(related);
           card.append(related);
         }
@@ -1538,17 +1711,25 @@ export class SidebarController {
     if (!append) this.chatActivity = null;
     if (this.activeTab === "chat_activity") this.renderActiveContent();
     try {
-      const response = await this.api.chatActivity(this.contextToken, {
-        chat_type:
-          this.chatActivityType === "all" ? undefined : this.chatActivityType,
-        cursor,
-        limit: 50,
-      });
+      const response = await this.api.chatActivity(
+        this.contextToken,
+        {
+          chat_type:
+            this.chatActivityType === "all" ? undefined : this.chatActivityType,
+          cursor,
+          limit: 50,
+        },
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.chatActivityRequestVersion) return;
       this.validateChatActivity(response);
-      this.chatActivity = append && this.chatActivity
-        ? { ...response, items: [...this.chatActivity.items, ...response.items] }
-        : response;
+      this.chatActivity =
+        append && this.chatActivity
+          ? {
+              ...response,
+              items: [...this.chatActivity.items, ...response.items],
+            }
+          : response;
     } catch (error) {
       if (requestVersion !== this.chatActivityRequestVersion) return;
       this.chatActivityError = error;
@@ -1629,7 +1810,12 @@ export class SidebarController {
             "item-title",
             `${item.chat_type === "private" ? "私聊" : "群聊"} · ${item.message_type}`,
           ),
-          createElement(this.doc, "div", "item-meta", `发送时间 ${item.sent_at}`),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `发送时间 ${item.sent_at}`,
+          ),
         );
         list.append(card);
       }
@@ -1686,7 +1872,10 @@ export class SidebarController {
     this.otherStaffChats = null;
     if (this.activeTab === "other_staff_messages") this.renderActiveContent();
     try {
-      const response = await this.api.otherStaffChats(this.contextToken);
+      const response = await this.api.otherStaffChats(
+        this.contextToken,
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.otherStaffChatsRequestVersion) return;
       this.validateOtherStaffChats(response);
       this.otherStaffChats = response;
@@ -1799,15 +1988,17 @@ export class SidebarController {
     if (!append) this.orders = null;
     if (this.activeTab === "orders") this.renderActiveContent();
     try {
-      const response = await this.api.orders(this.contextToken, {
-        limit: 20,
-        offset,
-      });
+      const response = await this.api.orders(
+        this.contextToken,
+        { limit: 20, offset },
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.ordersRequestVersion) return;
       this.validateOrderResponse(response);
-      this.orders = append && this.orders
-        ? { ...response, items: [...this.orders.items, ...response.items] }
-        : response;
+      this.orders =
+        append && this.orders
+          ? { ...response, items: [...this.orders.items, ...response.items] }
+          : response;
     } catch (error) {
       if (requestVersion !== this.ordersRequestVersion) return;
       this.ordersError = error;
@@ -1952,15 +2143,20 @@ export class SidebarController {
     if (!append) this.periodicOrders = null;
     if (this.activeTab === "periodic_orders") this.renderActiveContent();
     try {
-      const response = await this.api.periodicOrders(this.contextToken, {
-        limit: 20,
-        offset,
-      });
+      const response = await this.api.periodicOrders(
+        this.contextToken,
+        { limit: 20, offset },
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.periodicOrdersRequestVersion) return;
       this.validatePeriodicOrders(response);
-      this.periodicOrders = append && this.periodicOrders
-        ? { ...response, items: [...this.periodicOrders.items, ...response.items] }
-        : response;
+      this.periodicOrders =
+        append && this.periodicOrders
+          ? {
+              ...response,
+              items: [...this.periodicOrders.items, ...response.items],
+            }
+          : response;
     } catch (error) {
       if (requestVersion !== this.periodicOrdersRequestVersion) return;
       this.periodicOrdersError = error;
@@ -1977,7 +2173,9 @@ export class SidebarController {
     const panel = this.panelShell(
       "periodic-orders",
       "周期订单",
-      response ? `${response.items.length} 条 · canonical member 投影` : "canonical member 投影",
+      response
+        ? `${response.items.length} 条 · canonical member 投影`
+        : "canonical member 投影",
     );
     if (!response) {
       if (this.periodicOrdersError)
@@ -2003,7 +2201,8 @@ export class SidebarController {
       panel.append(createElement(this.doc, "div", "empty", "暂无周期订单记录"));
     else {
       const list = createElement(this.doc, "div", "list");
-      for (const member of response.items) list.append(this.renderPeriodicMember(member));
+      for (const member of response.items)
+        list.append(this.renderPeriodicMember(member));
       panel.append(list);
     }
     if (response.has_more) {
@@ -2025,7 +2224,9 @@ export class SidebarController {
     return panel;
   }
 
-  private renderPeriodicMember(member: SidebarServicePeriodMember): HTMLElement {
+  private renderPeriodicMember(
+    member: SidebarServicePeriodMember,
+  ): HTMLElement {
     const card = createElement(this.doc, "article", "list-item");
     card.dataset.periodicMemberRef = member.member_ref;
     card.append(
@@ -2054,7 +2255,8 @@ export class SidebarController {
     textarea.dataset.periodicRemark = member.member_ref;
     textarea.rows = 2;
     textarea.maxLength = 500;
-    textarea.value = this.periodicRemarkDrafts.get(member.member_ref) ?? member.remark ?? "";
+    textarea.value =
+      this.periodicRemarkDrafts.get(member.member_ref) ?? member.remark ?? "";
     textarea.setAttribute("aria-label", `周期订单 ${member.member_ref} 备注`);
     label.append(textarea);
     card.append(label);
@@ -2076,13 +2278,17 @@ export class SidebarController {
         `remark-status${status.failed ? " error" : ""}`,
         status.message,
       );
-      receipt.dataset.periodicRemarkReceipt = status.failed ? "failed" : "accepted";
+      receipt.dataset.periodicRemarkReceipt = status.failed
+        ? "failed"
+        : "accepted";
       card.append(receipt);
     }
     return card;
   }
 
-  private validatePeriodicRemark(response: SidebarPeriodicRemarkResponse): void {
+  private validatePeriodicRemark(
+    response: SidebarPeriodicRemarkResponse,
+  ): void {
     if (!response?.member) throw new Error("备注保存响应不完整，未显示成功。");
     this.validatePeriodicMember(response.member);
     validateSidebarSafety(response.safety, "周期订单备注");
@@ -2096,7 +2302,11 @@ export class SidebarController {
     );
     if (!current || !Number.isInteger(serviceProductId) || serviceProductId < 1)
       return;
-    const remark = (this.periodicRemarkDrafts.get(memberRef) ?? current.remark ?? "").trim();
+    const remark = (
+      this.periodicRemarkDrafts.get(memberRef) ??
+      current.remark ??
+      ""
+    ).trim();
     if (!remark) {
       this.periodicRemarkStatuses.set(memberRef, {
         message: "备注不能为空，未发起写入。",
@@ -2202,9 +2412,9 @@ export class SidebarController {
         !/^[A-Z]{3}$/.test(product.currency) ||
         !Number.isSafeInteger(product.stock_quantity) ||
         product.stock_quantity < 0 ||
-        !new RegExp(
-          `^/p/${product.kind}/[1-9][0-9]{0,18}$`,
-        ).test(product.public_path)
+        !new RegExp(`^/p/${product.kind}/[1-9][0-9]{0,18}$`).test(
+          product.public_path,
+        )
       )
         throw new Error("可分享商品响应不完整，已停止渲染。");
     }
@@ -2217,9 +2427,11 @@ export class SidebarController {
     this.productsError = null;
     if (this.activeTab === "products") this.renderActiveContent();
     try {
-      const response = await this.api.shareableProducts(this.contextToken, {
-        limit: 50,
-      });
+      const response = await this.api.shareableProducts(
+        this.contextToken,
+        { limit: 50 },
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.productsRequestVersion) return;
       this.validateShareableProducts(response);
       this.products = response;
@@ -2321,16 +2533,16 @@ export class SidebarController {
       throw new Error("临时媒体响应不完整，未调用 JSSDK。");
     if (
       response.upload_state === "ready" &&
-      (!response.media_id || !response.media_expires_at ||
+      (!response.media_id ||
+        !response.media_expires_at ||
         !response.provider_call_dispatched ||
         !response.real_external_call_executed)
     )
       throw new Error("临时媒体未就绪，未调用 JSSDK。");
   }
 
-  // A reminted context still represents the same browser-session actor and
-  // customer. Keeping the key at this scope prevents an unknown Provider
-  // outcome from being retried with a newly generated idempotency key.
+  // Keep an unchanged operation key for in-page retries without persisting the
+  // customer identifier, context token, or operation state in browser storage.
   private temporaryMediaOperationScope(imageID: number): string | null {
     const ownerStaffID = this.workbench?.profile.owner_staff_id;
     if (
@@ -2347,30 +2559,7 @@ export class SidebarController {
   private storedTemporaryMediaOperation(
     scope: string,
   ): TemporaryMediaOperation | undefined {
-    const cached = this.imagePrepareOperations.get(scope);
-    if (cached) return cached;
-    try {
-      const raw = this.doc.defaultView?.sessionStorage?.getItem(
-        TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX + encodeURIComponent(scope),
-      );
-      if (!raw) return undefined;
-      const operation = JSON.parse(raw) as Partial<TemporaryMediaOperation>;
-      if (
-        typeof operation.idempotencyKey !== "string" ||
-        !operation.idempotencyKey ||
-        operation.idempotencyKey.length > 255 ||
-        typeof operation.requiresManualConfirmation !== "boolean"
-      )
-        return undefined;
-      const restored: TemporaryMediaOperation = {
-        idempotencyKey: operation.idempotencyKey,
-        requiresManualConfirmation: operation.requiresManualConfirmation,
-      };
-      this.imagePrepareOperations.set(scope, restored);
-      return restored;
-    } catch {
-      return undefined;
-    }
+    return this.imagePrepareOperations.get(scope);
   }
 
   private saveTemporaryMediaOperation(
@@ -2378,31 +2567,17 @@ export class SidebarController {
     operation: TemporaryMediaOperation,
   ): void {
     this.imagePrepareOperations.set(scope, operation);
-    try {
-      this.doc.defaultView?.sessionStorage?.setItem(
-        TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX + encodeURIComponent(scope),
-        JSON.stringify(operation),
-      );
-    } catch {
-      // Storage is a retry-safety enhancement; the in-memory key remains.
-    }
   }
 
   private clearTemporaryMediaOperation(scope: string): void {
     this.imagePrepareOperations.delete(scope);
-    try {
-      this.doc.defaultView?.sessionStorage?.removeItem(
-        TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX + encodeURIComponent(scope),
-      );
-    } catch {
-      // A denied storage write cannot turn this completed operation into a retry.
-    }
   }
 
   private imagePrepareNeedsManualConfirmation(imageID: number): boolean {
     const scope = this.temporaryMediaOperationScope(imageID);
     return Boolean(
-      scope && this.storedTemporaryMediaOperation(scope)?.requiresManualConfirmation,
+      scope &&
+      this.storedTemporaryMediaOperation(scope)?.requiresManualConfirmation,
     );
   }
 
@@ -2523,7 +2698,9 @@ export class SidebarController {
       return panel;
     }
     if (!response.items.length)
-      panel.append(createElement(this.doc, "div", "empty", "暂无可分享的已启用商品"));
+      panel.append(
+        createElement(this.doc, "div", "empty", "暂无可分享的已启用商品"),
+      );
     else {
       const list = createElement(this.doc, "div", "list");
       for (const product of response.items) {
@@ -2539,18 +2716,32 @@ export class SidebarController {
             "item-meta",
             `${kind} · ${product.product_code} · ${product.currency} ${(product.price_minor / 100).toFixed(2)} · 库存 ${product.stock_quantity}`,
           ),
-          createElement(this.doc, "div", "item-meta", product.description || "无商品描述"),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            product.description || "无商品描述",
+          ),
         );
         const actions = createElement(this.doc, "div", "context-actions");
-        const send = createElement(this.doc, "button", "btn primary", "发送商品卡片");
+        const send = createElement(
+          this.doc,
+          "button",
+          "btn primary",
+          "发送商品卡片",
+        );
         send.type = "button";
+        send.disabled = !this.jssdkReady;
+        if (!this.jssdkReady) send.title = "企微 JSSDK 未就绪，发送已禁用";
         send.dataset.sidebarAction = "send-product";
         send.dataset.productId = String(product.product_id);
         send.dataset.productKind = product.kind;
         markBound(send);
         actions.append(send);
         card.append(actions);
-        const receipt = this.productSendStatuses.get(this.productSendKey(product));
+        const receipt = this.productSendStatuses.get(
+          this.productSendKey(product),
+        );
         if (receipt) {
           const status = createElement(
             this.doc,
@@ -2591,12 +2782,17 @@ export class SidebarController {
         limit: 20,
         offset,
       };
-      const response = await this.api.materials(this.contextToken, params);
+      const response = await this.api.materials(
+        this.contextToken,
+        params,
+        this.tabRequestController.signal,
+      );
       if (requestVersion !== this.materialsRequestVersion) return;
       this.validateMaterials(response);
-      this.materials = append && this.materials
-        ? { ...response, items: [...this.materials.items, ...response.items] }
-        : response;
+      this.materials =
+        append && this.materials
+          ? { ...response, items: [...this.materials.items, ...response.items] }
+          : response;
     } catch (error) {
       if (requestVersion !== this.materialsRequestVersion) return;
       this.materialsError = error;
@@ -2611,7 +2807,8 @@ export class SidebarController {
   private clearThumbnailURLs(): void {
     const revoke = this.doc.defaultView?.URL?.revokeObjectURL;
     if (typeof revoke === "function") {
-      for (const url of this.thumbnailURLs.values()) revoke.call(this.doc.defaultView?.URL, url);
+      for (const url of this.thumbnailURLs.values())
+        revoke.call(this.doc.defaultView?.URL, url);
     }
     this.thumbnailURLs.clear();
   }
@@ -2625,14 +2822,25 @@ export class SidebarController {
   private async loadThumbnailStatus(imageId: number): Promise<void> {
     if (!this.contextToken) return;
     try {
-      const blob = await this.api.thumbnailPreview(this.contextToken, imageId);
-      if (!blob || blob.size < 1 || !["image/png", "image/jpeg", "image/gif"].includes(blob.type))
+      const blob = await this.api.thumbnailPreview(
+        this.contextToken,
+        imageId,
+        this.tabRequestController.signal,
+      );
+      if (
+        !blob ||
+        blob.size < 1 ||
+        !["image/png", "image/jpeg", "image/gif"].includes(blob.type)
+      )
         throw new Error("缩略图二进制响应不完整。");
       const create = this.doc.defaultView?.URL?.createObjectURL;
       if (typeof create === "function") {
         const previous = this.thumbnailURLs.get(imageId);
         if (previous) this.doc.defaultView?.URL?.revokeObjectURL(previous);
-        this.thumbnailURLs.set(imageId, create.call(this.doc.defaultView?.URL, blob));
+        this.thumbnailURLs.set(
+          imageId,
+          create.call(this.doc.defaultView?.URL, blob),
+        );
       }
       this.thumbnailStatuses.set(imageId, "ready");
     } catch (error) {
@@ -2678,7 +2886,12 @@ export class SidebarController {
       const quick = createElement(this.doc, "div", "quick-keywords");
       quick.append(createElement(this.doc, "span", "panel-meta", "快捷关键词"));
       for (const keyword of response.quick_keywords) {
-        const button = createElement(this.doc, "button", "link-button", keyword);
+        const button = createElement(
+          this.doc,
+          "button",
+          "link-button",
+          keyword,
+        );
         button.type = "button";
         button.dataset.materialKeyword = keyword;
         markBound(button);
@@ -2719,11 +2932,16 @@ export class SidebarController {
           status === "ready"
             ? "thumbnail: ready"
             : status === "not_found"
-            ? "thumbnail: not_found"
-            : status === "error"
-              ? "thumbnail: 读取失败"
-              : "thumbnail: pending";
-        const badge = createElement(this.doc, "span", "thumbnail-status", statusLabel);
+              ? "thumbnail: not_found"
+              : status === "error"
+                ? "thumbnail: 读取失败"
+                : "thumbnail: pending";
+        const badge = createElement(
+          this.doc,
+          "span",
+          "thumbnail-status",
+          statusLabel,
+        );
         badge.dataset.thumbnailStatus = status;
         const previewURL = this.thumbnailURLs.get(item.id);
         if (status === "ready" && previewURL) {
@@ -2735,7 +2953,12 @@ export class SidebarController {
           card.append(preview);
         }
         card.append(
-          createElement(this.doc, "div", "item-title", item.name || item.file_name),
+          createElement(
+            this.doc,
+            "div",
+            "item-title",
+            item.name || item.file_name,
+          ),
           createElement(
             this.doc,
             "div",
@@ -2751,15 +2974,24 @@ export class SidebarController {
           badge,
         );
         if (item.description)
-          card.append(createElement(this.doc, "div", "item-meta", item.description));
+          card.append(
+            createElement(this.doc, "div", "item-meta", item.description),
+          );
         const actions = createElement(this.doc, "div", "context-actions");
-        const send = createElement(this.doc, "button", "btn primary", "发送图片");
-        send.type = "button";
-        const needsManualConfirmation = this.imagePrepareNeedsManualConfirmation(
-          item.id,
+        const send = createElement(
+          this.doc,
+          "button",
+          "btn primary",
+          "发送图片",
         );
+        send.type = "button";
+        const needsManualConfirmation =
+          this.imagePrepareNeedsManualConfirmation(item.id);
         send.disabled =
-          this.imageSendPreparing.has(item.id) || needsManualConfirmation;
+          !this.jssdkReady ||
+          this.imageSendPreparing.has(item.id) ||
+          needsManualConfirmation;
+        if (!this.jssdkReady) send.title = "企微 JSSDK 未就绪，发送已禁用";
         send.dataset.sidebarAction = "send-material-image";
         send.dataset.materialId = String(item.id);
         markBound(send);
@@ -2787,9 +3019,10 @@ export class SidebarController {
             receipt?.message ||
               "outcome_unknown · 临时媒体上传结果未知；请先在企微后台人工确认，系统不会自动重试。",
           );
-          sendStatus.dataset.sendReceipt = receipt?.failed || needsManualConfirmation
-            ? "client_callback,delivery_unknown,error"
-            : "client_callback,delivery_unknown";
+          sendStatus.dataset.sendReceipt =
+            receipt?.failed || needsManualConfirmation
+              ? "client_callback,delivery_unknown,error"
+              : "client_callback,delivery_unknown";
           card.append(sendStatus);
         }
         list.append(card);

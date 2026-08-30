@@ -28,6 +28,10 @@ type CustomerAnswerCandidateStore interface {
 	ListRecentCustomerAnswerCandidates(context.Context, int32) ([]CustomerAnswerCandidate, error)
 }
 
+type CustomerAnswerIdentityCandidateStore interface {
+	ListRecentCustomerAnswerIdentityCandidates(context.Context, int32) ([]CustomerAnswerCandidate, error)
+}
+
 // CustomerAnswerCandidate exists only across the Survey store/application
 // boundary. Raw hints are consumed by Identity matching and cannot fit in the
 // public CustomerSurveyAnswerReader result.
@@ -148,6 +152,59 @@ func (service *CustomerAnswerService) ListCustomerSurveyAnswers(
 		})
 	}
 	return cloneCustomerSurveyAnswerPage(page), nil
+}
+
+func (service *CustomerAnswerService) CountCustomerSurveyAnswers(ctx context.Context, customerID contactport.CustomerID) (int, error) {
+	if ctx == nil || customerID <= 0 || service == nil || nilCustomerAnswerDependency(service.uow) || nilCustomerAnswerDependency(service.matcher) {
+		return 0, ErrInvalidCustomerAnswerQuery
+	}
+	store, ok := service.store.(CustomerAnswerIdentityCandidateStore)
+	if !ok || nilCustomerAnswerDependency(store) {
+		return 0, ErrCustomerAnswersUnavailable
+	}
+	var candidates []CustomerAnswerCandidate
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		var readErr error
+		candidates, readErr = store.ListRecentCustomerAnswerIdentityCandidates(tx, CustomerAnswerScanLimit+1)
+		return readErr
+	})
+	if err != nil || len(candidates) > int(CustomerAnswerScanLimit+1) {
+		return 0, errors.Join(ErrCustomerAnswersUnavailable, err)
+	}
+	if len(candidates) > int(CustomerAnswerScanLimit) {
+		candidates = candidates[:CustomerAnswerScanLimit]
+	}
+	requests := make([]identityport.CustomerMatchRequest, 0, len(candidates))
+	var previous time.Time
+	var previousID int64
+	for _, candidate := range candidates {
+		if !validCustomerAnswerCandidate(candidate) || !previous.IsZero() &&
+			(candidate.SubmittedAt.After(previous) || candidate.SubmittedAt.Equal(previous) && candidate.ID >= previousID) {
+			return 0, ErrCustomerAnswersUnavailable
+		}
+		previous, previousID = candidate.SubmittedAt, candidate.ID
+		request, present, safe := customerAnswerMatchRequest(candidate, customerID, service.weComCorp)
+		if !safe {
+			return 0, ErrCustomerAnswersUnavailable
+		}
+		if present {
+			requests = append(requests, request)
+		}
+	}
+	if len(requests) == 0 {
+		return 0, nil
+	}
+	matches, err := service.matcher.MatchCustomers(ctx, requests)
+	if err != nil || len(matches) != len(requests) {
+		return 0, errors.Join(ErrCustomerAnswersUnavailable, err)
+	}
+	count := 0
+	for _, matched := range matches {
+		if matched {
+			count++
+		}
+	}
+	return count, nil
 }
 
 func customerAnswerMatchRequest(candidate CustomerAnswerCandidate, customerID contactport.CustomerID, corpID string) (identityport.CustomerMatchRequest, bool, bool) {

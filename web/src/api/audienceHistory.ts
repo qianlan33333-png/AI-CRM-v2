@@ -1,17 +1,31 @@
 import {
-  listAudienceHistoryGroups, type AudienceHistoryGroupPage,
-  listAudienceHistoryPackages, type AudienceHistoryPackagePage,
-  listAudienceHistoryVersions, type AudienceHistoryVersionPage,
-  listAudienceHistorySenders, type AudienceHistorySenderPage,
-  listAudienceHistoryRules, type AudienceHistoryRulePage,
-  listAudienceHistoryRuleVersions, type AudienceHistoryRuleVersionPage,
-  listAudienceHistoryDefinitions, type AudienceHistoryDefinitionPage,
-  listAudienceHistoryMembers, type AudienceHistoryMemberPage,
-  listAudienceHistoryActivityRuns, type AudienceActivityRunPage,
-  listAudienceHistoryActivityMemberEvents, type AudienceActivityMemberEventPage,
-  getAudienceHistoryPackage, getAudienceHistoryDefinition,
-  type AudienceHistoryPackageDetail, type AudienceHistoryDefinitionDetail,
-} from './generated/health';
+  listAudienceHistoryGroups,
+  listAudienceHistoryPackages,
+  listAudienceHistoryVersions,
+  listAudienceHistorySenders,
+  listAudienceHistoryRules,
+  listAudienceHistoryRuleVersions,
+  listAudienceHistoryDefinitions,
+  listAudienceHistoryMembers,
+  listAudienceHistoryActivityRuns,
+  listAudienceHistoryActivityMemberEvents,
+  getAudienceHistoryPackage,
+  getAudienceHistoryDefinition,
+} from "./generated/p4-audience-history/p4-audience-history";
+import {
+  type AudienceHistoryGroupPage,
+  type AudienceHistoryPackagePage,
+  type AudienceHistoryVersionPage,
+  type AudienceHistorySenderPage,
+  type AudienceHistoryRulePage,
+  type AudienceHistoryRuleVersionPage,
+  type AudienceHistoryDefinitionPage,
+  type AudienceHistoryMemberPage,
+  type AudienceActivityRunPage,
+  type AudienceActivityMemberEventPage,
+  type AudienceHistoryPackageDetail,
+  type AudienceHistoryDefinitionDetail,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type AudienceHistoryPage = AudienceHistoryGroupPage | AudienceHistoryPackagePage | AudienceHistoryVersionPage | AudienceHistorySenderPage | AudienceHistoryRulePage | AudienceHistoryRuleVersionPage | AudienceHistoryDefinitionPage | AudienceHistoryMemberPage | AudienceActivityRunPage | AudienceActivityMemberEventPage;

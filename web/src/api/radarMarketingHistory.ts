@@ -1,8 +1,18 @@
 import {
-  listRadarClickHistory, getRadarClickHistory, type RadarClickHistory,
-  listMarketingConfigHistoryConfigs, getMarketingConfigHistoryConfig, type MarketingConfigHistoryConfig,
-  listMarketingConfigHistoryRules, getMarketingConfigHistoryRule, type MarketingConfigHistoryRule,
-} from './generated/health';
+  listRadarClickHistory,
+  getRadarClickHistory,
+} from "./generated/p4-radar-click-history/p4-radar-click-history";
+import {
+  type RadarClickHistory,
+  type MarketingConfigHistoryConfig,
+  type MarketingConfigHistoryRule,
+} from "./generated/health.schemas";
+import {
+  listMarketingConfigHistoryConfigs,
+  getMarketingConfigHistoryConfig,
+  listMarketingConfigHistoryRules,
+  getMarketingConfigHistoryRule,
+} from "./generated/p4-marketing-config-history/p4-marketing-config-history";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type HistoryKind = 'radar_click' | 'marketing_config' | 'marketing_rule';

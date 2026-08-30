@@ -17,6 +17,7 @@ type Querier interface {
 	CompleteMediaImageDeleteReceipt(ctx context.Context, arg CompleteMediaImageDeleteReceiptParams) (CompleteMediaImageDeleteReceiptRow, error)
 	CompleteMediaImageUploadReceipt(ctx context.Context, arg CompleteMediaImageUploadReceiptParams) (CompleteMediaImageUploadReceiptRow, error)
 	CompleteMediaMiniProgramReceipt(ctx context.Context, arg CompleteMediaMiniProgramReceiptParams) (CompleteMediaMiniProgramReceiptRow, error)
+	CountEnabledMediaImages(ctx context.Context) (int64, error)
 	CountHistoricalGroupInvite(ctx context.Context) (int64, error)
 	CountHistoricalInvalidAsset(ctx context.Context) (int64, error)
 	CountMediaGroupInvites(ctx context.Context, arg CountMediaGroupInvitesParams) (int64, error)

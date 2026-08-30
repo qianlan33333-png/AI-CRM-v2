@@ -55,6 +55,19 @@ func (q *Queries) CompleteServicePeriodMemberReceipt(ctx context.Context, arg Co
 	return i, err
 }
 
+const countServicePeriodMembersByCustomer = `-- name: CountServicePeriodMembersByCustomer :one
+SELECT count(*)::bigint
+FROM public.service_period_members
+WHERE customer_id = $1
+`
+
+func (q *Queries) CountServicePeriodMembersByCustomer(ctx context.Context, customerID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countServicePeriodMembersByCustomer, customerID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createServicePeriodMember = `-- name: CreateServicePeriodMember :one
 INSERT INTO public.service_period_members (
   member_ref, service_product_id, customer_id, state, source, starts_at,

@@ -62,4 +62,22 @@ sed -i.bak 's# /q/\*##' "$fixture_directory/deploy/Caddyfile"
 rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
 expect_failure "$fixture_directory" 'missing public survey backend route'
 
+fixture_directory="$(new_fixture)"
+cleanup_directories+=("$fixture_directory")
+sed -i.bak '/encode zstd gzip/d' "$fixture_directory/deploy/Caddyfile"
+rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
+expect_failure "$fixture_directory" 'missing response compression'
+
+fixture_directory="$(new_fixture)"
+cleanup_directories+=("$fixture_directory")
+sed -i.bak 's#root \* /var/www/aicrm/id-dev-current#root * /var/www/aicrm/0123456789abcdef0123456789abcdef01234567#' "$fixture_directory/deploy/Caddyfile"
+rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
+expect_failure "$fixture_directory" 'hardcoded SHA web root'
+
+fixture_directory="$(new_fixture)"
+cleanup_directories+=("$fixture_directory")
+sed -i.bak 's/Cross-Origin-Opener-Policy "same-origin"/Cache-Control "no-store"/' "$fixture_directory/deploy/Caddyfile"
+rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
+expect_failure "$fixture_directory" 'global no-store'
+
 printf 'test-g2-web-edge: PASS\n'

@@ -1,9 +1,14 @@
 import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import { readPublicSurvey, readSurveyResult, submitSurvey } from '../api/public-survey';
-import type { PublicSurveyDefinition, PublicSurveyQuestion, PublicSurveyResult, PublicSurveySubmissionAnswer } from '../api/generated/health';
 import { toast } from '../shared/ui/feedback';
 
 const ACCENT = '#3370ff';
+import type {
+  PublicSurveyDefinition,
+  PublicSurveyQuestion,
+  PublicSurveyResult,
+  PublicSurveySubmissionAnswer,
+} from "../api/generated/health.schemas";
 
 const validID = (value: number): boolean => Number.isSafeInteger(value) && value > 0;
 const validToken = (value: string): boolean => /^[A-Za-z0-9_-]{43}$/.test(value);

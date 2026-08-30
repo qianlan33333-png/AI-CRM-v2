@@ -1,8 +1,19 @@
 import {
-  getMarketingStateHistoryChange, getMarketingStateHistorySnapshot, getMarketingStateHistoryValueChange, getMarketingStateHistoryValueSnapshot,
-  listMarketingStateHistoryChange, listMarketingStateHistorySnapshot, listMarketingStateHistoryValueChange, listMarketingStateHistoryValueSnapshot,
-  type MarketingStateHistoryChange, type MarketingStateHistorySnapshot, type MarketingStateHistoryValueChange, type MarketingStateHistoryValueSnapshot,
-} from './generated/health';
+  getMarketingStateHistoryChange,
+  getMarketingStateHistorySnapshot,
+  getMarketingStateHistoryValueChange,
+  getMarketingStateHistoryValueSnapshot,
+  listMarketingStateHistoryChange,
+  listMarketingStateHistorySnapshot,
+  listMarketingStateHistoryValueChange,
+  listMarketingStateHistoryValueSnapshot,
+} from "./generated/p4-marketing-state-history/p4-marketing-state-history";
+import {
+  type MarketingStateHistoryChange,
+  type MarketingStateHistorySnapshot,
+  type MarketingStateHistoryValueChange,
+  type MarketingStateHistoryValueSnapshot,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type MarketingStateHistoryKind = 'state_snapshot' | 'state_change' | 'value_snapshot' | 'value_change';

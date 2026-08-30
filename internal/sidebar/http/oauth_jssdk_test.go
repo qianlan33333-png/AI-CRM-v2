@@ -37,6 +37,24 @@ func TestSidebarOAuthHTTPRejectsUnknownStartQueryBeforeService(t *testing.T) {
 	}
 }
 
+func TestSidebarOAuthStartOnlyAcceptsV2SidebarReturnPath(t *testing.T) {
+	for _, rawURL := range []string{
+		"/api/sidebar/v2/oauth/start?external_userid=wm_external_41&next=%2Fsidebar%2Fbind-mobile",
+		"/api/sidebar/v2/oauth/start?external_userid=wm_external_41&next=https%3A%2F%2Fevil.example%2Fsidebar%2F",
+	} {
+		response := httptest.NewRecorder()
+		NewOAuthHandler(nil, nil).Start(response, httptest.NewRequest(http.MethodGet, rawURL, nil))
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("non-V2 next path %q status = %d", rawURL, response.Code)
+		}
+	}
+
+	externalUserID, nextPath, err := sidebarOAuthStartInput(httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/oauth/start?external_userid=wm_external_41", nil))
+	if err != nil || externalUserID != "wm_external_41" || nextPath != "/sidebar/" {
+		t.Fatalf("default V2 path = %q/%q err=%v", externalUserID, nextPath, err)
+	}
+}
+
 func TestSidebarAgentConfigHTTPUsesOnlyAgentConfigSignature(t *testing.T) {
 	now := time.Date(2026, time.August, 26, 8, 0, 0, 0, time.UTC)
 	provider := &httpAgentConfigProvider{ticket: sidebarapp.AgentConfigTicket{Value: "agent-config-ticket", ExpiresAt: now.Add(2 * time.Hour)}}

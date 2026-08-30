@@ -16,6 +16,28 @@ import (
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 )
 
+func TestReleaseSHAMiddlewarePublishesOnlyCompleteConfiguredSHA(t *testing.T) {
+	sha := strings.Repeat("a", 40)
+	leaf := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.WriteHeader(http.StatusNoContent)
+	})
+	for _, testCase := range []struct {
+		name, configured, expected string
+	}{
+		{name: "complete", configured: "  " + sha + "  ", expected: sha},
+		{name: "missing", configured: ""},
+		{name: "incomplete", configured: "abc"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			releaseSHAMiddleware(testCase.configured, leaf).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+			if response.Code != http.StatusNoContent || response.Header().Get("X-AICRM-Release-SHA") != testCase.expected {
+				t.Fatalf("response=%d header=%q", response.Code, response.Header().Get("X-AICRM-Release-SHA"))
+			}
+		})
+	}
+}
+
 func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 	service := &recordingAuth{}
 	authHandler, err := authhttp.NewHandler(service)
