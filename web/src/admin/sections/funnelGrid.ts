@@ -90,8 +90,7 @@ export interface FunnelGridOpts {
 
 export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: FunnelGridOpts): Promise<void> {
   if (api.mode === 'http') {
-    root.className = 'labs sec-funnel';
-    root.innerHTML = '<div class="card" style="margin:24px;padding:32px;text-align:center;color:#8F959E"><strong style="display:block;color:#1F2329;margin-bottom:8px">后端能力未就绪</strong>当前漏斗行/视图 DTO 与 Member Grid schema/query/views 契约不等价，页面未发送漏斗请求。</div>';
+    renderBlockedFunnel(root, opts);
     return;
   }
   const [rows, views] = await Promise.all([api.listFunnelRows(), api.listFunnelViews()]);
@@ -689,4 +688,16 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
   });
 
   sync();
+}
+
+function renderBlockedFunnel(root: HTMLElement, opts?: FunnelGridOpts): void {
+  root.className = 'labs sec-funnel';
+  const product = opts?.product;
+  const title = product ? `${esc(product.name)} · 会员数据` : '漏斗 / 数据看板';
+  root.innerHTML = `
+    <div class="crumb">客户管理后台 / ${product ? '交易 / 周期商品管理' : '运营'} / <b>${title}</b></div>
+    <div class="page-head"><div><div class="page-title">${title}</div><div class="page-desc">保留原多维表格工作区；仅在行、视图和权限 DTO 等价后开放查询与编辑</div></div></div>
+    <div class="card" data-backend-blocked style="margin-bottom:14px;padding:14px 16px;border-color:#F5D6A7;background:#FFF9F0;color:#8A4B08;font-size:13px;line-height:20px"><strong style="display:block;color:#1F2329;margin-bottom:4px">后端能力未就绪</strong>当前漏斗壳与 Member Grid schema/query/views 契约语义不等价。页面未请求漏斗数据，也未生成视图、分享或群发任务。</div>
+    <div class="card toolbar"><button class="btn" disabled>默认视图</button><button class="btn" disabled>筛选</button><button class="btn" disabled>分组</button><button class="btn" disabled>排序</button><input class="input" disabled placeholder="搜索当前数据" style="margin-left:auto;width:220px"></div>
+    <div class="card" style="overflow:hidden"><div style="display:grid;grid-template-columns:150px 150px 130px 1fr;padding:10px 14px;background:#FAFAFB;border-bottom:1px solid #DEE0E3;color:#8F959E;font-size:12px"><span>客户名</span><span>脱敏手机号</span><span>漏斗状态</span><span>最近活动</span></div><div style="padding:42px;text-align:center;color:#8F959E">没有可安全展示的数据行</div></div>`;
 }

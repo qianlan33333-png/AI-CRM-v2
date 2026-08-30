@@ -6,8 +6,6 @@
             </div>
           </div>
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
-            <div id="setup-wizard-card"></div>
-            <div id="admin-access-card"></div>
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1"><h2 style="margin:0;font-size:14px;font-weight:600">配置类目</h2><span style="font-size:12px;color:#8F959E">共 {{ configPage.total }} 个类目</span></div>
               <table style="width:100%;border-collapse:collapse">
@@ -31,4 +29,12 @@
                 </tbody>
               </table>
             </div>
+            <section aria-label="本地接入与访问控制" style="display:grid;gap:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px">
+                <h2 style="margin:0;font-size:14px;font-weight:600">本地接入与访问控制</h2>
+                <span style="font-size:12px;color:#8F959E">仅影响本系统，不代表企微侧已生效</span>
+              </div>
+              <div id="setup-wizard-card"></div>
+              <div id="admin-access-card"></div>
+            </section>
           </div>

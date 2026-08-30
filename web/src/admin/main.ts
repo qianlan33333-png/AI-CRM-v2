@@ -200,7 +200,7 @@ function boot(): void {
       break;
     }
     case 'radar':
-      void mountRadar(stage, api, { view: 'list' }).then(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="radar.html?click_history=1">V1 Radar 历史点击（只读）</a></p>'); }).catch((error) => showLoadError(stage, error));
+      void mountRadar(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
       return;
     case 'radarDetail':
       void mountRadar(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
@@ -209,10 +209,13 @@ function boot(): void {
       void mountRadar(stage, api, { view: 'form', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'ai':
-      void mountAiAssistant(stage, api, { view: 'list' }).then(() => { stage.insertAdjacentHTML('afterbegin', '<p><a href="ai.html?marketing_config_history=1">V1 营销自动化历史（只读）</a></p>'); }).catch((error) => showLoadError(stage, error));
+      void mountAiAssistant(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
       return;
     case 'aiDetail':
       void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
+      return;
+    case 'funnel':
+      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error));
       return;
     case 'campaigns':
       void mountCampaignWorkspace(stage).catch((error) => showLoadError(stage, error));
@@ -260,22 +263,7 @@ function boot(): void {
   void controller.init()
     .then(async () => {
       mount(stage, tpl.innerHTML, controller);
-      if (page === 'automation') {
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?outbound_task_history=1">V1 外发任务历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?legacy_marketing_history=1">V1 旧版营销快照（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="automation.html?broadcast_job_history=1">V1 群发任务历史（只读）</a></p>');
-      }
-      if (page === 'groupops') {
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="groupops.html?history=1">V1 群运营历史（只读）</a></p>');
-      }
       if (page === 'config') {
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?marketing_state_history=1">V1 营销状态历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?customer_state_history=1">V1 客户状态历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?static_history=1">V1 静态历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?invalid_source_history=1&history_kind=tags">V1 异常源历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?automation_history=1">V1 自动化历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?wecom_contact_history=1">V1 企微联系人历史（只读）</a></p>');
-        stage.insertAdjacentHTML('afterbegin', '<p><a href="config.html?deferred_identity_history=1">V1 未归属身份历史证据（只读）</a></p>');
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);
         const adminAccess = stage.querySelector<HTMLElement>('#admin-access-card');

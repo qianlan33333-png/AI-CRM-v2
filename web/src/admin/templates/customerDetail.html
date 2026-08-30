@@ -11,7 +11,7 @@
               <a onClick="{{ go.customers }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#646A73" stroke-width="1.6"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg></a>
               <div style="min-width:0">
                 <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><a onClick="{{ go.customers }}" style="cursor:pointer;color:#8F959E">客户列表</a><span>/</span><span>客户档案</span></div>
-                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:600;line-height:22px">{{ customer.item.name }}</span><span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px">安全 Customer360</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:600;line-height:22px">{{ customer.item.name }}</span><span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px">客户档案</span></div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex:none">
@@ -50,7 +50,7 @@
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end">
               <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">姓名</span><input id="fCustomerName" value="{{ customer.item.name }}" style="height:32px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
               <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">阶段 ID（留空清除）</span><input id="fCustomerStage" value="{{ customer.item.stageId }}" list="customerStages" style="height:32px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-              <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">标签 ID</span><input id="fCustomerTag" inputmode="numeric" style="height:32px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
+              <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">标签</span><input id="fCustomerTag" inputmode="numeric" placeholder="输入标签编号" style="height:32px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
               <div style="display:flex;gap:6px"><button onClick="{{ customer.save }}" style="height:32px;padding:0 12px;border:0;border-radius:6px;background:#3370ff;color:#fff">保存资料/阶段</button><button onClick="{{ customer.addTag }}" style="height:32px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff">加标签</button><button onClick="{{ customer.removeTag }}" style="height:32px;padding:0 10px;border:1px solid #FBC4C2;border-radius:6px;background:#FFF5F5;color:#D83931">移除标签</button></div>
               <datalist id="customerStages"><sc-for list="{{ customer.stages }}" as="st"><option value="{{ st.v }}">{{ st.k }}</option></sc-for></datalist>
             </div>

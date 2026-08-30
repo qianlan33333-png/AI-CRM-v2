@@ -1933,7 +1933,7 @@ export class AdminController extends PageBase {
 
     /* ================= 问卷 · 运营配置 ================= */
     const qid = this.currentQid();
-    const qRow = rows.questionnaires[qid];
+    const qRow = rows.questionnaires.find((item) => item.resourceId === qid);
     const ops = this.currentOps();
     const opsNav: Record<string, StyleObj> = {};
     const opsGo: Record<string, () => void> = {};
@@ -2507,6 +2507,7 @@ export class AdminController extends PageBase {
           } : { has: false, id: '', state: '', outcome: '', dispatched: '否', external: '否', digest: '—', canReconcile: false },
         },
         history: {
+          visible: channelHistoryAvailable && this.qs().get('history') === '1',
           available: channelHistoryAvailable,
           loading: s.channelHistoryLoading,
           error: s.channelHistoryError,
@@ -2625,6 +2626,10 @@ export class AdminController extends PageBase {
       mig: (() => {
         const preview = s.migPreview;
         return {
+          fromName: '由导入文件逐行指定',
+          toName: '由导入文件逐行指定',
+          pickFrom: () => toast('当前 OpenAPI 仅支持在 CSV / XLSX 中逐行指定原负责人；未发起请求', true),
+          pickTo: () => toast('当前 OpenAPI 仅支持在 CSV / XLSX 中逐行指定目标负责人；未发起请求', true),
           fileName: s.migFileName || '尚未选择 CSV',
           downloadTemplate: () => this.migDownloadTemplate(),
           parseCsv: () => this.migParseCsv(),
@@ -2702,6 +2707,7 @@ export class AdminController extends PageBase {
         unbind: () => this.unbindAutomation(),
         addSender: () => this.addSender(),
         saveSenders: () => this.saveSenders(),
+        refresh: () => this.previewAudience(),
         back: () => this.goto('automation'),
         snapshot: () => this.snapshotAudience(),
         previewConfiguration: () => this.previewAudience(),
