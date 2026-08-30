@@ -95,7 +95,7 @@ const insertHXCCurrentSyncRun = `-- name: InsertHXCCurrentSyncRun :exec
 INSERT INTO hxc_current_sync_runs (
   status, source_count, matched_count, unmatched_count, conflict_count, error_code, created_at, expires_at
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $7 + interval '15 days'
+  $1, $2, $3, $4, $5, $6, $7::timestamptz, $7::timestamptz + interval '15 days'
 )
 `
 

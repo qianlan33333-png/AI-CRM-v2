@@ -115,7 +115,7 @@ func TestCooperativeDeadlineUsesUnified503(t *testing.T) {
 	assertError(t, response, "DEPENDENCY_UNAVAILABLE")
 }
 
-func TestAPIProcessPublishesHealthAndProtectsFrozenOperations(t *testing.T) {
+func TestAPIProcessPublishesHealthAndHidesRetiredOperations(t *testing.T) {
 	repoRoot := repositoryRoot(t)
 	binary := filepath.Join(t.TempDir(), "aicrm")
 	build := exec.Command("go", "build", "-trimpath", "-o", binary, "./cmd/aicrm")
@@ -176,8 +176,15 @@ func TestAPIProcessPublishesHealthAndProtectsFrozenOperations(t *testing.T) {
 		}
 		body, readErr := io.ReadAll(response.Body)
 		_ = response.Body.Close()
-		if readErr != nil || response.StatusCode != http.StatusUnauthorized {
+		wantStatus := http.StatusNotFound
+		if operation.path == "/api/v1/auth/session" {
+			wantStatus = http.StatusUnauthorized
+		}
+		if readErr != nil || response.StatusCode != wantStatus {
 			t.Fatalf("%s %s status/body/read = %d/%s/%v", operation.method, operation.path, response.StatusCode, body, readErr)
+		}
+		if wantStatus == http.StatusNotFound {
+			continue
 		}
 		var payload struct {
 			Code string `json:"code"`
