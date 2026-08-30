@@ -30,6 +30,17 @@ func TestWhitelistGatewayExposesOnlyFrozenBusinessRoutes(t *testing.T) {
 		{http.MethodGet, "/api/admin/orders", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/hxc-current", http.StatusNoContent},
 		{http.MethodPost, "/api/admin/hxc-current", http.StatusNotFound},
+		{http.MethodGet, "/api/sidebar/v2/jssdk/agent-config", http.StatusNoContent},
+		{http.MethodPost, "/api/sidebar/v2/bootstrap", http.StatusNoContent},
+		{http.MethodGet, "/api/sidebar/v2/timeline", http.StatusNoContent},
+		{http.MethodGet, "/api/sidebar/v2/chat-activity", http.StatusNoContent},
+		{http.MethodGet, "/api/sidebar/v2/other-staff-chats", http.StatusNoContent},
+		{http.MethodGet, "/api/sidebar/v2/workbench", http.StatusNoContent},
+		{http.MethodPut, "/api/sidebar/v2/profile", http.StatusNoContent},
+		{http.MethodPost, "/api/sidebar/v2/phone-binding", http.StatusNoContent},
+		{http.MethodGet, "/api/sidebar/v2/materials", http.StatusNoContent},
+		{http.MethodGet, "/api/sidebar/v2/materials/image/7/preview", http.StatusNoContent},
+		{http.MethodPost, "/api/sidebar/v2/materials/image/7/temporary-media", http.StatusNotFound},
 		{http.MethodGet, "/api/admin/orders/legacy-order-1", http.StatusNotFound},
 		{http.MethodPost, "/api/admin/orders", http.StatusNotFound},
 		{http.MethodGet, "/api/admin/campaigns", http.StatusNotFound},
@@ -73,6 +84,7 @@ func TestWhitelistRouteAllowlistHasNoExternalExecution(t *testing.T) {
 		"/api/admin/questionnaires/1/submissions/2/external-push",
 		"/api/admin/automations/1/activate",
 		"/api/admin/ai-audience/packages/1/send-records",
+		"/api/sidebar/v2/materials/image/1/temporary-media",
 	} {
 		if whitelistRouteAllowed(http.MethodPost, path) {
 			t.Fatalf("external execution route is allowed: %s", path)

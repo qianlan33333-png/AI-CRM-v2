@@ -91,11 +91,11 @@ func (repository *SidebarProfileRepository) CompleteSidebarProfileReceipt(ctx co
 	return sidebarProfileReceipt(row.ID, row.ActorScope, row.KeyDigest, row.PayloadDigest, row.State, row.ResultSnapshot), nil
 }
 
-func sidebarProfileRecord(id int64, name string, owner pgtype.Int8, extra []byte, updatedAt pgtype.Timestamptz) (contactapp.SidebarProfileRecord, error) {
-	if id < 1 || name == "" || !owner.Valid || owner.Int64 < 1 || !json.Valid(extra) || !updatedAt.Valid || updatedAt.Time.IsZero() {
+func sidebarProfileRecord(id int64, name string, owner int64, extra []byte, updatedAt pgtype.Timestamptz) (contactapp.SidebarProfileRecord, error) {
+	if id < 1 || name == "" || owner < 1 || !json.Valid(extra) || !updatedAt.Valid || updatedAt.Time.IsZero() {
 		return contactapp.SidebarProfileRecord{}, contactport.ErrSidebarProfileUnavailable
 	}
-	return contactapp.SidebarProfileRecord{CustomerID: id, OwnerStaffID: owner.Int64, Name: name, Extra: append([]byte(nil), extra...), UpdatedAt: updatedAt.Time.UTC()}, nil
+	return contactapp.SidebarProfileRecord{CustomerID: id, OwnerStaffID: owner, Name: name, Extra: append([]byte(nil), extra...), UpdatedAt: updatedAt.Time.UTC()}, nil
 }
 
 func sidebarProfileReceipt(id int64, actor string, key, payload []byte, state string, snapshot []byte) contactapp.SidebarProfileReceipt {

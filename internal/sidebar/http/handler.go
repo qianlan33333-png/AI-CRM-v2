@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
@@ -173,6 +174,10 @@ func (handler *Handler) Bootstrap(writer http.ResponseWriter, request *http.Requ
 	session, _ := authport.SessionFromContext(request.Context())
 	result, err := handler.service.Bootstrap(request.Context(), principal, session, authenticated, body.ExternalUserID)
 	if err != nil {
+		slog.ErrorContext(request.Context(), "sidebar_bootstrap_failed",
+			"request_id", platformhttp.RequestID(request.Context()),
+			"stage", sidebarapp.BootstrapFailureStage(err),
+		)
 		writeError(writer, request, err)
 		return
 	}
@@ -429,9 +434,6 @@ func (handler *Handler) scope(request *http.Request, token string, capability au
 	scope, err := handler.service.VerifyContext(request.Context(), principal, session, token)
 	if err != nil {
 		return sidebarapp.Scope{}, err
-	}
-	if !authorization.AllowsOwner(scope.OwnerStaffID) {
-		return sidebarapp.Scope{}, sidebarapp.ErrForbidden
 	}
 	return scope, nil
 }

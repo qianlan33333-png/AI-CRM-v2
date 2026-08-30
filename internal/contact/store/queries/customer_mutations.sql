@@ -68,13 +68,11 @@ WHERE c.id = sqlc.arg(customer_id)::bigint
 FOR UPDATE;
 
 -- name: GetSidebarCustomerProfile :one
-SELECT id, name, owner_staff_id, extra, updated_at
+SELECT id, name,
+       COALESCE(NULLIF(sqlc.arg(owner_staff_id)::bigint, 0), owner_staff_id, 0)::bigint AS owner_staff_id,
+       extra, updated_at
 FROM public.customers
 WHERE id = sqlc.arg(customer_id)::bigint
-  AND (
-    sqlc.arg(owner_staff_id)::bigint = 0
-    OR owner_staff_id = sqlc.arg(owner_staff_id)::bigint
-  )
   AND NOT is_deleted;
 
 -- name: UpdateSidebarCustomerProfile :one
@@ -82,10 +80,9 @@ UPDATE public.customers
 SET extra = jsonb_set(extra, '{sidebar_profile}', sqlc.arg(profile)::jsonb, true),
     updated_at = sqlc.arg(updated_at)::timestamptz
 WHERE id = sqlc.arg(customer_id)::bigint
-  AND owner_staff_id = sqlc.arg(owner_staff_id)::bigint
   AND updated_at = sqlc.arg(expected_updated_at)::timestamptz
   AND NOT is_deleted
-RETURNING id, name, owner_staff_id, extra, updated_at;
+RETURNING id, name, sqlc.arg(owner_staff_id)::bigint AS owner_staff_id, extra, updated_at;
 
 -- name: ReserveSidebarCustomerProfileReceipt :one
 INSERT INTO public.sidebar_customer_profile_operation_receipts (

@@ -89,7 +89,8 @@ func (media *thumbnailMedia) GetImageVariant(context.Context, int64, string) (me
 }
 
 func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	staff := int64(7)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staff}
 	profiles := thumbnailProfiles{contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
 	media := &thumbnailMedia{exists: true, variant: mediaport.ImageVariant{Content: []byte("png"), MediaType: "image/png", ETag: `"thumb"`}}
 	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, media, []byte("01234567890123456789012345678901"))
@@ -130,7 +131,8 @@ func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
 }
 
 func TestBootstrapHTTPReturnsWorkbenchOnlyForAuthorizedViewer(t *testing.T) {
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	staff := int64(7)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staff}
 	profiles := thumbnailProfiles{contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer-private", UpdatedAt: time.Now().UTC()}}
 	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, &thumbnailMedia{}, []byte("01234567890123456789012345678901"))
 	if err != nil {
@@ -166,7 +168,8 @@ func TestBootstrapHTTPReturnsWorkbenchOnlyForAuthorizedViewer(t *testing.T) {
 }
 
 func TestThumbnailPreviewHTTPReturnsLocalBytesAndETag(t *testing.T) {
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	staff := int64(7)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staff}
 	profiles := thumbnailProfiles{contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
 	media := &thumbnailMedia{exists: true, variant: mediaport.ImageVariant{Content: []byte("image-bytes"), MediaType: "image/png", ETag: `"thumb-etag"`}}
 	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, media, []byte("01234567890123456789012345678901"))

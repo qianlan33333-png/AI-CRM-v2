@@ -1,6 +1,5 @@
 import {
   bindSidebarPhone,
-  bootstrapSidebar,
   getCompleteSidebarOAuthUrl,
   getSidebarAgentConfig,
   getSidebarWorkbench,
@@ -10,7 +9,6 @@ import {
 } from "./generated/p4-sidebar-core/p4-sidebar-core";
 import type {
   BindSidebarPhoneBody,
-  BootstrapSidebarBody,
   CompleteSidebarOAuthParams,
   ListSidebarChatActivityParams,
   ListSidebarMaterialsParams,
@@ -20,8 +18,7 @@ import type {
   ListSidebarShareableProductsParams,
   ListSidebarTimelineParams,
   MintSidebarContextBody,
-  SidebarAgentConfigSignature,
-  SidebarBootstrapResponse,
+  SidebarJSSDKConfig,
   SidebarChatActivityResponse,
   SidebarContextResponse,
   SidebarMaterialResponse,
@@ -61,25 +58,21 @@ export function newSidebarIdempotencyKey(scope: string): string {
 }
 
 export const sidebarApi = {
-  mintContext: async (body: MintSidebarContextBody) =>
+  mintContext: async (body: MintSidebarContextBody, signal?: AbortSignal) =>
     unwrapGenerated(
-      await mintSidebarContext(body, apiRequestOptions()),
+      await mintSidebarContext(body, apiRequestOptions({ signal })),
     ) as SidebarContextResponse,
-  bootstrap: async (body: BootstrapSidebarBody, signal?: AbortSignal) =>
-    unwrapGenerated(
-      await bootstrapSidebar(body, apiRequestOptions({ signal })),
-    ) as SidebarBootstrapResponse,
   agentConfig: async (url: string) =>
     unwrapGenerated(
       await getSidebarAgentConfig({ url }, apiRequestOptions()),
-    ) as SidebarAgentConfigSignature,
+    ) as SidebarJSSDKConfig,
   oauthStartUrl: (params: StartSidebarOAuthParams) =>
     getStartSidebarOAuthUrl(params),
   oauthCallbackUrl: (params: CompleteSidebarOAuthParams) =>
     getCompleteSidebarOAuthUrl(params),
-  workbench: async (contextToken: string) =>
+  workbench: async (contextToken: string, signal?: AbortSignal) =>
     unwrapGenerated(
-      await getSidebarWorkbench(scopedOptions(contextToken)),
+      await getSidebarWorkbench(scopedOptions(contextToken, { signal })),
     ) as SidebarWorkbenchResponse,
   profile: async (
     contextToken: string,

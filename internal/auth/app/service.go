@@ -23,9 +23,16 @@ const DefaultSessionLifetime = 8 * time.Hour
 var safeProviderID = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}$`)
 
 type Options struct {
-	Clock    func() time.Time
-	Random   io.Reader
-	Lifetime time.Duration
+	Clock         func() time.Time
+	Random        io.Reader
+	Lifetime      time.Duration
+	StaffResolver StaffResolver
+}
+
+// StaffResolver optionally links a verified admin account to the current
+// active staff row. Minimal auth-only schemas intentionally leave it unset.
+type StaffResolver interface {
+	ResolveStaffID(context.Context, int64) (*int64, error)
 }
 
 type repository interface {
@@ -42,6 +49,7 @@ type Service struct {
 	clock    func() time.Time
 	random   io.Reader
 	lifetime time.Duration
+	staff    StaffResolver
 }
 
 var (
@@ -65,7 +73,7 @@ func NewService(uow platformport.UnitOfWork, repo repository, options Options) (
 	if options.Lifetime < time.Minute || options.Lifetime > 24*time.Hour {
 		return nil, authport.ErrAuthenticationUnavailable
 	}
-	return &Service{uow: uow, repo: repo, clock: options.Clock, random: options.Random, lifetime: options.Lifetime}, nil
+	return &Service{uow: uow, repo: repo, clock: options.Clock, random: options.Random, lifetime: options.Lifetime, staff: options.StaffResolver}, nil
 }
 
 func (service *Service) IssueVerified(ctx context.Context, login authport.VerifiedLogin) (authport.BrowserSession, error) {
@@ -91,6 +99,10 @@ func (service *Service) IssueVerified(ctx context.Context, login authport.Verifi
 		if errors.Is(findErr, pgx.ErrNoRows) {
 			return authport.ErrUnauthenticated
 		}
+		if findErr != nil {
+			return errors.Join(authport.ErrAuthenticationUnavailable, findErr)
+		}
+		user.Principal, findErr = service.resolveStaff(txCtx, user.Principal)
 		if findErr != nil {
 			return errors.Join(authport.ErrAuthenticationUnavailable, findErr)
 		}
@@ -125,6 +137,10 @@ func (service *Service) Authenticate(ctx context.Context, session authport.Sessi
 		if err != nil {
 			return errors.Join(authport.ErrAuthenticationUnavailable, err)
 		}
+		principal, err = service.resolveStaff(txCtx, principal)
+		if err != nil {
+			return errors.Join(authport.ErrAuthenticationUnavailable, err)
+		}
 		if !validPrincipal(principal) {
 			return authport.ErrUnauthenticated
 		}
@@ -133,6 +149,18 @@ func (service *Service) Authenticate(ctx context.Context, session authport.Sessi
 	if err != nil {
 		return authport.Principal{}, err
 	}
+	return principal, nil
+}
+
+func (service *Service) resolveStaff(ctx context.Context, principal authport.Principal) (authport.Principal, error) {
+	if principal.StaffID != nil || service.staff == nil {
+		return principal, nil
+	}
+	staffID, err := service.staff.ResolveStaffID(ctx, principal.AdminUserID)
+	if err != nil {
+		return authport.Principal{}, err
+	}
+	principal.StaffID = staffID
 	return principal, nil
 }
 

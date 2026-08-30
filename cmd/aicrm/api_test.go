@@ -63,6 +63,7 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPut, "/api/sidebar/v2/periodic-orders/71/members/spm_abcdefghijklmnopqrstuv/remark", authport.CapabilityCustomersWrite},
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/1/thumbnail", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/sidebar/v2/other-staff-chats", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/admin/release-candidates", authport.CapabilityReleaseRead},
 		{http.MethodGet, "/api/v1/admin/release-candidates/1", authport.CapabilityReleaseRead},

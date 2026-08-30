@@ -4223,6 +4223,7 @@ export type SidebarAgentConfigSignatureSignatureType =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SidebarAgentConfigSignatureSignatureType = {
+  config: "config",
   agent_config: "agent_config",
 } as const;
 
@@ -4250,6 +4251,18 @@ export interface SidebarAgentConfigSignature {
    */
   url: string;
   ticket_expires_at: string;
+}
+
+export interface SidebarJSSDKConfig {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  corp_id: string;
+  /** @minimum 1 */
+  agent_id: number;
+  config: SidebarAgentConfigSignature;
+  agent_config: SidebarAgentConfigSignature;
 }
 
 export type SidebarContextResponseState =

@@ -29,6 +29,31 @@ var (
 	ErrUnavailable      = errors.New("sidebar unavailable")
 )
 
+type bootstrapStageError struct {
+	stage string
+	err   error
+}
+
+func (err *bootstrapStageError) Error() string { return "sidebar bootstrap failed at " + err.stage }
+func (err *bootstrapStageError) Unwrap() error { return err.err }
+
+// BootstrapFailureStage returns a fixed, non-sensitive dependency stage for
+// operational diagnostics. It never includes customer or identity values.
+func BootstrapFailureStage(err error) string {
+	var staged *bootstrapStageError
+	if errors.As(err, &staged) {
+		return staged.stage
+	}
+	return "unknown"
+}
+
+func bootstrapFailure(stage string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &bootstrapStageError{stage: stage, err: err}
+}
+
 type CorpReader interface {
 	CorpID(context.Context) (string, error)
 }
@@ -292,7 +317,7 @@ func (service *Service) Bootstrap(ctx context.Context, principal authport.Princi
 		CustomerID: resolved.result.CustomerID, OwnerStaffID: resolved.result.OwnerStaffID, Principal: principal,
 	}, resolved.profile)
 	if err != nil {
-		return BootstrapResult{}, err
+		return BootstrapResult{}, bootstrapFailure("workbench", err)
 	}
 	result.Token = resolved.result.Token
 	result.ExpiresAt = resolved.result.ExpiresAt
@@ -318,30 +343,31 @@ func (service *Service) resolveContext(ctx context.Context, principal authport.P
 	}
 	corpID, err := service.corp.CorpID(ctx)
 	if err != nil || corpID == "" {
-		return resolvedContext{}, ErrUnavailable
+		return resolvedContext{}, bootstrapFailure("corp", ErrUnavailable)
 	}
 	resolved, err := service.identity.Resolve(ctx, identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:" + corpID, Value: externalUserID, Assurance: identityport.AssuranceVerified, Source: "sidebar"})
 	if err != nil {
-		return resolvedContext{}, ErrUnavailable
+		return resolvedContext{}, bootstrapFailure("identity", ErrUnavailable)
 	}
 	if resolved.Status != identityport.ResolveFound || resolved.CustomerID < 1 {
 		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
 	}
-	profile, err := service.profiles.ResolveSidebarProfile(ctx, resolved.CustomerID)
-	if err != nil {
-		return resolvedContext{}, mapDependencyError(err)
+	viewerStaffID, ok := sidebarViewerStaffID(principal)
+	if !ok {
+		return resolvedContext{result: ContextResult{State: "viewer_session_required", Safety: localSafety()}}, nil
 	}
-	if !principalAllowsOwner(principal, profile.OwnerStaffID) {
-		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
+	profile, err := service.profiles.ReadSidebarProfile(ctx, resolved.CustomerID, viewerStaffID)
+	if err != nil {
+		return resolvedContext{}, bootstrapFailure("profile", mapDependencyError(err))
 	}
 	now := service.now().UTC().Truncate(time.Second)
-	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
+	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
 	token, err := service.codec.encode(claims)
 	if err != nil {
-		return resolvedContext{}, err
+		return resolvedContext{}, bootstrapFailure("context_token", err)
 	}
 	return resolvedContext{
-		result:  ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Safety: localSafety()},
+		result:  ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: profile.OwnerStaffID, Safety: localSafety()},
 		profile: profile,
 	}, nil
 }
@@ -361,7 +387,7 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	if err != nil || !hmac.Equal([]byte(claims.SessionFingerprint), []byte(sessionFingerprint)) {
 		return Scope{}, ErrTokenInvalid
 	}
-	if claims.AdminUserID != principal.AdminUserID || claims.Role != principal.Role || !principalAllowsOwner(principal, claims.OwnerStaffID) {
+	if claims.AdminUserID != principal.AdminUserID || claims.Role != principal.Role {
 		return Scope{}, ErrForbidden
 	}
 	corpID, err := service.corp.CorpID(ctx)
@@ -371,17 +397,21 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	if claims.CorpID != corpID {
 		return Scope{}, ErrTokenInvalid
 	}
-	profile, err := service.profiles.ResolveSidebarProfile(ctx, contactport.CustomerID(claims.CustomerID))
+	viewerStaffID, ok := sidebarViewerStaffID(principal)
+	if !ok {
+		return Scope{}, ErrForbidden
+	}
+	profile, err := service.profiles.ReadSidebarProfile(ctx, contactport.CustomerID(claims.CustomerID), viewerStaffID)
 	if errors.Is(err, contactport.ErrSidebarProfileNotFound) {
 		return Scope{}, ErrTokenInvalid
 	}
 	if err != nil {
 		return Scope{}, ErrUnavailable
 	}
-	if int64(profile.CustomerID) != claims.CustomerID || profile.OwnerStaffID != claims.OwnerStaffID {
+	if int64(profile.CustomerID) != claims.CustomerID {
 		return Scope{}, ErrTokenInvalid
 	}
-	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Principal: principal}, nil
+	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: viewerStaffID, Principal: principal}, nil
 }
 
 func (service *Service) Profile(ctx context.Context, scope Scope) (ProfileResult, error) {
@@ -540,8 +570,11 @@ func validPrincipal(value authport.Principal) bool {
 	return value.AdminUserID > 0 && (value.Role == authport.RoleAdmin || value.Role == authport.RoleOps || value.Role == authport.RoleSales) && (value.Role != authport.RoleSales || value.StaffID != nil && *value.StaffID > 0)
 }
 
-func principalAllowsOwner(value authport.Principal, owner int64) bool {
-	return owner > 0 && (value.Role == authport.RoleAdmin || value.Role == authport.RoleOps || value.Role == authport.RoleSales && value.StaffID != nil && *value.StaffID == owner)
+func sidebarViewerStaffID(value authport.Principal) (int64, bool) {
+	if value.StaffID == nil || *value.StaffID < 1 {
+		return 0, false
+	}
+	return *value.StaffID, true
 }
 
 func validExternalUserID(value string) bool {

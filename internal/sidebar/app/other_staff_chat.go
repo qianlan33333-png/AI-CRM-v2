@@ -14,9 +14,8 @@ import (
 
 const sidebarOtherStaffChatMaximumItems = 20
 
-// OtherStaffChatService passes the Sidebar's verified customer/owner scope to
-// the local WeCom archive projection. It does not call a provider or infer a
-// staff identity when the active owner lookup is unavailable.
+// OtherStaffChatService passes the verified customer and current viewer to the
+// local WeCom archive projection. Customer ownership is not an access input.
 type OtherStaffChatService struct {
 	chats wecomport.CustomerOtherStaffChatReader
 }
@@ -36,14 +35,14 @@ func NewOtherStaffChatService(chats wecomport.CustomerOtherStaffChatReader) (*Ot
 }
 
 func (service *OtherStaffChatService) List(ctx context.Context, scope Scope) ([]OtherStaffChat, error) {
-	if ctx == nil || scope.CustomerID < 1 || scope.OwnerStaffID < 1 {
+	if ctx == nil || scope.CustomerID < 1 || scope.Principal.StaffID == nil || *scope.Principal.StaffID < 1 {
 		return nil, ErrInvalidInput
 	}
 	if service == nil || nilOtherStaffChatDependency(service.chats) {
 		return nil, ErrUnavailable
 	}
 	page, err := service.chats.ListCustomerOtherStaffChats(ctx, wecomport.CustomerOtherStaffChatQuery{
-		CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: scope.OwnerStaffID,
+		CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: *scope.Principal.StaffID,
 	})
 	if err != nil || len(page.Items) > sidebarOtherStaffChatMaximumItems {
 		return nil, ErrUnavailable
