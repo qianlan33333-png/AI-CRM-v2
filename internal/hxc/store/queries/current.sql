@@ -35,7 +35,7 @@ DELETE FROM hxc_user_current WHERE NOT (hxc_user_id = ANY(sqlc.arg(hxc_user_ids)
 INSERT INTO hxc_current_sync_runs (
   status, source_count, matched_count, unmatched_count, conflict_count, error_code, created_at, expires_at
 ) VALUES (
-  sqlc.arg(status), sqlc.arg(source_count), sqlc.arg(matched_count), sqlc.arg(unmatched_count), sqlc.arg(conflict_count), sqlc.narg(error_code), sqlc.arg(created_at), sqlc.arg(created_at) + interval '15 days'
+  sqlc.arg(status), sqlc.arg(source_count), sqlc.arg(matched_count), sqlc.arg(unmatched_count), sqlc.arg(conflict_count), sqlc.narg(error_code), sqlc.arg(created_at)::timestamptz, sqlc.arg(created_at)::timestamptz + interval '15 days'
 );
 
 -- name: DeleteExpiredHXCCurrentSyncRuns :exec
