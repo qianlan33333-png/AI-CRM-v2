@@ -127,6 +127,44 @@ func (repository *CurrentRepository) ReadCustomerCurrent(ctx context.Context, cu
 	return result, nil
 }
 
+func (repository *CurrentRepository) ReadDashboard(ctx context.Context, limit int32) (hxcport.DashboardSnapshot, error) {
+	if repository == nil || repository.pool == nil || ctx == nil || limit < 1 || limit > 200 {
+		return hxcport.DashboardSnapshot{}, errors.New("invalid hxc dashboard read")
+	}
+	result := hxcport.DashboardSnapshot{Rows: []hxcport.DashboardRow{}}
+	if err := repository.pool.QueryRow(ctx, `SELECT
+COUNT(*)::bigint,
+COUNT(*) FILTER (WHERE match_state='matched')::bigint,
+COUNT(*) FILTER (WHERE match_state='unmatched')::bigint,
+COUNT(*) FILTER (WHERE match_state='conflict')::bigint,
+(SELECT created_at FROM hxc_current_sync_runs WHERE status='success' ORDER BY created_at DESC LIMIT 1)
+FROM hxc_user_current`).Scan(&result.Total, &result.MatchedCount, &result.UnmatchedCount, &result.ConflictCount, &result.LastSyncedAt); err != nil {
+		return result, err
+	}
+	rows, err := repository.pool.Query(ctx, `SELECT hxc_user_id, match_state, subscription_tier,
+current_period_used, monthly_chat_quota, user_messages_7d, user_messages_30d,
+last_used_at, last_capability, business_stage, user_segment, source_updated_at, synced_at
+FROM hxc_user_current
+ORDER BY COALESCE(last_used_at, source_updated_at) DESC, hxc_user_id
+LIMIT $1`, limit)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var row hxcport.DashboardRow
+		if err = rows.Scan(&row.HXCUserID, &row.MatchState, &row.SubscriptionTier,
+			&row.CurrentPeriodUsed, &row.MonthlyChatQuota, &row.UserMessages7D, &row.UserMessages30D,
+			&row.LastUsedAt, &row.LastCapability, &row.BusinessStage, &row.UserSegment, &row.SourceUpdatedAt, &row.SyncedAt); err != nil {
+			return result, err
+		}
+		row.SourceUpdatedAt = row.SourceUpdatedAt.UTC()
+		row.SyncedAt = row.SyncedAt.UTC()
+		result.Rows = append(result.Rows, row)
+	}
+	return result, rows.Err()
+}
+
 func storedTime(value pgtype.Timestamptz) *time.Time {
 	if !value.Valid {
 		return nil
@@ -136,3 +174,4 @@ func storedTime(value pgtype.Timestamptz) *time.Time {
 }
 
 var _ hxcport.CurrentReader = (*CurrentRepository)(nil)
+var _ hxcport.DashboardReader = (*CurrentRepository)(nil)

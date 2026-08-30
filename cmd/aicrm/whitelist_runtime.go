@@ -28,6 +28,7 @@ var whitelistRoutePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/admin/channels(?:/[1-9][0-9]*)?$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/(?:package-groups(?:/[1-9][0-9]*)?|packages(?:/[1-9][0-9]*(?:/(?:copy|pause|configuration|configuration-preview|configuration-materialize|members))?)?)$`),
 	regexp.MustCompile(`^/api/admin/automation-agents(?:/[1-9][0-9]*(?:/(?:fixed-content|precheck|activate|copy|pause|publish))?)?$`),
+	regexp.MustCompile(`^/api/admin/hxc-current$`),
 	regexp.MustCompile(`^/api/sidebar/v2/(?:oauth/(?:start|callback)|questionnaires|orders|periodic-orders(?:/[1-9][0-9]*/members/[^/]+/remark)?|shareable-products)$`),
 }
 
@@ -134,7 +135,7 @@ func whitelistMethodAllowed(method, path string) bool {
 	if method == http.MethodOptions {
 		return true
 	}
-	if path == "/api/admin/orders" || regexp.MustCompile(`^/api/admin/orders/`).MatchString(path) ||
+	if path == "/api/admin/orders" || path == "/api/admin/hxc-current" || regexp.MustCompile(`^/api/admin/orders/`).MatchString(path) ||
 		path == "/api/sidebar/v2/orders" || path == "/api/sidebar/v2/questionnaires" || path == "/api/sidebar/v2/shareable-products" {
 		return method == http.MethodGet
 	}
