@@ -869,7 +869,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	service, err := authapp.NewService(uow, authstore.NewRepository(), authapp.Options{})
+	service, err := authapp.NewService(uow, authstore.NewRepository(), authapp.Options{StaffResolver: authStaffResolver{}})
 	if err != nil {
 		pool.Close()
 		return nil, err

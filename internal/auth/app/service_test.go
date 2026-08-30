@@ -61,6 +61,19 @@ type fakeAuthRepository struct {
 	revokedAt         time.Time
 }
 
+type fakeStaffResolver struct {
+	staffID     *int64
+	err         error
+	calls       int
+	adminUserID int64
+}
+
+func (resolver *fakeStaffResolver) ResolveStaffID(_ context.Context, adminUserID int64) (*int64, error) {
+	resolver.calls++
+	resolver.adminUserID = adminUserID
+	return resolver.staffID, resolver.err
+}
+
 func (repository *fakeAuthRepository) FindVerifiedLogin(_ context.Context, login authport.VerifiedLogin) (authstore.LoginUser, error) {
 	repository.findCalls++
 	repository.findLogin = login
@@ -218,6 +231,26 @@ func TestIssueVerifiedUsesDefaultAndConfiguredLifetime(t *testing.T) {
 	}
 }
 
+func TestIssueVerifiedPersistsResolvedCurrentStaff(t *testing.T) {
+	staffID := int64(42)
+	resolver := &fakeStaffResolver{staffID: &staffID}
+	repository := &fakeAuthRepository{loginUser: usableLoginUser()}
+	service := newTestAuthService(t, &fakeAuthUoW{}, repository, Options{
+		Random:        &recordedReader{data: sequenceBytes(64)},
+		StaffResolver: resolver,
+	})
+
+	if _, err := service.IssueVerified(context.Background(), safeVerifiedLogin()); err != nil {
+		t.Fatalf("IssueVerified() error = %v", err)
+	}
+	if repository.insertUser.Principal.StaffID == nil || *repository.insertUser.Principal.StaffID != staffID {
+		t.Fatalf("persisted principal = %#v", repository.insertUser.Principal)
+	}
+	if resolver.calls != 1 || resolver.adminUserID != 7 {
+		t.Fatalf("staff resolver calls/admin=%d/%d, want 1/7", resolver.calls, resolver.adminUserID)
+	}
+}
+
 func TestIssueVerifiedFailsClosedWhenVerifiedLoginDoesNotResolve(t *testing.T) {
 	for _, name := range []string{"unknown user", "disabled login is hidden as no rows"} {
 		t.Run(name, func(t *testing.T) {
@@ -333,6 +366,34 @@ func TestAuthenticateReturnsValidPrincipal(t *testing.T) {
 	}
 	if uow.calls != 1 || repository.getCalls != 1 {
 		t.Fatalf("calls = uow:%d get:%d, want 1/1", uow.calls, repository.getCalls)
+	}
+}
+
+func TestAuthenticateResolvesCurrentStaffOutsideMinimalAuthQueries(t *testing.T) {
+	staffID := int64(42)
+	resolver := &fakeStaffResolver{staffID: &staffID}
+	token := authport.SessionRef(rawToken(sequenceBytes(32)))
+	repository := &fakeAuthRepository{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleSales}}
+	service := newTestAuthService(t, &fakeAuthUoW{}, repository, Options{StaffResolver: resolver})
+
+	principal, err := service.Authenticate(context.Background(), token)
+	if err != nil || principal.StaffID == nil || *principal.StaffID != staffID {
+		t.Fatalf("Authenticate() principal=%#v error=%v", principal, err)
+	}
+	if resolver.calls != 1 || resolver.adminUserID != 7 {
+		t.Fatalf("staff resolver calls/admin=%d/%d, want 1/7", resolver.calls, resolver.adminUserID)
+	}
+}
+
+func TestAuthenticateFailsClosedWhenCurrentStaffResolutionFails(t *testing.T) {
+	sentinel := errors.New("staff directory unavailable")
+	resolver := &fakeStaffResolver{err: sentinel}
+	repository := &fakeAuthRepository{principal: usablePrincipal()}
+	service := newTestAuthService(t, &fakeAuthUoW{}, repository, Options{StaffResolver: resolver})
+
+	principal, err := service.Authenticate(context.Background(), authport.SessionRef(rawToken(sequenceBytes(32))))
+	if principal != (authport.Principal{}) || !errors.Is(err, authport.ErrAuthenticationUnavailable) || !errors.Is(err, sentinel) {
+		t.Fatalf("Authenticate() principal=%#v error=%v", principal, err)
 	}
 }
 

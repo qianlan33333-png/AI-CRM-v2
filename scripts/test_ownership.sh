@@ -30,6 +30,7 @@ seed() {
   printf '%s\n' 'package provider' 'const endpoint = "https://api.weixin.qq.com/cgi-bin/stable_token"' >"$root/internal/order/provider/wechat_shop.go"
   printf '%s\n' 'package store' \
     'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' \
+    'const configTicket = "/cgi-bin/get_jsapi_ticket"' \
     'const agentConfigTicket = "/cgi-bin/ticket/get"' \
     'const addContactWay = "/cgi-bin/externalcontact/add_contact_way"' \
     'const getContactWay = "/cgi-bin/externalcontact/get_contact_way"' \

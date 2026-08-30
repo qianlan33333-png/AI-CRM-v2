@@ -33,11 +33,8 @@ func (q *Queries) ClaimAdminOAuthState(ctx context.Context, arg ClaimAdminOAuthS
 }
 
 const findAdminUserForVerifiedLogin = `-- name: FindAdminUserForVerifiedLogin :one
-SELECT u.id, u.role, COALESCE(u.staff_id, s.id, 0)::bigint AS staff_id, u.session_version
+SELECT u.id, u.role, COALESCE(u.staff_id, 0)::bigint AS staff_id, u.session_version
 FROM admin_users AS u
-LEFT JOIN staff AS s
-  ON s.wecom_userid = u.provider_subject_id
- AND s.is_active
 WHERE u.auth_provider = $1
   AND u.wecom_corp_id = $2
   AND u.provider_subject_id = $3
@@ -71,12 +68,9 @@ func (q *Queries) FindAdminUserForVerifiedLogin(ctx context.Context, arg FindAdm
 }
 
 const getActiveSession = `-- name: GetActiveSession :one
-SELECT u.id, u.role, COALESCE(u.staff_id, viewer.id, 0)::bigint AS staff_id
+SELECT u.id, u.role, COALESCE(u.staff_id, 0)::bigint AS staff_id
 FROM admin_sessions AS s
 JOIN admin_users AS u ON u.id = s.admin_user_id
-LEFT JOIN staff AS viewer
-  ON viewer.wecom_userid = u.provider_subject_id
- AND viewer.is_active
 WHERE s.session_token_hash = $1
   AND s.revoked_at IS NULL
   AND s.expires_at > $2
