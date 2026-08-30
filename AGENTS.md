@@ -63,8 +63,13 @@
 - oapi-codegen、sqlc、Orval 生成目录禁止手写；相关输入变化时同步真实生成物。
 - `go.sum`、`package-lock.json` 的变化必须来自对应依赖操作并可解释。
 - 本地优先运行与 changed paths 直接相关的测试；不要求每个开发任务本地跑全仓。
-- PR 唯一 Required Check 是 `ci / merge-gate`。未知可执行变更由 CI 保守回退到
-  full；Nightly 承担全仓 race、acceptance、生成、依赖和 PostgreSQL 回归。
+- 普通 PR 只等待针对性 CI 汇总出的 `ci / merge-gate`，它是唯一 Required Check。
+  未知可执行变更由 CI 保守回退到 full；PR 创建、更新、CI 完成及合并 main 均不
+  触发 Full Nightly。
+- Full Nightly 每天北京时间 02:17 定时运行一次，承担全仓 race、acceptance、生成、
+  依赖和 PostgreSQL 回归。失败时单独创建 Bugfix PR，按涉及路径跑针对性 CI，
+  `ci / merge-gate` 通过后合并并等待下一次每日 Nightly 自然验证；不手动立即重跑，
+  也不阻塞其他普通 PR。
 - PR 用简短中文说明“改了什么、怎么验证、有什么风险”。只有 migration、真实外部
   效果或回滚复杂时才补充专项说明；不要求命令退出码表或证据等级表。
 - mock/local/staging/production 不得混称。涉及真实部署或外部效果时，如未执行，

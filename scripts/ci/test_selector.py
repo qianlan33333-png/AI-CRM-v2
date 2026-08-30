@@ -622,11 +622,7 @@ class WorkflowWiringTests(unittest.TestCase):
             self.assertRegex(source, r"(?m)^permissions:\n  contents: read\n")
             permission_entries = re.findall(r"(?m)^  [a-z-]+: (?:read|write|write-all)$", source)
             self.assertEqual(permission_entries, ["  contents: read"])
-            if relative_name == ".github/workflows/nightly.yml":
-                self.assertEqual(
-                    re.findall(r"(?m)^      [a-z-]+: (?:write|write-all)$", source),
-                    ["      statuses: write"],
-                )
+            self.assertNotRegex(source, r"(?m)^\s+[a-z-]+: (?:write|write-all)$")
             self.assertNotIn("pull_request_target", source)
             self.assertNotRegex(source, r"(?m)^\s+paths(?:-ignore)?:")
             for action_ref in re.findall(r"(?m)^\s+(?:- )?uses: ([^\s#]+)", source):
@@ -653,20 +649,19 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn("go=", source)
         self.assertIn("cancelled", CLASSIFIER_PATH.read_text(encoding="utf-8"))
 
-    def test_nightly_uses_trusted_triggers_and_isolates_status_write(self) -> None:
+    def test_nightly_is_schedule_only_and_read_only(self) -> None:
         source = (REPO_ROOT / ".github/workflows/nightly.yml").read_text(encoding="utf-8")
-        self.assertNotIn("pull_request:", source)
-        self.assertNotIn("workflow_dispatch:", source)
-        self.assertIn("push:", source)
-        self.assertIn("schedule:", source)
-        self.assertIn("workflow_run:", source)
+        self.assertIn('on:\n  schedule:\n    - cron: "17 18 * * *"\n\npermissions:', source)
+        for forbidden_trigger in ("pull_request", "workflow_run", "push", "workflow_dispatch"):
+            self.assertNotRegex(source, rf"(?m)^  {forbidden_trigger}:$")
+        self.assertIn("  group: ci-nightly\n", source)
+        self.assertIn("  cancel-in-progress: true\n", source)
+        self.assertIn("          TARGET_SHA: ${{ github.sha }}\n", source)
+        self.assertNotIn("github.event.workflow_run", source)
         self.assertNotIn("ci / merge-gate", source)
-        full_regression, publisher = source.split("  publish_block_compatibility:\n", 1)
-        self.assertNotIn("statuses: write", full_regression)
-        self.assertIn("      statuses: write", publisher)
-        self.assertNotIn("actions/checkout", publisher)
-        self.assertIn("name: Publish block compatibility status", publisher)
-        self.assertIn('"context": "ci / block compatibility"', source)
+        self.assertNotRegex(source, r"(?m)^\s+[a-z-]+: (?:write|write-all)$")
+        self.assertNotIn("publish_block_compatibility", source)
+        self.assertNotIn("ci / block compatibility", source)
 
     def test_full_nightly_checks_all_query_plans(self) -> None:
         source = (REPO_ROOT / "scripts/ci/run_full_regression.sh").read_text(encoding="utf-8")

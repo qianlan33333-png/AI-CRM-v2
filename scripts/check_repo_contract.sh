@@ -47,13 +47,8 @@ for workflow in .github/workflows/ci.yml .github/workflows/nightly.yml; do
   [[ "$(grep -Fxc '  contents: read' <<<"$source" || true)" = "1" ]] ||
     fail "workflow must use contents: read: $workflow"
   write_permissions="$(grep -E '^[[:space:]]+[A-Za-z0-9_-]+:[[:space:]]+(write|write-all)[[:space:]]*$' <<<"$source" || true)"
-  if [[ "$workflow" = ".github/workflows/nightly.yml" ]]; then
-    [[ "$write_permissions" = '      statuses: write' ]] ||
-      fail "nightly may only write commit statuses: $workflow"
-  else
-    [[ -z "$write_permissions" ]] ||
-      fail "workflow requests write permission: $workflow"
-  fi
+  [[ -z "$write_permissions" ]] ||
+    fail "workflow requests write permission: $workflow"
   ! grep -Fq 'pull_request_target' <<<"$source" ||
     fail "pull_request_target is forbidden: $workflow"
   ! grep -Eq '^[[:space:]]+paths(-ignore)?:' <<<"$source" ||
@@ -103,21 +98,36 @@ database_block="$(awk '
 grep -Fqx '    timeout-minutes: 60' <<<"$database_block" ||
   fail "full database gate must retain its 60-minute budget"
 
-! grep -Fq 'pull_request:' <<<"$nightly_source" ||
-  fail "nightly must not use a branch-controlled pull-request workflow"
-! grep -Fq 'workflow_dispatch:' <<<"$nightly_source" ||
-  fail "nightly must not expose a branch-dispatch status writer"
-for anchor in \
-  '  push:' \
-  '  schedule:' \
-  '  workflow_run:' \
-  '      statuses: write' \
-  '    needs: full_regression' \
-  'ci / block compatibility' \
-  'scripts/ci/run_full_regression.sh'; do
-  grep -Fq "$anchor" <<<"$nightly_source" ||
-    fail "nightly lost a required trigger or full-regression entrypoint: $anchor"
+nightly_trigger_block="$(awk '
+  /^on:$/ { capture = 1 }
+  capture {
+    if (seen && /^[^[:space:]]/) { exit }
+    if ($0 != "") { print }
+    seen = 1
+  }
+' <<<"$nightly_source")"
+for forbidden_trigger in pull_request workflow_run push workflow_dispatch; do
+  ! grep -Eq "^  ${forbidden_trigger}:" <<<"$nightly_trigger_block" ||
+    fail "nightly trigger is forbidden: $forbidden_trigger"
 done
+expected_nightly_trigger=$'on:\n  schedule:\n    - cron: "17 18 * * *"'
+[[ "$nightly_trigger_block" = "$expected_nightly_trigger" ]] ||
+  fail "nightly must use only the daily 18:17 UTC schedule"
+for forbidden_anchor in \
+  'publish_block_compatibility' \
+  'ci / block compatibility'; do
+  ! grep -Fq "$forbidden_anchor" <<<"$nightly_source" ||
+    fail "nightly compatibility status publisher must remain removed: $forbidden_anchor"
+done
+for exact_anchor in \
+  '  group: ci-nightly' \
+  '  cancel-in-progress: true' \
+  '          TARGET_SHA: ${{ github.sha }}'; do
+  grep -Fqx "$exact_anchor" <<<"$nightly_source" ||
+    fail "nightly lost required schedule-only wiring: $exact_anchor"
+done
+grep -Fq 'scripts/ci/run_full_regression.sh' <<<"$nightly_source" ||
+  fail "nightly lost the full-regression entrypoint"
 ! grep -Fq 'ci / merge-gate' <<<"$nightly_source" ||
   fail "nightly must not publish the required merge-gate context"
 
