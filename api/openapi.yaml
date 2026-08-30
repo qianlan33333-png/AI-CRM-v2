@@ -2621,19 +2621,19 @@ paths:
     get:
       tags: [p4-sidebar-core]
       operationId: getSidebarAgentConfig
-      summary: Sign one allowed Sidebar URL with a WeCom agent_config ticket
+      summary: Sign one allowed Sidebar URL for wx.config and wx.agentConfig
       security: []
       x-p4-decision-evidence: P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26
       x-aicrm-capability: sidebar.jssdk
       x-aicrm-auth-scheme: public
       x-aicrm-csrf: none
       x-aicrm-data-classification: internal
-      x-aicrm-data-source: wecom.agent_config_ticket.read
+      x-aicrm-data-source: wecom.jsapi_and_agent_config_ticket.read
       x-aicrm-external-effect: none
       parameters:
         - {name: url, in: query, required: true, schema: {type: string, format: uri, minLength: 1, maxLength: 4096}}
       responses:
-        "200": {description: Agent-config-only signature; the provider ticket is never returned, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarAgentConfigSignature"}}}}
+        "200": {description: Two-stage JSSDK signatures; provider tickets are never returned, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarJSSDKConfig"}}}}
         "400": {$ref: "#/components/responses/BadRequest"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/timeline:
@@ -19420,7 +19420,7 @@ components:
       additionalProperties: false
       required: [signature_type, corp_id, agent_id, nonce, timestamp, signature, url, ticket_expires_at]
       properties:
-        signature_type: {type: string, enum: [agent_config]}
+        signature_type: {type: string, enum: [config, agent_config]}
         corp_id: {type: string, minLength: 1, maxLength: 128}
         agent_id: {type: integer, format: int64, minimum: 1}
         nonce: {type: string, minLength: 1, maxLength: 128}
@@ -19428,6 +19428,15 @@ components:
         signature: {type: string, pattern: '^[a-f0-9]{40}$'}
         url: {type: string, format: uri, minLength: 1, maxLength: 4096}
         ticket_expires_at: {type: string, format: date-time}
+    SidebarJSSDKConfig:
+      type: object
+      additionalProperties: false
+      required: [corp_id, agent_id, config, agent_config]
+      properties:
+        corp_id: {type: string, minLength: 1, maxLength: 128}
+        agent_id: {type: integer, format: int64, minimum: 1}
+        config: {$ref: "#/components/schemas/SidebarAgentConfigSignature"}
+        agent_config: {$ref: "#/components/schemas/SidebarAgentConfigSignature"}
     SidebarContextResponse:
       type: object
       additionalProperties: false

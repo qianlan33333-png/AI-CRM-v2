@@ -33,7 +33,7 @@ func TestOtherStaffChatHandlerReturnsOnlyMaskedLocalFields(t *testing.T) {
 		payload.Safety != (sidebarapp.Safety{LocalOnly: true}) {
 		t.Fatalf("payload=%s err=%v", response.Body.String(), err)
 	}
-	if reader.query != (wecomport.CustomerOtherStaffChatQuery{CustomerID: contactport.CustomerID(41), OwnerStaffID: 7}) {
+	if reader.query != (wecomport.CustomerOtherStaffChatQuery{CustomerID: contactport.CustomerID(41), OwnerStaffID: 8}) {
 		t.Fatalf("query=%#v", reader.query)
 	}
 }
@@ -52,7 +52,8 @@ func TestOtherStaffChatHandlerFailsClosedWithoutVerifiedLocalRead(t *testing.T) 
 
 func sidebarOtherStaffChatHandler(t *testing.T) (*OtherStaffChatHandler, *otherStaffChatHTTPFake, string, context.Context) {
 	t.Helper()
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	viewerStaffID := int64(8)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &viewerStaffID}
 	profiles := thumbnailProfiles{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
 	contextService, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, &thumbnailMedia{}, []byte("01234567890123456789012345678901"))
 	if err != nil {

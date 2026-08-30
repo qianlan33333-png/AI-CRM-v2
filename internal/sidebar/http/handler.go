@@ -435,9 +435,6 @@ func (handler *Handler) scope(request *http.Request, token string, capability au
 	if err != nil {
 		return sidebarapp.Scope{}, err
 	}
-	if !authorization.AllowsOwner(scope.OwnerStaffID) {
-		return sidebarapp.Scope{}, sidebarapp.ErrForbidden
-	}
 	return scope, nil
 }
 

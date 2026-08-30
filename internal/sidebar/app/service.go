@@ -356,17 +356,14 @@ func (service *Service) resolveContext(ctx context.Context, principal authport.P
 	if err != nil {
 		return resolvedContext{}, bootstrapFailure("profile", mapDependencyError(err))
 	}
-	if !principalAllowsOwner(principal, profile.OwnerStaffID) {
-		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
-	}
 	now := service.now().UTC().Truncate(time.Second)
-	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
+	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
 	token, err := service.codec.encode(claims)
 	if err != nil {
 		return resolvedContext{}, bootstrapFailure("context_token", err)
 	}
 	return resolvedContext{
-		result:  ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Safety: localSafety()},
+		result:  ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: profile.OwnerStaffID, Safety: localSafety()},
 		profile: profile,
 	}, nil
 }
@@ -386,7 +383,7 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	if err != nil || !hmac.Equal([]byte(claims.SessionFingerprint), []byte(sessionFingerprint)) {
 		return Scope{}, ErrTokenInvalid
 	}
-	if claims.AdminUserID != principal.AdminUserID || claims.Role != principal.Role || !principalAllowsOwner(principal, claims.OwnerStaffID) {
+	if claims.AdminUserID != principal.AdminUserID || claims.Role != principal.Role {
 		return Scope{}, ErrForbidden
 	}
 	corpID, err := service.corp.CorpID(ctx)
@@ -403,10 +400,10 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	if err != nil {
 		return Scope{}, ErrUnavailable
 	}
-	if int64(profile.CustomerID) != claims.CustomerID || profile.OwnerStaffID != claims.OwnerStaffID {
+	if int64(profile.CustomerID) != claims.CustomerID {
 		return Scope{}, ErrTokenInvalid
 	}
-	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Principal: principal}, nil
+	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: profile.OwnerStaffID, Principal: principal}, nil
 }
 
 func (service *Service) Profile(ctx context.Context, scope Scope) (ProfileResult, error) {
@@ -563,13 +560,6 @@ func (service *Service) workbenchWithProfile(ctx context.Context, scope Scope, p
 
 func validPrincipal(value authport.Principal) bool {
 	return value.AdminUserID > 0 && (value.Role == authport.RoleAdmin || value.Role == authport.RoleOps || value.Role == authport.RoleSales) && (value.Role != authport.RoleSales || value.StaffID != nil && *value.StaffID > 0)
-}
-
-func principalAllowsOwner(value authport.Principal, owner int64) bool {
-	if owner == 0 {
-		return value.Role == authport.RoleAdmin || value.Role == authport.RoleOps
-	}
-	return owner > 0 && (value.Role == authport.RoleAdmin || value.Role == authport.RoleOps || value.Role == authport.RoleSales && value.StaffID != nil && *value.StaffID == owner)
 }
 
 func validExternalUserID(value string) bool {

@@ -57,8 +57,8 @@ func sidebarOAuthFailureFields(err error) (string, int) {
 	}
 }
 
-// sidebarAgentConfigTicketProvider exposes only agent_config tickets to the
-// sidebar signature service. It has no corp-config or write capability.
+// sidebarAgentConfigTicketProvider exposes the two read-only tickets needed
+// for wx.config and wx.agentConfig. It has no provider write capability.
 type sidebarAgentConfigTicketProvider struct {
 	client *wecomclient.AgentConfigTicketClient
 }
@@ -68,6 +68,17 @@ func (provider sidebarAgentConfigTicketProvider) FetchAgentConfigTicket(ctx cont
 		return sidebarapp.AgentConfigTicket{}, errors.New("sidebar agent config provider unavailable")
 	}
 	ticket, err := provider.client.FetchAgentConfigTicket(ctx)
+	if err != nil {
+		return sidebarapp.AgentConfigTicket{}, err
+	}
+	return sidebarapp.AgentConfigTicket{Value: ticket.Value, ExpiresAt: ticket.ExpiresAt}, nil
+}
+
+func (provider sidebarAgentConfigTicketProvider) FetchConfigTicket(ctx context.Context) (sidebarapp.AgentConfigTicket, error) {
+	if provider.client == nil {
+		return sidebarapp.AgentConfigTicket{}, errors.New("sidebar config provider unavailable")
+	}
+	ticket, err := provider.client.FetchConfigTicket(ctx)
 	if err != nil {
 		return sidebarapp.AgentConfigTicket{}, err
 	}
