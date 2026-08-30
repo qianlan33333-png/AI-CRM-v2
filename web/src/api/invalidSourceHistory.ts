@@ -1,9 +1,19 @@
 import {
-  listUnboundTagHistory, getUnboundTagHistory, type UnboundTagHistory,
-  listInvalidChannelHistory, getInvalidChannelHistory, type InvalidChannelHistory,
-  listInvalidAssetHistory, getInvalidAssetHistory, type InvalidAssetHistory,
-  listInvalidRadarLinkHistory, getInvalidRadarLinkHistory, type InvalidRadarLinkHistory,
-} from './generated/health';
+  listUnboundTagHistory,
+  getUnboundTagHistory,
+  listInvalidChannelHistory,
+  getInvalidChannelHistory,
+  listInvalidAssetHistory,
+  getInvalidAssetHistory,
+  listInvalidRadarLinkHistory,
+  getInvalidRadarLinkHistory,
+} from "./generated/p4-invalid-source-history/p4-invalid-source-history";
+import {
+  type UnboundTagHistory,
+  type InvalidChannelHistory,
+  type InvalidAssetHistory,
+  type InvalidRadarLinkHistory,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type InvalidSourceKind = 'tags' | 'channels' | 'assets' | 'links';

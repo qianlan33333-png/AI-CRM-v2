@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-outbound-task-history-'));
@@ -46,7 +47,7 @@ try {
   if (!stage.querySelector('[role="alert"]') || stage.textContent.includes('unavailable') || stage.textContent.includes('历史 #')) throw new Error('failed result retained raw or fallback data');
   if (!calls.every(({ init }) => init.method === 'GET' && init.credentials === 'include' && init.body === undefined)) throw new Error('history UI made a non-GET request');
   let html = fs.readFileSync(path.join(root, 'dist', 'admin/automation.html'), 'utf8');
-  const bundle = fs.readFileSync(path.join(root, 'dist', 'assets/admin.js'), 'utf8');
+  const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
   const bootCalls = [];
   const boot = new JSDOM(html, {
     url: 'http://localhost/admin/automation.html?outbound_task_history=1',

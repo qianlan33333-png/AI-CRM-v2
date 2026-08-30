@@ -1,7 +1,13 @@
 import {
-  listServicePeriodHistoryDefinitions, listServicePeriodHistoryEntitlements, listServicePeriodHistoryEvents,
-  type ServicePeriodHistoryDefinition, type ServicePeriodHistoryEntitlement, type ServicePeriodHistoryEvent,
-} from './generated/health';
+  listServicePeriodHistoryDefinitions,
+  listServicePeriodHistoryEntitlements,
+  listServicePeriodHistoryEvents,
+} from "./generated/p4-service-period-products/p4-service-period-products";
+import {
+  type ServicePeriodHistoryDefinition,
+  type ServicePeriodHistoryEntitlement,
+  type ServicePeriodHistoryEvent,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { ServicePeriodHistoryDefinition, ServicePeriodHistoryEntitlement, ServicePeriodHistoryEvent };

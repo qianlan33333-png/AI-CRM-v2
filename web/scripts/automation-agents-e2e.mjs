@@ -2,8 +2,10 @@ import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
 const calls = [];
 const agent = (patch = {}) => ({
   id: 7, automation_type: 'agent', agent_code: 'welcome_agent', agent_name: '欢迎 Agent',
@@ -18,10 +20,9 @@ const agent = (patch = {}) => ({
 const json = (body, status = 200) => ({ status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(body) });
 
 function page(name, query = '') {
-  let html = fs.readFileSync(path.join(root, `dist/admin/${name}.html`), 'utf8');
-  html = html.replace(/<script src="[^"]*assets\/admin\.js"><\/script>/, () => `<script>${fs.readFileSync(path.join(root, 'dist/assets/admin.js'), 'utf8')}</script>`);
-  return new JSDOM(html, {
-    url: `http://localhost/admin/${name}.html${query}`, runScripts: 'dangerously', pretendToBeVisual: true,
+  const html = fs.readFileSync(path.join(root, `dist/admin/${name}.html`), 'utf8');
+  const dom = new JSDOM(html, {
+    url: `http://localhost/admin/${name}.html${query}`, runScripts: 'outside-only', pretendToBeVisual: true,
     beforeParse(window) {
       window.__AICRM_TEST_MOCK__ = false;
       window.document.cookie = `aicrm_csrf=${'c'.repeat(43)}`;
@@ -37,6 +38,8 @@ function page(name, query = '') {
       };
     },
   });
+  dom.window.eval(bundle);
+  return dom;
 }
 
 const list = page('agents');

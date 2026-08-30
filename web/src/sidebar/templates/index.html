@@ -71,8 +71,16 @@
     <div class="workflow" id="workflow-title"></div>
   </header>
   <nav class="tabs" id="tabs" aria-label="侧边栏模块"></nav>
-  <main id="content" class="content">
-    <div id="sidebar-context-status" class="sidebar-status" role="status">正在读取当前客户工作台…</div>
-  </main>
+
+  <div
+    id="sidebar-context-status"
+    class="sidebar-status"
+    role="status"
+    aria-live="polite"
+  >
+    正在识别当前企微客户…
+  </div>
+
+  <main id="content" class="content"></main>
 </div>
 <div id="toast" class="hidden-control" role="status" aria-live="polite"></div>

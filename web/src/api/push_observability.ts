@@ -1,4 +1,7 @@
-import { getLegacyPushCenterSections, getLegacyPushCenterStats } from './generated/health';
+import {
+  getLegacyPushCenterSections,
+  getLegacyPushCenterStats,
+} from "./generated/p4-push-center-compat/p4-push-center-compat";
 import { readCloudAuditDto, type CloudAudit } from './cloudAudit';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 

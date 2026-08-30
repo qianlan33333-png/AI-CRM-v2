@@ -50,7 +50,7 @@ import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePu
 import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, getChannelHistoryDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
 import { listGlobalQuestionnairePushLogsDto } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
-import type { AIAudiencePackageSender } from '../../api/generated/health';
+import type { AIAudiencePackageSender } from "../../api/generated/health.schemas";
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
 import { archiveHxcSenderDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';

@@ -6,9 +6,16 @@ import { JSDOM } from 'jsdom';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DIST = path.join(ROOT, 'dist');
+const TEST_BUNDLES = {
+  admin: await buildTestBrowserBundle(path.join(ROOT, 'src/admin/main.ts')),
+  h5: await buildTestBrowserBundle(path.join(ROOT, 'src/h5/main.ts')),
+  sidebar: await buildTestBrowserBundle(path.join(ROOT, 'src/sidebar/main.ts')),
+  memberGridShare: await buildTestBrowserBundle(path.join(ROOT, 'src/public/main.ts')),
+};
 
 let pass = 0;
 let fail = 0;
@@ -34,7 +41,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   });
   const file = path.join(DIST, 'member-grid-share/index.html');
   let html = fs.readFileSync(file, 'utf8');
-  html = html.replace(/<script src="\.\.\/assets\/memberGridShare\.js"><\/script>/, () => `<script>${fs.readFileSync(path.join(DIST, 'assets/memberGridShare.js'), 'utf8')}</script>`);
+  html = html.replace(/<script type="module" src="\.\.\/assets\/memberGridShare-[^"]+\.js"><\/script>/, () => `<script>${TEST_BUNDLES.memberGridShare}</script>`);
   const dom = new JSDOM(html, {
     url: 'http://localhost/member-grid-share/index.html#' + (token || ''),
     runScripts: 'dangerously',
@@ -54,14 +61,11 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, customerListHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
-  html = html.replace(/<script src="[^"]*assets\/(admin|h5|sidebar)\.js"><\/script>/, (_m, name) => {
-    const code = fs.readFileSync(path.join(DIST, 'assets', name + '.js'), 'utf8');
-    return `<script>${code}</script>`;
-  });
+  html = html.replace(/<script type="module" src="[^"]*assets\/(admin|h5|sidebar)-[^"]+\.js"><\/script>/, (_m, name) => `<script>${TEST_BUNDLES[name]}</script>`);
   const qs = q || (id != null ? 'id=' + id : '');
   const dom = new JSDOM(html, {
     url: 'http://localhost/' + rel + (qs ? '?' + qs : ''),
@@ -69,7 +73,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || campaignHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || campaignHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || customerListHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (hxcHistoryHttp) {
         window.Headers = Headers;
         const test = window.__hxcHistoryHttpTest = { calls: [], fail: hxcHistoryHttp.fail || false };
@@ -837,17 +841,33 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         };
         return;
       }
+      if (customerListHttp) {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const customers = Array.from({ length: 55 }, (_, index) => ({ id: index + 1, name: index < 10 ? `李思远${index + 1}` : `客户${index + 1}`, owner_staff_id: index < 19 ? 101 : 102, is_deleted: false, extra: {}, created_at: '2026-08-26T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' }));
+        window.fetch = async (input) => {
+          const url = new URL(String(input), window.location.origin);
+          if (url.pathname !== '/api/v1/customers') return json({ code: 'unexpected_customer_request' }, 500);
+          let rows = customers;
+          if (url.searchParams.get('keyword')) rows = rows.slice(0, 10);
+          if (url.searchParams.get('owner_staff_id') === '101') rows = rows.slice(0, 19);
+          if (url.searchParams.get('tag_id') === '2') rows = rows.slice(0, 18);
+          const offset = url.searchParams.get('cursor') === 'customer-page-2' ? 50 : 0;
+          return json({ items: rows.slice(offset, offset + 50), next_cursor: offset === 0 && rows.length > 50 ? 'customer-page-2' : null, total: rows.length, total_is_estimate: false, watermark: 'customer-test-watermark' });
+        };
+        return;
+      }
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
+      const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
       window.wx = {
-        agentConfig(options) { options.success?.({ err_msg: 'agentConfig:ok' }); },
+        agentConfig(options) { if (scenario === 'sdk_error') options.fail?.({ err_msg: 'agentConfig:fail' }); else options.success?.({ err_msg: 'agentConfig:ok' }); },
         invoke(method, payload, callback) {
           window.__sidebarTest.wxMessages.push({ method, payload });
-          callback({ err_msg: method + ':ok' });
+          window.__sidebarTest.wxInvokes.push(method);
+          callback({ err_msg: method + ':ok', ...(method === 'getCurExternalContact' ? { external_userid: 'ext-7' } : {}) });
         },
       };
-      const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
       const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
       const memberRef = 'spm_' + 'A'.repeat(22);
       const profile = {
@@ -870,17 +890,20 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         blob: async () => new window.Blob([JSON.stringify(data)], { type: 'application/json' }),
         clone() { return this; },
       });
-      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [] };
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [], wxInvokes: [], requests: [] };
+      if (scenario === 'sdk_cache') {
+        const pageURL = window.location.href.split('#', 1)[0];
+        const config = { signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'cached-nonce', timestamp: 1, signature: 'cached-signature', url: pageURL, ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() };
+        window.sessionStorage.setItem('aicrm.sidebar.jssdk.agent-config.v1', JSON.stringify({ url: pageURL, usable_until: Date.now() + 2 * 60 * 1000, config }));
+      }
       window.fetch = async (input, init = {}) => {
         const url = String(input);
+        window.__sidebarTest.requests.push(url);
         if (url.includes('/jssdk/agent-config')) {
-          return json({ signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'nonce', timestamp: 1, signature: 'signature', url: 'http://localhost/sidebar/index.html' });
+          return json({ signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'nonce', timestamp: 1, signature: 'signature', url: window.location.href.split('#', 1)[0], ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() });
         }
-        if (url.includes('/context-token')) {
-          return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), customer_id: 7, owner_staff_id: 9, safety });
-        }
-        if (url.includes('/workbench')) {
-          return json({ profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: scenario === 'success' ? 1 : 0, periodic_order_count: scenario === 'success' ? 1 : 0, material_count: scenario === 'success' ? 2 : 0, safety });
+        if (url.includes('/bootstrap')) {
+          return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), expires_at: '2026-08-26T01:05:00Z', customer_id: 7, owner_staff_id: 9, workbench: { profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: scenario === 'success' ? 1 : 0, periodic_order_count: scenario === 'success' ? 1 : 0, material_count: scenario === 'success' ? 2 : 0, safety }, safety });
         }
         if (url.includes('/phone-binding')) {
           window.__sidebarTest.phoneBody = JSON.parse(init.body || '{}');
@@ -1290,7 +1313,7 @@ for (const query of ['message_history=1&history_message_id=bad', 'message_histor
 
 console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航）');
 {
-  const dom = await loadPage('admin/customers.html');
+  const dom = await loadPage('admin/customers.html', { customerListHttp: true });
   const d = dom.window.document;
   ok('客户首屏按服务端页大小渲染 50 行', d.querySelectorAll('tbody tr').length === 50);
   ok('客户列表使用真实总数 55', d.body.textContent.includes('共 55 位客户') && d.body.textContent.includes('第 1 – 50 条，共 55 条'));
@@ -2351,7 +2374,40 @@ console.log('sidebar/index.html');
   const dom = await loadPage('sidebar/index.html');
   const d = dom.window.document;
   ok('侧边栏渲染 375px 高密度壳', d.querySelector('#sidebar-workbench-root.sidebar-shell') && d.querySelector('.customer-card') && [...d.querySelectorAll('style')].some((style) => style.textContent.includes('width:min(375px,100vw)')));
+  ok('无 external_userid 时保持 agentConfig → getContext → getCurExternalContact → bootstrap 安全顺序',
+    dom.window.__sidebarTest.wxInvokes.slice(0, 2).join('|') === 'getContext|getCurExternalContact' &&
+    dom.window.__sidebarTest.requests[0]?.includes('/jssdk/agent-config') &&
+    dom.window.__sidebarTest.requests[1]?.includes('/bootstrap'));
   dom.window.close();
+}
+
+console.log('sidebar/index.html（bootstrap 并行、JSSDK 缓存与降级）');
+{
+  const parallel = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=success' });
+  const requests = parallel.window.__sidebarTest.requests;
+  ok('URL 已含 external_userid 时 JSSDK 与 bootstrap 同步启动且不走旧两步接口',
+    requests[0]?.includes('/jssdk/agent-config') && requests[1]?.includes('/bootstrap') &&
+    requests.filter((url) => url.includes('/bootstrap')).length === 1 &&
+    !requests.some((url) => url.includes('/context-token') || url.includes('/workbench')));
+  parallel.window.close();
+
+  const cached = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=sdk_cache' });
+  const cachedConfig = cached.window.sessionStorage.getItem('aicrm.sidebar.jssdk.agent-config.v1') || '';
+  ok('同一完整页面 URL 的短期 session JSSDK 配置复用且不缓存客户数据',
+    !cached.window.__sidebarTest.requests.some((url) => url.includes('/jssdk/agent-config')) &&
+    cached.window.__sidebarTest.requests.some((url) => url.includes('/bootstrap')) && !cachedConfig.includes('customer'));
+  cached.window.close();
+
+  const degraded = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=sdk_error' });
+  const degradedDoc = degraded.window.document;
+  ok('JSSDK 失败而 bootstrap 成功时进入 degraded_ready 并保留本地画像',
+    degradedDoc.querySelector('#sidebar-context-status')?.textContent.includes('degraded_ready') && degradedDoc.body.textContent.includes('侧边栏测试客户'));
+  click(degraded, degradedDoc.querySelector('[data-sidebar-tab="products"]'));
+  await sleep(30);
+  const degradedSend = degradedDoc.querySelector('[data-sidebar-action="send-product"]');
+  ok('degraded_ready 禁用企微发送但不禁用本地只读标签页',
+    degradedSend?.disabled === true && degradedSend?.title.includes('JSSDK') && degraded.window.__sidebarTest.wxMessages.length === 0);
+  degraded.window.close();
 }
 
 console.log('sidebar/index.html（问卷读取状态）');
@@ -2369,7 +2425,10 @@ for (const scenario of ['success', 'empty', 'error']) {
     d.querySelector('[data-sidebar-tab="coupons"]').disabled);
   click(dom, questionnaireTab);
   ok('问卷切换先显示 loading', d.body.textContent.includes('正在读取问卷答案'));
+  click(dom, d.querySelector('[data-sidebar-tab="questionnaires"]'));
   await sleep(30);
+  ok('同一客户同一标签页加载保持 single-flight',
+    dom.window.__sidebarTest.requests.filter((url) => url.includes('/questionnaires')).length === 1);
   if (scenario === 'success') {
     ok('问卷真实读取并可展开答案', d.body.textContent.includes('展开答案（1）') && !!d.querySelector('.questionnaire-answers'));
   } else if (scenario === 'empty') {

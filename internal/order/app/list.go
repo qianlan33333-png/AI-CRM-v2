@@ -82,6 +82,22 @@ func (service *Service) List(ctx context.Context, filter orderport.Filter) (orde
 	return page, nil
 }
 
+func (service *Service) CountCustomer(ctx context.Context, customerID int64) (int64, error) {
+	if ctx == nil || customerID < 1 || nilDependency(service) || nilDependency(service.uow) || nilDependency(service.store) {
+		return 0, ErrInvalidArgument
+	}
+	var count int64
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		var countErr error
+		count, countErr = service.store.Count(tx, orderport.Filter{CustomerID: &customerID})
+		return countErr
+	})
+	if err != nil || count < 0 {
+		return 0, classify(err)
+	}
+	return count, nil
+}
+
 func (service *Service) project(ctx context.Context, record orderport.Record) (orderport.Item, error) {
 	if !validRecord(record) {
 		return orderport.Item{}, ErrUnavailable

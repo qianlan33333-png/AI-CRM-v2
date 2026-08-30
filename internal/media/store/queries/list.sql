@@ -114,3 +114,6 @@ SELECT
 FROM total
 LEFT JOIN page ON TRUE
 ORDER BY page.updated_at DESC NULLS LAST, page.id DESC NULLS LAST;
+
+-- name: CountEnabledMediaImages :one
+SELECT count(*)::bigint FROM media_images WHERE enabled;

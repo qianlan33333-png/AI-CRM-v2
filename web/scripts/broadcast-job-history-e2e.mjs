@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dist = path.join(root, 'dist');
@@ -46,7 +47,7 @@ try {
   if (!calls.every(({ init }) => init.method === 'GET' && init.credentials === 'include' && init.body === undefined)) throw new Error('history UI made a non-GET request');
 
   let html = fs.readFileSync(path.join(dist, 'admin/automation.html'), 'utf8');
-  const bundle = fs.readFileSync(path.join(dist, 'assets/admin.js'), 'utf8');
+  const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
   const bootCalls = [];
   const boot = new JSDOM(html, {
     url: 'http://localhost/admin/automation.html?broadcast_job_history=1',

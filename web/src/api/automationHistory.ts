@@ -1,8 +1,19 @@
 import {
-  getAutomationHistoryAgent, getAutomationHistoryConfig, getAutomationHistoryPrompt, getAutomationHistorySOP,
-  listAutomationHistoryAgents, listAutomationHistoryConfigs, listAutomationHistoryPrompts, listAutomationHistorySOPs,
-  type AutomationHistoryAgent, type AutomationHistoryConfig, type AutomationHistoryPrompt, type AutomationHistorySOP,
-} from './generated/health';
+  getAutomationHistoryAgent,
+  getAutomationHistoryConfig,
+  getAutomationHistoryPrompt,
+  getAutomationHistorySOP,
+  listAutomationHistoryAgents,
+  listAutomationHistoryConfigs,
+  listAutomationHistoryPrompts,
+  listAutomationHistorySOPs,
+} from "./generated/p4-automation-history/p4-automation-history";
+import {
+  type AutomationHistoryAgent,
+  type AutomationHistoryConfig,
+  type AutomationHistoryPrompt,
+  type AutomationHistorySOP,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { AutomationHistoryAgent, AutomationHistoryConfig, AutomationHistoryPrompt, AutomationHistorySOP };

@@ -7,9 +7,11 @@ import {
   precheckLegacyAutomationAgent,
   publishLegacyAutomationAgent,
   updateLegacyAutomationAgent,
+} from '../../api/generated/p4-automation-agents/p4-automation-agents';
+import {
   type LegacyAutomationAgentDetail,
   type LegacyAutomationAgentListResponse,
-} from '../../api/generated/health';
+} from '../../api/generated/health.schemas';
 import { apiRequestOptions, unwrapGenerated } from '../../api/transport';
 import { esc } from './util';
 

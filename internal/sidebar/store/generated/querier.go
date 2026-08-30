@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CompleteSidebarImageSend(ctx context.Context, arg CompleteSidebarImageSendParams) (CompleteSidebarImageSendRow, error)
 	GetSidebarImageSendByKey(ctx context.Context, arg GetSidebarImageSendByKeyParams) (GetSidebarImageSendByKeyRow, error)
+	ReadSidebarWorkbenchCounts(ctx context.Context, arg ReadSidebarWorkbenchCountsParams) (ReadSidebarWorkbenchCountsRow, error)
 	ReserveSidebarImageSend(ctx context.Context, arg ReserveSidebarImageSendParams) (ReserveSidebarImageSendRow, error)
 }
 

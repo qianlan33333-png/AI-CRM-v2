@@ -2,9 +2,11 @@ import {
   getCampaignHistoryDefinition,
   listCampaignHistoryDefinitionSteps,
   listCampaignHistoryDefinitions,
+} from "./generated/p4-campaign-history/p4-campaign-history";
+import {
   type HistoricalCampaignDefinition,
   type HistoricalCampaignDefinitionStep,
-} from './generated/health';
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type CampaignDefinitionHistoryPage<T> = { items: T[]; total: number; limit: number; offset: number };

@@ -1,19 +1,23 @@
 import {
-	getContactReferenceHistoryBinding,
-	getContactReferenceHistoryDirectory,
-	getWeComContactHistoryEvent,
-	getWeComContactHistoryRelation,
-	listContactReferenceHistoryBindings,
-	listContactReferenceHistoryDirectory,
-	type ContactReferenceHistoryBinding,
-	type ContactReferenceHistoryDirectory,
+  getContactReferenceHistoryBinding,
+  getContactReferenceHistoryDirectory,
+  listContactReferenceHistoryBindings,
+  listContactReferenceHistoryDirectory,
+} from "./generated/p4-contact-reference-history/p4-contact-reference-history";
+import {
+  getWeComContactHistoryEvent,
+  getWeComContactHistoryRelation,
   listWeComContactHistoryEvents,
   listWeComContactHistoryRelations,
+} from "./generated/p4-wecom-contact-history/p4-wecom-contact-history";
+import {
+  type ContactReferenceHistoryBinding,
+  type ContactReferenceHistoryDirectory,
   type WeComContactHistoryEvent,
   type WeComContactHistoryEventPage,
   type WeComContactHistoryRelation,
   type WeComContactHistoryRelationPage,
-} from './generated/health';
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { ContactReferenceHistoryBinding, ContactReferenceHistoryDirectory, WeComContactHistoryEvent, WeComContactHistoryRelation };

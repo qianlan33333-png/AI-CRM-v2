@@ -2,7 +2,12 @@ import {
   readGroupOpsHistoryPlans, readGroupOpsHistoryDirectory, readGroupOpsHistoryGroups, readGroupOpsHistoryNodes,
   requireGroupOpsHistoryPlanID,
 } from '../../api/groupOpsHistory';
-import type { GroupOpsHistoryPlan, GroupOpsHistoryDirectory, GroupOpsHistoryGroup, GroupOpsHistoryNode } from '../../api/generated/health';
+import type {
+  GroupOpsHistoryPlan,
+  GroupOpsHistoryDirectory,
+  GroupOpsHistoryGroup,
+  GroupOpsHistoryNode,
+} from "../../api/generated/health.schemas";
 import { ApiError } from '../../api/transport';
 import { esc } from './util';
 

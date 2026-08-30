@@ -4,6 +4,8 @@ import {
   listProfileHistoryOptionMappings,
   listProfileHistoryTemplates,
   listSignupTagHistoryRules,
+} from "../../api/generated/p4-profile-catalog-history/p4-profile-catalog-history";
+import {
   type ProfileCatalogHistoryCategory,
   type ProfileCatalogHistoryCategoryPage,
   type ProfileCatalogHistoryOptionMapping,
@@ -13,7 +15,7 @@ import {
   type ProfileCatalogHistoryTemplate,
   type ProfileCatalogHistoryTemplateDetail,
   type ProfileCatalogHistoryTemplatePage,
-} from '../../api/generated/health';
+} from "../../api/generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from '../../api/transport';
 import { esc } from './util';
 

@@ -1,7 +1,13 @@
 import {
-  listCouponHistoryDefinitions, listCouponHistoryClaims, listCouponHistoryRedemptions,
-  type CouponHistoryDefinition, type CouponHistoryClaim, type CouponHistoryRedemption,
-} from './generated/health';
+  listCouponHistoryDefinitions,
+  listCouponHistoryClaims,
+  listCouponHistoryRedemptions,
+} from "./generated/p4-coupon-history/p4-coupon-history";
+import {
+  type CouponHistoryDefinition,
+  type CouponHistoryClaim,
+  type CouponHistoryRedemption,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { CouponHistoryDefinition, CouponHistoryClaim, CouponHistoryRedemption };

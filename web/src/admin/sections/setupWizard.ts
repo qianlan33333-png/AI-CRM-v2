@@ -1,9 +1,11 @@
 import {
   getSetupWizard,
   saveSetupWizard,
+} from "../../api/generated/p4-setup-wizard/p4-setup-wizard";
+import {
   type SetupWizardReadResponse,
   type SetupWizardSaveResponse,
-} from '../../api/generated/health';
+} from "../../api/generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from '../../api/transport';
 
 function assertLocalBoundary(value: SetupWizardReadResponse | SetupWizardSaveResponse): void {

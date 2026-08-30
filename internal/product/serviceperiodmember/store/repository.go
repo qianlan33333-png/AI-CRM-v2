@@ -191,6 +191,18 @@ func (*Repository) ListCustomer(ctx context.Context, query memberport.CustomerLi
 	return result, nil
 }
 
+func (*Repository) CountCustomer(ctx context.Context, customerID int64) (int64, error) {
+	q, err := queries(ctx)
+	if err != nil || customerID < 1 {
+		return 0, classify(err)
+	}
+	count, err := q.CountServicePeriodMembersByCustomer(ctx, customerID)
+	if err != nil || count < 0 {
+		return 0, classify(err)
+	}
+	return count, nil
+}
+
 func (*Repository) ReserveReceipt(ctx context.Context, reservation memberport.ReceiptReservation) (memberport.Receipt, bool, error) {
 	q, err := queries(ctx)
 	if err != nil {

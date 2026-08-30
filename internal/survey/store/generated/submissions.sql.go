@@ -307,6 +307,52 @@ func (q *Queries) ListRecentCustomerAnswerCandidates(ctx context.Context, rowLim
 	return items, nil
 }
 
+const listRecentCustomerAnswerIdentityCandidates = `-- name: ListRecentCustomerAnswerIdentityCandidates :many
+SELECT s.id, s.questionnaire_id, s.unionid, s.external_userid, s.mobile,
+       s.total_score, s.submitted_at
+FROM questionnaire_submissions s
+ORDER BY s.submitted_at DESC, s.id DESC
+LIMIT $1::integer
+`
+
+type ListRecentCustomerAnswerIdentityCandidatesRow struct {
+	ID              int64              `json:"id"`
+	QuestionnaireID int64              `json:"questionnaire_id"`
+	Unionid         string             `json:"unionid"`
+	ExternalUserid  string             `json:"external_userid"`
+	Mobile          string             `json:"mobile"`
+	TotalScore      float64            `json:"total_score"`
+	SubmittedAt     pgtype.Timestamptz `json:"submitted_at"`
+}
+
+func (q *Queries) ListRecentCustomerAnswerIdentityCandidates(ctx context.Context, rowLimit int32) ([]ListRecentCustomerAnswerIdentityCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, listRecentCustomerAnswerIdentityCandidates, rowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecentCustomerAnswerIdentityCandidatesRow{}
+	for rows.Next() {
+		var i ListRecentCustomerAnswerIdentityCandidatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuestionnaireID,
+			&i.Unionid,
+			&i.ExternalUserid,
+			&i.Mobile,
+			&i.TotalScore,
+			&i.SubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const questionnaireSubmissionOwnerExists = `-- name: QuestionnaireSubmissionOwnerExists :one
 SELECT EXISTS(SELECT 1 FROM questionnaires q WHERE q.id = $1::bigint) AS owner_exists
 `

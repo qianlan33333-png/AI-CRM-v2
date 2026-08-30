@@ -5,29 +5,218 @@ import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
 import { getChannelHistoryDto } from './admin';
-import type { LegacyQuestionnaire } from './generated/health';
-import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductShareUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
+import type { LegacyQuestionnaire } from "./generated/health.schemas";
+import {
+  getAddCustomerTagUrl,
+  getListCustomersUrl,
+  getSetCustomerStageUrl,
+  getUpdateCustomerUrl,
+} from "./generated/p3-contact/p3-contact";
+import {
+  getCreateContactOwnerReassignmentPreviewUrl,
+  getDownloadContactOwnerReassignmentResultsUrl,
+  getDownloadContactOwnerReassignmentTemplateUrl,
+  getExecuteContactOwnerReassignmentPreviewUrl,
+  getGetContactOwnerReassignmentPreviewUrl,
+} from "./generated/p4-contact-owner-reassignment/p4-contact-owner-reassignment";
+import {
+  getCreateLegacyWecomTagUrl,
+  getGetLegacyWecomTagUrl,
+  getQueueLegacyWecomTagSyncUrl,
+} from "./generated/p4-tag-compat/p4-tag-compat";
+import {
+  getCreateRadarLinkUrl,
+  getGetRadarLinkShareProjectionUrl,
+  getListRadarLinksUrl,
+} from "./generated/p4-radar/p4-radar";
+import {
+  getGetAdminOpsCategoryUrl,
+  getListAdminOpsCategoriesUrl,
+} from "./generated/p4-adminops-safe/p4-adminops-safe";
+import {
+  getGetLegacyAttachmentUrl,
+  getGetLegacyImageUrl,
+  getListLegacyAttachmentsUrl,
+  getUpdateLegacyImageUrl,
+  getUploadLegacyAttachmentUrl,
+} from "./generated/p4-media-compat/p4-media-compat";
+import {
+  getGetLegacyCouponUrl,
+  getListLegacyCouponsUrl,
+} from "./generated/p4-coupon-compat/p4-coupon-compat";
+import { getGetLegacyOrderUrl } from "./generated/p4-order-compat/p4-order-compat";
+import {
+  getGetLegacyQuestionnaireUrl,
+  getListLegacyQuestionnairesUrl,
+} from "./generated/p4-survey-compat/p4-survey-compat";
+import {
+  getGetProductUrl,
+  getListProductsUrl,
+} from "./generated/p4-product/p4-product";
+import {
+  getGetServicePeriodProductShareUrl,
+  getGetServicePeriodProductUrl,
+  getListServicePeriodProductsUrl,
+} from "./generated/p4-service-period-products/p4-service-period-products";
+import { getListAIAudiencePackagesUrl } from "./generated/p4-ai-audience/p4-ai-audience";
+import { getListLegacyChannelsUrl } from "./generated/p4-channel-compat/p4-channel-compat";
+import { getCreateProductUrl } from "./generated/p4-product/p4-product";
+import {
+  getCreateServicePeriodProductUrl,
+  getUpdateServicePeriodProductUrl,
+} from "./generated/p4-service-period-products/p4-service-period-products";
+import {
+  getArchiveLegacyCouponUrl,
+  getCopyLegacyCouponUrl,
+  getCreateLegacyCouponUrl,
+  getDeleteLegacyCouponUrl,
+  getPublishLegacyCouponUrl,
+  getStopLegacyCouponUrl,
+  getUpdateLegacyCouponUrl,
+} from "./generated/p4-coupon-compat/p4-coupon-compat";
+import { getGetLegacyImageVariantUrl } from "./generated/p4-media-compat/p4-media-compat";
+import {
+  getCreateServicePeriodMemberGridCollaboratorUrl,
+  getDeleteServicePeriodMemberGridCollaboratorUrl,
+  getGetServicePeriodMemberGridAccessUrl,
+  getGetServicePeriodMemberGridSchemaUrl,
+  getGetServicePeriodMemberGridShareSettingsUrl,
+  getGetServicePeriodMemberUrl,
+  getListServicePeriodMemberViewsUrl,
+  getQueryServicePeriodMemberGridUrl,
+  getSetServicePeriodMemberGridExternalShareUrl,
+  getUpdateServicePeriodMemberFieldsUrl,
+  getUpdateServicePeriodMemberGridCollaboratorUrl,
+} from "./generated/p4-service-period-member-grid/p4-service-period-member-grid";
+import {
+  getListLegacyCouponClaimsUrl,
+  getListLegacyCouponProductOptionsUrl,
+} from "./generated/p4-coupon-compat/p4-coupon-compat";
+import {
+  getCreateLegacyQuestionnaireUrl,
+  getDeleteLegacyQuestionnaireUrl,
+  getDisableLegacyQuestionnaireUrl,
+  getDuplicateLegacyQuestionnaireUrl,
+  getEnableLegacyQuestionnaireUrl,
+  getUpdateLegacyQuestionnaireUrl,
+} from "./generated/p4-survey-compat/p4-survey-compat";
+import { getPublishQuestionnairePublicDefinitionUrl } from "./generated/p4-survey/p4-survey";
+import {
+  getCreateLegacyChannelUrl,
+  getUpdateLegacyChannelUrl,
+} from "./generated/p4-channel-compat/p4-channel-compat";
+import {
+  getGetChannelAcquisitionAssetUrl,
+  getGetChannelAcquisitionPreviewUrl,
+  getListChannelAcquisitionAssetsUrl,
+  getListChannelAcquisitionStaffUrl,
+  getPublishChannelAcquisitionAssetUrl,
+  getUpdateChannelAcquisitionAssigneesUrl,
+} from "./generated/p4-channel/p4-channel";
+import { getGetChannelHistoryUrl } from "./generated/p4-channel-compat/p4-channel-compat";
+import {
+  getDeleteAIAudienceAutomationBindingUrl,
+  getGetAIAudienceAutomationBindingUrl,
+  getGetAIAudienceConfigurationVersionUrl,
+  getGetAIAudiencePackageSendersUrl,
+  getListAIAudiencePackageMembersUrl,
+  getMaterializeAIAudienceConfigurationUrl,
+  getPreviewAIAudienceConfigurationUrl,
+  getPutAIAudienceAutomationBindingUrl,
+  getPutAIAudienceConfigurationVersionUrl,
+  getReplaceAIAudiencePackageSendersUrl,
+  getUpdateAIAudiencePackageUrl,
+} from "./generated/p4-ai-audience/p4-ai-audience";
+import {
+  getActivateGroupOpsPlanUrl,
+  getAddGroupOpsPlanGroupAssetUrl,
+  getAddGroupOpsPlanMemberUrl,
+  getAddGroupOpsPlanNodeUrl,
+  getArchiveGroupOpsPlanUrl,
+  getCreateGroupOpsPlanUrl,
+  getDeleteGroupOpsPlanUrl,
+  getGetGroupOpsPlanUrl,
+  getGetGroupOpsWebhookDescriptorUrl,
+  getListGroupOpsExecutionsUrl,
+  getListGroupOpsPlansUrl,
+  getPauseGroupOpsPlanUrl,
+  getPreviewGroupOpsPlanContentUrl,
+  getPreviewGroupOpsRunDueUrl,
+  getUpdateGroupOpsPlanNodeUrl,
+  getUpdateGroupOpsPlanUrl,
+} from "./generated/p4-group-ops/p4-group-ops";
+import {
+  getCreateLegacyRefundIntentUrl,
+  getCreateLegacyWechatRefundIntentUrl,
+} from "./generated/p4-order-compat/p4-order-compat";
+import {
+  getQueueSurveyExternalPushTestUrl,
+  getSaveSurveyCompletionOperationsUrl,
+  getSaveSurveyExternalPushOperationsUrl,
+} from "./generated/p4-survey-compat/p4-survey-compat";
+import {
+  getArchiveLegacyHXCSendConfigUrl,
+  getGetLegacyHXCSendConfigUrl,
+  getRefreshLegacyHXCDirectoryUrl,
+  getReorderLegacyHXCSendConfigsUrl,
+  getUpsertLegacyHXCSendConfigUrl,
+} from "./generated/p4-hxc-compat/p4-hxc-compat";
+import {
+  getGetLegacyAppSettingsResourceUrl,
+  getSaveLegacyAppSettingsResourceUrl,
+} from "./generated/p4-config-settings-compat/p4-config-settings-compat";
+import {
+  getGetAdminOpsPushCapabilitiesUrl,
+  getListAdminOpsReleasesUrl,
+} from "./generated/p4-adminops-safe/p4-adminops-safe";
+import { getGetCustomerContextUrl } from "./generated/p3-contact/p3-contact";
+import { getListCustomerSurveyAnswersUrl } from "./generated/p4-customer-360/p4-customer-360";
+import { getListStagesUrl } from "./generated/p2-stages/p2-stages";
+import {
+  getDeleteCloudCampaignUrl,
+  getListCloudCampaignsUrl,
+} from "./generated/p4-cloud-campaign/p4-cloud-campaign";
+import {
+  getGetCloudCampaignTouchPlanRecipientUrl,
+  getGetCloudCampaignTouchPlanReviewUrl,
+  getListCloudCampaignTouchPlanRecipientsUrl,
+  getMutateCloudCampaignTouchPlanReviewUrl,
+} from "./generated/p4-campaign-review-handoff/p4-campaign-review-handoff";
+import { getListCloudCampaignPlansUrl } from "./generated/p4-campaign-initiation/p4-campaign-initiation";
+import {
+  getGetCloudCampaignTouchPlanRecipientReviewUrl,
+  getMutateCloudCampaignTouchPlanRecipientReviewUrl,
+} from "./generated/p4-campaign-review-handoff/p4-campaign-review-handoff";
+import {
+  getAcceptOutboundCampaignHandoffUrl,
+  getDispatchOutboundCampaignHandoffUrl,
+  getDispatchOutboundCampaignRecipientUrl,
+  getGetOutboundCampaignDispatchReconciliationUrl,
+  getGetOutboundCampaignHandoffSummaryUrl,
+  getReconcileOutboundCampaignHandoffUrl,
+} from "./generated/p4-outbound-operations/p4-outbound-operations";
+
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { mountFunnelGrid } from '../admin/sections/funnelGrid';
 import { radarQrSvg, radarShareUrl } from '../admin/sections/qr';
-import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
-import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
-import { getCreateServicePeriodMemberGridCollaboratorUrl, getDeleteServicePeriodMemberGridCollaboratorUrl, getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getGetServicePeriodMemberUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl, getQueryServicePeriodMemberGridUrl, getSetServicePeriodMemberGridExternalShareUrl, getUpdateServicePeriodMemberFieldsUrl, getUpdateServicePeriodMemberGridCollaboratorUrl } from './generated/health';
-import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
-import { getCreateLegacyChannelUrl, getGetChannelAcquisitionAssetUrl, getGetChannelAcquisitionPreviewUrl, getListChannelAcquisitionAssetsUrl, getListChannelAcquisitionStaffUrl, getPublishChannelAcquisitionAssetUrl, getUpdateChannelAcquisitionAssigneesUrl, getUpdateLegacyChannelUrl } from './generated/health';
-import { getGetChannelHistoryUrl } from './generated/health';
-import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
-import { getActivateGroupOpsPlanUrl, getAddGroupOpsPlanGroupAssetUrl, getAddGroupOpsPlanMemberUrl, getAddGroupOpsPlanNodeUrl, getArchiveGroupOpsPlanUrl, getCreateGroupOpsPlanUrl, getDeleteGroupOpsPlanUrl, getGetGroupOpsPlanUrl, getGetGroupOpsWebhookDescriptorUrl, getListGroupOpsExecutionsUrl, getListGroupOpsPlansUrl, getPauseGroupOpsPlanUrl, getPreviewGroupOpsPlanContentUrl, getPreviewGroupOpsRunDueUrl, getUpdateGroupOpsPlanNodeUrl, getUpdateGroupOpsPlanUrl } from './generated/health';
-import { getCreateLegacyRefundIntentUrl, getCreateLegacyWechatRefundIntentUrl } from './generated/health';
-import { getQueueSurveyExternalPushTestUrl, getSaveSurveyCompletionOperationsUrl, getSaveSurveyExternalPushOperationsUrl } from './generated/health';
-import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getRefreshLegacyHXCDirectoryUrl, getReorderLegacyHXCSendConfigsUrl, getUpsertLegacyHXCSendConfigUrl } from './generated/health';
-import { getGetLegacyAppSettingsResourceUrl, getSaveLegacyAppSettingsResourceUrl } from './generated/health';
-import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from './generated/health';
-import { getGetCustomerContextUrl, getListCustomerSurveyAnswersUrl, getListStagesUrl } from './generated/health';
-import { getDeleteCloudCampaignUrl, getGetCloudCampaignTouchPlanRecipientUrl, getGetCloudCampaignTouchPlanReviewUrl, getListCloudCampaignPlansUrl, getListCloudCampaignTouchPlanRecipientsUrl, getListCloudCampaignsUrl, getMutateCloudCampaignTouchPlanReviewUrl } from './generated/health';
-import { getGetCloudCampaignTouchPlanRecipientReviewUrl, getMutateCloudCampaignTouchPlanRecipientReviewUrl } from './generated/health';
-import { getAcceptOutboundCampaignHandoffUrl, getDispatchOutboundCampaignHandoffUrl, getDispatchOutboundCampaignRecipientUrl, getGetOutboundCampaignDispatchReconciliationUrl, getGetOutboundCampaignHandoffSummaryUrl, getReconcileOutboundCampaignHandoffUrl } from './generated/health';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });

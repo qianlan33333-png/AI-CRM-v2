@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countEnabledMediaImages = `-- name: CountEnabledMediaImages :one
+SELECT count(*)::bigint FROM media_images WHERE enabled
+`
+
+func (q *Queries) CountEnabledMediaImages(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countEnabledMediaImages)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listMediaImagePage = `-- name: ListMediaImagePage :many
 WITH normalized AS MATERIALIZED (
     SELECT

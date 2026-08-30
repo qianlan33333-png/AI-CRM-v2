@@ -99,6 +99,7 @@ import (
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
 	sidebarhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/http"
+	sidebarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
 	surveyoperationshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/operations"
@@ -138,6 +139,17 @@ func runtimeConfigDeclarationFromConfig(config appconfig.Root) runtimeConfigDecl
 		WeChatPayConfig:     "unknown",
 		OAuthConfig:         oauthStatus,
 	}
+}
+
+func releaseSHAMiddleware(releaseSHA string, next http.Handler) http.Handler {
+	releaseSHA = strings.TrimSpace(releaseSHA)
+	if next == nil || !fullReleaseSHA.MatchString(releaseSHA) {
+		return next
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("X-AICRM-Release-SHA", releaseSHA)
+		next.ServeHTTP(writer, request)
+	})
 }
 
 type apiComponent struct {
@@ -1993,6 +2005,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	if config.WeCom.Sidebar.Enabled {
 		sidebarCorpID = config.WeCom.Sidebar.CorpID
 	}
+	var sidebarWorkbench sidebarapp.WorkbenchReader
+	if strings.TrimSpace(sidebarCorpID) != "" {
+		sidebarWorkbench, err = sidebarstore.NewWorkbenchRepository(pool, sidebarCorpID)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
 	sidebarProfileRepository := contactstore.NewSidebarProfileRepository()
 	var sidebarProfiles contactport.SidebarProfileService = contactapp.NewSidebarProfileService(uow, sidebarProfileRepository, eventstore.NewAppender())
 	if config.WeCom.Outbound.Enabled {
@@ -2037,8 +2057,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		mediaService,
 		config.Identity.HMACKey.Value(),
 		sidebarapp.ServiceOptions{
-			Products: sidebarShareableProductCatalog{ordinary: productService, period: servicePeriodProductService},
-			Media:    sidebarTemporaryMedia,
+			Products:  sidebarShareableProductCatalog{ordinary: productService, period: servicePeriodProductService},
+			Media:     sidebarTemporaryMedia,
+			Workbench: sidebarWorkbench,
 		},
 	)
 	if err != nil {
@@ -2339,6 +2360,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	handler = releaseSHAMiddleware(config.Release.SHA, handler)
 	return &apiComponent{
 		server: &http.Server{
 			Handler:           handler,
@@ -2737,6 +2759,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		return nil
 	}
 	if err = registerOptionalSidebar("/api/sidebar/context-token", http.HandlerFunc(wrapper.MintSidebarContext)); err != nil {
+		return nil, err
+	}
+	if err = registerOptionalSidebar("/api/sidebar/v2/bootstrap", http.HandlerFunc(wrapper.BootstrapSidebar)); err != nil {
 		return nil, err
 	}
 	if err = registerPublic(http.MethodPost, orderhttp.PaymentCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayPaymentCallback)); err != nil {

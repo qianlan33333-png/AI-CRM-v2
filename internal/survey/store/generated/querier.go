@@ -61,6 +61,7 @@ type Querier interface {
 	ListQuestionnaireSubmissions(ctx context.Context, arg ListQuestionnaireSubmissionsParams) ([]ListQuestionnaireSubmissionsRow, error)
 	ListQuestionnairesOffset(ctx context.Context, arg ListQuestionnairesOffsetParams) ([]ListQuestionnairesOffsetRow, error)
 	ListRecentCustomerAnswerCandidates(ctx context.Context, rowLimit int32) ([]ListRecentCustomerAnswerCandidatesRow, error)
+	ListRecentCustomerAnswerIdentityCandidates(ctx context.Context, rowLimit int32) ([]ListRecentCustomerAnswerIdentityCandidatesRow, error)
 	ListSurveyExternalPushLogs(ctx context.Context, arg ListSurveyExternalPushLogsParams) ([]ListSurveyExternalPushLogsRow, error)
 	LockSurveyExternalPushDeliveryReceipt(ctx context.Context, arg LockSurveyExternalPushDeliveryReceiptParams) (LockSurveyExternalPushDeliveryReceiptRow, error)
 	LockSurveyExternalPushReconcile(ctx context.Context, arg LockSurveyExternalPushReconcileParams) (LockSurveyExternalPushReconcileRow, error)

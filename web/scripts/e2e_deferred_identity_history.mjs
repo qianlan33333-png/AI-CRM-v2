@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { buildTestBrowserBundle } from './test-browser-bundle.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const outdir = fs.mkdtempSync(path.join(os.tmpdir(), 'aicrm-deferred-identity-history-'));
@@ -92,7 +93,7 @@ try {
   fail = false;
 
   const html = fs.readFileSync(path.join(dist, 'admin/config.html'), 'utf8');
-  const bundle = fs.readFileSync(path.join(dist, 'assets/admin.js'), 'utf8');
+  const bundle = await buildTestBrowserBundle(path.join(root, 'src/admin/main.ts'));
   for (const [kind, endpoint] of [['people', 'people'], ['conflicts', 'conflicts'], ['missing-roots', 'missing-roots']]) {
     const bootCalls = [];
     const boot = new JSDOM(html, {

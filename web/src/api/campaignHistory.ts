@@ -6,12 +6,14 @@ import {
   listCampaignHistoryBroadcastRecipients,
   listCampaignHistoryMembers,
   listCampaignHistorySegments,
+} from "./generated/p4-campaign-history/p4-campaign-history";
+import {
   type HistoricalBroadcastMessage,
   type HistoricalBroadcastPlan,
   type HistoricalBroadcastRecipient,
   type HistoricalCampaignMember,
   type HistoricalCampaignSegment,
-} from './generated/health';
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { HistoricalBroadcastMessage, HistoricalBroadcastPlan, HistoricalBroadcastRecipient, HistoricalCampaignMember, HistoricalCampaignSegment };

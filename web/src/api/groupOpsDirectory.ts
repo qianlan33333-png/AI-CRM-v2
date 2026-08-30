@@ -1,4 +1,9 @@
-import { listAIAudienceOperationMembers, listGroupOpsDirectoryGroups, syncGroupOpsDirectoryGroups, type GroupOpsDirectoryPage } from './generated/health';
+import { listAIAudienceOperationMembers } from "./generated/p4-ai-audience/p4-ai-audience";
+import {
+  listGroupOpsDirectoryGroups,
+  syncGroupOpsDirectoryGroups,
+} from "./generated/p4-group-ops/p4-group-ops";
+import { type GroupOpsDirectoryPage } from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 import { groupOpsOperationMembersDto } from './admin';
 

@@ -2518,7 +2518,7 @@ paths:
       responses: {"200": {description: Redacted results, content: {text/csv: {schema: {type: string}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
   /api/sidebar/context-token:
     post:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: mintSidebarContext
       summary: Resolve one local customer and mint a short-lived owner-scoped sidebar token
       security: []
@@ -2546,9 +2546,39 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/bootstrap:
+    post:
+      tags: [p4-sidebar-core]
+      operationId: bootstrapSidebar
+      summary: Resolve one local customer, mint a scoped token, and return the first workbench projection
+      security: []
+      x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: optional_human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: sidebar.local_read_model
+      x-aicrm-external-effect: none
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [external_userid]
+              properties:
+                external_userid: {type: string, minLength: 1, maxLength: 1024}
+      responses:
+        "200": {description: "Ready with a scoped workbench, viewer-session-required, or not-bound local state", content: {application/json: {schema: {$ref: "#/components/schemas/SidebarBootstrapResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/oauth/start:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: startSidebarOAuth
       summary: Start a state-bound Sidebar WeCom OAuth grant for one external contact
       security: []
@@ -2568,7 +2598,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/oauth/callback:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: completeSidebarOAuth
       summary: Claim a Sidebar OAuth state once and establish a bound browser session
       security: []
@@ -2589,7 +2619,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/jssdk/agent-config:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: getSidebarAgentConfig
       summary: Sign one allowed Sidebar URL with a WeCom agent_config ticket
       security: []
@@ -2608,7 +2638,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/timeline:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-activity]
       operationId: listSidebarTimeline
       summary: Read the bound customer's safe local activity timeline
       x-p4-decision-evidence: P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26
@@ -2632,7 +2662,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/chat-activity:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-activity]
       operationId: listSidebarChatActivity
       summary: Read the bound customer's safe local chat-activity metadata
       x-p4-decision-evidence: P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26
@@ -2657,7 +2687,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/other-staff-chats:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-activity]
       operationId: listSidebarOtherStaffChats
       summary: Read the bound customer's recent masked chats owned by other active staff
       x-p4-decision-evidence: P4-S05-035-SIDEBAR-OTHER-STAFF-LOCAL-ARCHIVE-2026-08-27
@@ -2678,7 +2708,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/workbench:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: getSidebarWorkbench
       summary: Read the customer sidebar local workbench aggregate
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2699,7 +2729,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/profile:
     put:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: updateSidebarProfile
       summary: Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2741,7 +2771,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/phone-binding:
     post:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-core]
       operationId: bindSidebarPhone
       summary: Bind a declared E.164 phone to the customer from the live sidebar scope
       x-p4-decision-evidence: P4-W2-A-2026-08-26
@@ -2776,7 +2806,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/questionnaires:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-questionnaires]
       operationId: listSidebarQuestionnaires
       summary: List bounded safe-choice questionnaire answers for one scoped customer
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2798,7 +2828,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/orders:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-orders]
       operationId: listSidebarOrders
       summary: List customer-scoped local orders with inline safe details and without payer or identity fields
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2821,7 +2851,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/periodic-orders:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-orders]
       operationId: listSidebarPeriodicOrders
       summary: List canonical service-period members for one scoped customer
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2844,7 +2874,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark:
     put:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-orders]
       operationId: updateSidebarPeriodicRemark
       summary: Update a scoped service-period member remark by canonical key and CAS version
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2883,7 +2913,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/materials:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-materials]
       operationId: listSidebarMaterials
       summary: List local enabled image metadata and quick keywords without creating variants
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2958,7 +2988,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/materials/image/{image_id}/thumbnail:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-materials]
       operationId: getSidebarMaterialThumbnailStatus
       summary: Return pending for a local image without generating a thumbnail
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
@@ -2982,7 +3012,7 @@ paths:
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/materials/image/{image_id}/preview:
     get:
-      tags: [p4-sidebar-local]
+      tags: [p4-sidebar-materials]
       operationId: getSidebarMaterialThumbnailPreview
       summary: Read a real local thumb_320 image variant for the scoped sidebar
       x-p4-decision-evidence: P4-W2-A-2026-08-26
@@ -19409,6 +19439,18 @@ components:
         customer_id: {type: integer, format: int64, minimum: 1}
         owner_staff_id: {type: integer, format: int64, minimum: 1}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarBootstrapResponse:
+      type: object
+      additionalProperties: false
+      required: [state, safety]
+      properties:
+        state: {type: string, enum: [ready, viewer_session_required, customer_not_bound]}
+        context_token: {type: string, minLength: 64, maxLength: 4096}
+        expires_at: {type: string, format: date-time}
+        customer_id: {type: integer, format: int64, minimum: 1}
+        owner_staff_id: {type: integer, format: int64, minimum: 1}
+        workbench: {$ref: "#/components/schemas/SidebarWorkbenchResponse"}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
     SidebarProfile:
       type: object
       additionalProperties: false
@@ -19614,9 +19656,9 @@ components:
       required: [profile, questionnaire_count, order_count, periodic_order_count, material_count, safety]
       properties:
         profile: {$ref: "#/components/schemas/SidebarProfile"}
-        questionnaire_count: {type: integer, minimum: 0, maximum: 20}
+        questionnaire_count: {type: integer, minimum: 0, maximum: 500}
         order_count: {type: integer, format: int64, minimum: 0}
-        periodic_order_count: {type: integer, minimum: 0, maximum: 100}
+        periodic_order_count: {type: integer, minimum: 0}
         material_count: {type: integer, format: int64, minimum: 0}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
     SidebarThumbnailPendingResponse:

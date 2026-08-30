@@ -5,12 +5,14 @@ import {
   listWeComCustomerAcquisitionLinks as listGeneratedLinks,
   reconcileWeComCustomerAcquisitionLink as reconcileGeneratedLink,
   updateWeComCustomerAcquisitionLink as updateGeneratedLink,
+} from "./generated/p4-channel/p4-channel";
+import {
   type CustomerAcquisitionLink,
   type CustomerAcquisitionLinkInput,
   type CustomerAcquisitionLinkReceipt,
   type CustomerAcquisitionLinkReceiptResolution,
   type CustomerAcquisitionLinkReceiptState,
-} from "./generated/health";
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from "./transport";
 
 export type WeComAcquisitionLinkPage = {

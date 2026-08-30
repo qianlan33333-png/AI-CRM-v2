@@ -1,4 +1,11 @@
-import { listMessageHistory, getMessageHistory, type MessageHistoryItem, type MessageHistoryPage } from './generated/health';
+import {
+  listMessageHistory,
+  getMessageHistory,
+} from "./generated/p4-message-history/p4-message-history";
+import {
+  type MessageHistoryItem,
+  type MessageHistoryPage,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { MessageHistoryItem, MessageHistoryPage };

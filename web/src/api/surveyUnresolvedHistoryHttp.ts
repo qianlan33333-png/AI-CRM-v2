@@ -1,4 +1,8 @@
-import { getSurveyUnresolvedHistorySubmission, listSurveyUnresolvedHistoryAnswers, listSurveyUnresolvedHistorySubmissions } from './generated/health';
+import {
+  getSurveyUnresolvedHistorySubmission,
+  listSurveyUnresolvedHistoryAnswers,
+  listSurveyUnresolvedHistorySubmissions,
+} from "./generated/p4-survey-unresolved-history/p4-survey-unresolved-history";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 import type { SurveyUnresolvedHistoryTransport } from './surveyUnresolvedHistory';
 

@@ -1,16 +1,20 @@
 import {
   cancelExternalEffectRuntime,
-  cancelLegacyOutboundJob,
   getExternalEffectsDiagnostics,
+  listExternalEffectsRuntime,
+} from "./generated/p4-external-effects-runtime/p4-external-effects-runtime";
+import {
+  cancelLegacyOutboundJob,
   getLegacyOutboundJob,
   getLegacyOutboundJobReconciliation,
-  getLegacyPushCenterSections,
-  getLegacyPushCenterStats,
-  listExternalEffectJobs,
-  listExternalEffectsRuntime,
   listLegacyOutboundJobs,
   retryLegacyOutboundJob,
-} from './generated/health';
+} from "./generated/p4-outbound-operations/p4-outbound-operations";
+import {
+  getLegacyPushCenterSections,
+  getLegacyPushCenterStats,
+} from "./generated/p4-push-center-compat/p4-push-center-compat";
+import { listExternalEffectJobs } from "./generated/p4-external-effects/p4-external-effects";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 type Value = Record<string, unknown>;

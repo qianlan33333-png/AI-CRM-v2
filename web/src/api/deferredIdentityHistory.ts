@@ -5,10 +5,12 @@ import {
   listDeferredIdentityConflicts,
   listDeferredPeople,
   listMissingRootIdentities,
+} from "./generated/p4-deferred-identity-history/p4-deferred-identity-history";
+import {
   type DeferredIdentityHistoryConflict,
   type DeferredIdentityHistoryMissingRoot,
   type DeferredIdentityHistoryPerson,
-} from './generated/health';
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type { DeferredIdentityHistoryConflict, DeferredIdentityHistoryMissingRoot, DeferredIdentityHistoryPerson };

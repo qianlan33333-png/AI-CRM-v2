@@ -145,6 +145,26 @@ func (r *SubmissionRepository) ListRecentCustomerAnswerCandidates(ctx context.Co
 	return result, nil
 }
 
+func (r *SubmissionRepository) ListRecentCustomerAnswerIdentityCandidates(ctx context.Context, limit int32) ([]surveyapp.CustomerAnswerCandidate, error) {
+	q, err := queries(ctx)
+	if r == nil || err != nil || limit < 1 || limit > surveyapp.CustomerAnswerScanLimit+1 {
+		return nil, unavailable(err)
+	}
+	rows, err := q.ListRecentCustomerAnswerIdentityCandidates(ctx, limit)
+	if err != nil {
+		return nil, unavailable(err)
+	}
+	result := make([]surveyapp.CustomerAnswerCandidate, len(rows))
+	for index, row := range rows {
+		result[index] = surveyapp.CustomerAnswerCandidate{
+			ID: row.ID, QuestionnaireID: surveyport.ID(row.QuestionnaireID), UnionID: row.Unionid,
+			ExternalUserID: row.ExternalUserid, Mobile: row.Mobile, TotalScore: row.TotalScore,
+			SubmittedAt: row.SubmittedAt.Time,
+		}
+	}
+	return result, nil
+}
+
 func (r *SubmissionRepository) ExportSubmissions(ctx context.Context, id surveyport.ID, limit int32) ([]surveyport.Submission, error) {
 	q, err := queries(ctx)
 	if r == nil || err != nil || id < 1 || limit < 1 {

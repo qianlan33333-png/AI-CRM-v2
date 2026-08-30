@@ -1,4 +1,28 @@
-import { listStaticHistoryGroupInvite, getStaticHistoryGroupInvite, type StaticHistoryGroupInvite, listStaticHistoryProductPageSlice, getStaticHistoryProductPageSlice, type StaticHistoryProductPageSlice, listStaticHistoryCycleStrategy, getStaticHistoryCycleStrategy, type StaticHistoryCycleStrategy, listStaticHistoryCycleVersion, getStaticHistoryCycleVersion, type StaticHistoryCycleVersion, listStaticHistoryCycleDocument, getStaticHistoryCycleDocument, type StaticHistoryCycleDocument, listStaticHistoryCycleMetric, getStaticHistoryCycleMetric, type StaticHistoryCycleMetric, listStaticHistoryCycleReference, getStaticHistoryCycleReference, type StaticHistoryCycleReference } from './generated/health';
+import {
+  listStaticHistoryGroupInvite,
+  getStaticHistoryGroupInvite,
+  listStaticHistoryProductPageSlice,
+  getStaticHistoryProductPageSlice,
+  listStaticHistoryCycleStrategy,
+  getStaticHistoryCycleStrategy,
+  listStaticHistoryCycleVersion,
+  getStaticHistoryCycleVersion,
+  listStaticHistoryCycleDocument,
+  getStaticHistoryCycleDocument,
+  listStaticHistoryCycleMetric,
+  getStaticHistoryCycleMetric,
+  listStaticHistoryCycleReference,
+  getStaticHistoryCycleReference,
+} from "./generated/p4-static-history/p4-static-history";
+import {
+  type StaticHistoryGroupInvite,
+  type StaticHistoryProductPageSlice,
+  type StaticHistoryCycleStrategy,
+  type StaticHistoryCycleVersion,
+  type StaticHistoryCycleDocument,
+  type StaticHistoryCycleMetric,
+  type StaticHistoryCycleReference,
+} from "./generated/health.schemas";
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
 export type StaticHistoryKind = 'GroupInvite' | 'ProductPageSlice' | 'CycleStrategy' | 'CycleVersion' | 'CycleDocument' | 'CycleMetric' | 'CycleReference';
