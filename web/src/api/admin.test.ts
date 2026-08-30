@@ -2,6 +2,7 @@ import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
 import { archiveTagDto, queueTagSyncDto, saveTagDto, saveTagGroupDto } from './admin';
+import { tagGroupPageDto } from './admin';
 import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
@@ -559,7 +560,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(imagePageDto({ id: 11, file_name: 'a.png', enabled: false }).resourceId === '11', 'image response mapping keeps resource id');
   assert(attachmentPageDto({ id: 12, file_name: 'a.pdf', mime_type: 'application/pdf' }).resourceId === '12', 'attachment response mapping keeps resource id');
   assert(miniProgramPageDto({ id: 13, name: '小程序', thumbnail_status: 'ready' }).resourceId === 13, 'mini-program response mapping keeps resource id');
-  assert(tagPageDto({ id: 1, group_id: 2, name: '新客', user_count: 6 }).users === 6, 'tag response mapping');
+  assert(tagGroupPageDto({ group_id: 2, group_name: '客户阶段' }).name === '客户阶段' && tagPageDto({ tag_id: 1, group_id: 2, tag_name: '新客', user_count: 6 }).users === 6, 'legacy tag response mapping');
   assert(radarPageDto({ link_id: 5, public_code: 'rd_1234567890123456789012', name: '雷达', title: '内容', destination_url: 'https://example.test/r', cover_image_id: null, attachment_id: null, status: 'enabled', version: 2, created_by: 9, updated_by: 9, created_at: '', updated_at: '' }).enabled, 'radar response mapping');
   assert(audiencePackagePageDto({ package_id: 3, name: '沉默用户', group_id: null, lifecycle: 'active', version: 4, refresh_mode: 'manual', member_count: 12, refreshed_at: null }).count === 12, 'audience response mapping');
   assert(configCategoryPageDto({ key: 'wechat_pay', enabled: true }).on, 'config category safe response mapping');
