@@ -28,7 +28,7 @@ services:
     image: postgres:16.14-trixie@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${AICRM_POSTGRES_DB:-aicrm}
+      POSTGRES_DB: ${AICRM_POSTGRES_DB:-aicrm_v2_core}
       POSTGRES_USER: ${AICRM_POSTGRES_USER:-aicrm}
       POSTGRES_PASSWORD: ${AICRM_POSTGRES_PASSWORD:?AICRM_POSTGRES_PASSWORD is required}
     command:

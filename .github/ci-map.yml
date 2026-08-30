@@ -169,7 +169,7 @@
     },
     {
       "name": "domain-migration",
-      "patterns": ["internal/migration/**","internal/datamigration/**","cmd/aicrm-v1-import/**","cmd/aicrm-v1-domain-import/**","scripts/datamigration_manifest/**","acceptance/datamigration/**"],
+      "patterns": ["internal/migration/**","internal/datamigration/**","cmd/aicrm-v1-import/**","cmd/aicrm-v1-domain-import/**","cmd/aicrm-whitelist-import/**","cmd/aicrm-v2-cleanup/**","schema/whitelist_*.sql","scripts/datamigration_manifest/**","acceptance/datamigration/**"],
       "effects": {"go": true,"go_groups": ["migration"],"go_mode": "selected"}
     },
     {
