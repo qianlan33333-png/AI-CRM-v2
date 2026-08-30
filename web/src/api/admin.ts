@@ -309,7 +309,7 @@ import {
 } from "./generated/health.schemas";
 import { getCreateLegacyWechatOrderExportUrl } from "./generated/p4-order-compat/p4-order-compat";
 import { type LegacyWechatOrderExportRequest } from "./generated/health.schemas";
-import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, ProductAdminProjection, ProductExternalPush, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, FunnelGridRow, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, ProductAdminProjection, ProductExternalPush, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -318,6 +318,44 @@ const text = (value: unknown, fallback = '—'): string => value == null || valu
 const list = (value: unknown, ...keys: string[]): unknown[] => { const source = obj(value); for (const key of keys) if (Array.isArray(source[key])) return source[key] as unknown[]; return []; };
 const toneFor = (status: unknown): Tone => { const value = text(status, '').toLowerCase(); if (/active|enabled|paid|success|completed|published/.test(value)) return 'ok'; if (/pending|draft|processing/.test(value)) return 'warn'; if (/disabled|archived|failed|cancel|closed/.test(value)) return 'gray'; return 'blue'; };
 const call = async <T>(request: Promise<T>): Promise<unknown> => unwrapGenerated(await request as { status: number; data: unknown }) as unknown;
+
+export async function listHXCCurrentRowsDto(): Promise<FunnelGridRow[]> {
+  const response = await request('/api/admin/hxc-current?limit=100');
+  const payload = obj(await response.json());
+  if (payload.source !== 'hxc_current_sync' || payload.read_only !== true || payload.real_external_call_executed !== false) throw new Error('黄小璨当前态响应边界无效');
+  const total = Number(payload.total);
+  const matched = Number(payload.matched_count);
+  const unmatched = Number(payload.unmatched_count);
+  const conflict = Number(payload.conflict_count);
+  if (![total, matched, unmatched, conflict].every((value) => Number.isSafeInteger(value) && value >= 0) || matched + unmatched + conflict !== total) throw new Error('黄小璨当前态统计无效');
+  return list(payload, 'items').map((value) => {
+    const item = obj(value);
+    const userRef = text(item.user_ref, '');
+    const matchState = text(item.match_state, '');
+    const subscriptionTier = text(item.subscription_tier, '');
+    if (!/^HXC-\*{4}.{0,4}$/.test(userRef) || !['matched', 'unmatched', 'conflict'].includes(matchState) || !subscriptionTier) throw new Error('黄小璨当前态数据行无效');
+    return {
+      user_ref: userRef,
+      match_state: matchState,
+      subscription_tier: subscriptionTier,
+      current_period_used: Number(item.current_period_used || 0),
+      monthly_chat_quota: Number(item.monthly_chat_quota || 0),
+      user_messages_7d: Number(item.user_messages_7d || 0),
+      user_messages_30d: Number(item.user_messages_30d || 0),
+      last_used_at: text(item.last_used_at),
+      last_capability: text(item.last_capability),
+      business_stage: text(item.business_stage),
+      user_segment: text(item.user_segment),
+      source_updated_at: text(item.source_updated_at),
+      synced_at: text(item.synced_at),
+      __total: total,
+      __matched: matched,
+      __unmatched: unmatched,
+      __conflict: conflict,
+      __last_synced_at: text(payload.last_synced_at),
+    };
+  });
+}
 
 export type MemberGridExternalShareResult = { enabled: boolean; version: number; tokenIssued: boolean; publicPath: string };
 

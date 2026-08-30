@@ -1013,7 +1013,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerDetailService,
 		contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
 	)
-	customerContextService := customer360app.NewCustomerContextService(customer360Reader, messageArchiveService, hxcstore.NewCurrentRepository(pool))
+	hxcCurrentRepository := hxcstore.NewCurrentRepository(pool)
+	customerContextService := customer360app.NewCustomerContextService(customer360Reader, messageArchiveService, hxcCurrentRepository)
 	customerContextHandler, err := customer360http.NewCustomerContextHandler(customerContextService)
 	if err != nil {
 		pool.Close()
@@ -2293,6 +2294,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		groupOpsRuntime,
 		hxcapp.Reader{Staff: hxcStaffDirectory, Configs: hxcSenderRepository},
 	)}
+	legacyHandler.hxcCurrentDashboard = hxcCurrentRepository
 	eventDeliveryLineage, err := eventapp.NewDeliveryLineageReader(uow, eventstore.NewDeliveryLineageRepository(), config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
@@ -3565,6 +3567,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, legacyDataHealthSummaryPath, authport.CapabilityAdminRead, false, http.HandlerFunc(dataHealth.Summary)},
 			{http.MethodGet, legacyHXCSenderPagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.hxcSender.Page)},
 			{http.MethodGet, legacyHXCSenderReadPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.hxcSender.Read)},
+			{http.MethodGet, hxcCurrentDashboardPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ListHXCCurrentDashboard)},
 			{http.MethodPost, legacyHXCSenderReadPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.hxcSender.Save)},
 			{http.MethodPut, legacyHXCSenderReorderPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.hxcSender.Reorder)},
 			{http.MethodDelete, legacyHXCSenderItemPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.hxcSender.Archive)},
