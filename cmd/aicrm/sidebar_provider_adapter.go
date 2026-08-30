@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
@@ -32,9 +33,28 @@ func (provider sidebarOAuthProvider) Exchange(ctx context.Context, code string) 
 	}
 	identity, err := provider.client.Exchange(ctx, code)
 	if err != nil {
+		category, providerCode := sidebarOAuthFailureFields(err)
+		slog.WarnContext(ctx, "sidebar_oauth_provider_exchange_failed", "category", category, "provider_code", providerCode)
 		return sidebarapp.OAuthIdentity{}, err
 	}
 	return sidebarapp.OAuthIdentity{CorpID: string(identity.CorpID), UserID: identity.UserID}, nil
+}
+
+func sidebarOAuthFailureFields(err error) (string, int) {
+	var providerError *wecomclient.APIError
+	if errors.As(err, &providerError) {
+		return "upstream_rejected", providerError.Code
+	}
+	switch {
+	case errors.Is(err, wecomclient.ErrRequestTimeout):
+		return "timeout", 0
+	case errors.Is(err, wecomclient.ErrTransport):
+		return "transport", 0
+	case errors.Is(err, wecomclient.ErrUnexpectedResponse):
+		return "unexpected_response", 0
+	default:
+		return "unknown", 0
+	}
 }
 
 // sidebarAgentConfigTicketProvider exposes only agent_config tickets to the
