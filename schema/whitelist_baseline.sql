@@ -5,7 +5,7 @@
 -- AI-CRM V2 capability baseline v2. Business/history rows are intentionally
 -- empty; current product capabilities remain available for fresh imports.
 
-\restrict YtoRNparmOaxFC9YOQyy28PR6CziXfGpt9q6Nv1SghSGo4ZXpkscgwQ7OSja8Px
+\restrict mkmer4asvMyzACTT6vuNPOl4zGzBdmkIlhMBMGPcLhbiXB90confJWuKkvjv28b
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -13467,6 +13467,7 @@ CREATE TABLE public.questionnaire_submissions (
     redirect_url_snapshot text DEFAULT ''::text NOT NULL,
     submitted_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone NOT NULL,
+    customer_id bigint,
     CONSTRAINT questionnaire_submissions_campaign CHECK (((btrim(campaign_id) = campaign_id) AND (char_length(campaign_id) <= 200))),
     CONSTRAINT questionnaire_submissions_customer_name CHECK ((char_length(customer_name) <= 300)),
     CONSTRAINT questionnaire_submissions_external_userid CHECK (((btrim(external_userid) = external_userid) AND (char_length(external_userid) <= 200))),
@@ -18962,7 +18963,7 @@ COPY public.questionnaire_submission_external_push_bindings (id, questionnaire_i
 -- Data for Name: questionnaire_submissions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.questionnaire_submissions (id, questionnaire_id, respondent_key, openid, unionid, external_userid, customer_name, follow_user_userid, matched_by, mobile, source_channel, campaign_id, staff_id, total_score, final_tags, result_token, redirect_url_snapshot, submitted_at, created_at) FROM stdin;
+COPY public.questionnaire_submissions (id, questionnaire_id, respondent_key, openid, unionid, external_userid, customer_name, follow_user_userid, matched_by, mobile, source_channel, campaign_id, staff_id, total_score, final_tags, result_token, redirect_url_snapshot, submitted_at, created_at, customer_id) FROM stdin;
 \.
 
 
@@ -28171,6 +28172,13 @@ CREATE INDEX questionnaire_submission_external_push_bindings_questionnaire_i ON 
 
 
 --
+-- Name: questionnaire_submissions_customer_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX questionnaire_submissions_customer_id_idx ON public.questionnaire_submissions USING btree (customer_id, submitted_at DESC, id DESC);
+
+
+--
 -- Name: questionnaire_submissions_page; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -32290,6 +32298,14 @@ ALTER TABLE ONLY public.questionnaire_submission_external_push_bindings
 
 
 --
+-- Name: questionnaire_submissions questionnaire_submissions_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.questionnaire_submissions
+    ADD CONSTRAINT questionnaire_submissions_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: questionnaire_submissions questionnaire_submissions_questionnaire_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -32949,4 +32965,4 @@ ALTER TABLE ONLY public.whitelist_import_domain_receipts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict YtoRNparmOaxFC9YOQyy28PR6CziXfGpt9q6Nv1SghSGo4ZXpkscgwQ7OSja8Px
+\unrestrict mkmer4asvMyzACTT6vuNPOl4zGzBdmkIlhMBMGPcLhbiXB90confJWuKkvjv28b

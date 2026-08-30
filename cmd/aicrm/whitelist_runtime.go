@@ -245,6 +245,7 @@ func checkWhitelistReadiness(ctx context.Context, pool *pgxpool.Pool) error {
   to_regclass('public.order_list_projections') IS NOT NULL AND
   to_regclass('public.order_refund_facts') IS NOT NULL AND
   to_regclass('public.questionnaires') IS NOT NULL AND
+  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='questionnaire_submissions' AND column_name='customer_id') AND
   to_regclass('public.product_local_entitlements') IS NOT NULL AND
   to_regclass('public.radar_links') IS NOT NULL AND
   to_regclass('public.channels') IS NOT NULL AND
