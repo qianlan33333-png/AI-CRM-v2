@@ -3,36 +3,3 @@
 //   sqlc v1.28.0
 
 package hxcsource
-
-import (
-	"database/sql"
-	"encoding/json"
-	"time"
-)
-
-type AicrmHxcUserCurrentV1 struct {
-	HxcUserID             string          `json:"hxc_user_id"`
-	Unionid               sql.NullString  `json:"unionid"`
-	Phone                 sql.NullString  `json:"phone"`
-	SubscriptionTier      string          `json:"subscription_tier"`
-	SubscriptionExpiresAt sql.NullTime    `json:"subscription_expires_at"`
-	MonthlyChatQuota      int32           `json:"monthly_chat_quota"`
-	CurrentPeriodUsed     int32           `json:"current_period_used"`
-	ConsultationLimit     int32           `json:"consultation_limit"`
-	ConsultationUsed      int32           `json:"consultation_used"`
-	Sessions7d            int64           `json:"sessions_7d"`
-	Sessions30d           int64           `json:"sessions_30d"`
-	SessionsTotal         int64           `json:"sessions_total"`
-	UserMessages7d        int64           `json:"user_messages_7d"`
-	UserMessages30d       int64           `json:"user_messages_30d"`
-	UserMessagesTotal     int64           `json:"user_messages_total"`
-	CapabilityUsage       json.RawMessage `json:"capability_usage"`
-	LastUsedAt            sql.NullTime    `json:"last_used_at"`
-	LastCapability        sql.NullString  `json:"last_capability"`
-	BusinessStage         sql.NullString  `json:"business_stage"`
-	MainLineType          sql.NullString  `json:"main_line_type"`
-	UserSegment           sql.NullString  `json:"user_segment"`
-	FocusTopics           json.RawMessage `json:"focus_topics"`
-	PainTag               sql.NullString  `json:"pain_tag"`
-	SourceUpdatedAt       time.Time       `json:"source_updated_at"`
-}
