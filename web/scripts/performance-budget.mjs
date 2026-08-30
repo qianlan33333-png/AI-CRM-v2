@@ -120,6 +120,7 @@ assertBudget("crm-legacy-shell", legacyGraph, 150 * 1024);
 
 const sidebarGraph = new Set([
   ...staticGraph(manifest.entries.sidebar),
+  ...staticGraph(manifest.entries.sidebarStyles),
   ...staticGraph(manifest.entries.tokens),
 ]);
 const sidebarInputs = [...sidebarGraph].flatMap(
