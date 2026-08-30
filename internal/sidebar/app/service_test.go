@@ -319,6 +319,28 @@ func TestBootstrapReportsSanitizedFailureStage(t *testing.T) {
 	}
 }
 
+func TestBootstrapAllowsUnassignedCustomerOnlyForGlobalViewer(t *testing.T) {
+	service, staff := sidebarTestService(t)
+	profiles := service.profiles.(*profileFake)
+	profiles.profile.OwnerStaffID = 0
+
+	admin := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	result, err := service.Bootstrap(context.Background(), admin, sidebarTestSession, true, "wm_external_41")
+	if err != nil || result.State != "ready" || result.OwnerStaffID != 0 || result.Workbench == nil || result.Workbench.Profile.OwnerStaffID != 0 {
+		t.Fatalf("admin bootstrap=%+v err=%v", result, err)
+	}
+	scope, err := service.VerifyContext(context.Background(), admin, sidebarTestSession, result.Token)
+	if err != nil || scope.CustomerID != 41 || scope.OwnerStaffID != 0 {
+		t.Fatalf("admin scope=%+v err=%v", scope, err)
+	}
+
+	sales := authport.Principal{AdminUserID: 10, Role: authport.RoleSales, StaffID: &staff}
+	denied, err := service.Bootstrap(context.Background(), sales, sidebarTestSession, true, "wm_external_41")
+	if err != nil || denied.State != "customer_not_bound" || denied.Token != "" || denied.Workbench != nil {
+		t.Fatalf("sales bootstrap=%+v err=%v", denied, err)
+	}
+}
+
 type failingWorkbenchReader struct{}
 
 func (failingWorkbenchReader) Read(context.Context, contactport.CustomerID) (WorkbenchCounts, error) {

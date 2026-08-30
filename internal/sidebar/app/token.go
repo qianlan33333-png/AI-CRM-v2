@@ -82,7 +82,8 @@ func (codec *tokenCodec) decode(value string) (tokenClaims, error) {
 }
 
 func validClaims(claims tokenClaims) bool {
-	return claims.Version == tokenVersion && claims.CorpID != "" && claims.CustomerID > 0 && claims.OwnerStaffID > 0 &&
+	ownerValid := claims.OwnerStaffID > 0 || claims.OwnerStaffID == 0 && (claims.Role == authport.RoleAdmin || claims.Role == authport.RoleOps)
+	return claims.Version == tokenVersion && claims.CorpID != "" && claims.CustomerID > 0 && ownerValid &&
 		claims.AdminUserID > 0 && (claims.Role == authport.RoleAdmin || claims.Role == authport.RoleOps || claims.Role == authport.RoleSales) &&
 		validSessionFingerprint(claims.SessionFingerprint) && !claims.IssuedAt.IsZero() && claims.ExpiresAt.After(claims.IssuedAt)
 }

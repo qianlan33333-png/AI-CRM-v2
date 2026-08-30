@@ -19437,7 +19437,7 @@ components:
         context_token: {type: string, minLength: 64, maxLength: 4096}
         expires_at: {type: string, format: date-time}
         customer_id: {type: integer, format: int64, minimum: 1}
-        owner_staff_id: {type: integer, format: int64, minimum: 1}
+        owner_staff_id: {type: integer, format: int64, minimum: 0, description: Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
     SidebarBootstrapResponse:
       type: object
@@ -19448,7 +19448,7 @@ components:
         context_token: {type: string, minLength: 64, maxLength: 4096}
         expires_at: {type: string, format: date-time}
         customer_id: {type: integer, format: int64, minimum: 1}
-        owner_staff_id: {type: integer, format: int64, minimum: 1}
+        owner_staff_id: {type: integer, format: int64, minimum: 0, description: Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.}
         workbench: {$ref: "#/components/schemas/SidebarWorkbenchResponse"}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
     SidebarProfile:
@@ -19458,7 +19458,7 @@ components:
       properties:
         customer_id: {type: integer, format: int64, minimum: 1}
         name: {type: string, minLength: 1}
-        owner_staff_id: {type: integer, format: int64, minimum: 1}
+        owner_staff_id: {type: integer, format: int64, minimum: 0, description: Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.}
         source: {type: string, maxLength: 200}
         industry: {type: string, maxLength: 200}
         description: {type: string, maxLength: 2000}

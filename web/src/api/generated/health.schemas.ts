@@ -4272,7 +4272,10 @@ export interface SidebarContextResponse {
   expires_at?: string;
   /** @minimum 1 */
   customer_id?: number;
-  /** @minimum 1 */
+  /**
+   * Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.
+   * @minimum 0
+   */
   owner_staff_id?: number;
   safety: SidebarSafety;
 }
@@ -4297,7 +4300,10 @@ export interface SidebarBootstrapResponse {
   expires_at?: string;
   /** @minimum 1 */
   customer_id?: number;
-  /** @minimum 1 */
+  /**
+   * Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.
+   * @minimum 0
+   */
   owner_staff_id?: number;
   workbench?: SidebarWorkbenchResponse;
   safety: SidebarSafety;
@@ -4308,7 +4314,10 @@ export interface SidebarProfile {
   customer_id: number;
   /** @minLength 1 */
   name: string;
-  /** @minimum 1 */
+  /**
+   * Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.
+   * @minimum 0
+   */
   owner_staff_id: number;
   /** @maxLength 200 */
   source: string;
