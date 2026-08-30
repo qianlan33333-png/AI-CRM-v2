@@ -1193,11 +1193,11 @@ export async function runAdminAdapterTests(): Promise<void> {
   } finally { globalThis.fetch = savedFetch; }
 
   let funnelCalled = false;
-  globalThis.fetch = async () => { funnelCalled = true; return new Response('{}', { status: 200 }); };
+  globalThis.fetch = async (input) => { funnelCalled = String(input) === '/api/admin/hxc-current?limit=100'; return new Response(JSON.stringify({ source: 'hxc_current_sync', read_only: true, real_external_call_executed: false, total: 1, matched_count: 0, unmatched_count: 1, conflict_count: 0, last_synced_at: '2026-08-30T00:00:00Z', items: [{ user_ref: 'HXC-****1234', match_state: 'unmatched', subscription_tier: 'member', current_period_used: 2, monthly_chat_quota: 100, user_messages_7d: 3, user_messages_30d: 7, last_used_at: '2026-08-30T00:00:00Z', source_updated_at: '2026-08-30T00:00:00Z', synced_at: '2026-08-30T00:00:00Z' }] }), { status: 200 }); };
   try {
     const funnelRoot = { className: '', innerHTML: '' } as unknown as HTMLElement;
     await mountFunnelGrid(funnelRoot, new HttpApi({ baseUrl: '' }));
-    assert(funnelRoot.innerHTML.includes('后端能力未就绪') && !funnelCalled, 'HXC funnel prototype must fail closed without a request in HTTP mode');
+    assert(funnelRoot.innerHTML.includes('黄小璨用户当前态') && funnelRoot.innerHTML.includes('HXC-****1234') && funnelCalled, 'HXC funnel reads the current synchronized snapshot in HTTP mode');
   } finally { globalThis.fetch = savedFetch; }
 
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'conflict' }), { status: 409 });
