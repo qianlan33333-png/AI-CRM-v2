@@ -108,7 +108,11 @@ review_usage AS (
 SELECT
   u.id AS hxc_user_id,
   CAST(NULLIF(TRIM(u.unionid), '') AS CHAR(64)) AS unionid,
-  CAST(NULLIF(TRIM(u.phone), '') AS CHAR(20)) AS phone,
+  CAST(CASE
+    WHEN TRIM(u.phone) REGEXP '^[+][1-9][0-9]{1,14}$' THEN TRIM(u.phone)
+    WHEN TRIM(u.phone) REGEXP '^1[0-9]{10}$' THEN CONCAT('+86', TRIM(u.phone))
+    ELSE NULL
+  END AS CHAR(20)) AS phone,
   CAST(COALESCE(NULLIF(TRIM(s.tier), ''), NULLIF(TRIM(u.member_level), ''), 'free') AS CHAR(20)) AS subscription_tier,
   COALESCE(s.expires_at, u.member_expires_at) AS subscription_expires_at,
   CAST(CASE WHEN COALESCE(s.monthly_chat_quota, 0) < 0 THEN 2147483647 ELSE COALESCE(s.monthly_chat_quota, 0) END AS SIGNED) AS monthly_chat_quota,
