@@ -1,6 +1,7 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, dispatchCampaignOutboundRecipientDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getCampaignTouchPlanReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, groupOpsOperationMembersDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderDetailDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, setMemberGridExternalShareDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
+import { archiveTagDto, queueTagSyncDto, saveTagDto, saveTagGroupDto } from './admin';
 import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
@@ -1145,6 +1146,28 @@ export async function runAdminAdapterTests(): Promise<void> {
   const pushProjection = readOnlyConfigPageDto('push-capabilities', { capabilities: { archive_sync: { enabled: true } } });
   const releaseProjection = readOnlyConfigPageDto('releases', { releases: [{ id: 7, state: 'published', checksum: 'b'.repeat(64) }] });
   assert(pushProjection.blocks[0].fields[0].kind === 'readonly' && releaseProjection.blocks[0].fields[0].label.includes('Release 7'), 'push/release safe projection mapping');
+
+  const tagWriteCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    tagWriteCalls.push({ input: url, init });
+    if (url.endsWith('/sync')) return new Response(JSON.stringify({ accepted: true }), { status: 202 });
+    if (url.endsWith('/tag-groups') || url.includes('/tag-groups/')) return new Response(JSON.stringify({ group: { id: 1, name: '客户阶段' } }), { status: 200 });
+    if (url.endsWith('/tags')) return new Response(JSON.stringify({ tag: { id: 2, group_id: 1, name: '新客' } }), { status: 200 });
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+  try {
+    await queueTagSyncDto();
+    await saveTagGroupDto({ name: '客户阶段', firstTag: '新客' });
+    await saveTagDto({ groupId: 1, name: '新客' });
+    await archiveTagDto(2);
+    const mutations = tagWriteCalls.filter(({ init }) => init?.method !== 'GET');
+    assert(mutations.length === 4 && mutations.every(({ init }) => {
+      const key = new Headers(init?.headers).get('Idempotency-Key');
+      const body = JSON.parse(String(init?.body));
+      return Boolean(key) && key === body.idempotency_key;
+    }), 'tag mutations copy the body idempotency key to the required header');
+  } finally { globalThis.fetch = savedFetch; }
 
   let refundRequest: { input: string; init?: RequestInit } | undefined;
   globalThis.fetch = async (input, init) => { refundRequest = { input: String(input), init }; return new Response(JSON.stringify({ id: 73, order_id: 9, out_refund_no: 'pe01r_' + 'a'.repeat(32), amount_minor: 1200, currency: 'CNY', state: 'reserved', version: 1, created_at: '', updated_at: '' }), { status: 202 }); };
