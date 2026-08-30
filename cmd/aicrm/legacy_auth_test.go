@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -164,6 +166,34 @@ func TestHumanAuthRejectsStateReplayCorpIDMismatchAndUnsafeNextBeforeProvider(t 
 	}
 }
 
+func TestHumanAuthLogsOnlySafeProviderFailureClassification(t *testing.T) {
+	now := time.Now().UTC()
+	state := browserToken(0x61)
+	application := &humanAuthStub{
+		attempt: authport.OAuthAttempt{State: authport.OAuthState(state), ExpiresAt: now.Add(time.Minute)},
+		claim:   authport.OAuthClaim{Provider: authport.ProviderWeCom, NextPath: "/admin"},
+	}
+	provider := &humanOAuthStub{exchangeErr: errors.Join(wecomclient.ErrUpstream, &wecomclient.APIError{Code: 50001, Message: "sensitive-provider-message"})}
+	var logs bytes.Buffer
+	handler, err := NewHumanAuthHandler(application, application, application, provider, HumanAuthOptions{
+		Clock:  func() time.Time { return now },
+		Logger: slog.New(slog.NewJSONHandler(&logs, nil)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/auth/wecom/callback?code=sensitive-provider-code&state="+state, nil)
+	request.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: state})
+	response := httptest.NewRecorder()
+	handler.Callback(response, request)
+	logged := logs.String()
+	if response.Code != http.StatusFound || response.Header().Get("Location") != "/login?auth_error=provider_failed" ||
+		!strings.Contains(logged, `"msg":"wecom_oauth_exchange_failed"`) || !strings.Contains(logged, `"failure_class":"upstream_rejected"`) ||
+		!strings.Contains(logged, `"provider_code":50001`) || strings.Contains(logged, "sensitive-provider-code") || strings.Contains(logged, "sensitive-provider-message") {
+		t.Fatalf("response=%d location=%q log=%q", response.Code, response.Header().Get("Location"), logged)
+	}
+}
+
 func TestFinalRouterMountsFrozenHumanAuthMethodsOutsideSessionMiddleware(t *testing.T) {
 	application := &humanAuthStub{principal: authport.Principal{AdminUserID: 1, Role: authport.RoleAdmin}, attempt: authport.OAuthAttempt{State: authport.OAuthState(browserToken(2)), ExpiresAt: time.Now().Add(time.Minute)}}
 	human, err := NewHumanAuthHandler(application, application, application, &humanOAuthStub{}, HumanAuthOptions{})
@@ -220,6 +250,7 @@ func cookiesByName(cookies []*http.Cookie) map[string]*http.Cookie {
 
 type humanOAuthStub struct {
 	identity           wecomclient.HumanIdentity
+	exchangeErr        error
 	authorizationState string
 	exchangeCode       string
 	authorizationCalls int
@@ -237,6 +268,9 @@ func (provider *humanOAuthStub) AuthorizationURL(state string) (string, error) {
 func (provider *humanOAuthStub) Exchange(_ context.Context, code string) (wecomclient.HumanIdentity, error) {
 	provider.exchangeCalls++
 	provider.exchangeCode = code
+	if provider.exchangeErr != nil {
+		return wecomclient.HumanIdentity{}, provider.exchangeErr
+	}
 	if provider.identity.UserID == "" {
 		return wecomclient.HumanIdentity{CorpID: "corp-fixture", UserID: "member-fixture"}, nil
 	}

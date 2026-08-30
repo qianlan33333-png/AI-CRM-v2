@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"html/template"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path"
@@ -45,10 +46,12 @@ type HumanAuthHandler struct {
 	states   authport.OAuthStateManager
 	provider humanOAuthProvider
 	clock    func() time.Time
+	logger   *slog.Logger
 }
 
 type HumanAuthOptions struct {
-	Clock func() time.Time
+	Clock  func() time.Time
+	Logger *slog.Logger
 }
 
 func NewHumanAuthHandler(auth authport.Service, issuer authport.Issuer, states authport.OAuthStateManager, provider humanOAuthProvider, options HumanAuthOptions) (*HumanAuthHandler, error) {
@@ -58,7 +61,10 @@ func NewHumanAuthHandler(auth authport.Service, issuer authport.Issuer, states a
 	if options.Clock == nil {
 		options.Clock = time.Now
 	}
-	return &HumanAuthHandler{auth: auth, issuer: issuer, states: states, provider: provider, clock: options.Clock}, nil
+	if options.Logger == nil {
+		options.Logger = slog.Default()
+	}
+	return &HumanAuthHandler{auth: auth, issuer: issuer, states: states, provider: provider, clock: options.Clock, logger: options.Logger}, nil
 }
 
 func (handler *HumanAuthHandler) Login(writer http.ResponseWriter, request *http.Request) {
@@ -154,6 +160,7 @@ func (handler *HumanAuthHandler) Callback(writer http.ResponseWriter, request *h
 	}
 	identity, err := handler.provider.Exchange(request.Context(), code)
 	if err != nil {
+		handler.logProviderExchangeFailure(request.Context(), err)
 		redirectLoginError(writer, request, "provider_failed")
 		return
 	}
@@ -178,6 +185,29 @@ func (handler *HumanAuthHandler) Callback(writer http.ResponseWriter, request *h
 	}
 	noStore(writer)
 	http.Redirect(writer, request, claim.NextPath, http.StatusFound)
+}
+
+func (handler *HumanAuthHandler) logProviderExchangeFailure(ctx context.Context, err error) {
+	if handler == nil || handler.logger == nil || err == nil {
+		return
+	}
+	failureClass := "unexpected_response"
+	switch {
+	case errors.Is(err, wecomclient.ErrRequestTimeout):
+		failureClass = "timeout"
+	case errors.Is(err, wecomclient.ErrTransport):
+		failureClass = "transport"
+	case errors.Is(err, wecomclient.ErrInvalidConfig):
+		failureClass = "invalid_config"
+	case errors.Is(err, wecomclient.ErrUpstream):
+		failureClass = "upstream_rejected"
+	}
+	attributes := []any{"failure_class", failureClass}
+	var providerError *wecomclient.APIError
+	if errors.As(err, &providerError) {
+		attributes = append(attributes, "provider_code", providerError.Code)
+	}
+	handler.logger.WarnContext(ctx, "wecom_oauth_exchange_failed", attributes...)
 }
 
 func (handler *HumanAuthHandler) Logout(writer http.ResponseWriter, request *http.Request) {
