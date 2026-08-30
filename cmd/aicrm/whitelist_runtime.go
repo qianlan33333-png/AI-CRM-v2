@@ -49,6 +49,7 @@ var whitelistRoutePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/admin/channels(?:/[1-9][0-9]*)?$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/(?:package-groups(?:/[1-9][0-9]*)?|packages(?:/[1-9][0-9]*(?:/(?:copy|pause|configuration|configuration-preview|configuration-materialize|members))?)?)$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/operation-members$`),
+	regexp.MustCompile(`^/api/admin/common/operation-members$`),
 	regexp.MustCompile(`^/api/admin/automation-conversion/group-ops/plans(?:/.*)?$`),
 	regexp.MustCompile(`^/api/admin/automation-agents(?:/[1-9][0-9]*(?:/(?:fixed-content|precheck|activate|copy|pause|publish))?)?$`),
 	regexp.MustCompile(`^/api/admin/config/(?:app-settings|categories(?:/[^/]+(?:/(?:enabled|settings|check))?)?|push-capabilities|releases)$`),

@@ -40,6 +40,7 @@ func TestWhitelistGatewayExposesCurrentCapabilitiesWithoutExternalExecution(t *t
 		{http.MethodGet, "/api/admin/attachment-library", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/miniprogram-library", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/automation-conversion/group-ops/plans", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/common/operation-members", http.StatusNoContent},
 		{http.MethodPost, "/api/admin/automation-conversion/group-ops/plans/1/run-due", http.StatusNotFound},
 		{http.MethodGet, "/api/admin/config/app-settings", http.StatusNoContent},
 		{http.MethodGet, "/api/sidebar/v2/jssdk/agent-config", http.StatusNoContent},
