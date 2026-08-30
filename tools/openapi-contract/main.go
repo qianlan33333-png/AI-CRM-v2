@@ -3750,7 +3750,7 @@ func validateSegmentContract(doc *openapi3.T) error {
 	}
 	predicate := doc.Components.Schemas["SegmentDefinitionPredicate"].Value
 	for field, want := range map[string][]string{
-		"field": {"added_at", "channel_id", "is_deleted", "last_interact_at", "owner_staff_id", "stage_id", "tag_id"},
+		"field": {"added_at", "channel_id", "is_deleted", "last_interact_at", "legacy_audience_package_source_id", "owner_staff_id", "stage_id", "tag_id"},
 		"op":    {"after", "before", "eq", "has_any", "in"},
 	} {
 		property := predicate.Properties[field]
