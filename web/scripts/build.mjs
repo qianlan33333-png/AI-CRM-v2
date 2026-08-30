@@ -112,7 +112,7 @@ function h5Page(screen, assets) {
 }
 
 function sidebarPage(assets) {
-  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>企微侧边栏 · AI-CRM</title>${stylesheet('../', assets.tokens)}</head><body>${read(path.join(SRC, 'sidebar/templates/index.html'))}${moduleScript('../', assets.sidebar)}</body></html>\n`;
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>企微侧边栏 · AI-CRM</title>${stylesheet('../', assets.tokens)}${stylesheet('../', assets.sidebarStyles)}</head><body>${read(path.join(SRC, 'sidebar/templates/index.html'))}${moduleScript('../', assets.sidebar)}</body></html>\n`;
 }
 
 function memberGridSharePage(assets) {
@@ -197,6 +197,7 @@ async function main() {
       admin: path.join(SRC, 'admin/main.ts'),
       h5: path.join(SRC, 'h5/main.ts'),
       sidebar: path.join(SRC, 'sidebar/main.ts'),
+      sidebarStyles: path.join(SRC, 'sidebar/sidebar.css'),
       memberGridShare: path.join(SRC, 'public/main.ts'),
       tokens: path.join(SRC, 'shared/ui/tokens.css'),
       labs: path.join(SRC, 'admin/sections/labs.css'),
@@ -220,11 +221,12 @@ async function main() {
     const name = Object.entries({
       admin: path.join(SRC, 'admin/main.ts'), h5: path.join(SRC, 'h5/main.ts'),
       sidebar: path.join(SRC, 'sidebar/main.ts'), memberGridShare: path.join(SRC, 'public/main.ts'),
+      sidebarStyles: path.join(SRC, 'sidebar/sidebar.css'),
       tokens: path.join(SRC, 'shared/ui/tokens.css'), labs: path.join(SRC, 'admin/sections/labs.css'),
     }).find(([, entry]) => path.resolve(REPOSITORY, metadata.entryPoint) === entry)?.[0];
     if (name) entries[name] = outputPath(output);
   }
-  for (const required of ['admin', 'h5', 'sidebar', 'memberGridShare', 'tokens', 'labs']) {
+  for (const required of ['admin', 'h5', 'sidebar', 'sidebarStyles', 'memberGridShare', 'tokens', 'labs']) {
     if (!entries[required]) throw new Error(`missing build entry: ${required}`);
   }
 
