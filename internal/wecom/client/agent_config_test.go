@@ -9,15 +9,21 @@ import (
 	"time"
 )
 
-func TestAgentConfigTicketClientFetchesOnlyAgentConfigTicket(t *testing.T) {
+func TestAgentConfigTicketClientFetchesBothRequiredTicketTypes(t *testing.T) {
 	now := time.Date(2026, time.August, 26, 8, 0, 0, 0, time.UTC)
 	var calls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		calls.Add(1)
-		if request.URL.Path != "/cgi-bin/ticket/get" || request.URL.Query().Get("type") != "agent_config" || request.URL.Query().Get("access_token") != "access-fixture" {
+		ticketType := request.URL.Query().Get("type")
+		isConfig := request.URL.Path == "/cgi-bin/get_jsapi_ticket" && ticketType == ""
+		isAgentConfig := request.URL.Path == "/cgi-bin/ticket/get" && ticketType == "agent_config"
+		if (!isConfig && !isAgentConfig) || request.URL.Query().Get("access_token") != "access-fixture" {
 			t.Fatalf("request = %s?%s", request.URL.Path, request.URL.RawQuery)
 		}
-		_, _ = writer.Write([]byte(`{"errcode":0,"ticket":"agent-config-ticket","expires_in":7200}`))
+		if isConfig {
+			ticketType = "jsapi"
+		}
+		_, _ = writer.Write([]byte(`{"errcode":0,"ticket":"` + ticketType + `-ticket","expires_in":7200}`))
 	}))
 	defer server.Close()
 	client, err := NewAgentConfigTicketClient(AgentConfigTicketClientConfig{
@@ -26,9 +32,13 @@ func TestAgentConfigTicketClientFetchesOnlyAgentConfigTicket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ticket, err := client.FetchAgentConfigTicket(context.Background())
-	if err != nil || ticket.Value != "agent-config-ticket" || !ticket.ExpiresAt.Equal(now.Add(2*time.Hour)) || calls.Load() != 1 {
-		t.Fatalf("FetchAgentConfigTicket() = %+v, %v, calls=%d", ticket, err, calls.Load())
+	configTicket, err := client.FetchConfigTicket(context.Background())
+	if err != nil || configTicket.Value != "jsapi-ticket" || !configTicket.ExpiresAt.Equal(now.Add(2*time.Hour)) {
+		t.Fatalf("FetchConfigTicket() = %+v, %v", configTicket, err)
+	}
+	agentTicket, err := client.FetchAgentConfigTicket(context.Background())
+	if err != nil || agentTicket.Value != "agent_config-ticket" || !agentTicket.ExpiresAt.Equal(now.Add(2*time.Hour)) || calls.Load() != 2 {
+		t.Fatalf("FetchAgentConfigTicket() = %+v, %v, calls=%d", agentTicket, err, calls.Load())
 	}
 }
 

@@ -20,7 +20,7 @@ import type {
   ListSidebarShareableProductsParams,
   ListSidebarTimelineParams,
   MintSidebarContextBody,
-  SidebarAgentConfigSignature,
+  SidebarJSSDKConfig,
   SidebarBootstrapResponse,
   SidebarChatActivityResponse,
   SidebarContextResponse,
@@ -72,7 +72,7 @@ export const sidebarApi = {
   agentConfig: async (url: string) =>
     unwrapGenerated(
       await getSidebarAgentConfig({ url }, apiRequestOptions()),
-    ) as SidebarAgentConfigSignature,
+    ) as SidebarJSSDKConfig,
   oauthStartUrl: (params: StartSidebarOAuthParams) =>
     getStartSidebarOAuthUrl(params),
   oauthCallbackUrl: (params: CompleteSidebarOAuthParams) =>

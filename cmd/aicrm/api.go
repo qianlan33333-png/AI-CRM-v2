@@ -913,7 +913,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, errInvalidAPIComponent
 		}
-		providerHTTP := &http.Client{Timeout: 5 * time.Second}
+		// WeCom's corp jsapi ticket endpoint resets HTTP/2 connections from the
+		// Go transport in production. The provider supports HTTP/1.1, which is
+		// also the protocol used by the previous working sidebar.
+		providerHTTP := &http.Client{Transport: &http.Transport{Proxy: http.ProxyFromEnvironment}, Timeout: 5 * time.Second}
 		tokenProvider, tokenErr := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{
 			BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: providerHTTP, Now: time.Now,
 		})
@@ -2826,6 +2829,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/sidebar/v2/materials/image/{image_id}/temporary-media", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.PrepareSidebarImageTemporaryMedia)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/preview", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailPreview)},
+		{http.MethodGet, "/api/sidebar/v2/other-staff-chats", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarOtherStaffChats)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
 		{http.MethodGet, "/api/v1/admin/release-candidates", authport.CapabilityReleaseRead, false, http.HandlerFunc(wrapper.ListReleaseCandidates)},
 		{http.MethodPost, "/api/v1/admin/release-candidates", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RegisterReleaseCandidate)},

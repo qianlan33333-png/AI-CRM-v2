@@ -13420,12 +13420,15 @@ func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 // Defines values for SidebarAgentConfigSignatureSignatureType.
 const (
 	AgentConfig SidebarAgentConfigSignatureSignatureType = "agent_config"
+	Config      SidebarAgentConfigSignatureSignatureType = "config"
 )
 
 // Valid indicates whether the value is a known member of the SidebarAgentConfigSignatureSignatureType enum.
 func (e SidebarAgentConfigSignatureSignatureType) Valid() bool {
 	switch e {
 	case AgentConfig:
+		return true
+	case Config:
 		return true
 	default:
 		return false
@@ -23589,6 +23592,14 @@ type SidebarContextResponse struct {
 // SidebarContextResponseState defines model for SidebarContextResponse.State.
 type SidebarContextResponseState string
 
+// SidebarJSSDKConfig defines model for SidebarJSSDKConfig.
+type SidebarJSSDKConfig struct {
+	AgentConfig SidebarAgentConfigSignature `json:"agent_config"`
+	AgentId     int64                       `json:"agent_id"`
+	Config      SidebarAgentConfigSignature `json:"config"`
+	CorpId      string                      `json:"corp_id"`
+}
+
 // SidebarMaterialItem defines model for SidebarMaterialItem.
 type SidebarMaterialItem struct {
 	Category        string                             `json:"category"`
@@ -29458,7 +29469,7 @@ type ServerInterface interface {
 	// Read the bound customer's safe local chat-activity metadata
 	// (GET /api/sidebar/v2/chat-activity)
 	ListSidebarChatActivity(w http.ResponseWriter, r *http.Request, params ListSidebarChatActivityParams)
-	// Sign one allowed Sidebar URL with a WeCom agent_config ticket
+	// Sign one allowed Sidebar URL for wx.config and wx.agentConfig
 	// (GET /api/sidebar/v2/jssdk/agent-config)
 	GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams)
 	// List local enabled image metadata and quick keywords without creating variants
@@ -31549,7 +31560,7 @@ func (_ Unimplemented) ListSidebarChatActivity(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Sign one allowed Sidebar URL with a WeCom agent_config ticket
+// Sign one allowed Sidebar URL for wx.config and wx.agentConfig
 // (GET /api/sidebar/v2/jssdk/agent-config)
 func (_ Unimplemented) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -71536,7 +71547,7 @@ type GetSidebarAgentConfigResponseObject interface {
 	VisitGetSidebarAgentConfigResponse(w http.ResponseWriter) error
 }
 
-type GetSidebarAgentConfig200JSONResponse SidebarAgentConfigSignature
+type GetSidebarAgentConfig200JSONResponse SidebarJSSDKConfig
 
 func (response GetSidebarAgentConfig200JSONResponse) VisitGetSidebarAgentConfigResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -78829,7 +78840,7 @@ type StrictServerInterface interface {
 	// Read the bound customer's safe local chat-activity metadata
 	// (GET /api/sidebar/v2/chat-activity)
 	ListSidebarChatActivity(ctx context.Context, request ListSidebarChatActivityRequestObject) (ListSidebarChatActivityResponseObject, error)
-	// Sign one allowed Sidebar URL with a WeCom agent_config ticket
+	// Sign one allowed Sidebar URL for wx.config and wx.agentConfig
 	// (GET /api/sidebar/v2/jssdk/agent-config)
 	GetSidebarAgentConfig(ctx context.Context, request GetSidebarAgentConfigRequestObject) (GetSidebarAgentConfigResponseObject, error)
 	// List local enabled image metadata and quick keywords without creating variants

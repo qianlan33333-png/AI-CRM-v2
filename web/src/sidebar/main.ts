@@ -7,6 +7,7 @@
 import { newSidebarIdempotencyKey, sidebarApi } from "../api/sidebar";
 import type {
   SidebarAgentConfigSignature,
+  SidebarJSSDKConfig,
   SidebarBootstrapResponse,
   SidebarChatActivityResponse,
   SidebarOtherStaffChatResponse,
@@ -32,7 +33,7 @@ import { initFeedback } from "../shared/ui/feedback";
 const SDK_TIMEOUT_MS = 5000;
 const SDK_CACHE_MAX_MS = 5 * 60 * 1000;
 const SDK_CACHE_SAFETY_MS = 30 * 1000;
-const SDK_CACHE_KEY = "aicrm.sidebar.jssdk.agent-config.v1";
+const SDK_CACHE_KEY = "aicrm.sidebar.jssdk.agent-config.v2";
 const PROFILE_SAVE_DEBOUNCE_MS = 520;
 
 export const PROFILE_FIELDS = [
@@ -76,6 +77,17 @@ type BoundSidebarApi = Pick<
 >;
 
 interface SidebarWx {
+  config(options: {
+    beta: boolean;
+    debug: boolean;
+    appId: string;
+    timestamp: number;
+    nonceStr: string;
+    signature: string;
+    jsApiList: string[];
+  }): void;
+  ready(callback: () => void): void;
+  error(callback: (result?: Record<string, unknown>) => void): void;
   agentConfig(options: {
     corpid: string;
     agentid: string;
@@ -234,6 +246,35 @@ function firstString(
     const candidate = value[key];
     if (typeof candidate === "string" && candidate.trim())
       return candidate.trim();
+  }
+  return "";
+}
+
+function firstPayloadString(
+  value: Record<string, unknown> | undefined,
+  keys: string[],
+): string {
+  if (!value) return "";
+  const queue: Record<string, unknown>[] = [value];
+  const seen = new Set<Record<string, unknown>>();
+  while (queue.length) {
+    const current = queue.shift();
+    if (!current || seen.has(current)) continue;
+    seen.add(current);
+    const direct = firstString(current, keys);
+    if (direct) return direct;
+    for (const key of [
+      "data",
+      "context",
+      "user",
+      "member",
+      "currentUser",
+      "current_user",
+    ]) {
+      const nested = current[key];
+      if (nested && typeof nested === "object" && !Array.isArray(nested))
+        queue.push(nested as Record<string, unknown>);
+    }
   }
   return "";
 }
@@ -639,7 +680,13 @@ export class SidebarController {
   }
 
   private queryExternalUserid(query: URLSearchParams): string {
-    for (const key of ["external_userid", "externalUserid", "externalUserId"]) {
+    for (const key of [
+      "external_userid",
+      "externalUserid",
+      "externalUserId",
+      "user_id",
+      "userId",
+    ]) {
       const value = query.get(key)?.trim();
       if (value) return value;
     }
@@ -711,7 +758,7 @@ export class SidebarController {
     }
   }
 
-  private cachedAgentConfig(url: string): SidebarAgentConfigSignature | null {
+  private cachedAgentConfig(url: string): SidebarJSSDKConfig | null {
     const storage = this.doc.defaultView?.sessionStorage;
     if (!storage) return null;
     try {
@@ -720,14 +767,15 @@ export class SidebarController {
       const cached = JSON.parse(raw) as {
         url?: unknown;
         usable_until?: unknown;
-        config?: SidebarAgentConfigSignature;
+        config?: SidebarJSSDKConfig;
       };
       if (
         cached.url !== url ||
         typeof cached.usable_until !== "number" ||
         cached.usable_until <= Date.now() ||
         !cached.config ||
-        cached.config.url !== url
+        cached.config.config.url !== url ||
+        cached.config.agent_config.url !== url
       ) {
         storage.removeItem(SDK_CACHE_KEY);
         return null;
@@ -740,10 +788,18 @@ export class SidebarController {
     }
   }
 
-  private cacheAgentConfig(config: SidebarAgentConfigSignature): void {
+  private cacheAgentConfig(config: SidebarJSSDKConfig): void {
     const storage = this.doc.defaultView?.sessionStorage;
-    if (!storage || config.url !== this.currentPageUrl()) return;
-    const providerExpiry = Date.parse(config.ticket_expires_at);
+    if (
+      !storage ||
+      config.config.url !== this.currentPageUrl() ||
+      config.agent_config.url !== this.currentPageUrl()
+    )
+      return;
+    const providerExpiry = Math.min(
+      Date.parse(config.config.ticket_expires_at),
+      Date.parse(config.agent_config.ticket_expires_at),
+    );
     const usableUntil =
       Math.min(providerExpiry, Date.now() + SDK_CACHE_MAX_MS) -
       SDK_CACHE_SAFETY_MS;
@@ -751,35 +807,57 @@ export class SidebarController {
     try {
       storage.setItem(
         SDK_CACHE_KEY,
-        JSON.stringify({ url: config.url, usable_until: usableUntil, config }),
+        JSON.stringify({
+          url: config.config.url,
+          usable_until: usableUntil,
+          config,
+        }),
       );
     } catch {
       // A session without storage remains correct; it only loses the short cache.
     }
   }
 
-  private validateAgentConfig(config: SidebarAgentConfigSignature): void {
+  private validateAgentConfig(config: SidebarJSSDKConfig): void {
     if (
       !config ||
-      config.signature_type !== "agent_config" ||
       !config.corp_id ||
       !Number.isFinite(config.agent_id) ||
-      !config.nonce ||
-      !Number.isFinite(config.timestamp) ||
-      !config.signature ||
-      !config.url
+      config.config.url !== config.agent_config.url
     ) {
-      throw new Error("JSSDK agent_config 签名不完整。");
+      throw new Error("JSSDK 两阶段签名不完整。");
     }
+    this.validateJssdkSignature(config.config, "config");
+    this.validateJssdkSignature(config.agent_config, "agent_config");
+  }
+
+  private validateJssdkSignature(
+    signature: SidebarAgentConfigSignature,
+    signatureType: "config" | "agent_config",
+  ): void {
+    if (
+      !signature ||
+      signature.signature_type !== signatureType ||
+      !signature.nonce ||
+      !Number.isFinite(signature.timestamp) ||
+      !signature.signature ||
+      !signature.url
+    )
+      throw new Error(`JSSDK ${signatureType} 签名不完整。`);
   }
 
   private configureAgent(
     wx: SidebarWx,
-    config: SidebarAgentConfigSignature,
+    config: SidebarJSSDKConfig,
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      if (typeof wx.agentConfig !== "function") {
-        reject(new Error("当前企微 SDK 不支持 agentConfig。"));
+      if (
+        typeof wx.config !== "function" ||
+        typeof wx.ready !== "function" ||
+        typeof wx.error !== "function" ||
+        typeof wx.agentConfig !== "function"
+      ) {
+        reject(new Error("当前企微 SDK 不支持两阶段 JSSDK 初始化。"));
         return;
       }
       let settled = false;
@@ -790,20 +868,38 @@ export class SidebarController {
         else resolve();
       };
       try {
-        wx.agentConfig({
-          corpid: config.corp_id,
-          agentid: String(config.agent_id),
-          timestamp: config.timestamp,
-          nonceStr: config.nonce,
-          signature: config.signature,
-          jsApiList: ["getContext", "getCurExternalContact", "sendChatMessage"],
-          success: () => finish(),
-          fail: (result) =>
-            finish(
-              new Error(
-                `企微 agentConfig 失败：${firstString(result, ["errmsg", "err_msg", "message"]) || "未知错误"}`,
+        wx.ready(() => {
+          wx.agentConfig({
+            corpid: config.corp_id,
+            agentid: String(config.agent_id),
+            timestamp: config.agent_config.timestamp,
+            nonceStr: config.agent_config.nonce,
+            signature: config.agent_config.signature,
+            jsApiList: ["getCurExternalContact", "sendChatMessage"],
+            success: () => finish(),
+            fail: (result) =>
+              finish(
+                new Error(
+                  `企微 agentConfig 失败：${firstString(result, ["errmsg", "err_msg", "message"]) || "未知错误"}`,
+                ),
               ),
+          });
+        });
+        wx.error((result) =>
+          finish(
+            new Error(
+              `企微 config 失败：${firstString(result, ["errmsg", "err_msg", "message"]) || "未知错误"}`,
             ),
+          ),
+        );
+        wx.config({
+          beta: true,
+          debug: false,
+          appId: config.corp_id,
+          timestamp: config.config.timestamp,
+          nonceStr: config.config.nonce,
+          signature: config.config.signature,
+          jsApiList: ["sendChatMessage"],
         });
       } catch (error) {
         finish(
@@ -857,15 +953,17 @@ export class SidebarController {
     const wx = this.doc.defaultView?.wx;
     if (!wx || typeof wx.invoke !== "function")
       throw new Error("企微 SDK 不支持上下文读取。");
-    // getContext proves that the agent context was established. Its userId is
-    // the employee identity and must not be mistaken for the external contact.
-    await this.invokeWx(wx, "getContext", {});
     const contact = await this.invokeWx(wx, "getCurExternalContact", {});
-    const externalUserid = firstString(contact, [
+    const externalUserid = firstPayloadString(contact, [
       "external_userid",
       "externalUserid",
+      "external_userId",
+      "externalUserId",
+      "external_user_id",
+      "externalUserID",
       "userId",
       "user_id",
+      "UserId",
     ]);
     if (!externalUserid)
       throw new Error("企微未返回当前客户 external_userid。");

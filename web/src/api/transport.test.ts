@@ -277,16 +277,22 @@ export async function runTransportContractTests(): Promise<void> {
   globalThis.fetch = async (input, init) => {
     sidebarWriteRequests.push({ input: String(input), init });
     if (String(input).includes("agent-config")) {
+      const signature = (signature_type: "config" | "agent_config") => ({
+        signature_type,
+        corp_id: "corp-test",
+        agent_id: 7,
+        nonce: `nonce-${signature_type}`,
+        timestamp: 1720000000,
+        signature: "a".repeat(40),
+        url: "https://app.test/sidebar/index.html",
+        ticket_expires_at: "2026-08-26T03:00:00Z",
+      });
       return new Response(
         JSON.stringify({
-          signature_type: "agent_config",
           corp_id: "corp-test",
           agent_id: 7,
-          nonce: "nonce-test",
-          timestamp: 1720000000,
-          signature: "a".repeat(40),
-          url: "https://app.test/sidebar/index.html",
-          ticket_expires_at: "2026-08-26T03:00:00Z",
+          config: signature("config"),
+          agent_config: signature("agent_config"),
         }),
         { status: 200 },
       );
@@ -359,7 +365,8 @@ export async function runTransportContractTests(): Promise<void> {
       "https://app.test/sidebar/index.html",
     );
     assert(
-      agentConfig.signature_type === "agent_config",
+      agentConfig.config.signature_type === "config" &&
+        agentConfig.agent_config.signature_type === "agent_config",
       "Sidebar agent config must use the generated V2 JSSDK DTO",
     );
     const profile = await sidebarApi.profile(

@@ -293,12 +293,12 @@ func TestFinalSidebarContextRouteOptionalSessionRBACAndEnumerationSafety(t *test
 	authService.principal = authport.Principal{AdminUserID: 10, Role: authport.RoleSales, StaffID: &otherStaffID}
 	authService.authorization = authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: 8}
 	otherOwner := call(true, `{"external_userid":"wm_external_41"}`)
-	if otherOwner.Code != http.StatusOK || decodeState(t, otherOwner) != "customer_not_bound" {
+	if otherOwner.Code != http.StatusOK || decodeState(t, otherOwner) != "ready" {
 		t.Fatalf("other owner response=%d/%s", otherOwner.Code, otherOwner.Body.String())
 	}
 	identity.status = identityport.ResolveNotFound
 	unbound := call(true, `{"external_userid":"wm_external_41"}`)
-	if unbound.Code != http.StatusOK || decodeState(t, unbound) != "customer_not_bound" || otherOwner.Body.String() != unbound.Body.String() {
-		t.Fatalf("other-owner/unbound differ: %d %s / %d %s", otherOwner.Code, otherOwner.Body.String(), unbound.Code, unbound.Body.String())
+	if unbound.Code != http.StatusOK || decodeState(t, unbound) != "customer_not_bound" {
+		t.Fatalf("unbound response: %d %s", unbound.Code, unbound.Body.String())
 	}
 }

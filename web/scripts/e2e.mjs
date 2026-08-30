@@ -860,12 +860,23 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
       const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
+      let wxReady;
+      let wxError;
       window.wx = {
-        agentConfig(options) { if (scenario === 'sdk_error') options.fail?.({ err_msg: 'agentConfig:fail' }); else options.success?.({ err_msg: 'agentConfig:ok' }); },
+        config() {
+          window.__sidebarTest.wxStages.push('config');
+          queueMicrotask(() => scenario === 'config_error' ? wxError?.({ err_msg: 'config:fail' }) : wxReady?.());
+        },
+        ready(callback) { wxReady = callback; },
+        error(callback) { wxError = callback; },
+        agentConfig(options) {
+          window.__sidebarTest.wxStages.push('agentConfig');
+          if (scenario === 'sdk_error') options.fail?.({ err_msg: 'agentConfig:fail' }); else options.success?.({ err_msg: 'agentConfig:ok' });
+        },
         invoke(method, payload, callback) {
           window.__sidebarTest.wxMessages.push({ method, payload });
           window.__sidebarTest.wxInvokes.push(method);
-          callback({ err_msg: method + ':ok', ...(method === 'getCurExternalContact' ? { external_userid: 'ext-7' } : {}) });
+          callback({ err_msg: method + ':ok', ...(method === 'getCurExternalContact' ? { data: { externalUserId: 'ext-7' } } : {}) });
         },
       };
       const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
@@ -890,17 +901,20 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         blob: async () => new window.Blob([JSON.stringify(data)], { type: 'application/json' }),
         clone() { return this; },
       });
-      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [], wxInvokes: [], requests: [] };
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [], wxInvokes: [], wxStages: [], requests: [] };
       if (scenario === 'sdk_cache') {
         const pageURL = window.location.href.split('#', 1)[0];
-        const config = { signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'cached-nonce', timestamp: 1, signature: 'cached-signature', url: pageURL, ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() };
-        window.sessionStorage.setItem('aicrm.sidebar.jssdk.agent-config.v1', JSON.stringify({ url: pageURL, usable_until: Date.now() + 2 * 60 * 1000, config }));
+        const signature = (type, nonce) => ({ signature_type: type, nonce, timestamp: 1, signature: 'cached-signature', url: pageURL, ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() });
+        const config = { corp_id: 'ww-test', agent_id: 1, config: signature('config', 'cached-config-nonce'), agent_config: signature('agent_config', 'cached-agent-nonce') };
+        window.sessionStorage.setItem('aicrm.sidebar.jssdk.agent-config.v2', JSON.stringify({ url: pageURL, usable_until: Date.now() + 2 * 60 * 1000, config }));
       }
       window.fetch = async (input, init = {}) => {
         const url = String(input);
         window.__sidebarTest.requests.push(url);
         if (url.includes('/jssdk/agent-config')) {
-          return json({ signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'nonce', timestamp: 1, signature: 'signature', url: window.location.href.split('#', 1)[0], ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() });
+          const pageURL = window.location.href.split('#', 1)[0];
+          const signature = (type, nonce) => ({ signature_type: type, nonce, timestamp: 1, signature: 'signature', url: pageURL, ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() });
+          return json({ corp_id: 'ww-test', agent_id: 1, config: signature('config', 'config-nonce'), agent_config: signature('agent_config', 'agent-nonce') });
         }
         if (url.includes('/bootstrap')) {
           return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), expires_at: '2026-08-26T01:05:00Z', customer_id: 7, owner_staff_id: 9, workbench: { profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: scenario === 'success' ? 1 : 0, periodic_order_count: scenario === 'success' ? 1 : 0, material_count: scenario === 'success' ? 2 : 0, safety }, safety });
@@ -2395,8 +2409,9 @@ console.log('sidebar/index.html');
   ok('侧边栏渲染 375px 高密度壳且 CSP 下不依赖内联样式',
     d.querySelector('#sidebar-workbench-root.sidebar-shell') && d.querySelector('.customer-card') &&
     !d.querySelector('style') && sidebarHTML.includes(`href="../${sidebarManifest.entries.sidebarStyles}"`));
-  ok('无 external_userid 时保持 agentConfig → getContext → getCurExternalContact → bootstrap 安全顺序',
-    dom.window.__sidebarTest.wxInvokes.slice(0, 2).join('|') === 'getContext|getCurExternalContact' &&
+  ok('无 external_userid 时保持 V1 config → agentConfig → getCurExternalContact(客户) → bootstrap 顺序',
+    dom.window.__sidebarTest.wxStages.join('|') === 'config|agentConfig' &&
+    dom.window.__sidebarTest.wxInvokes.join('|') === 'getCurExternalContact' &&
     dom.window.__sidebarTest.requests[0]?.includes('/jssdk/agent-config') &&
     dom.window.__sidebarTest.requests[1]?.includes('/bootstrap'));
   dom.window.close();
@@ -2413,7 +2428,7 @@ console.log('sidebar/index.html（bootstrap 并行、JSSDK 缓存与降级）');
   parallel.window.close();
 
   const cached = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=sdk_cache' });
-  const cachedConfig = cached.window.sessionStorage.getItem('aicrm.sidebar.jssdk.agent-config.v1') || '';
+  const cachedConfig = cached.window.sessionStorage.getItem('aicrm.sidebar.jssdk.agent-config.v2') || '';
   ok('同一完整页面 URL 的短期 session JSSDK 配置复用且不缓存客户数据',
     !cached.window.__sidebarTest.requests.some((url) => url.includes('/jssdk/agent-config')) &&
     cached.window.__sidebarTest.requests.some((url) => url.includes('/bootstrap')) && !cachedConfig.includes('customer'));

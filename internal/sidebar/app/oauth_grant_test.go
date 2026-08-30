@@ -14,8 +14,8 @@ import (
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 )
 
-func TestOAuthGrantClosesStateProviderIdentitySessionAndCustomerScope(t *testing.T) {
-	service, contexts, states, provider, auth, resolver, now := oauthGrantFixture(t)
+func TestOAuthGrantClosesStateProviderIdentityAndEmployeeSessionOnly(t *testing.T) {
+	service, _, states, provider, auth, resolver, now := oauthGrantFixture(t)
 	start, err := service.Begin(context.Background(), "wm_external_41", "/sidebar/bind-mobile?tab=profile")
 	if err != nil {
 		t.Fatal(err)
@@ -33,22 +33,14 @@ func TestOAuthGrantClosesStateProviderIdentitySessionAndCustomerScope(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if completed.NextPath != "/sidebar/bind-mobile?tab=profile" || completed.Session.Session != auth.session.Session ||
-		completed.Context.State != "ready" || completed.Context.CustomerID != 41 || completed.Context.Token == "" {
+	if completed.NextPath != "/sidebar/bind-mobile?tab=profile" || completed.Session.Session != auth.session.Session {
 		t.Fatalf("Complete() = %+v", completed)
 	}
 	if states.claimCalls != 1 || provider.exchangeCalls != 1 || auth.issueCalls != 1 || auth.authenticateCalls != 1 || auth.authorizeCalls != 1 {
 		t.Fatalf("state/provider/issue/auth/authz calls = %d/%d/%d/%d/%d", states.claimCalls, provider.exchangeCalls, auth.issueCalls, auth.authenticateCalls, auth.authorizeCalls)
 	}
-	wantRef := identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp-1", Value: "wm_external_41", Assurance: identityport.AssuranceVerified, Source: "sidebar"}
-	if resolver.ref != wantRef {
-		t.Fatalf("identity ref = %+v", resolver.ref)
-	}
-	if _, err = contexts.VerifyContext(context.Background(), auth.principal, auth.session.Session, completed.Context.Token); err != nil {
-		t.Fatalf("issued session could not use context grant: %v", err)
-	}
-	if _, err = contexts.VerifyContext(context.Background(), auth.principal, "different-browser-session", completed.Context.Token); !errors.Is(err, ErrTokenInvalid) {
-		t.Fatalf("cross-session replay error = %v", err)
+	if resolver.calls != 0 {
+		t.Fatalf("OAuth callback resolved customer context %d times, want 0", resolver.calls)
 	}
 
 	if _, err = service.Complete(context.Background(), "one-time-code", start.State, start.Binding); !errors.Is(err, ErrOAuthAttemptInvalid) {
@@ -59,7 +51,7 @@ func TestOAuthGrantClosesStateProviderIdentitySessionAndCustomerScope(t *testing
 	}
 }
 
-func TestOAuthGrantRejectsUnboundOrTamperedBrowserFactsWithoutCreatingIdentity(t *testing.T) {
+func TestOAuthGrantDoesNotResolveCustomerDuringCallback(t *testing.T) {
 	service, _, states, provider, auth, resolver, _ := oauthGrantFixture(t)
 	start, err := service.Begin(context.Background(), "wm_external_41", "/sidebar/bind-mobile")
 	if err != nil {
@@ -81,13 +73,13 @@ func TestOAuthGrantRejectsUnboundOrTamperedBrowserFactsWithoutCreatingIdentity(t
 		t.Fatalf("tampered binding reached state/provider = %d/%d", states.claimCalls, provider.exchangeCalls)
 	}
 
-	resolver.result = identityport.ResolveResult{Status: identityport.ResolveNotFound}
+	resolver.err = ErrUnavailable
 	completed, err := service.Complete(context.Background(), "code", start.State, start.Binding)
-	if err != nil || completed.Context.State != "customer_not_bound" || completed.Context.Token != "" || completed.Session.Session == "" {
+	if err != nil || completed.Session.Session == "" {
 		t.Fatalf("unbound Complete() = %+v err=%v", completed, err)
 	}
-	if resolver.calls != 1 {
-		t.Fatalf("identity resolve calls = %d", resolver.calls)
+	if resolver.calls != 0 {
+		t.Fatalf("identity resolve calls = %d, want 0", resolver.calls)
 	}
 }
 
@@ -218,6 +210,7 @@ func (auth *oauthGrantAuth) Invalidate(_ context.Context, session authport.Sessi
 
 type oauthGrantResolver struct {
 	result identityport.ResolveResult
+	err    error
 	ref    identityport.IDRef
 	calls  int
 }
@@ -225,7 +218,7 @@ type oauthGrantResolver struct {
 func (resolver *oauthGrantResolver) Resolve(_ context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
 	resolver.calls++
 	resolver.ref = ref
-	return resolver.result, nil
+	return resolver.result, resolver.err
 }
 
 func oauthGrantFixture(t *testing.T) (*OAuthGrantService, *Service, *oauthGrantStates, *oauthGrantProvider, *oauthGrantAuth, *oauthGrantResolver, time.Time) {

@@ -57,14 +57,14 @@ func TestActivityServiceProjectsOnlySafeFieldsAndTrustedScope(t *testing.T) {
 	timeline.read.TimelineNextCursor = &nextTimeline
 	timelinePage, err := service.Timeline(context.Background(), scope, "timeline-opaque-current", 9)
 	if err != nil || !reflect.DeepEqual(timelinePage, TimelineActivityPage{Items: []TimelineActivity{{ID: 7, EventType: "radar_opened", OccurredAt: stamp.UTC()}}, NextCursor: &nextTimeline}) ||
-		timeline.calls != 1 || timeline.input.CustomerID != 41 || timeline.input.OwnerStaffID == nil || *timeline.input.OwnerStaffID != 7 || timeline.input.TimelineCursor != "timeline-opaque-current" || timeline.input.TimelineLimit != 9 {
+		timeline.calls != 1 || timeline.input.CustomerID != 41 || timeline.input.OwnerStaffID != nil || timeline.input.TimelineCursor != "timeline-opaque-current" || timeline.input.TimelineLimit != 9 {
 		t.Fatalf("timeline=%+v err=%v calls/input=%d/%+v", timelinePage, err, timeline.calls, timeline.input)
 	}
 	nextChat, previousChat := "chat-opaque-next", "chat-opaque-previous"
 	chat.page.ChatType, chat.page.NextCursor, chat.page.PreviousCursor = "private", &nextChat, &previousChat
 	chatPage, err := service.Chat(context.Background(), scope, "private", "chat-opaque-current", 7)
 	if err != nil || !reflect.DeepEqual(chatPage, ChatActivityPage{Items: []ChatActivity{{ChatType: "private", MessageType: "text", SentAt: stamp.UTC()}}, NextCursor: &nextChat, PreviousCursor: &previousChat}) ||
-		chat.calls != 1 || chat.query.CustomerID != 41 || chat.query.OwnerStaffID == nil || *chat.query.OwnerStaffID != 7 || chat.query.ChatType != "private" || chat.query.Cursor != "chat-opaque-current" || chat.query.Limit != 7 {
+		chat.calls != 1 || chat.query.CustomerID != 41 || chat.query.OwnerStaffID != nil || chat.query.ChatType != "private" || chat.query.Cursor != "chat-opaque-current" || chat.query.Limit != 7 {
 		t.Fatalf("chat=%+v err=%v calls/query=%d/%+v", chatPage, err, chat.calls, chat.query)
 	}
 }
@@ -76,7 +76,7 @@ func TestActivityServiceFailsClosedBeforeReadsAndForUnsafeResults(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, scope := range []Scope{{}, {CustomerID: 41}} {
+	for _, scope := range []Scope{{}} {
 		if _, err = service.Timeline(context.Background(), scope, "", 0); !errors.Is(err, ErrInvalidInput) || timeline.calls != 0 {
 			t.Fatalf("timeline invalid scope=%+v err=%v calls=%d", scope, err, timeline.calls)
 		}

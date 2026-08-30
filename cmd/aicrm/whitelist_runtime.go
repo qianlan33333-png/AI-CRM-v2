@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,7 +30,8 @@ var whitelistRoutePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/admin/ai-audience/(?:package-groups(?:/[1-9][0-9]*)?|packages(?:/[1-9][0-9]*(?:/(?:copy|pause|configuration|configuration-preview|configuration-materialize|members))?)?)$`),
 	regexp.MustCompile(`^/api/admin/automation-agents(?:/[1-9][0-9]*(?:/(?:fixed-content|precheck|activate|copy|pause|publish))?)?$`),
 	regexp.MustCompile(`^/api/admin/hxc-current$`),
-	regexp.MustCompile(`^/api/sidebar/v2/(?:oauth/(?:start|callback)|questionnaires|orders|periodic-orders(?:/[1-9][0-9]*/members/[^/]+/remark)?|shareable-products)$`),
+	regexp.MustCompile(`^/api/sidebar/context-token$`),
+	regexp.MustCompile(`^/api/sidebar/v2/(?:oauth/(?:start|callback)|jssdk/agent-config|bootstrap|timeline|chat-activity|other-staff-chats|workbench|profile|phone-binding|questionnaires|orders|periodic-orders(?:/[1-9][0-9]*/members/[^/]+/remark)?|shareable-products|materials(?:/image/[1-9][0-9]*/(?:thumbnail|preview))?|coupons)$`),
 }
 
 func newWhitelistAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -134,6 +136,15 @@ func whitelistRouteAllowed(method, path string) bool {
 func whitelistMethodAllowed(method, path string) bool {
 	if method == http.MethodOptions {
 		return true
+	}
+	if path == "/api/sidebar/context-token" || path == "/api/sidebar/v2/bootstrap" || path == "/api/sidebar/v2/phone-binding" {
+		return method == http.MethodPost
+	}
+	if path == "/api/sidebar/v2/profile" || strings.Contains(path, "/periodic-orders/") {
+		return method == http.MethodPut
+	}
+	if strings.HasPrefix(path, "/api/sidebar/v2/") {
+		return method == http.MethodGet
 	}
 	if path == "/api/admin/orders" || path == "/api/admin/hxc-current" || regexp.MustCompile(`^/api/admin/orders/`).MatchString(path) ||
 		path == "/api/sidebar/v2/orders" || path == "/api/sidebar/v2/questionnaires" || path == "/api/sidebar/v2/shareable-products" {
