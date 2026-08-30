@@ -78,7 +78,7 @@ func reconcileWhitelistTx(ctx context.Context, tx pgx.Tx, runID string) (reconci
 	}
 	if err := tx.QueryRow(ctx, `SELECT
   (SELECT count(*) FROM public.external_effects)+(SELECT count(*) FROM public.external_effect_attempts)+(SELECT count(*) FROM public.external_effect_receipts)+(SELECT count(*) FROM public.external_effect_reconciliations),
-	  (CASE WHEN to_regclass('public.order_provider_callback_receipts') IS NULL THEN 0 ELSE 1 END),
+	  (SELECT count(*) FROM public.order_provider_callback_receipts),
 	  (SELECT count(*) FROM public.product_images)+
 	  (SELECT count(*) FROM public.products WHERE
 	    legacy_admin_projection ?| ARRAY['image_ids','material_ids'] OR
@@ -104,7 +104,7 @@ func reconcileWhitelistTx(ctx context.Context, tx pgx.Tx, runID string) (reconci
     jsonb_array_length(COALESCE(fixed_content_package_json->'miniprogram_library_ids','[]'::jsonb))>0 OR
     jsonb_array_length(COALESCE(fixed_content_package_json->'attachment_library_ids','[]'::jsonb))>0 OR
     jsonb_array_length(COALESCE(fixed_content_package_json->'group_invite_library_ids','[]'::jsonb))>0 OR fixed_content_package_json ? 'dynamic_miniprogram_card'),
-  (CASE WHEN to_regclass('public.campaigns') IS NULL AND to_regclass('public.cloud_campaigns') IS NULL THEN 0 ELSE 1 END),
+	  (SELECT count(*) FROM public.cloud_campaigns),
   (CASE WHEN to_regclass('public.wecom_message_archive') IS NULL AND to_regclass('public.messages') IS NULL THEN 0 ELSE 1 END)`).Scan(
 		&result.ExternalEffects, &result.ProviderReceipts, &result.LegacyMaterialReferences, &result.OldCampaignRows, &result.OldMessageRows); err != nil {
 		return reconcileResult{}, err
@@ -113,8 +113,8 @@ func reconcileWhitelistTx(ctx context.Context, tx pgx.Tx, runID string) (reconci
 	if err := tx.QueryRow(ctx, `SELECT
   (SELECT count(*) FROM public.ai_audience_package_metadata WHERE lifecycle<>'paused'),
   (SELECT count(*) FROM public.automation_agent_configurations WHERE status<>'paused' OR execution_enabled),
-  (CASE WHEN to_regclass('public.radar_link_events') IS NULL THEN 0 ELSE 1 END),
-  (CASE WHEN to_regclass('public.channel_acquisition_entrant_receipts') IS NULL THEN 0 ELSE 1 END)`).Scan(&audienceNotPaused, &automationOpen, &radarEvents, &channelEvents); err != nil {
+	  (SELECT count(*) FROM public.radar_link_events),
+	  (SELECT count(*) FROM public.channel_acquisition_entrant_receipts)`).Scan(&audienceNotPaused, &automationOpen, &radarEvents, &channelEvents); err != nil {
 		return reconcileResult{}, err
 	}
 	if result.OrphanRows != 0 || result.IdentityConflicts != 0 || result.ExternalEffects != 0 || result.ProviderReceipts != 0 || result.LegacyMaterialReferences != 0 || result.OldCampaignRows != 0 || result.OldMessageRows != 0 || audienceNotPaused != 0 || automationOpen != 0 || radarEvents != 0 || channelEvents != 0 {
