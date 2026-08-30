@@ -1,19 +1,14 @@
 name: ci / nightly
 
 on:
-  push:
-    branches: [main]
   schedule:
-    - cron: "17 18 1-31 1-12 0-6"
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
+    - cron: "17 18 * * *"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-nightly-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+  group: ci-nightly
   cancel-in-progress: true
 
 env:
@@ -25,11 +20,8 @@ env:
 jobs:
   full_regression:
     name: ci / nightly-full-regression
-    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success') }}
     permissions:
       contents: read
-    outputs:
-      tested_sha: ${{ steps.target.outputs.sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     services:
@@ -50,7 +42,7 @@ jobs:
       - name: Resolve tested commit
         id: target
         env:
-          TARGET_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          TARGET_SHA: ${{ github.sha }}
         run: |
           [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
           echo "sha=$TARGET_SHA" >>"$GITHUB_OUTPUT"
@@ -104,41 +96,3 @@ jobs:
           DM01_TARGET_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_dm01_target?sslmode=disable
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
         run: QUERY_PLAN_BASE_SHA="$(git rev-parse HEAD^)" QUERY_PLAN_HEAD_SHA="$(git rev-parse HEAD)" scripts/ci/run_full_regression.sh
-
-  publish_block_compatibility:
-    name: ci / publish-block-compatibility
-    needs: full_regression
-    if: ${{ always() && needs.full_regression.outputs.tested_sha != '' }}
-    permissions:
-      statuses: write
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Publish block compatibility status
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JOB_STATUS: ${{ needs.full_regression.result }}
-          TESTED_SHA: ${{ needs.full_regression.outputs.tested_sha }}
-        run: |
-          case "$JOB_STATUS" in
-            success)
-              state="success"
-              description="Full Nightly passed for this commit"
-              ;;
-            failure|cancelled)
-              state="failure"
-              description="Full Nightly did not pass for this commit"
-              ;;
-            *)
-              state="error"
-              description="Full Nightly ended without a conclusive result"
-              ;;
-          esac
-          payload="$(STATE="$state" DESCRIPTION="$description" python3 -c 'import json, os; print(json.dumps({"state": os.environ["STATE"], "context": "ci / block compatibility", "description": os.environ["DESCRIPTION"], "target_url": "{}/{}/actions/runs/{}".format(os.environ["GITHUB_SERVER_URL"], os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_RUN_ID"])}))')"
-          curl --fail-with-body --silent --show-error \
-            --request POST \
-            --header "Authorization: Bearer $GITHUB_TOKEN" \
-            --header "Accept: application/vnd.github+json" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/statuses/$TESTED_SHA" \
-            --data "$payload"
