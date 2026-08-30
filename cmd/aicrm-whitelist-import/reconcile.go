@@ -80,7 +80,12 @@ func reconcileWhitelistTx(ctx context.Context, tx pgx.Tx, runID string) (reconci
   (SELECT count(*) FROM public.external_effects)+(SELECT count(*) FROM public.external_effect_attempts)+(SELECT count(*) FROM public.external_effect_receipts)+(SELECT count(*) FROM public.external_effect_reconciliations),
 	  (CASE WHEN to_regclass('public.order_provider_callback_receipts') IS NULL THEN 0 ELSE 1 END),
 	  (SELECT count(*) FROM public.product_images)+
-	  (SELECT count(*) FROM public.products WHERE legacy_admin_projection ?| ARRAY['lead_program_id','lead_channel_id','completion_target','wecom_tagging','image_ids','material_ids'])+
+	  (SELECT count(*) FROM public.products WHERE
+	    legacy_admin_projection ?| ARRAY['image_ids','material_ids'] OR
+	    COALESCE(legacy_admin_projection->'lead_program_id','null'::jsonb)<>'null'::jsonb OR
+	    COALESCE(legacy_admin_projection->'lead_channel_id','null'::jsonb)<>'null'::jsonb OR
+	    COALESCE(legacy_admin_projection->'completion_target','null'::jsonb)<>'null'::jsonb OR
+	    COALESCE(legacy_admin_projection->'wecom_tagging','null'::jsonb) NOT IN ('null'::jsonb,'{}'::jsonb,'[]'::jsonb))+
 	  (SELECT count(*) FROM public.channels WHERE config ?| ARRAY['staff_id','staff_ids','employee_id','employee_ids','tag_id','tag_ids','welcome_material_id','welcome_material_ids','welcome_message','material_id','material_ids'])+
   (SELECT count(*) FROM public.radar_links WHERE cover_image_id IS NOT NULL OR attachment_id IS NOT NULL)+
   (SELECT count(*) FROM public.automation_agent_configurations WHERE

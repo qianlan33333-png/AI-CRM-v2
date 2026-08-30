@@ -102,6 +102,27 @@ func TestProductCopyClearsLegacyReferencesWithoutBreakingCanonicalProjection(t *
 	t.Fatal("product copy spec is missing")
 }
 
+func TestReconciliationAcceptsExplicitlyClearedProductReferences(t *testing.T) {
+	payload, err := os.ReadFile("reconcile.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	query := string(payload)
+	if strings.Contains(query, "legacy_admin_projection ?| ARRAY['lead_program_id','lead_channel_id','completion_target','wecom_tagging','image_ids','material_ids']") {
+		t.Fatal("reconciliation still treats canonical null keys as legacy references")
+	}
+	for _, cleared := range []string{
+		"COALESCE(legacy_admin_projection->'lead_program_id','null'::jsonb)<>'null'::jsonb",
+		"COALESCE(legacy_admin_projection->'lead_channel_id','null'::jsonb)<>'null'::jsonb",
+		"COALESCE(legacy_admin_projection->'completion_target','null'::jsonb)<>'null'::jsonb",
+		"COALESCE(legacy_admin_projection->'wecom_tagging','null'::jsonb) NOT IN ('null'::jsonb,'{}'::jsonb,'[]'::jsonb)",
+	} {
+		if !strings.Contains(query, cleared) {
+			t.Fatalf("reconciliation is missing cleared-reference predicate %s", cleared)
+		}
+	}
+}
+
 func TestQuestionnaireSubjectKeepsExistingCustomer(t *testing.T) {
 	resolution, err := resolveQuestionnaireRows([]questionnaireResolutionRow{{
 		submissionID: 7, matchCount: 1, existingCustomer: 42, unionID: "known", createdAt: time.Unix(1, 0).UTC(),
