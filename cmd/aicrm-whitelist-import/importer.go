@@ -80,7 +80,12 @@ SELECT id::text, to_jsonb(item), to_jsonb(item) || jsonb_build_object(
 FROM public.channels AS item ORDER BY id`},
 	{domain: "product", sourceEntity: "products", targetTable: "products", query: `
 SELECT id::text, to_jsonb(item), to_jsonb(item) || jsonb_build_object(
-  'legacy_admin_projection', item.legacy_admin_projection - ARRAY['lead_program_id','lead_channel_id','completion_target','wecom_tagging','image_ids','material_ids'])
+  'legacy_admin_projection',
+    item.legacy_admin_projection - ARRAY['image_ids','material_ids'] || jsonb_build_object(
+      'lead_program_id',null,
+      'lead_channel_id',null,
+      'completion_target',null,
+      'wecom_tagging','{}'::jsonb))
 FROM public.products AS item ORDER BY id`},
 	{domain: "order", sourceEntity: "order_list_projections", targetTable: "order_list_projections", query: `
 SELECT id::text, to_jsonb(item), to_jsonb(item) || '{"payer_name_snapshot":"","mobile_snapshot":"","identity_kind":"","identity_value":""}'::jsonb

@@ -82,6 +82,26 @@ func TestOrderCustomerIsAddedAndInvalidProductsAreExcluded(t *testing.T) {
 	}
 }
 
+func TestProductCopyClearsLegacyReferencesWithoutBreakingCanonicalProjection(t *testing.T) {
+	for _, spec := range whitelistCopySpecs {
+		if spec.sourceEntity != "products" {
+			continue
+		}
+		for _, cleared := range []string{"'lead_program_id',null", "'lead_channel_id',null", "'completion_target',null", "'wecom_tagging','{}'::jsonb"} {
+			if !strings.Contains(spec.query, cleared) {
+				t.Fatalf("product projection does not explicitly clear %s", cleared)
+			}
+		}
+		for _, removed := range []string{"image_ids", "material_ids"} {
+			if !strings.Contains(spec.query, removed) {
+				t.Fatalf("product projection does not remove %s", removed)
+			}
+		}
+		return
+	}
+	t.Fatal("product copy spec is missing")
+}
+
 func TestQuestionnaireSubjectKeepsExistingCustomer(t *testing.T) {
 	resolution, err := resolveQuestionnaireRows([]questionnaireResolutionRow{{
 		submissionID: 7, matchCount: 1, existingCustomer: 42, unionID: "known", createdAt: time.Unix(1, 0).UTC(),
