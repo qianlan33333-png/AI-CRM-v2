@@ -42,7 +42,8 @@ function transform(html) {
 }
 
 const registry = JSON.parse(read(path.join(SRC, 'admin/registry.json')));
-const navItems = JSON.parse(read(path.join(SRC, 'admin/nav.json')));
+const whitelistNavKeys = new Set(['automation', 'channels', 'funnel', 'questionnaires', 'radar', 'orders', 'products', 'spProducts', 'agents']);
+const navItems = JSON.parse(read(path.join(SRC, 'admin/nav.json'))).filter((item) => whitelistNavKeys.has(item.key));
 const h5Registry = JSON.parse(read(path.join(SRC, 'h5/registry.json')));
 const packageJson = JSON.parse(read(path.join(REPOSITORY, 'package.json')));
 const richPages = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData', 'campaigns']);

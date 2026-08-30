@@ -1,6 +1,6 @@
           <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
             <div><div style="font-size:12px;color:#8F959E">运营 / 问卷</div><div style="font-size:16px;font-weight:600">{{ questionnaireFormPage.title }}</div></div>
-            <div style="display:flex;gap:8px"><button onClick="{{ go.questionnaires }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">返回列表</button><button onClick="{{ questionnaireFormPage.save }}" style="height:30px;padding:0 12px;border:1px solid #3370ff;border-radius:6px;background:#fff;color:#245BDB;font-size:13px;cursor:pointer">保存定义</button><button onClick="{{ questionnaireFormPage.publish }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:#3370ff;color:#fff;font-size:13px;cursor:pointer">保存并发布公开定义</button></div>
+            <div style="display:flex;gap:8px"><button onClick="{{ go.questionnaires }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">返回列表</button><button onClick="{{ questionnaireFormPage.save }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:#3370ff;color:#fff;font-size:13px;cursor:pointer">保存定义</button></div>
           </div>
           <div style="flex:1;overflow:auto;padding:20px;display:grid;gap:12px;align-content:start">
             <div style="max-width:1100px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
@@ -17,5 +17,5 @@
                 <label style="grid-column:1/-1;display:grid;gap:6px;font-size:12px;color:#646A73">测评配置 JSON<textarea id="questionnaireAssessmentConfig" rows="6" spellcheck="false" style="border:1px solid #DEE0E3;border-radius:6px;padding:10px 12px;font-size:12px;line-height:19px;font-family:ui-monospace,Menlo,monospace">{{ questionnaireFormPage.item.assessmentConfigJson }}</textarea></label>
               </div>
             </div>
-            <div style="max-width:1100px;padding:14px 16px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;font-size:13px;color:#245BDB;line-height:20px">保存仅写入问卷定义；“保存并发布公开定义”会先启用问卷，再以服务端返回的 questionnaire version 发布不可变公开快照。score_rules 按当前契约必须为空数组。</div>
+            <div style="max-width:1100px;padding:14px 16px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;font-size:13px;color:#245BDB;line-height:20px">保存只写入白名单问卷定义；已提交答案保持只读，不创建外推任务。</div>
           </div>

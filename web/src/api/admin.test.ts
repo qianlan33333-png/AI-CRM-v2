@@ -354,7 +354,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   globalThis.fetch = async (input, init) => {
     const request = { input: String(input), init };
     memberGridCalls.push(request);
-    if (request.input.endsWith('/member-grid/query')) return new Response(JSON.stringify({ rows: [{ member_ref: 'spm_0123456789012345678901', service_product_id: 8, customer_id: 21, display_name: '陈晨', state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, expired_at: null, removed_at: null, version: 3, updated_at: '2026-08-26T08:00:00Z' }], limit: 50, next_cursor: '', has_more: false }), { status: 200 });
+    if (request.input.endsWith('/8/members')) return new Response(JSON.stringify({ items: [{ member_ref: 'spm_0123456789012345678901', name: '陈晨', state: 'active' }] }), { status: 200 });
     if (request.input.endsWith('/member-grid/access')) return new Response(JSON.stringify({ product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false }), { status: 200 });
     if (request.input.endsWith('/member-grid/schema')) return new Response(JSON.stringify({ service_product_id: 8, columns: Array.from({ length: 12 }, (_, index) => ({ key: index === 0 ? 'display_name' : 'state', label: `列${index + 1}`, type: 'string', nullable: false })) }), { status: 200 });
     if (request.input.endsWith('/member-views')) return new Response(JSON.stringify({ product_id: 8, views: [{ id: 'default', name: '默认视图', source: 'built_in', read_only: true }] }), { status: 200 });
@@ -364,21 +364,19 @@ export async function runAdminAdapterTests(): Promise<void> {
     throw new Error(`unexpected member grid request: ${request.input}`);
   };
   try {
-    const memberGridPage = await new HttpApi({ baseUrl: '' }).loadDb({ page: 'spProductData', id: '8' });
-    const query = memberGridCalls.find((request) => request.input.endsWith('/member-grid/query'));
-    assert(memberGridCalls.length === 7 && query?.init?.method === 'POST', 'member grid page uses only generated reads plus bounded grid query');
-    assert(JSON.parse(String(query.init.body)).state === 'all' && JSON.parse(String(query.init.body)).limit === 50, 'member grid initial query is a bounded all-state read');
-    assert(memberGridPage.rows.orderKv[0].k === '陈晨 (spm_0123456789012345678901)' && memberGridPage.rows.orderKv[0].v.includes('active · manual'), 'member grid page renders real grid row fields instead of nonexistent member name/status aliases');
-    assert(memberGridPage.rows.orderKv.some((row) => row.k === 'member-grid-columns' && row.v === '12') && memberGridPage.rows.orderKv.some((row) => row.k === 'external-share-enabled' && row.v === 'false'), 'member grid page preserves local access and disabled public-share state');
+    const serviceFormPage = await new HttpApi({ baseUrl: '' }).loadDb({ page: 'spProductForm', id: '8' });
+    assert(memberGridCalls.length === 3 && memberGridCalls.every((request) => request.init?.method === 'GET'), 'service product editor reads only list, detail and current members');
+    assert(memberGridCalls.some((request) => request.input.endsWith('/8/members')) && !memberGridCalls.some((request) => request.input.includes('member-grid') || request.input.includes('share') || request.input.includes('external-push')), 'service product editor does not request old grid, share or external effect data');
+    assert(serviceFormPage.rows.spProducts[0]?.resourceId === 8 && serviceFormPage.rows.orderKv[0]?.k === '陈晨' && serviceFormPage.rows.orderKv[0]?.v === 'active', 'service product editor maps current product and member facts');
   } finally { globalThis.fetch = savedMemberGridFetch; }
 
   const savedMemberGridFailureFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'unavailable' }), { status: 503 });
   try {
-    await new HttpApi({ baseUrl: '' }).loadDb({ page: 'spProductData', id: '8' });
-    assert(false, 'member grid accepted unavailable response');
+    await new HttpApi({ baseUrl: '' }).loadDb({ page: 'spProductForm', id: '8' });
+    assert(false, 'service product editor accepted unavailable response');
   } catch (error) {
-    assert(error instanceof ApiError && error.status === 503, 'member grid read failure remains visible without Mock or Seed fallback');
+    assert(error instanceof ApiError && error.status === 503, 'service product read failure remains visible without Mock or Seed fallback');
   } finally { globalThis.fetch = savedMemberGridFailureFetch; }
   assert(getListLegacyCouponsUrl() === '/api/admin/coupons', 'coupon list URL/method');
   assert(getGetLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon detail URL/method');
@@ -808,14 +806,11 @@ export async function runAdminAdapterTests(): Promise<void> {
   const channelFormReadCalls: string[] = [];
   globalThis.fetch = async (input) => {
     channelFormReadCalls.push(String(input));
-    const url = String(input);
-    if (url.endsWith('/wecom/tag-groups')) return new Response(JSON.stringify({ items: [{ id: 9, name: '获客标签组' }] }), { status: 200 });
-    if (url.endsWith('/wecom/tags')) return new Response(JSON.stringify({ items: [{ id: 10, group_id: 9, name: '首咨', user_count: 0, updated_at: '' }] }), { status: 200 });
     return new Response(JSON.stringify({ channels: [] }), { status: 200 });
   };
   try {
     const channelFormDb = await readAdminRows('channelForm');
-    assert(channelFormDb.tagGroups[0]?.name === '获客标签组' && channelFormDb.wecomTags[0]?.name === '首咨' && channelFormReadCalls.includes('/api/admin/wecom/tag-groups') && channelFormReadCalls.includes('/api/admin/wecom/tags'), 'channel form loads real local tag catalogs');
+    assert(channelFormDb.tagGroups.length === 0 && channelFormDb.wecomTags.length === 0 && channelFormReadCalls.length === 1 && channelFormReadCalls[0].startsWith('/api/admin/channels'), 'channel form does not request old tag or staff catalogs');
   } finally { globalThis.fetch = savedFetch; }
 
   const audienceCalls: Array<{ input: string; init?: RequestInit }> = [];

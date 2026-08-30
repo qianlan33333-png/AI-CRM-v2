@@ -1,41 +1,19 @@
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
-            <div><div style="font-size:12px;color:#8F959E">交易 / 普通商品</div><div style="font-size:16px;font-weight:600">{{ productFormPage.title }}</div></div>
-            <div style="display:flex;gap:8px"><button onClick="{{ go.products }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">返回列表</button><button onClick="{{ productFormPage.save }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:#3370ff;color:#fff;font-size:13px;cursor:pointer">保存商品</button></div>
-          </div>
-          <div style="flex:1;overflow:auto;padding:20px;display:grid;gap:12px;align-content:start">
-            <div style="max-width:900px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
-              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">商品基础信息</div>
-              <div style="padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">商品编码<input id="pfCode" value="{{ productFormPage.item.code }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">商品名称<input id="pfName" value="{{ productFormPage.item.name }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">价格（元）<input id="pfPrice" value="{{ productFormPage.item.price }}" inputmode="decimal" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">币种<input id="pfCurrency" value="{{ productFormPage.item.currency }}" maxlength="3" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">库存<input id="pfStock" type="number" min="0" value="{{ productFormPage.item.stockQuantity }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
-                <div style="font-size:12px;color:#8F959E;align-self:end;padding-bottom:10px">服务端版本：{{ productFormPage.item.version }} · 生命周期：{{ productFormPage.item.lifecycle }}</div>
-                <label style="grid-column:1/-1;display:grid;gap:6px;font-size:12px;color:#646A73">描述<textarea id="pfDescription" rows="4" style="border:1px solid #DEE0E3;border-radius:6px;padding:8px 10px;font-size:13px">{{ productFormPage.item.description }}</textarea></label>
-              </div>
-            </div>
-            <div style="max-width:900px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
-              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">页面素材</div>
-              <div style="padding:16px;display:grid;gap:8px"><label style="display:grid;gap:6px;font-size:12px;color:#646A73">素材地址（每行一条，支持素材库同源 original 地址或 HTTPS）<textarea id="pfImages" rows="5" placeholder="/api/admin/image-library/123/variants/original" style="border:1px solid #DEE0E3;border-radius:6px;padding:8px 10px;font-size:13px">{{ productFormPage.imagesText }}</textarea></label><span style="font-size:12px;color:#8F959E">保存后写入 V2 product_images，顺序即页面展示顺序。</span></div>
-            </div>
-            <div style="max-width:900px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
-              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">购买后动作与企微标签</div>
-              <div style="padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">购买按钮文案<input id="pfBuyButtonText" value="{{ productFormPage.item.adminProjection.buyButtonText }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">手机号要求<select id="pfRequireMobile" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"><sc-if value="{{ productFormPage.item.adminProjection.requireMobile }}"><option value="true" selected>要求填写</option><option value="false">不要求</option></sc-if><sc-if value="{{ productFormPage.requireMobileOff }}"><option value="false" selected>不要求</option><option value="true">要求填写</option></sc-if></select></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">引流项目 ID<input id="pfLeadProgramId" type="number" min="1" value="{{ productFormPage.item.adminProjection.leadProgramId }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">引流渠道 ID<input id="pfLeadChannelId" type="number" min="1" value="{{ productFormPage.item.adminProjection.leadChannelId }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">二维码标题<input id="pfLeadQrTitle" value="{{ productFormPage.item.adminProjection.leadQrTitle }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">二维码副标题<input id="pfLeadQrSubtitle" value="{{ productFormPage.item.adminProjection.leadQrSubtitle }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">完成后跳转<select id="pfCompletionRedirectEnabled" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"><sc-if value="{{ productFormPage.item.adminProjection.completionRedirectEnabled }}"><option value="true" selected>启用</option><option value="false">关闭</option></sc-if><sc-if value="{{ productFormPage.completionRedirectOff }}"><option value="false" selected>关闭</option><option value="true">启用</option></sc-if></select></label>
-                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">完成后地址<input id="pfCompletionRedirectUrl" value="{{ productFormPage.item.adminProjection.completionRedirectUrl }}" placeholder="https://... 或 /内部路径" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label>
-                <label style="grid-column:1/-1;display:grid;gap:6px;font-size:12px;color:#646A73">结构化跳转配置（JSON 对象）<textarea id="pfCompletionTarget" rows="4" style="border:1px solid #DEE0E3;border-radius:6px;padding:8px 10px">{{ productFormPage.completionTargetText }}</textarea></label>
-                <label style="grid-column:1/-1;display:grid;gap:6px;font-size:12px;color:#646A73">企微标签配置（JSON 对象）<textarea id="pfWecomTagging" rows="4" style="border:1px solid #DEE0E3;border-radius:6px;padding:8px 10px">{{ productFormPage.wecomTaggingText }}</textarea></label>
-              </div>
-            </div>
-            <div style="max-width:900px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
-              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">外部推送绑定</div>
-              <div style="padding:16px;display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px"><label style="display:grid;gap:6px;font-size:12px;color:#646A73">状态<select id="pfExternalPushEnabled" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"><sc-if value="{{ productFormPage.item.externalPush.enabled }}"><option value="true" selected>启用绑定</option><option value="false">关闭</option></sc-if><sc-if value="{{ productFormPage.externalPushOff }}"><option value="false" selected>关闭</option><option value="true">启用绑定</option></sc-if></select></label><label style="display:grid;gap:6px;font-size:12px;color:#646A73">配置引用<input id="pfExternalPushReference" value="{{ productFormPage.item.externalPush.configurationReference }}" placeholder="product-paid-notify" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px"></label><span style="grid-column:1/-1;font-size:12px;color:#8F959E">保存只更新 V2 本地配置；当前外部效果开关仍关闭，不会自动发送。</span></div>
-            </div>
-          </div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+  <div><div style="font-size:12px;color:#8F959E">交易 / 普通商品</div><div style="font-size:16px;font-weight:600">{{ productFormPage.title }}</div></div>
+  <div style="display:flex;gap:8px"><button onClick="{{ go.products }}">返回列表</button><button onClick="{{ productFormPage.save }}" style="border:0;background:#3370ff;color:#fff">保存商品</button></div>
+</div>
+<div style="flex:1;overflow:auto;padding:20px;display:grid;gap:12px;align-content:start">
+  <div style="max-width:900px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">商品当前信息</div>
+    <div style="padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+      <label>商品编码<input id="pfCode" value="{{ productFormPage.item.code }}"></label>
+      <label>商品名称<input id="pfName" value="{{ productFormPage.item.name }}"></label>
+      <label>价格（元）<input id="pfPrice" value="{{ productFormPage.item.price }}" inputmode="decimal"></label>
+      <label>币种<input id="pfCurrency" value="{{ productFormPage.item.currency }}" maxlength="3"></label>
+      <label>库存<input id="pfStock" type="number" min="0" value="{{ productFormPage.item.stockQuantity }}"></label>
+      <div style="font-size:12px;color:#8F959E;align-self:end;padding-bottom:10px">服务端版本：{{ productFormPage.item.version }} · 生命周期：{{ productFormPage.item.lifecycle }}</div>
+      <label style="grid-column:1/-1">描述<textarea id="pfDescription" rows="5">{{ productFormPage.item.description }}</textarea></label>
+    </div>
+  </div>
+  <div style="max-width:900px;padding:14px 16px;border:1px solid #F5D6A7;border-radius:8px;background:#FFF9F0;font-size:13px;color:#8F5A16">旧图片、素材、员工、标签和外部推送引用保持清空；保存只更新白名单商品当前态。</div>
+</div>

@@ -8,7 +8,6 @@
  */
 import type { AdminApi } from '../../shared/api/client';
 import type { RadarLink, RadarLinkInput, RadarMedia, RadarType } from '../../shared/api/types';
-import { exportRadarEventsCsv, readRadarEvents } from '../../api/admin';
 import { toast } from '../../shared/ui/feedback';
 import { openPicker } from '../../shared/ui/picker';
 import { downloadCsv } from '../../shared/ui/download';
@@ -134,7 +133,6 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
         <td class="num">${i.view_count.toLocaleString()}</td>
         <td class="muted">${esc(i.last_viewed_at.slice(5))}</td>
         <td><div class="row-actions">
-          <button class="link-btn" data-share="${i.id}">分享</button>
           <button class="link-btn" data-detail="${i.id}">详情</button>
           <button class="link-btn" data-edit="${i.id}">编辑</button>
           <button class="link-btn ${i.enabled ? 'red' : ''}" data-toggle="${i.id}">${i.enabled ? '停用' : '启用'}</button>
@@ -205,15 +203,9 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
     root.innerHTML = '<div class="card" style="padding:40px;text-align:center;color:#8F959E">雷达链接不存在</div>';
     return;
   }
-  let events = api.mode === 'http' ? await readRadarEvents(it.id) : await api.listRadarEvents(it.id);
+  let events: Awaited<ReturnType<AdminApi['listRadarEvents']>> = [];
   let url = '';
-  let shareError = '';
-  if (api.mode === 'http') {
-    try { url = radarShareUrl(await api.getRadarSharePath(it.id)); }
-    catch (error) { shareError = error instanceof Error ? error.message : '分享路径读取失败'; }
-  } else {
-    shareError = '测试/本地模式不使用 Mock 分享路径';
-  }
+  const shareError = '白名单阶段未配置分享投影';
   const shareNotice = url
     ? `<span id="dUrl">${esc(url)}</span><button class="link-btn" id="dCopyInline">复制</button>`
     : `<span class="muted"><strong>backend_blocked</strong>：${esc(shareError)}</span><button class="link-btn" id="dCopyInline" disabled>复制</button>`;
@@ -292,16 +284,9 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
 
   ['#dKeyword', '#dStart', '#dEnd'].forEach((s) => $(s).addEventListener('input', paintRows));
   $('#dRefresh').addEventListener('click', () => {
-    const button = $('#dRefresh') as HTMLButtonElement;
-    button.disabled = true;
-    const next = api.mode === 'http' ? readRadarEvents(it.id, currentTimeFilters()) : api.listRadarEvents(it.id);
-    void next.then((result) => {
-      events = result;
-      paintRows();
-      toast('已按当前时间条件刷新');
-    }).catch((error) => toast(error instanceof Error ? error.message : '雷达事件刷新失败', true)).finally(() => {
-      button.disabled = false;
-    });
+    events = [];
+    paintRows();
+    toast('白名单阶段不读取旧点击历史');
   });
   $('#dBack').addEventListener('click', () => {
     location.href = 'radar.html';
@@ -312,27 +297,12 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
   $('#dCopy').addEventListener('click', () => { if (url) copyText(url, toast); });
   $('#dCopyInline').addEventListener('click', () => { if (url) copyText(url, toast); });
   $('#dExport').addEventListener('click', () => {
-    if (api.mode === 'http') {
-      const button = $('#dExport') as HTMLButtonElement;
-      button.disabled = true;
-      void exportRadarEventsCsv(it.id, currentTimeFilters()).then((csv) => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = 'radar-events.csv';
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-        toast('已导出 CSV');
-      }).catch((error) => toast(error instanceof Error ? error.message : '雷达事件导出失败', true)).finally(() => {
-        button.disabled = false;
-      });
-      return;
-    }
     downloadCsv(
       'radar-events.csv',
       ['回执 ID', '事件阶段', '时间'],
       filteredEvents().map((e) => [e.unionid_masked, e.external_userid, e.created_at]),
     );
-    toast('已导出 CSV');
+    toast('已导出当前白名单事件（旧点击历史未迁移）');
   });
 
   paintRows();

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -54,6 +55,25 @@ func TestWhitelistGatewayExposesOnlyFrozenBusinessRoutes(t *testing.T) {
 		if response.Code != test.want {
 			t.Errorf("%s %s: status=%d want=%d", test.method, test.path, response.Code, test.want)
 		}
+	}
+}
+
+func TestWhitelistGatewayRejectedRouteReturnsJSON(t *testing.T) {
+	handler := whitelistGateway(http.NotFoundHandler(), func(context.Context) error { return nil })
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/admin/messages", nil))
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status=%d", response.Code)
+	}
+	if got := response.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("content-type=%q", got)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("body is not json: %v", err)
+	}
+	if body["code"] != "NOT_FOUND" || body["message"] == "" {
+		t.Fatalf("body=%v", body)
 	}
 }
 

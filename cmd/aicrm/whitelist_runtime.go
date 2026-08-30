@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -114,7 +115,12 @@ func whitelistGateway(next http.Handler, readinessCheck func(context.Context) er
 			next.ServeHTTP(writer, request)
 			return
 		}
-		http.NotFound(writer, request)
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(writer).Encode(map[string]string{
+			"code":    "NOT_FOUND",
+			"message": "The requested resource is not available in the whitelist runtime.",
+		})
 	})
 }
 

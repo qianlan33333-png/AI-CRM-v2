@@ -270,17 +270,9 @@ export class AdminController extends PageBase {
       this.state.miniProgramError = error instanceof Error ? error.message : '小程序素材读取失败';
     }
     if (this.page === 'audienceEdit') {
-      this.state.audienceTemplateError = '';
+      this.state.audienceTemplateError = '旧标签、员工和历史模板不迁移；有问题的人群包按新规则重新创建';
       this.state.audienceTemplatePreview = null;
       this.state.audienceTemplates = [];
-      if (this.api.mode === 'http') {
-        try {
-          this.state.audienceTemplates = await listAudienceTemplatesDto();
-          if (!this.state.audienceTemplates.some((template) => template.key === this.state.audienceTemplateKey)) this.state.audienceTemplateKey = this.state.audienceTemplates[0]?.key || 'active_contacts';
-        } catch (error) {
-          this.state.audienceTemplateError = error instanceof Error ? error.message : 'Audience 模板目录读取失败';
-        }
-      }
     }
     if (this.page === 'channelForm') {
       this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
@@ -293,14 +285,11 @@ export class AdminController extends PageBase {
       this.state.channelProviderBusy = false;
       this.state.channelProviderError = '';
     }
-    if (this.page === 'channelForm' && resourceId && !this.state.channelFormNotFound) {
-      const channelId = Number(resourceId);
-      if (Number.isSafeInteger(channelId) && channelId > 0) await this.loadChannelFormAcquisitionData(channelId);
-    } else if (this.page === 'channelForm') {
+    if (this.page === 'channelForm') {
       this.state.channelFormPreview = null;
       this.state.channelFormAssets = [];
-      this.state.channelFormPreviewError = '';
-      this.state.channelFormAssetError = '';
+      this.state.channelFormPreviewError = '员工和标签未配置';
+      this.state.channelFormAssetError = '素材未配置';
     }
     if (this.page === 'customers') {
       this.state.customerPage = 0;
@@ -1520,24 +1509,9 @@ export class AdminController extends PageBase {
     const input: import('../api/admin').ProductWriteInput = { id, code: value('Code'), name: value('Name'), description: value('Description'), price: value('Price'), currency: value('Currency') || 'CNY', stockQuantity: Number(value('Stock')) };
     if (!input.code || !input.name) { toast('商品编码和名称不能为空', true); return; }
     if (!Number.isInteger(input.stockQuantity) || input.stockQuantity < 0) { toast('库存必须是非负整数', true); return; }
-    {
-      const current = kind === 'product' ? this.db.rows.products.find((row) => row.resourceId === id) : this.db.rows.spProducts.find((row) => row.resourceId === id);
-      const projection = current?.adminProjection || { schemaVersion: 1 as const, status: 'draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] };
-      const optionalID = (name: string): number | null => { const raw = value(name); if (!raw) return null; const parsed = Number(raw); if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error(`${name} 必须是正整数`); return parsed; };
-      try {
-        const images = value('Images').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-        if (images.length > 20 || images.some((url) => url.length > 2048 || (!url.startsWith('/') && !/^https:\/\//.test(url)))) throw new Error('页面素材最多 20 条，且必须是同源路径或 HTTPS 地址');
-        const completionTarget = value('CompletionTarget') ? JSON.parse(value('CompletionTarget')) as Record<string, unknown> : null;
-        const wecomTagging = value('WecomTagging') ? JSON.parse(value('WecomTagging')) as Record<string, unknown> : {};
-        if ((completionTarget !== null && (Array.isArray(completionTarget) || typeof completionTarget !== 'object')) || Array.isArray(wecomTagging) || typeof wecomTagging !== 'object') throw new Error('跳转和企微标签配置必须是 JSON 对象');
-        input.images = images;
-        input.adminProjection = { ...projection, buyButtonText: value('BuyButtonText'), requireMobile: value('RequireMobile') === 'true', leadProgramId: optionalID('LeadProgramId'), leadChannelId: optionalID('LeadChannelId'), leadQrTitle: value('LeadQrTitle'), leadQrSubtitle: value('LeadQrSubtitle'), completionRedirectEnabled: value('CompletionRedirectEnabled') === 'true', completionRedirectUrl: value('CompletionRedirectUrl'), completionTarget, wecomTagging };
-        const pushEnabled = value('ExternalPushEnabled') === 'true';
-        const configurationReference = value('ExternalPushReference');
-        if (pushEnabled && !/^[A-Za-z0-9._:-]{1,128}$/.test(configurationReference)) throw new Error('启用外推时必须填写 1-128 位配置引用');
-        input.externalPush = { enabled: pushEnabled, configurationReference };
-      } catch (error) { toast(error instanceof Error ? error.message : '商品运营配置无效', true); return; }
-    }
+    const current = kind === 'product' ? this.db.rows.products.find((row) => row.resourceId === id) : this.db.rows.spProducts.find((row) => row.resourceId === id);
+    input.images = [];
+    input.adminProjection = current?.adminProjection ? { ...current.adminProjection, wecomTagging: {} } : undefined;
     const action = kind === 'product' ? this.api.saveProduct(input) : this.api.saveServiceProduct(input);
     void action.then((saved) => {
       toast(`${kind === 'product' ? '普通' : '周期'}商品已保存，服务端版本 ${saved.version || '—'}`);
@@ -1668,15 +1642,8 @@ export class AdminController extends PageBase {
     };
     if (!input.channel_name || !input.channel_code) return toast('渠道名称和编码不能为空', true);
     if ([...(input.welcome_image_library_ids || []), ...(input.welcome_miniprogram_library_ids || []), ...(input.welcome_attachment_library_ids || []), ...(input.welcome_group_invite_library_ids || [])].some((id) => !Number.isInteger(id) || id < 1)) return toast('素材引用必须是正整数 ID', true);
-    const assignment = input.channel_type === 'wecom_customer_acquisition' ? this.channelAssignmentInput(value) : {};
-    if (assignment.error) return toast(assignment.error, true);
-    void this.api.saveChannel(input).then(async (saved) => {
-      if (assignment.input) {
-        const channelId = saved.resourceId || input.id;
-        if (!channelId) throw new Error('渠道保存未返回服务端 ID，无法保存本地客服分配');
-        await this.api.updateChannelAcquisitionAssignees(channelId, assignment.input);
-      }
-      toast(assignment.input ? '渠道与本地分配配置已保存；未证明企微客服同步' : '渠道配置已保存（本地事实，不代表企微执行）');
+    void this.api.saveChannel(input).then(() => {
+      toast('渠道当前配置已保存；员工、标签和素材保持未配置，未调用 Provider');
       this.goto('channels');
     }).catch((error) => toast(error instanceof Error ? error.message : '渠道或本地分配配置保存失败', true));
   }
