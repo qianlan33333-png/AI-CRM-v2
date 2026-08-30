@@ -296,6 +296,7 @@ import {
 } from "./generated/p4-survey-compat/p4-survey-compat";
 import { type WechatShopRefundRequest } from "./generated/health.schemas";
 import {
+  downloadChannelQRCode,
   getChannelAcquisitionAsset,
   getChannelAcquisitionPreview,
   listChannelAcquisitionAssets,
@@ -888,7 +889,7 @@ export function channelPageDto(channel: LegacyChannelListItem | LegacyChannel): 
   const x = obj(channel);
   return {
     resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: text(x.channel_type, 'qrcode'), status: text(x.status), tone: toneFor(x.status),
-    mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'),
+    mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '') ? '下载二维码' : '生成/下载二维码',
     channelType: x.channel_type === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode', carrierType: x.carrier_type === 'link' ? 'link' : 'qrcode', sceneValue: text(x.scene_value, ''), qrUrl: text(x.qr_url, ''), ownerStaffId: text(x.owner_staff_id, ''), customerChannel: text(x.customer_channel, ''), linkUrl: text(x.link_url, ''), finalUrl: text(x.final_url, ''), shareUrl: text(x.share_url, ''), copyText: text(x.copy_text, ''),
     welcomeMessage: text(x.welcome_message, ''), welcomeImageLibraryIds: list(x, 'welcome_image_library_ids').map(Number), welcomeMiniprogramLibraryIds: list(x, 'welcome_miniprogram_library_ids').map(Number), welcomeAttachmentLibraryIds: list(x, 'welcome_attachment_library_ids').map(Number), welcomeGroupInviteLibraryIds: list(x, 'welcome_group_invite_library_ids').map(Number),
     autoAcceptFriend: x.auto_accept_friend === true, entryTagId: text(x.entry_tag_id, ''), entryTagName: text(x.entry_tag_name, ''), entryTagGroupName: text(x.entry_tag_group_name, ''), assignmentMode: x.assignment_mode === 'multi_staff' ? 'multi_staff' : 'single_owner', assignmentStrategy: x.assignment_strategy === 'cap_switch' ? 'cap_switch' : 'ratio', overflowPolicy: text(x.overflow_policy, ''), assignmentConfig: obj(x.assignment_config_json),
@@ -1096,6 +1097,12 @@ export async function getChannelAcquisitionAssetDto(channelId: number, effectId:
   const result = await call(getChannelAcquisitionAsset(channelId, effectId, apiRequestOptions()));
   const source = obj(result);
   return channelAcquisitionAssetDto(source.asset || source);
+}
+
+export async function downloadChannelQRCodeDto(channelId: number): Promise<Blob> {
+  const payload = await call(downloadChannelQRCode(channelId, apiRequestOptions()));
+  if (!(payload instanceof Blob) || payload.size === 0 || payload.type !== 'image/jpeg') throw new Error('后端未返回有效的 JPEG 二维码');
+  return payload;
 }
 
 export const channelAcquisitionAssetReady = (asset: ChannelAcquisitionAsset | null | undefined): boolean => asset?.state === 'executed' && (asset.kind === 'contact_way_qrcode' ? Boolean(asset.downloadUrl) : Boolean(asset.assetUrl?.trim()));

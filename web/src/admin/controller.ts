@@ -892,6 +892,58 @@ export class AdminController extends PageBase {
     copyText(asset!.kind === 'contact_way_qrcode' ? asset!.downloadUrl! : asset!.assetUrl!, (message, error) => toast(message, error));
   }
 
+  private async downloadChannelQRCode(channel: Channel, asset: ChannelAcquisitionAsset): Promise<void> {
+    if (!channel.resourceId || !channelAcquisitionAssetReady(asset)) throw new Error('二维码尚未生成完成');
+    const blob = await this.api.downloadChannelQRCode(channel.resourceId);
+    const url = URL.createObjectURL(blob);
+    try {
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `channel-${channel.resourceId}-qrcode.jpg`;
+      anchor.click();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  private generateOrDownloadChannelQRCode(channel: Channel): void {
+    const channelId = channel.resourceId;
+    if (!channelId || !Number.isSafeInteger(channelId) || channelId < 1) return toast('渠道缺少有效服务端 ID', true);
+    void (async () => {
+      const preview = await this.api.getChannelAcquisitionPreview(channelId);
+      if (!preview.assignees.length) {
+        this.openChannelDrawer(channelId);
+        throw new Error('请先在渠道编辑页配置至少一位企微客服');
+      }
+      let assets = await this.loadChannelAcquisitionAssets(channelId);
+      let current = assets.find((item) => item.kind === 'contact_way_qrcode');
+      if (current?.state === 'outcome_unknown') throw new Error('上一次二维码生成结果未知，请先人工对账');
+      if (current && channelAcquisitionAssetReady(current)) {
+        await this.downloadChannelQRCode(channel, current);
+        return;
+      }
+      if (!current || current.state === 'final_failed' || current.state === 'reconciled' || current.state === 'executed') {
+        current = await this.api.publishChannelAcquisitionAsset(channelId, 'contact_way_qrcode');
+        toast('二维码生成任务已提交');
+      }
+      for (let attempt = 0; attempt < 16; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 750));
+        current = await this.api.getChannelAcquisitionAsset(channelId, current.effectId);
+        assets = [current, ...assets.filter((item) => item.effectId !== current!.effectId)];
+        if (this.state.channelDrawerChannel?.resourceId === channelId) this.setState({ channelDrawerAssets: assets });
+        if (channelAcquisitionAssetReady(current)) {
+          await this.downloadChannelQRCode(channel, current);
+          toast('二维码已生成并开始下载');
+          return;
+        }
+        if (current.state === 'final_failed') throw new Error('企微未能生成二维码');
+        if (current.state === 'outcome_unknown') throw new Error('二维码生成结果未知，请人工对账');
+      }
+      this.openChannelDrawer(channelId);
+      toast('二维码仍在生成，可在渠道详情中查看状态', true);
+    })().catch((error) => toast(error instanceof Error ? error.message : '二维码生成或下载失败', true));
+  }
+
   private requestChannelAsset(channelId: number | undefined, kind: ChannelAcquisitionAsset['kind'], target: 'drawer' | 'form'): void {
     if (!channelId || !Number.isSafeInteger(channelId) || channelId < 1) return toast('渠道缺少有效服务端 ID', true);
     const busyKey = target === 'drawer' ? 'channelDrawerAssetBusy' : 'channelFormAssetBusy';
@@ -3055,6 +3107,7 @@ export class AdminController extends PageBase {
         chStats: rows.chStats,
         channels: rows.channels.map((r) => ({
           ...r,
+          qrAction: () => this.generateOrDownloadChannelQRCode(r),
           view: () => this.openChannelDrawer(r.resourceId),
           edit: () => this.goto('channelForm', r.resourceId == null ? '' : '?id=' + r.resourceId),
           cs: mk(r.tone), tcs: mk(r.tagTone), typeCs: mk('blue'), matCs: mk('gray'), welCs: mk('ok'),

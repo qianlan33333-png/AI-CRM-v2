@@ -156,16 +156,19 @@ func TestSchedulerPlanAddsCH02RecoveryOnlyWhenProviderEnabled(t *testing.T) {
 	}
 }
 
-func TestWhitelistMessageArchivePlanHasOneRegisteredSyncJob(t *testing.T) {
+func TestWhitelistPeriodicPlanRegistersOnlyEnabledJobs(t *testing.T) {
 	workers := platformjobqueue.NewWorkerRegistry()
 	if err := wecomarchive.RegisterWorker(workers, &wecomarchive.Service{}); err != nil {
 		t.Fatal(err)
 	}
-	plan, err := whitelistMessageArchivePeriodicPlan(workers)
+	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueCritical, &schedulerAcquisitionRecoveryWorker{}); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := whitelistPeriodicPlan(workers, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if jobs := plan.Jobs(); len(jobs) != 1 {
-		t.Fatalf("archive periodic jobs=%d, want 1", len(jobs))
+	if jobs := plan.Jobs(); len(jobs) != 2 {
+		t.Fatalf("whitelist periodic jobs=%d, want 2", len(jobs))
 	}
 }

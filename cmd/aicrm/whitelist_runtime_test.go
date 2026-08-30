@@ -59,13 +59,40 @@ func TestWhitelistGatewayExposesCurrentCapabilitiesWithoutExternalExecution(t *t
 		{http.MethodGet, "/api/admin/campaigns", http.StatusNotFound},
 		{http.MethodGet, "/api/admin/messages", http.StatusNotFound},
 		{http.MethodPost, "/api/admin/wechat-pay/products/41/external-push", http.StatusNotFound},
-		{http.MethodPost, "/api/admin/channels/3/qrcode/generate", http.StatusNotFound},
+		{http.MethodGet, "/api/admin/channels/3/contacts", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-preview", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-staff", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-assets", http.StatusNoContent},
+		{http.MethodPost, "/api/admin/channels/3/qrcode/generate", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/channels/3/qrcode/download", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/audience-history/packages", http.StatusNotFound},
 	} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(test.method, test.path, nil))
 		if response.Code != test.want {
 			t.Errorf("%s %s: status=%d want=%d", test.method, test.path, response.Code, test.want)
+		}
+	}
+}
+
+func TestWhitelistChannelAcquisitionRoutesReachFailClosedHandlers(t *testing.T) {
+	for _, route := range []struct{ method, path string }{
+		{http.MethodGet, "/api/admin/channels/3/acquisition-staff"},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-assets"},
+		{http.MethodPost, "/api/admin/channels/3/qrcode/generate"},
+		{http.MethodGet, "/api/admin/channels/3/qrcode/download"},
+	} {
+		if !whitelistRouteAllowed(route.method, route.path, whitelistCapabilities{}) {
+			t.Fatalf("channel acquisition route is blocked: %s", route.path)
+		}
+	}
+	for _, route := range []struct{ method, path string }{
+		{http.MethodGet, "/api/admin/channels/3/contacts"},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-preview"},
+		{http.MethodPut, "/api/admin/channels/3/assignees"},
+	} {
+		if !whitelistRouteAllowed(route.method, route.path, whitelistCapabilities{}) {
+			t.Fatalf("local channel route is blocked: %s %s", route.method, route.path)
 		}
 	}
 }

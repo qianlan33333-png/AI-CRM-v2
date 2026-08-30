@@ -93,25 +93,35 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 	return platformscheduler.Build(workers, definitions)
 }
 
-func whitelistMessageArchivePeriodicPlan(workers *platformjobqueue.WorkerRegistry) (*platformscheduler.Plan, error) {
-	schedule, err := platformscheduler.Every(wecomarchive.SyncPeriod)
-	if err != nil {
-		return nil, err
+func whitelistPeriodicPlan(workers *platformjobqueue.WorkerRegistry, archiveEnabled, customerAcquisitionEnabled bool) (*platformscheduler.Plan, error) {
+	definitions := make([]platformscheduler.Definition, 0, 2)
+	if archiveEnabled {
+		schedule, err := platformscheduler.Every(wecomarchive.SyncPeriod)
+		if err != nil {
+			return nil, err
+		}
+		definitions = append(definitions, platformscheduler.Definition{
+			ID: "wecom.message_archive.sync", Queue: platformjobqueue.QueueSync, Schedule: schedule, Args: wecomarchive.JobArgs{}, RunOnStart: true,
+		})
 	}
-	plan, err := platformscheduler.Build(workers, []platformscheduler.Definition{{
-		ID: "wecom.message_archive.sync", Queue: platformjobqueue.QueueSync, Schedule: schedule, Args: wecomarchive.JobArgs{}, RunOnStart: true,
-	}})
-	if err != nil {
-		return nil, err
+	if customerAcquisitionEnabled {
+		schedule, err := platformscheduler.Every(contactapp.ChannelAcquisitionAssetRecoveryPeriod)
+		if err != nil {
+			return nil, err
+		}
+		definitions = append(definitions, platformscheduler.Definition{
+			ID: "contact.acquisition_asset.attempted_recovery", Queue: platformjobqueue.QueueCritical,
+			Schedule: schedule, Args: contactapp.ChannelAcquisitionAssetRecoveryJobArgs{}, RunOnStart: true,
+		})
 	}
-	return plan, nil
+	return platformscheduler.Build(workers, definitions)
 }
 
-func newWhitelistJobQueueClient(pool *pgxpool.Pool, concurrency platformjobqueue.QueueConcurrency, workers *platformjobqueue.WorkerRegistry, archiveEnabled bool) (*platformjobqueue.Client, error) {
-	if !archiveEnabled {
+func newWhitelistJobQueueClient(pool *pgxpool.Pool, concurrency platformjobqueue.QueueConcurrency, workers *platformjobqueue.WorkerRegistry, archiveEnabled, customerAcquisitionEnabled bool) (*platformjobqueue.Client, error) {
+	if !archiveEnabled && !customerAcquisitionEnabled {
 		return platformjobqueue.NewClient(pool, concurrency, workers)
 	}
-	plan, err := whitelistMessageArchivePeriodicPlan(workers)
+	plan, err := whitelistPeriodicPlan(workers, archiveEnabled, customerAcquisitionEnabled)
 	if err != nil {
 		return nil, err
 	}

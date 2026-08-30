@@ -12,6 +12,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
@@ -51,6 +54,8 @@ var whitelistRoutePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/admin/questionnaires(?:/preflight|/[1-9][0-9]*(?:/(?:duplicate|disable|enable|results|submissions))?)?$`),
 	regexp.MustCompile(`^/api/admin/radar-links(?:/new/options|/[1-9][0-9]*(?:/(?:enable|disable))?)?$`),
 	regexp.MustCompile(`^/api/admin/channels(?:/[1-9][0-9]*)?$`),
+	regexp.MustCompile(`^/api/admin/channels/[1-9][0-9]*/(?:contacts|acquisition-preview|assignees)$`),
+	regexp.MustCompile(`^/api/admin/channels/[1-9][0-9]*/(?:acquisition-staff|qrcode/(?:generate|download)|acquisition-assets(?:/eer_[1-9][0-9]{0,18}(?:/reconcile)?)?)$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/(?:package-groups(?:/[1-9][0-9]*)?|packages(?:/[1-9][0-9]*(?:/(?:copy|pause|configuration|configuration-preview|configuration-materialize|members))?)?)$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/operation-members$`),
 	regexp.MustCompile(`^/api/admin/common/operation-members$`),
@@ -149,6 +154,51 @@ func newWhitelistWorkerComponent(config appconfig.Root) (appruntime.Component, e
 			return nil, serviceErr
 		}
 	}
+	if config.WeCom.CustomerAcquisition.Enabled {
+		uow := platformstore.NewUnitOfWork(pool)
+		externalEffectsRuntimeRepository := externaleffectsstore.NewRepository(pool, uow)
+		externalEffectsRuntime, runtimeErr := eer.NewService(externalEffectsRuntimeRepository)
+		if runtimeErr != nil {
+			pool.Close()
+			return nil, runtimeErr
+		}
+		acquisitionEffects, acquisitionErr := contactapp.NewChannelAcquisitionAssetEERRuntime(externalEffectsRuntime, externalEffectsRuntimeRepository)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionJobs, acquisitionErr := contactstore.NewChannelAcquisitionAssetRiverJobInserter(pool)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionProvider, acquisitionErr := newChannelAcquisitionAssetProvider(config.WeCom.CustomerAcquisition, &http.Client{Timeout: 5 * time.Second}, time.Now)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionStore := contactstore.NewChannelAcquisitionAssetRepository()
+		acquisitionService, acquisitionErr := contactapp.NewChannelAcquisitionAssetService(
+			uow, acquisitionStore, acquisitionEffects, acquisitionJobs, acquisitionProvider, config.WeCom.CustomerAcquisition.CorpID,
+		)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		if acquisitionErr = contactworker.RegisterChannelAcquisitionAssetWorker(workers, acquisitionService); acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionRecovery, acquisitionErr := contactapp.NewChannelAcquisitionAssetRecoveryService(uow, acquisitionStore, acquisitionJobs, time.Now)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		if acquisitionErr = contactworker.RegisterChannelAcquisitionAssetRecoveryWorker(workers, acquisitionRecovery); acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+	}
 	client, err := newWhitelistJobQueueClient(pool, platformjobqueue.QueueConcurrency{
 		Critical: queues.Critical,
 		Event:    queues.Event,
@@ -156,7 +206,7 @@ func newWhitelistWorkerComponent(config appconfig.Root) (appruntime.Component, e
 		Sync:     queues.Sync,
 		Heavy:    queues.Heavy,
 		AI:       queues.AI,
-	}, workers, config.WeCom.MessageArchive.Enabled)
+	}, workers, config.WeCom.MessageArchive.Enabled, config.WeCom.CustomerAcquisition.Enabled)
 	if err != nil {
 		pool.Close()
 		return nil, err

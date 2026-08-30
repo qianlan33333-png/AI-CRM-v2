@@ -7,6 +7,7 @@ import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
 import { getChannelHistoryDto } from './admin';
+import { downloadChannelQRCodeDto } from './admin';
 import type { LegacyQuestionnaire } from "./generated/health.schemas";
 import {
   getAddCustomerTagUrl,
@@ -776,6 +777,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   globalThis.fetch = async (input, init) => {
     acquisitionCalls.push({ input: String(input), init });
     const url = String(input);
+    if (url.endsWith('/qrcode/download')) return new Response(new Blob(['jpeg'], { type: 'image/jpeg' }), { status: 200, headers: { 'Content-Type': 'image/jpeg' } });
     if (url.endsWith('/acquisition-preview')) return new Response(JSON.stringify({ channel_id: 51, channel_code: 'new', channel_name: '新客', assignees: [{ wecom_userid: 'alice', display_name: 'Alice', status: 'active', priority: 1, ratio_percent: 100 }], lifecycle: { state: 'draft', entrant_ready: false, readiness_blockers: ['Provider 未执行'] }, qrcode: { status: 'not_generated', scene_value: '', url: '' }, share: { url: '', copy_text: '' }, local_only: true, provider_execution_eligible: false, real_external_call_executed: false }), { status: 200 });
     if (url.endsWith('/acquisition-staff')) return new Response(JSON.stringify({ channel_id: 51, items: [{ wecom_userid: 'alice', display_name: 'Alice', assigned: true, priority: 1, ratio_percent: 100 }], provider_source: 'wecom_follow_user_list', provider_read_succeeded: true, real_external_call_executed: false }), { status: 200 });
     if (url.endsWith('/assignees')) return new Response(JSON.stringify({ channel_id: 51, assignees: [{ wecom_userid: 'alice', display_name: 'Alice', status: 'active', priority: 1, ratio_percent: 60, max_scans_24h: 24 }], local_only: true, provider_execution_eligible: false, real_external_call_executed: false }), { status: 200 });
@@ -801,6 +803,8 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(qr.downloadUrl === '/api/admin/channels/51/qrcode/download' && channelAcquisitionAssetReady(qr), 'QR download path is bound to the response channel');
     const mismatchedQr = channelAcquisitionAssetDto({ effect_id: 'eer_qr_bad', channel_id: 51, kind: 'contact_way_qrcode', asset_version: 1, state: 'executed', entrant_ready: true, created_at: '', updated_at: '', download_url: '/api/admin/channels/52/qrcode/download' });
     assert(!mismatchedQr.downloadUrl && !channelAcquisitionAssetReady(mismatchedQr), 'cross-channel QR download path fails closed');
+    const qrBlob = await downloadChannelQRCodeDto(51);
+    assert(qrBlob.type === 'image/jpeg' && qrBlob.size > 0, 'QR download uses the generated same-origin blob operation');
     try { channelAcquisitionPreviewDto({ channel_id: 51, channel_code: 'new', channel_name: '新客', assignees: [], lifecycle: { state: 'draft', readiness_blockers: [] }, local_only: true, provider_execution_eligible: true, real_external_call_executed: false }); assert(false, 'unsafe acquisition preview must fail closed'); }
     catch (error) { assert(error instanceof Error && error.message.includes('本地-only'), 'unsafe acquisition preview fails closed'); }
   } finally { globalThis.fetch = savedFetch; }

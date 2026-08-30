@@ -2151,7 +2151,7 @@ console.log('admin/channels.html（HTTP 历史停用渠道列表）');
   const d = dom.window.document;
   const calls = dom.window.__channelHttpTest.calls;
   ok('历史渠道列表经真实 OpenAPI GET 显示停用定义', d.body.textContent.includes('V1 历史渠道') && d.body.textContent.includes('inactive') && calls.some((call) => call.path === '/api/admin/channels' && call.query.includes('limit=50') && call.query.includes('include_archived=true') && call.method === 'GET'));
-  ok('空旧二维码不伪造渠道资产或外部成功', d.body.textContent.includes('后端未返回二维码地址') && !d.body.textContent.includes('已执行') && !d.body.textContent.includes('Provider 已执行') && calls.every((call) => call.method === 'GET'));
+  ok('空旧二维码不伪造渠道资产或外部成功', d.body.textContent.includes('生成/下载二维码') && !d.body.textContent.includes('后端未返回二维码地址') && !d.body.textContent.includes('已执行') && !d.body.textContent.includes('Provider 已执行') && calls.every((call) => call.method === 'GET'));
   dom.window.close();
 }
 

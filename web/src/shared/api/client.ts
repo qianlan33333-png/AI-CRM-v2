@@ -47,7 +47,7 @@ import { SEED_DB, deepCopy } from './mockData';
 import { deleteProductDto, listHXCCurrentRowsDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
 import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
-import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, getChannelHistoryDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
+import { downloadChannelQRCodeDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, getChannelHistoryDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
 import { listGlobalQuestionnairePushLogsDto } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from "../../api/generated/health.schemas";
@@ -75,6 +75,7 @@ export interface AdminApi {
   listChannelAcquisitionAssets(channelId: number): Promise<ChannelAcquisitionAsset[]>;
   publishChannelAcquisitionAsset(channelId: number, kind: ChannelAcquisitionAssetKind): Promise<ChannelAcquisitionAsset>;
   getChannelAcquisitionAsset(channelId: number, effectId: string): Promise<ChannelAcquisitionAsset>;
+  downloadChannelQRCode(channelId: number): Promise<Blob>;
   exportWechatOrders(input: WechatOrderExportInput): Promise<Blob>;
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult>;
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]>;
@@ -354,6 +355,7 @@ export class MockApi implements AdminApi {
     return this.getChannel(channelId).then(() => delay({ effectId: `mock-eer-${Date.now()}`, channelId, kind, assetVersion: 1, state: 'queued', updatedAt: new Date().toISOString(), createdAt: new Date().toISOString(), entrantReady: false }));
   }
   getChannelAcquisitionAsset(_channelId: number, _effectId: string): Promise<ChannelAcquisitionAsset> { return Promise.reject(new Error('Mock 未保存获客资产回执')); }
+  downloadChannelQRCode(_channelId: number): Promise<Blob> { return Promise.reject(new Error('Mock 不提供企微二维码')); }
   saveChannel(input: ChannelWriteInput): Promise<Channel> { const item = input.id == null ? { resourceId: Date.now(), name: input.channel_name || '', code: input.channel_code || '', type: input.channel_type || 'qrcode', status: input.status || 'inactive', tone: 'warn' as const, mat: '—', tag: input.entry_tag_name || '—', tagTone: 'gray' as const, users: '0', qr: '' } : this.db.rows.channels.find((row) => row.resourceId === input.id)!; Object.assign(item, { name: input.channel_name, code: input.channel_code, channelType: input.channel_type, carrierType: input.carrier_type, status: input.status, sceneValue: input.scene_value, qrUrl: input.qr_url, ownerStaffId: input.owner_staff_id, customerChannel: input.customer_channel, linkUrl: input.link_url, finalUrl: input.final_url, welcomeMessage: input.welcome_message, welcomeImageLibraryIds: input.welcome_image_library_ids, welcomeMiniprogramLibraryIds: input.welcome_miniprogram_library_ids, welcomeAttachmentLibraryIds: input.welcome_attachment_library_ids, welcomeGroupInviteLibraryIds: input.welcome_group_invite_library_ids, autoAcceptFriend: input.auto_accept_friend, entryTagId: input.entry_tag_id, entryTagName: input.entry_tag_name, entryTagGroupName: input.entry_tag_group_name, assignmentMode: input.assignment_mode, assignmentStrategy: input.assignment_strategy, overflowPolicy: input.overflow_policy, assignmentConfig: input.assignment_config_json }); if (input.id == null) this.db.rows.channels.push(item); this.persist(); return delay(item); }
   exportWechatOrders(_input: WechatOrderExportInput): Promise<Blob> { return delay(new Blob(['local_id,provider,product_code,amount_minor,currency,status,created_at\n'], { type: 'text/csv' })); }
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { if (!input.checked || input.transactionIdConfirmation !== input.orderNo) return Promise.reject(new Error('必须勾选确认并完整输入当前订单号')); return delay({ id: `mock-refund-${input.orderNo}`, state: 'reserved', provider: input.provider, realExternalCallExecuted: false, deliveryProven: false }); }
@@ -850,6 +852,7 @@ export class HttpApi implements AdminApi {
   listChannelAcquisitionAssets(channelId: number): Promise<ChannelAcquisitionAsset[]> { return listChannelAcquisitionAssetsDto(channelId); }
   publishChannelAcquisitionAsset(channelId: number, kind: ChannelAcquisitionAssetKind): Promise<ChannelAcquisitionAsset> { return publishChannelAcquisitionAssetDto(channelId, kind); }
   getChannelAcquisitionAsset(channelId: number, effectId: string): Promise<ChannelAcquisitionAsset> { return getChannelAcquisitionAssetDto(channelId, effectId); }
+  downloadChannelQRCode(channelId: number): Promise<Blob> { return downloadChannelQRCodeDto(channelId); }
   exportWechatOrders(input: WechatOrderExportInput): Promise<Blob> { return exportWechatOrdersDto(input); }
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { return createRefundIntentDto(input); }
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { return saveHxcSenderDto(input); }
