@@ -248,3 +248,25 @@ func TestWhitelistBaselineContainsOnlyCurrentBusinessBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestWhitelistAuthenticationDoesNotDependOnLegacyStaffDirectory(t *testing.T) {
+	payload, err := os.ReadFile("../../internal/auth/store/queries/auth.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema := string(payload)
+	for _, query := range []string{"FindAdminUserForVerifiedLogin", "GetActiveSession"} {
+		start := strings.Index(schema, "-- name: "+query+" ")
+		if start < 0 {
+			t.Fatalf("missing auth query %s", query)
+		}
+		end := strings.Index(schema[start+1:], "-- name:")
+		section := schema[start:]
+		if end >= 0 {
+			section = schema[start : start+1+end]
+		}
+		if strings.Contains(section, "JOIN staff") {
+			t.Fatalf("whitelist auth query %s depends on legacy staff directory", query)
+		}
+	}
+}
