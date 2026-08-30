@@ -33,13 +33,16 @@ func (q *Queries) ClaimAdminOAuthState(ctx context.Context, arg ClaimAdminOAuthS
 }
 
 const findAdminUserForVerifiedLogin = `-- name: FindAdminUserForVerifiedLogin :one
-SELECT id, role, staff_id, session_version
-FROM admin_users
-WHERE auth_provider = $1
-  AND wecom_corp_id = $2
-  AND provider_subject_id = $3
-  AND is_active
-  AND login_enabled
+SELECT u.id, u.role, COALESCE(u.staff_id, s.id, 0)::bigint AS staff_id, u.session_version
+FROM admin_users AS u
+LEFT JOIN staff AS s
+  ON s.wecom_userid = u.provider_subject_id
+ AND s.is_active
+WHERE u.auth_provider = $1
+  AND u.wecom_corp_id = $2
+  AND u.provider_subject_id = $3
+  AND u.is_active
+  AND u.login_enabled
 `
 
 type FindAdminUserForVerifiedLoginParams struct {
@@ -49,10 +52,10 @@ type FindAdminUserForVerifiedLoginParams struct {
 }
 
 type FindAdminUserForVerifiedLoginRow struct {
-	ID             int64       `json:"id"`
-	Role           string      `json:"role"`
-	StaffID        pgtype.Int8 `json:"staff_id"`
-	SessionVersion int64       `json:"session_version"`
+	ID             int64  `json:"id"`
+	Role           string `json:"role"`
+	StaffID        int64  `json:"staff_id"`
+	SessionVersion int64  `json:"session_version"`
 }
 
 func (q *Queries) FindAdminUserForVerifiedLogin(ctx context.Context, arg FindAdminUserForVerifiedLoginParams) (FindAdminUserForVerifiedLoginRow, error) {
@@ -68,9 +71,12 @@ func (q *Queries) FindAdminUserForVerifiedLogin(ctx context.Context, arg FindAdm
 }
 
 const getActiveSession = `-- name: GetActiveSession :one
-SELECT u.id, u.role, u.staff_id
+SELECT u.id, u.role, COALESCE(u.staff_id, viewer.id, 0)::bigint AS staff_id
 FROM admin_sessions AS s
 JOIN admin_users AS u ON u.id = s.admin_user_id
+LEFT JOIN staff AS viewer
+  ON viewer.wecom_userid = u.provider_subject_id
+ AND viewer.is_active
 WHERE s.session_token_hash = $1
   AND s.revoked_at IS NULL
   AND s.expires_at > $2
@@ -85,9 +91,9 @@ type GetActiveSessionParams struct {
 }
 
 type GetActiveSessionRow struct {
-	ID      int64       `json:"id"`
-	Role    string      `json:"role"`
-	StaffID pgtype.Int8 `json:"staff_id"`
+	ID      int64  `json:"id"`
+	Role    string `json:"role"`
+	StaffID int64  `json:"staff_id"`
 }
 
 func (q *Queries) GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error) {

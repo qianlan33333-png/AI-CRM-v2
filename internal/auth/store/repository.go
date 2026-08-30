@@ -52,7 +52,7 @@ func (repository *Repository) FindVerifiedLogin(ctx context.Context, login authp
 		return LoginUser{}, err
 	}
 	return LoginUser{
-		Principal:      authport.Principal{AdminUserID: row.ID, Role: authport.Role(row.Role), StaffID: int64Pointer(row.StaffID)},
+		Principal:      authport.Principal{AdminUserID: row.ID, Role: authport.Role(row.Role), StaffID: positiveInt64Pointer(row.StaffID)},
 		SessionVersion: row.SessionVersion,
 	}, nil
 }
@@ -78,7 +78,7 @@ func (repository *Repository) GetActive(ctx context.Context, tokenHash []byte, n
 	if err != nil {
 		return authport.Principal{}, err
 	}
-	return authport.Principal{AdminUserID: row.ID, Role: authport.Role(row.Role), StaffID: int64Pointer(row.StaffID)}, nil
+	return authport.Principal{AdminUserID: row.ID, Role: authport.Role(row.Role), StaffID: positiveInt64Pointer(row.StaffID)}, nil
 }
 
 func (repository *Repository) ValidateCSRF(ctx context.Context, tokenHash, csrfHash []byte, now time.Time) (bool, error) {
@@ -177,5 +177,13 @@ func int64Pointer(value pgtype.Int8) *int64 {
 		return nil
 	}
 	result := value.Int64
+	return &result
+}
+
+func positiveInt64Pointer(value int64) *int64 {
+	if value < 1 {
+		return nil
+	}
+	result := value
 	return &result
 }

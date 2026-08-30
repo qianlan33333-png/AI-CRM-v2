@@ -1,11 +1,14 @@
 -- name: FindAdminUserForVerifiedLogin :one
-SELECT id, role, staff_id, session_version
-FROM admin_users
-WHERE auth_provider = sqlc.arg(auth_provider)
-  AND wecom_corp_id = sqlc.arg(wecom_corp_id)
-  AND provider_subject_id = sqlc.arg(provider_subject_id)
-  AND is_active
-  AND login_enabled;
+SELECT u.id, u.role, COALESCE(u.staff_id, s.id, 0)::bigint AS staff_id, u.session_version
+FROM admin_users AS u
+LEFT JOIN staff AS s
+  ON s.wecom_userid = u.provider_subject_id
+ AND s.is_active
+WHERE u.auth_provider = sqlc.arg(auth_provider)
+  AND u.wecom_corp_id = sqlc.arg(wecom_corp_id)
+  AND u.provider_subject_id = sqlc.arg(provider_subject_id)
+  AND u.is_active
+  AND u.login_enabled;
 
 -- name: InsertAdminSession :exec
 INSERT INTO admin_sessions (
@@ -18,9 +21,12 @@ INSERT INTO admin_sessions (
 );
 
 -- name: GetActiveSession :one
-SELECT u.id, u.role, u.staff_id
+SELECT u.id, u.role, COALESCE(u.staff_id, viewer.id, 0)::bigint AS staff_id
 FROM admin_sessions AS s
 JOIN admin_users AS u ON u.id = s.admin_user_id
+LEFT JOIN staff AS viewer
+  ON viewer.wecom_userid = u.provider_subject_id
+ AND viewer.is_active
 WHERE s.session_token_hash = sqlc.arg(session_token_hash)
   AND s.revoked_at IS NULL
   AND s.expires_at > sqlc.arg(now)

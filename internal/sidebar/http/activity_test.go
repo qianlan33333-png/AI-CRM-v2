@@ -119,7 +119,8 @@ func TestActivityHandlerFailsClosedWhenReadUnavailable(t *testing.T) {
 
 func sidebarActivityHandler(t *testing.T) (*ActivityHandler, *sidebarActivityTimelineFake, *sidebarActivityChatFake, string, context.Context) {
 	t.Helper()
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	staff := int64(7)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staff}
 	profiles := thumbnailProfiles{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
 	contextService, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, &thumbnailMedia{}, []byte("01234567890123456789012345678901"))
 	if err != nil {

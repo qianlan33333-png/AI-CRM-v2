@@ -352,7 +352,11 @@ func (service *Service) resolveContext(ctx context.Context, principal authport.P
 	if resolved.Status != identityport.ResolveFound || resolved.CustomerID < 1 {
 		return resolvedContext{result: ContextResult{State: "customer_not_bound", Safety: localSafety()}}, nil
 	}
-	profile, err := service.profiles.ResolveSidebarProfile(ctx, resolved.CustomerID)
+	viewerStaffID, ok := sidebarViewerStaffID(principal)
+	if !ok {
+		return resolvedContext{result: ContextResult{State: "viewer_session_required", Safety: localSafety()}}, nil
+	}
+	profile, err := service.profiles.ReadSidebarProfile(ctx, resolved.CustomerID, viewerStaffID)
 	if err != nil {
 		return resolvedContext{}, bootstrapFailure("profile", mapDependencyError(err))
 	}
@@ -393,7 +397,11 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	if claims.CorpID != corpID {
 		return Scope{}, ErrTokenInvalid
 	}
-	profile, err := service.profiles.ResolveSidebarProfile(ctx, contactport.CustomerID(claims.CustomerID))
+	viewerStaffID, ok := sidebarViewerStaffID(principal)
+	if !ok {
+		return Scope{}, ErrForbidden
+	}
+	profile, err := service.profiles.ReadSidebarProfile(ctx, contactport.CustomerID(claims.CustomerID), viewerStaffID)
 	if errors.Is(err, contactport.ErrSidebarProfileNotFound) {
 		return Scope{}, ErrTokenInvalid
 	}
@@ -403,7 +411,7 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	if int64(profile.CustomerID) != claims.CustomerID {
 		return Scope{}, ErrTokenInvalid
 	}
-	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: profile.OwnerStaffID, Principal: principal}, nil
+	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: viewerStaffID, Principal: principal}, nil
 }
 
 func (service *Service) Profile(ctx context.Context, scope Scope) (ProfileResult, error) {
@@ -560,6 +568,13 @@ func (service *Service) workbenchWithProfile(ctx context.Context, scope Scope, p
 
 func validPrincipal(value authport.Principal) bool {
 	return value.AdminUserID > 0 && (value.Role == authport.RoleAdmin || value.Role == authport.RoleOps || value.Role == authport.RoleSales) && (value.Role != authport.RoleSales || value.StaffID != nil && *value.StaffID > 0)
+}
+
+func sidebarViewerStaffID(value authport.Principal) (int64, bool) {
+	if value.StaffID == nil || *value.StaffID < 1 {
+		return 0, false
+	}
+	return *value.StaffID, true
 }
 
 func validExternalUserID(value string) bool {

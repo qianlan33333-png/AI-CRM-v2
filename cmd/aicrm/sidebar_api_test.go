@@ -227,7 +227,7 @@ func TestPublicSidebarProductRouteIsUnauthenticatedReadOnlyHTML(t *testing.T) {
 func TestFinalSidebarContextRouteOptionalSessionRBACAndEnumerationSafety(t *testing.T) {
 	staffID := int64(7)
 	authService := &sidebarRouteAuth{
-		principal:     authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin},
+		principal:     authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staffID},
 		authorization: authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal},
 	}
 	authHandler, err := authhttp.NewHandler(authService)

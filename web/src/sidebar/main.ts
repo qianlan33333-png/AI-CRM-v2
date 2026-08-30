@@ -8,7 +8,7 @@ import { newSidebarIdempotencyKey, sidebarApi } from "../api/sidebar";
 import type {
   SidebarAgentConfigSignature,
   SidebarJSSDKConfig,
-  SidebarBootstrapResponse,
+  SidebarContextResponse,
   SidebarChatActivityResponse,
   SidebarOtherStaffChatResponse,
   SidebarMaterialResponse,
@@ -55,7 +55,6 @@ const PROFILE_LABELS: Record<ProfileField, string> = {
 
 type BoundSidebarApi = Pick<
   typeof sidebarApi,
-  | "bootstrap"
   | "mintContext"
   | "agentConfig"
   | "oauthStartUrl"
@@ -119,6 +118,11 @@ type ReceiptStep = {
 type TemporaryMediaOperation = {
   idempotencyKey: string;
   requiresManualConfirmation: boolean;
+};
+
+type SidebarInitialLoad = {
+  context: SidebarContextResponse;
+  workbench?: SidebarWorkbenchResponse;
 };
 
 type SidebarTab =
@@ -395,7 +399,7 @@ export class SidebarController {
   private initializationVersion = 0;
   private tabRequestController = new AbortController();
   private readonly bootstrapCoordinator =
-    new SidebarBootstrapCoordinator<SidebarBootstrapResponse>();
+    new SidebarBootstrapCoordinator<SidebarInitialLoad>();
   private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
   private readonly thumbnailURLs = new Map<number, string>();
   private phoneBindingLoading = false;
@@ -608,29 +612,29 @@ export class SidebarController {
     this.externalUserId = externalUserid;
     this.setContextStatus("正在读取客户范围的本地工作台…");
     try {
-      const bootstrap = await this.bootstrap(externalUserid);
+      const initial = await this.loadInitialWorkbench(externalUserid);
       if (initializationVersion !== this.initializationVersion) return;
-      if (bootstrap.state === "viewer_session_required") {
+      if (initial.context.state === "viewer_session_required") {
         this.renderViewerSessionRequired();
         return;
       }
-      if (bootstrap.state === "customer_not_bound") {
-        this.renderContextError("当前员工无权查看该客户，客户上下文未建立。");
+      if (initial.context.state === "customer_not_bound") {
+        this.renderContextError("当前客户尚未建立 CRM 身份映射。");
         return;
       }
       if (
-        bootstrap.state !== "ready" ||
-        !bootstrap.context_token ||
-        !bootstrap.workbench
+        initial.context.state !== "ready" ||
+        !initial.context.context_token ||
+        !initial.workbench
       ) {
         this.renderContextError(
-          `Sidebar 上下文不可用：${bootstrap.state || "unknown"}`,
+          `Sidebar 上下文不可用：${initial.context.state || "unknown"}`,
         );
         return;
       }
-      this.contextToken = bootstrap.context_token;
+      this.contextToken = initial.context.context_token;
       this.degradedReady = false;
-      this.renderWorkbench(bootstrap.workbench);
+      this.renderWorkbench(initial.workbench);
       if (externalUserid) {
         this.setContextStatus(
           "客户画像已就绪；企微 JSSDK 正在并行初始化。",
@@ -660,10 +664,19 @@ export class SidebarController {
     }
   }
 
-  private bootstrap(externalUserId: string): Promise<SidebarBootstrapResponse> {
-    return this.bootstrapCoordinator.run(externalUserId, (signal) =>
-      this.api.bootstrap({ external_userid: externalUserId }, signal),
-    );
+  private loadInitialWorkbench(
+    externalUserId: string,
+  ): Promise<SidebarInitialLoad> {
+    return this.bootstrapCoordinator.run(externalUserId, async (signal) => {
+      const context = await this.api.mintContext(
+        { external_userid: externalUserId },
+        signal,
+      );
+      if (context.state !== "ready" || !context.context_token)
+        return { context };
+      const workbench = await this.api.workbench(context.context_token, signal);
+      return { context, workbench };
+    });
   }
 
   private cancelTabRequests(): void {
