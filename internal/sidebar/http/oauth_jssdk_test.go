@@ -55,27 +55,31 @@ func TestSidebarOAuthStartOnlyAcceptsV2SidebarReturnPath(t *testing.T) {
 	}
 }
 
-func TestSidebarAgentConfigHTTPUsesOnlyAgentConfigSignature(t *testing.T) {
+func TestSidebarAgentConfigHTTPReturnsConfigThenAgentConfigSignatures(t *testing.T) {
 	now := time.Date(2026, time.August, 26, 8, 0, 0, 0, time.UTC)
-	provider := &httpAgentConfigProvider{ticket: sidebarapp.AgentConfigTicket{Value: "agent-config-ticket", ExpiresAt: now.Add(2 * time.Hour)}}
+	provider := &httpAgentConfigProvider{
+		configTicket: sidebarapp.AgentConfigTicket{Value: "config-ticket", ExpiresAt: now.Add(2 * time.Hour)},
+		agentTicket:  sidebarapp.AgentConfigTicket{Value: "agent-config-ticket", ExpiresAt: now.Add(2 * time.Hour)},
+	}
 	service, err := sidebarapp.NewJSSDKService(sidebarapp.JSSDKServiceConfig{
 		Enabled: true, CorpID: "corp-1", AgentID: 73, AllowedHosts: []string{"crm.example.test"},
-	}, provider, sidebarapp.JSSDKOptions{Clock: func() time.Time { return now }, Random: bytes.NewReader(bytes.Repeat([]byte{1}, 16))})
+	}, provider, sidebarapp.JSSDKOptions{Clock: func() time.Time { return now }, Random: bytes.NewReader(bytes.Repeat([]byte{1}, 32))})
 	if err != nil {
 		t.Fatal(err)
 	}
 	query := url.Values{"url": {"https://crm.example.test/sidebar#fragment"}}
 	response := httptest.NewRecorder()
 	NewJSSDKHandler(service).AgentConfig(response, httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/jssdk/agent-config?"+query.Encode(), nil))
-	if response.Code != http.StatusOK || provider.calls != 1 || response.Header().Get("Cache-Control") != "private, no-store" {
-		t.Fatalf("agent config status/calls/cache = %d/%d/%q", response.Code, provider.calls, response.Header().Get("Cache-Control"))
+	if response.Code != http.StatusOK || provider.configCalls != 1 || provider.agentCalls != 1 || response.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatalf("jssdk config status/calls/cache = %d/%d/%d/%q", response.Code, provider.configCalls, provider.agentCalls, response.Header().Get("Cache-Control"))
 	}
 	body := append([]byte(nil), response.Body.Bytes()...)
-	var got sidebarapp.AgentConfigSignature
+	var got sidebarapp.JSSDKConfig
 	if err = json.Unmarshal(body, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.SignatureType != "agent_config" || got.URL != "https://crm.example.test/sidebar" || !bytes.Contains(body, []byte(`"signature_type":"agent_config"`)) || bytes.Contains(body, []byte("agent-config-ticket")) {
+	if got.Config.SignatureType != "config" || got.AgentConfig.SignatureType != "agent_config" || got.Config.URL != "https://crm.example.test/sidebar" || got.AgentConfig.URL != got.Config.URL ||
+		!bytes.Contains(body, []byte(`"signature_type":"config"`)) || !bytes.Contains(body, []byte(`"signature_type":"agent_config"`)) || bytes.Contains(body, []byte("config-ticket")) {
 		t.Fatalf("agent config response = %+v body=%q", got, body)
 	}
 }
@@ -97,17 +101,24 @@ func TestSidebarAgentConfigHTTPDisabledOrInvalidNeverCallsProvider(t *testing.T)
 	}
 	response = httptest.NewRecorder()
 	NewJSSDKHandler(service).AgentConfig(response, httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/jssdk/agent-config?url=https%3A%2F%2Fevil.example%2Fsidebar", nil))
-	if response.Code != http.StatusBadRequest || provider.calls != 0 {
-		t.Fatalf("invalid status/calls = %d/%d", response.Code, provider.calls)
+	if response.Code != http.StatusBadRequest || provider.configCalls != 0 || provider.agentCalls != 0 {
+		t.Fatalf("invalid status/calls = %d/%d/%d", response.Code, provider.configCalls, provider.agentCalls)
 	}
 }
 
 type httpAgentConfigProvider struct {
-	ticket sidebarapp.AgentConfigTicket
-	calls  int
+	configTicket sidebarapp.AgentConfigTicket
+	agentTicket  sidebarapp.AgentConfigTicket
+	configCalls  int
+	agentCalls   int
+}
+
+func (provider *httpAgentConfigProvider) FetchConfigTicket(context.Context) (sidebarapp.AgentConfigTicket, error) {
+	provider.configCalls++
+	return provider.configTicket, nil
 }
 
 func (provider *httpAgentConfigProvider) FetchAgentConfigTicket(context.Context) (sidebarapp.AgentConfigTicket, error) {
-	provider.calls++
-	return provider.ticket, nil
+	provider.agentCalls++
+	return provider.agentTicket, nil
 }

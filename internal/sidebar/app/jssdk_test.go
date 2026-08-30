@@ -11,12 +11,15 @@ import (
 	"time"
 )
 
-func TestAgentConfigUsesDeterministicCanonicalSignatureAndStripsFragment(t *testing.T) {
+func TestAgentConfigUsesTwoDeterministicSignaturesAndStripsFragment(t *testing.T) {
 	now := time.Date(2026, time.August, 25, 10, 0, 0, 0, time.UTC)
-	provider := &agentConfigProviderFake{ticket: AgentConfigTicket{Value: "ticket-fixture", ExpiresAt: now.Add(2 * time.Hour)}}
+	provider := &agentConfigProviderFake{
+		configTicket: AgentConfigTicket{Value: "config-ticket-fixture", ExpiresAt: now.Add(2 * time.Hour)},
+		agentTicket:  AgentConfigTicket{Value: "agent-ticket-fixture", ExpiresAt: now.Add(2 * time.Hour)},
+	}
 	service, err := NewJSSDKService(JSSDKServiceConfig{
 		Enabled: true, CorpID: "corp-1", AgentID: 73, AllowedHosts: []string{"CRM.EXAMPLE.TEST"},
-	}, provider, JSSDKOptions{Clock: func() time.Time { return now }, Random: bytes.NewReader(bytes.Repeat([]byte{0x11}, 16))})
+	}, provider, JSSDKOptions{Clock: func() time.Time { return now }, Random: bytes.NewReader(bytes.Repeat([]byte{0x11}, 32))})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,13 +27,14 @@ func TestAgentConfigUsesDeterministicCanonicalSignatureAndStripsFragment(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.SignatureType != "agent_config" || result.CorpID != "corp-1" || result.AgentID != 73 || result.Nonce != "EREREREREREREREREREREQ" || result.Timestamp != 1787652000 ||
-		result.URL != "https://crm.example.test/sidebar?tab=profile%2Fone" || result.Signature != "0296c52a3932efcf6ed973f72cd247830ed8bf31" ||
-		!result.TicketExpiresAt.Equal(now.Add(2*time.Hour)) || provider.calls.Load() != 1 {
-		t.Fatalf("AgentConfig()=%+v provider_calls=%d", result, provider.calls.Load())
+	if result.CorpID != "corp-1" || result.AgentID != 73 || result.Config.SignatureType != "config" || result.AgentConfig.SignatureType != "agent_config" ||
+		result.Config.Nonce != "EREREREREREREREREREREQ" || result.AgentConfig.Nonce != "EREREREREREREREREREREQ" || result.Config.Timestamp != 1787652000 ||
+		result.Config.URL != "https://crm.example.test/sidebar?tab=profile%2Fone" || result.AgentConfig.URL != result.Config.URL ||
+		!result.Config.TicketExpiresAt.Equal(now.Add(2*time.Hour)) || !result.AgentConfig.TicketExpiresAt.Equal(now.Add(2*time.Hour)) || provider.configCalls.Load() != 1 || provider.agentCalls.Load() != 1 {
+		t.Fatalf("AgentConfig()=%+v provider_calls=%d/%d", result, provider.configCalls.Load(), provider.agentCalls.Load())
 	}
-	wantCanonical := "jsapi_ticket=ticket-fixture&noncestr=EREREREREREREREREREREQ&timestamp=1787652000&url=https://crm.example.test/sidebar?tab=profile%2Fone"
-	if canonical := canonicalJSSDKString("ticket-fixture", result.Nonce, result.Timestamp, result.URL); canonical != wantCanonical {
+	wantCanonical := "jsapi_ticket=config-ticket-fixture&noncestr=EREREREREREREREREREREQ&timestamp=1787652000&url=https://crm.example.test/sidebar?tab=profile%2Fone"
+	if canonical := canonicalJSSDKString("config-ticket-fixture", result.Config.Nonce, result.Config.Timestamp, result.Config.URL); canonical != wantCanonical {
 		t.Fatalf("canonical string = %q", canonical)
 	}
 	encoded, err := json.Marshal(result)
@@ -57,8 +61,8 @@ func TestAgentConfigRejectsUnsafeOrUnallowedURLsBeforeProvider(t *testing.T) {
 			}
 		})
 	}
-	if provider.calls.Load() != 0 {
-		t.Fatalf("unsafe URL provider calls = %d", provider.calls.Load())
+	if provider.configCalls.Load() != 0 || provider.agentCalls.Load() != 0 {
+		t.Fatalf("unsafe URL provider calls = %d/%d", provider.configCalls.Load(), provider.agentCalls.Load())
 	}
 }
 
@@ -182,13 +186,27 @@ func TestJSSDKEnabledConfigurationFailsClosed(t *testing.T) {
 }
 
 type agentConfigProviderFake struct {
-	ticket AgentConfigTicket
-	err    error
-	calls  atomic.Int32
+	ticket       AgentConfigTicket
+	configTicket AgentConfigTicket
+	agentTicket  AgentConfigTicket
+	err          error
+	configCalls  atomic.Int32
+	agentCalls   atomic.Int32
+}
+
+func (provider *agentConfigProviderFake) FetchConfigTicket(context.Context) (AgentConfigTicket, error) {
+	provider.configCalls.Add(1)
+	if provider.configTicket.Value != "" {
+		return provider.configTicket, provider.err
+	}
+	return provider.ticket, provider.err
 }
 
 func (provider *agentConfigProviderFake) FetchAgentConfigTicket(context.Context) (AgentConfigTicket, error) {
-	provider.calls.Add(1)
+	provider.agentCalls.Add(1)
+	if provider.agentTicket.Value != "" {
+		return provider.agentTicket, provider.err
+	}
 	return provider.ticket, provider.err
 }
 
@@ -197,6 +215,10 @@ type blockingAgentConfigProvider struct {
 	release chan struct{}
 	ticket  AgentConfigTicket
 	calls   atomic.Int32
+}
+
+func (provider *blockingAgentConfigProvider) FetchConfigTicket(context.Context) (AgentConfigTicket, error) {
+	return provider.FetchAgentConfigTicket(context.Background())
 }
 
 func (provider *blockingAgentConfigProvider) FetchAgentConfigTicket(context.Context) (AgentConfigTicket, error) {
@@ -215,6 +237,10 @@ type agentConfigProviderResult struct {
 type sequenceAgentConfigProvider struct {
 	results []agentConfigProviderResult
 	calls   int
+}
+
+func (provider *sequenceAgentConfigProvider) FetchConfigTicket(ctx context.Context) (AgentConfigTicket, error) {
+	return provider.FetchAgentConfigTicket(ctx)
 }
 
 func (provider *sequenceAgentConfigProvider) FetchAgentConfigTicket(context.Context) (AgentConfigTicket, error) {

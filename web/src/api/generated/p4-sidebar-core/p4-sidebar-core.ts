@@ -16,9 +16,9 @@ import type {
   MintSidebarContextBody,
   NotFoundResponse,
   ServiceUnavailableResponse,
-  SidebarAgentConfigSignature,
   SidebarBootstrapResponse,
   SidebarContextResponse,
+  SidebarJSSDKConfig,
   SidebarPhoneBindingResponse,
   SidebarProfileUpdateResponse,
   SidebarWorkbenchResponse,
@@ -301,10 +301,10 @@ export const completeSidebarOAuth = async (
 };
 
 /**
- * @summary Sign one allowed Sidebar URL with a WeCom agent_config ticket
+ * @summary Sign one allowed Sidebar URL for wx.config and wx.agentConfig
  */
 export type getSidebarAgentConfigResponse200 = {
-  data: SidebarAgentConfigSignature;
+  data: SidebarJSSDKConfig;
   status: 200;
 };
 

@@ -13,13 +13,12 @@ import (
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 )
 
-const tokenVersion = 2
+const tokenVersion = 3
 
 type tokenClaims struct {
 	Version            int           `json:"v"`
 	CorpID             string        `json:"corp_id"`
 	CustomerID         int64         `json:"customer_id"`
-	OwnerStaffID       int64         `json:"owner_staff_id"`
 	AdminUserID        int64         `json:"admin_user_id"`
 	Role               authport.Role `json:"role"`
 	SessionFingerprint string        `json:"session_fingerprint"`
@@ -82,8 +81,7 @@ func (codec *tokenCodec) decode(value string) (tokenClaims, error) {
 }
 
 func validClaims(claims tokenClaims) bool {
-	ownerValid := claims.OwnerStaffID > 0 || claims.OwnerStaffID == 0 && (claims.Role == authport.RoleAdmin || claims.Role == authport.RoleOps)
-	return claims.Version == tokenVersion && claims.CorpID != "" && claims.CustomerID > 0 && ownerValid &&
+	return claims.Version == tokenVersion && claims.CorpID != "" && claims.CustomerID > 0 &&
 		claims.AdminUserID > 0 && (claims.Role == authport.RoleAdmin || claims.Role == authport.RoleOps || claims.Role == authport.RoleSales) &&
 		validSessionFingerprint(claims.SessionFingerprint) && !claims.IssuedAt.IsZero() && claims.ExpiresAt.After(claims.IssuedAt)
 }

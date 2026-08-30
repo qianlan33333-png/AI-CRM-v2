@@ -58,16 +58,15 @@ func NewActivityService(timeline contactport.Customer360Reader, chats customer36
 }
 
 func (service *ActivityService) Timeline(ctx context.Context, scope Scope, cursor string, limit int32) (TimelineActivityPage, error) {
-	if ctx == nil || scope.CustomerID < 1 || scope.OwnerStaffID < 1 || !validActivityPageInput(cursor, limit) {
+	if ctx == nil || scope.CustomerID < 1 || !validActivityPageInput(cursor, limit) {
 		return TimelineActivityPage{}, ErrInvalidInput
 	}
 	if service == nil || nilActivityDependency(service.timeline) {
 		return TimelineActivityPage{}, ErrUnavailable
 	}
 	limit = normalizeTimelineActivityLimit(limit)
-	owner := scope.OwnerStaffID
 	read, err := service.timeline.ReadCustomer360(ctx, contactport.Customer360ReadInput{
-		CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: &owner, TimelineCursor: cursor, TimelineLimit: limit,
+		CustomerID: contactport.CustomerID(scope.CustomerID), TimelineCursor: cursor, TimelineLimit: limit,
 	})
 	if err != nil {
 		return TimelineActivityPage{}, mapActivityError(err)
@@ -95,7 +94,7 @@ func (service *ActivityService) Timeline(ctx context.Context, scope Scope, curso
 }
 
 func (service *ActivityService) Chat(ctx context.Context, scope Scope, chatType, cursor string, limit int32) (ChatActivityPage, error) {
-	if ctx == nil || scope.CustomerID < 1 || scope.OwnerStaffID < 1 || !validActivityPageInput(cursor, limit) ||
+	if ctx == nil || scope.CustomerID < 1 || !validActivityPageInput(cursor, limit) ||
 		(chatType != "" && chatType != "private" && chatType != "group") {
 		return ChatActivityPage{}, ErrInvalidInput
 	}
@@ -103,9 +102,8 @@ func (service *ActivityService) Chat(ctx context.Context, scope Scope, chatType,
 		return ChatActivityPage{}, ErrUnavailable
 	}
 	limit = normalizeChatActivityLimit(limit)
-	owner := scope.OwnerStaffID
 	page, err := service.chats.ListCustomerChatActivity(ctx, customer360port.CustomerChatActivityQuery{
-		CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: &owner, ChatType: chatType, Cursor: cursor, Limit: limit,
+		CustomerID: contactport.CustomerID(scope.CustomerID), ChatType: chatType, Cursor: cursor, Limit: limit,
 	})
 	if err != nil {
 		return ChatActivityPage{}, mapActivityError(err)

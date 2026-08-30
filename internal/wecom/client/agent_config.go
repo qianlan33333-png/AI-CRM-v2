@@ -10,8 +10,8 @@ import (
 	"unicode"
 )
 
-// AgentConfigTicketClient reads only WeCom agent_config tickets. It cannot be
-// used for corp config signatures or any provider write.
+// AgentConfigTicketClient reads the two read-only WeCom tickets required by
+// wx.config and wx.agentConfig. It has no provider write capability.
 type AgentConfigTicketClient struct {
 	baseURL       *url.URL
 	httpClient    *http.Client
@@ -40,7 +40,18 @@ func NewAgentConfigTicketClient(config AgentConfigTicketClientConfig) (*AgentCon
 }
 
 func (client *AgentConfigTicketClient) FetchAgentConfigTicket(ctx context.Context) (AgentConfigTicket, error) {
+	return client.fetchTicket(ctx, "agent_config")
+}
+
+func (client *AgentConfigTicketClient) FetchConfigTicket(ctx context.Context) (AgentConfigTicket, error) {
+	return client.fetchTicket(ctx, "jsapi")
+}
+
+func (client *AgentConfigTicketClient) fetchTicket(ctx context.Context, ticketType string) (AgentConfigTicket, error) {
 	if client == nil || ctx == nil {
+		return AgentConfigTicket{}, ErrInvalidConfig
+	}
+	if ticketType != "jsapi" && ticketType != "agent_config" {
 		return AgentConfigTicket{}, ErrInvalidConfig
 	}
 	token, err := client.tokenProvider.Token(ctx)
@@ -50,7 +61,7 @@ func (client *AgentConfigTicketClient) FetchAgentConfigTicket(ctx context.Contex
 	endpoint := client.baseURL.ResolveReference(&url.URL{Path: "/cgi-bin/ticket/get"})
 	query := url.Values{}
 	query.Set("access_token", token.Value())
-	query.Set("type", "agent_config")
+	query.Set("type", ticketType)
 	endpoint.RawQuery = query.Encode()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
 	if err != nil {
