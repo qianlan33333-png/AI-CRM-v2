@@ -228,6 +228,15 @@ func (q *Queries) CreateProductLocalEntitlement(ctx context.Context, arg CreateP
 	return i, err
 }
 
+const deleteProductImages = `-- name: DeleteProductImages :exec
+DELETE FROM product_images WHERE product_id = $1::bigint
+`
+
+func (q *Queries) DeleteProductImages(ctx context.Context, productID int64) error {
+	_, err := q.db.Exec(ctx, deleteProductImages, productID)
+	return err
+}
+
 const getEntitlementOperationReceipt = `-- name: GetEntitlementOperationReceipt :one
 SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 FROM entitlement_operation_receipts
@@ -863,10 +872,11 @@ SET name = $1::text,
     price_minor = $3::bigint,
     currency = $4::char(3),
     stock_quantity = $5::integer,
-    updated_at = $6::timestamptz,
+    legacy_admin_projection = $6::jsonb,
+    updated_at = $7::timestamptz,
     version = version + 1
-WHERE id = $7::bigint
-  AND version = $8::bigint
+WHERE id = $8::bigint
+  AND version = $9::bigint
   AND COALESCE(legacy_admin_projection->>'status', '') NOT IN (
     'service_period_draft',
     'service_period_enabled',
@@ -877,14 +887,15 @@ RETURNING id, product_code, name, description, price_minor, currency, stock_quan
 `
 
 type UpdateProductParams struct {
-	Name            string             `json:"name"`
-	Description     string             `json:"description"`
-	PriceMinor      int64              `json:"price_minor"`
-	Currency        string             `json:"currency"`
-	StockQuantity   int32              `json:"stock_quantity"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	ProductID       int64              `json:"product_id"`
-	ExpectedVersion int64              `json:"expected_version"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	ProductID             int64              `json:"product_id"`
+	ExpectedVersion       int64              `json:"expected_version"`
 }
 
 type UpdateProductRow struct {
@@ -910,6 +921,7 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (U
 		arg.PriceMinor,
 		arg.Currency,
 		arg.StockQuantity,
+		arg.LegacyAdminProjection,
 		arg.UpdatedAt,
 		arg.ProductID,
 		arg.ExpectedVersion,

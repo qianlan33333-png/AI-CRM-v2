@@ -133,6 +133,14 @@ func (repository *CatalogRepository) UpdateServicePeriodProduct(ctx context.Cont
 	if affected != 1 {
 		return productport.Product{}, productapp.ErrConflict
 	}
+	if err = querySet.DeleteProductImages(ctx, int64(command.ID)); err != nil {
+		return productport.Product{}, unavailable(err)
+	}
+	for position, imageURL := range command.Images {
+		if err = querySet.InsertProductImage(ctx, productdb.InsertProductImageParams{ProductID: int64(command.ID), Position: int32(position), ImageUrl: imageURL}); err != nil {
+			return productport.Product{}, unavailable(err)
+		}
+	}
 	updated, err := repository.GetServicePeriodProduct(ctx, command.ID)
 	if err != nil {
 		return productport.Product{}, err

@@ -91,3 +91,6 @@ func (audienceDefinitionQueries) LastInteractAfter(context.Context, time.Time) (
 func (queries audienceDefinitionQueries) DeletedEqual(context.Context, bool) ([]int64, error) {
 	return append([]int64(nil), queries.universe...), nil
 }
+func (queries audienceDefinitionQueries) LegacyAudiencePackageSnapshot(context.Context, int64) ([]int64, error) {
+	return append([]int64(nil), queries.universe...), nil
+}

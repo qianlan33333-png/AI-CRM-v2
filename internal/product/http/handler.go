@@ -46,7 +46,11 @@ func (h *Handler) ListProducts(w http.ResponseWriter, r *http.Request, p generat
 	}
 	items := make([]generated.Product, len(page.Items))
 	for i, x := range page.Items {
-		items[i] = mapProduct(x)
+		items[i], e = mapProduct(x)
+		if e != nil {
+			fail(w, r, e)
+			return
+		}
 	}
 	response := generated.ProductPage{Items: items}
 	if page.NextCursor != "" {
@@ -65,7 +69,12 @@ func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request, id generate
 		fail(w, r, e)
 		return
 	}
-	write(w, http.StatusOK, mapProduct(p))
+	response, e := mapProduct(p)
+	if e != nil {
+		fail(w, r, e)
+		return
+	}
+	write(w, http.StatusOK, response)
 }
 func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request, p generated.CreateProductParams) {
 	principal, ok := authport.PrincipalFromContext(r.Context())
@@ -79,19 +88,36 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request, p genera
 		return
 	}
 	projection := productapp.DefaultLegacyAdminProjection()
+	if body.AdminProjection != nil {
+		encoded, marshalErr := json.Marshal(body.AdminProjection)
+		if marshalErr != nil {
+			fail(w, r, productapp.ErrInvalidProduct)
+			return
+		}
+		projection = encoded
+	}
 	result, e := h.app.Create(r.Context(), productport.CreateCommand{ProductCode: body.ProductCode, Name: body.Name, Description: body.Description, Currency: body.Currency, PriceMinor: body.PriceMinor, StockQuantity: body.StockQuantity, Images: body.Images, LegacyAdminProjection: projection, Actor: principal.AdminUserID, IdempotencyKey: string(p.IdempotencyKey)})
 	if e != nil {
 		fail(w, r, e)
 		return
 	}
-	write(w, http.StatusCreated, mapProduct(result))
+	response, e := mapProduct(result)
+	if e != nil {
+		fail(w, r, e)
+		return
+	}
+	write(w, http.StatusCreated, response)
 }
 func authorized(r *http.Request, c authport.Capability) bool {
 	a, ok := authport.AuthorizationFromContext(r.Context())
 	return ok && a.Capability == c && a.Scope == authport.ScopeGlobal
 }
-func mapProduct(p productport.Product) generated.Product {
-	return generated.Product{Id: int64(p.ID), ProductCode: p.ProductCode, Name: p.Name, Description: p.Description, PriceMinor: p.PriceMinor, Currency: p.Currency, StockQuantity: p.StockQuantity, Images: append([]string(nil), p.Images...), CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Version: p.Version}
+func mapProduct(p productport.Product) (generated.Product, error) {
+	var projection generated.ProductAdminProjection
+	if json.Unmarshal(p.LegacyAdminProjection, &projection) != nil {
+		return generated.Product{}, productapp.ErrUnavailable
+	}
+	return generated.Product{Id: int64(p.ID), ProductCode: p.ProductCode, Name: p.Name, Description: p.Description, PriceMinor: p.PriceMinor, Currency: p.Currency, StockQuantity: p.StockQuantity, Images: append([]string(nil), p.Images...), AdminProjection: projection, CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Version: p.Version}, nil
 }
 func write(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

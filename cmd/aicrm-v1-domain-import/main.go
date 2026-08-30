@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1candidate"
@@ -46,7 +47,7 @@ func main() {
 
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
-	mode := flags.String("mode", "import", "import|reconcile|final-preflight|final-reconcile")
+	mode := flags.String("mode", "import", "import|reconcile|final-preflight|final-project|final-reconcile")
 	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance|coupon (read-only history)|service-period (read-only history)|channel (inactive definitions and history)|groupops (read-only history)|audience-history (non-executable history)|message-history (masked read-only history)|contact-history (read-only snapshots)|customer-timeline-history (immutable observations)|member-grid-history (read-only)|campaign-history (read-only snapshots)|automation-history (non-executable configuration)|profile-catalog-history (inert templates and signup rules)|hxc-history (immutable observations)|hxc-runtime-history (inert sender/send observations)|hxc-chat-job-history (inert dialogue job observations)|hxc-member-usage-history (inert generation observations)|contact-reference-history (inert customer binding/directory references)|cycle-observation-history (read-only cycle metrics/references)|static-tail-history (inert media/product/cycle facts)|customer-state-history (immutable status observations)|marketing-state-history (immutable marketing observations)|legacy-marketing-history (read-only snapshots)|survey-unresolved-history (read-only answers)|broadcast-job-history (inert job observations)|outbound-task-history (inert task observations)|external-identity-gap (sealed archive gap identities)|wecom-contact-history (read-only source observations)|radar-click-history|marketing-config-history|final (final-preflight/final-reconcile only)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	manifestPath := flags.String("manifest", finalMigrationManifestPath, "final V1 domain migration manifest (final-preflight/final-reconcile only)")
@@ -89,6 +90,31 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 			return nil
 		}
 		return json.NewEncoder(os.Stdout).Encode(result)
+	}
+	if *mode == finalProjectMode {
+		if *domain != finalReconcileDomain || *archiveRunID == "" || environment.TargetDatabaseURL == "" || *migrationActor < 1 || len(environment.ArchiveKey) != 32 {
+			return fmt.Errorf("final-project requires domain=final, archive-run-id, migration-actor, target database and 32-byte archive key")
+		}
+		dm01 := appconfig.LoadDM01RuntimeEnvironment()
+		if environment.SourceDatabaseURL != "" || dm01.SourceDatabaseURL != "" {
+			return fmt.Errorf("final-project requires V1 and DM01 source database connections to be unset")
+		}
+		ctx := context.Background()
+		pool, err := pgxpool.New(ctx, environment.TargetDatabaseURL)
+		if err != nil {
+			return err
+		}
+		defer pool.Close()
+		archive, err := v1archive.OpenPostgresArchiveReader(ctx, environment.TargetDatabaseURL, []byte(environment.ArchiveKey))
+		if err != nil {
+			return err
+		}
+		defer archive.Close()
+		result, err := projectFinalEditableBusiness(ctx, pool, archive, *archiveRunID, *migrationActor, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"final_editable_projection": result})
 	}
 	if *mode == finalReconcileMode {
 		if *domain != finalReconcileDomain || *archiveRunID == "" || environment.TargetDatabaseURL == "" || *dm01RunID < 1 {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,7 +51,7 @@ func TestServicePeriodCreateReplayAndPayloadConflict(t *testing.T) {
 		t.Fatalf("created=%+v", created)
 	}
 	replayed, err := service.CreateServicePeriodProduct(context.Background(), command)
-	if err != nil || replayed != created {
+	if err != nil || !reflect.DeepEqual(replayed, created) {
 		t.Fatalf("replayed=%+v err=%v want=%+v", replayed, err, created)
 	}
 	if store.createCalls != 1 || len(events.events) != 1 {
@@ -94,10 +95,12 @@ func TestServicePeriodCASCopyEnableDisableArchiveAndReferenceRetention(t *testin
 		PriceMinor:      29900,
 		Currency:        "cny",
 		StockQuantity:   9,
+		Images:          []string{"https://cdn.example.test/service-period.png"},
+		AdminProjection: json.RawMessage(`{"schema_version":1,"status":"service_period_draft","enabled":false,"buy_button_text":"立即订阅","require_mobile":true}`),
 		Actor:           52,
 		IdempotencyKey:  "period-update-key-0001",
 	})
-	if err != nil || updated.Version != 2 || updated.Name != "周期服务已更新" || updated.Lifecycle != productport.ServicePeriodDraft {
+	if err != nil || updated.Version != 2 || updated.Name != "周期服务已更新" || updated.Lifecycle != productport.ServicePeriodDraft || len(updated.Images) != 1 || updated.Images[0] != "https://cdn.example.test/service-period.png" || !strings.Contains(string(updated.AdminProjection), `"buy_button_text":"立即订阅"`) {
 		t.Fatalf("updated=%+v err=%v", updated, err)
 	}
 
@@ -132,7 +135,7 @@ func TestServicePeriodCASCopyEnableDisableArchiveAndReferenceRetention(t *testin
 	if err != nil || copied.ServiceProductID == disabled.ServiceProductID || copied.Version != 1 || copied.Lifecycle != productport.ServicePeriodDraft || copied.Enabled || copied.Archived {
 		t.Fatalf("copied=%+v err=%v", copied, err)
 	}
-	if copied.PriceMinor != disabled.PriceMinor || copied.StockQuantity != disabled.StockQuantity || copied.ProductCode == disabled.ProductCode {
+	if copied.PriceMinor != disabled.PriceMinor || copied.StockQuantity != disabled.StockQuantity || copied.ProductCode == disabled.ProductCode || !reflect.DeepEqual(copied.Images, disabled.Images) || !strings.Contains(string(copied.AdminProjection), `"buy_button_text":"立即订阅"`) {
 		t.Fatalf("copy did not retain stable local Product facts: source=%+v copy=%+v", disabled, copied)
 	}
 	replayedCopy, err := service.CopyServicePeriodProduct(context.Background(), productport.CopyServicePeriodProductCommand{
@@ -141,7 +144,7 @@ func TestServicePeriodCASCopyEnableDisableArchiveAndReferenceRetention(t *testin
 		Actor:           52,
 		IdempotencyKey:  "period-copy-key-000001",
 	})
-	if err != nil || replayedCopy != copied {
+	if err != nil || !reflect.DeepEqual(replayedCopy, copied) {
 		t.Fatalf("copy replay=%+v err=%v want=%+v", replayedCopy, err, copied)
 	}
 
@@ -402,6 +405,7 @@ func (store *servicePeriodTestStore) UpdateServicePeriodProduct(_ context.Contex
 	product.PriceMinor = command.PriceMinor
 	product.Currency = command.Currency
 	product.StockQuantity = command.StockQuantity
+	product.Images = append([]string(nil), command.Images...)
 	product.LegacyAdminProjection = append([]byte(nil), command.LegacyAdminProjection...)
 	product.Version++
 	product.UpdatedAt = now

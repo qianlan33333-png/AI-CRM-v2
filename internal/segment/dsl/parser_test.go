@@ -21,8 +21,8 @@ func TestParseCanonicalAST(t *testing.T) {
 		},
 		{
 			name:  "all scalar families",
-			input: `{"or":[{"field":"owner_staff_id","op":"eq","value":9},{"field":"channel_id","op":"in","value":[4,2]},{"field":"added_at","op":"after","value":"2026-08-12T10:00:00+00:00"},{"field":"last_interact_at","op":"before","value":"-7d"},{"field":"is_deleted","op":"eq","value":false}]}`,
-			want:  `{"or":[{"field":"owner_staff_id","op":"eq","value":9},{"field":"channel_id","op":"in","value":[2,4]},{"field":"added_at","op":"after","value":"2026-08-12T10:00:00Z"},{"field":"last_interact_at","op":"before","value":"-7d"},{"field":"is_deleted","op":"eq","value":false}]}`,
+			input: `{"or":[{"field":"owner_staff_id","op":"eq","value":9},{"field":"channel_id","op":"in","value":[4,2]},{"field":"added_at","op":"after","value":"2026-08-12T10:00:00+00:00"},{"field":"last_interact_at","op":"before","value":"-7d"},{"field":"is_deleted","op":"eq","value":false},{"field":"legacy_audience_package_source_id","op":"eq","value":14}]}`,
+			want:  `{"or":[{"field":"owner_staff_id","op":"eq","value":9},{"field":"channel_id","op":"in","value":[2,4]},{"field":"added_at","op":"after","value":"2026-08-12T10:00:00Z"},{"field":"last_interact_at","op":"before","value":"-7d"},{"field":"is_deleted","op":"eq","value":false},{"field":"legacy_audience_package_source_id","op":"eq","value":14}]}`,
 		},
 	}
 	for _, testCase := range cases {

@@ -16,6 +16,10 @@ import (
 
 const staticTailHistoryImportVersion = "v1-static-tail-history-a1"
 
+type staticTailHistoryResult struct {
+	History v1domain.StaticTailHistoryImportResult `json:"history"`
+}
+
 func newStaticTailHistoryJournal(run string) (*v1domain.StaticTailHistoryJournal, error) {
 	var journals [5]*v1domain.Journal
 	for index, mapping := range [][3]string{
@@ -34,26 +38,30 @@ func newStaticTailHistoryJournal(run string) (*v1domain.StaticTailHistoryJournal
 	return v1domain.NewStaticTailHistoryJournal(journals[0], journals[1], journals[2], journals[3], journals[4])
 }
 
-func importStaticTailHistory(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, run string) (v1domain.StaticTailHistoryImportResult, error) {
+func importStaticTailHistory(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, run string) (staticTailHistoryResult, error) {
 	journal, err := newStaticTailHistoryJournal(run)
 	if err != nil {
-		return v1domain.StaticTailHistoryImportResult{}, err
+		return staticTailHistoryResult{}, err
 	}
 	media, err := mediaapp.NewStaticMediaHistoryWriter(mediastore.NewStaticMediaHistoryStore(), journal)
 	if err != nil {
-		return v1domain.StaticTailHistoryImportResult{}, err
+		return staticTailHistoryResult{}, err
 	}
 	product, err := productapp.NewStaticProductHistoryWriter(productstore.NewStaticProductHistoryStore(), journal)
 	if err != nil {
-		return v1domain.StaticTailHistoryImportResult{}, err
+		return staticTailHistoryResult{}, err
 	}
 	cycle, err := cycleapp.NewStaticCycleHistoryWriter(cyclestore.NewStaticCycleHistoryStore(), journal)
 	if err != nil {
-		return v1domain.StaticTailHistoryImportResult{}, err
+		return staticTailHistoryResult{}, err
 	}
 	importer, err := v1domain.NewStaticTailHistoryImporter(archive, uow, media, product, cycle, journal)
 	if err != nil {
-		return v1domain.StaticTailHistoryImportResult{}, err
+		return staticTailHistoryResult{}, err
 	}
-	return importer.Import(ctx, run)
+	history, err := importer.Import(ctx, run)
+	if err != nil {
+		return staticTailHistoryResult{}, err
+	}
+	return staticTailHistoryResult{History: history}, nil
 }

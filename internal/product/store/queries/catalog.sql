@@ -97,6 +97,7 @@ SET name = sqlc.arg(name)::text,
     price_minor = sqlc.arg(price_minor)::bigint,
     currency = sqlc.arg(currency)::char(3),
     stock_quantity = sqlc.arg(stock_quantity)::integer,
+    legacy_admin_projection = sqlc.arg(legacy_admin_projection)::jsonb,
     updated_at = sqlc.arg(updated_at)::timestamptz,
     version = version + 1
 WHERE id = sqlc.arg(product_id)::bigint
@@ -108,6 +109,9 @@ WHERE id = sqlc.arg(product_id)::bigint
     'service_period_archived'
   )
 RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, local_lifecycle, legacy_admin_projection;
+
+-- name: DeleteProductImages :exec
+DELETE FROM product_images WHERE product_id = sqlc.arg(product_id)::bigint;
 
 -- name: IncrementProductCount :one
 UPDATE product_catalog_counters SET total_products = total_products + 1

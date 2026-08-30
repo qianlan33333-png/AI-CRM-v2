@@ -290,14 +290,20 @@ func (s *Service) Update(ctx context.Context, command productport.UpdateCommand)
 		if current.Version != int64(command.ExpectedVersion) {
 			return ErrConflict
 		}
+		if command.Images == nil {
+			command.Images = slices.Clone(current.Images)
+		}
+		if len(command.LegacyAdminProjection) == 0 {
+			command.LegacyAdminProjection = append(json.RawMessage(nil), current.LegacyAdminProjection...)
+		}
 		result, e = s.store.Update(tx, command, now)
 		if e != nil {
 			return e
 		}
 		if !validOrdinaryProduct(result) || result.Version != current.Version+1 ||
 			result.ProductCode != current.ProductCode || result.CreatedBy != current.CreatedBy ||
-			!result.CreatedAt.Equal(current.CreatedAt) || !reflect.DeepEqual(result.Images, current.Images) ||
-			!jsonEquivalent(result.LegacyAdminProjection, current.LegacyAdminProjection) ||
+			!result.CreatedAt.Equal(current.CreatedAt) || !reflect.DeepEqual(result.Images, command.Images) ||
+			!jsonEquivalent(result.LegacyAdminProjection, command.LegacyAdminProjection) ||
 			result.Name != command.Name || result.Description != command.Description ||
 			result.PriceMinor != command.PriceMinor || result.Currency != command.Currency ||
 			result.StockQuantity != command.StockQuantity {
@@ -554,11 +560,26 @@ func entitlementReady(s *EntitlementService) bool {
 }
 
 func normalizeUpdate(c productport.UpdateCommand) (productport.UpdateCommand, [32]byte, error) {
+	c.Images = slices.Clone(c.Images)
 	c.Name = strings.TrimSpace(c.Name)
 	c.Description = strings.TrimSpace(c.Description)
 	c.Currency = strings.ToUpper(strings.TrimSpace(c.Currency))
-	if c.ID < 1 || c.ExpectedVersion < 1 || c.ExpectedVersion == math.MaxInt64 || c.Actor < 1 || c.Name == "" || len(c.Name) > 200 || len(c.Description) > 10000 || c.PriceMinor < 0 || c.StockQuantity < 0 || len(c.Currency) != 3 || !validIdempotencyKey(c.IdempotencyKey) {
+	var projection json.RawMessage
+	var err error
+	if len(c.LegacyAdminProjection) > 0 {
+		projection, err = CanonicalLegacyAdminProjection(c.LegacyAdminProjection)
+	}
+	if c.ID < 1 || c.ExpectedVersion < 1 || c.ExpectedVersion == math.MaxInt64 || c.Actor < 1 || c.Name == "" || len(c.Name) > 200 || len(c.Description) > 10000 || c.PriceMinor < 0 || c.StockQuantity < 0 || len(c.Currency) != 3 || len(c.Images) > 20 || !validIdempotencyKey(c.IdempotencyKey) || err != nil {
 		return productport.UpdateCommand{}, [32]byte{}, ErrInvalidProduct
+	}
+	if projection != nil {
+		c.LegacyAdminProjection = projection
+	}
+	for i := range c.Images {
+		c.Images[i] = strings.TrimSpace(c.Images[i])
+		if c.Images[i] == "" || len(c.Images[i]) > 2048 {
+			return productport.UpdateCommand{}, [32]byte{}, ErrInvalidProduct
+		}
 	}
 	canonical, err := json.Marshal(struct {
 		ID                          int64
@@ -566,7 +587,9 @@ func normalizeUpdate(c productport.UpdateCommand) (productport.UpdateCommand, [3
 		Name, Description, Currency string
 		PriceMinor                  int64
 		StockQuantity               int32
-	}{int64(c.ID), c.ExpectedVersion, c.Name, c.Description, c.Currency, c.PriceMinor, c.StockQuantity})
+		Images                      []string
+		LegacyAdminProjection       json.RawMessage
+	}{int64(c.ID), c.ExpectedVersion, c.Name, c.Description, c.Currency, c.PriceMinor, c.StockQuantity, c.Images, c.LegacyAdminProjection})
 	if err != nil {
 		return productport.UpdateCommand{}, [32]byte{}, ErrInvalidProduct
 	}

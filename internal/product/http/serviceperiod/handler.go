@@ -220,14 +220,16 @@ func (handler *Handler) create(writer http.ResponseWriter, request *http.Request
 		return
 	}
 	product, err := handler.application.CreateServicePeriodProduct(request.Context(), productport.CreateServicePeriodProductCommand{
-		ProductCode:    *body.ProductCode,
-		Name:           *body.Name,
-		Description:    body.Description,
-		PriceMinor:     *body.PriceMinor,
-		Currency:       *body.Currency,
-		StockQuantity:  *body.StockQuantity,
-		Actor:          principal.AdminUserID,
-		IdempotencyKey: key,
+		ProductCode:     *body.ProductCode,
+		Name:            *body.Name,
+		Description:     body.Description,
+		PriceMinor:      *body.PriceMinor,
+		Currency:        *body.Currency,
+		StockQuantity:   *body.StockQuantity,
+		Images:          body.Images,
+		AdminProjection: body.AdminProjection,
+		Actor:           principal.AdminUserID,
+		IdempotencyKey:  key,
 	})
 	if err != nil {
 		writeApplicationError(writer, request, err)
@@ -264,6 +266,8 @@ func (handler *Handler) update(writer http.ResponseWriter, request *http.Request
 		PriceMinor:      *body.PriceMinor,
 		Currency:        *body.Currency,
 		StockQuantity:   *body.StockQuantity,
+		Images:          body.Images,
+		AdminProjection: body.AdminProjection,
 		Actor:           principal.AdminUserID,
 		IdempotencyKey:  key,
 	})
@@ -373,21 +377,25 @@ func decodeVersionRequest(writer http.ResponseWriter, request *http.Request) (in
 }
 
 type createRequest struct {
-	ProductCode   *string `json:"product_code"`
-	Name          *string `json:"name"`
-	Description   string  `json:"description"`
-	PriceMinor    *int64  `json:"price_minor"`
-	Currency      *string `json:"currency"`
-	StockQuantity *int32  `json:"stock_quantity"`
+	ProductCode     *string         `json:"product_code"`
+	Name            *string         `json:"name"`
+	Description     string          `json:"description"`
+	PriceMinor      *int64          `json:"price_minor"`
+	Currency        *string         `json:"currency"`
+	StockQuantity   *int32          `json:"stock_quantity"`
+	Images          []string        `json:"images"`
+	AdminProjection json.RawMessage `json:"admin_projection"`
 }
 
 type updateRequest struct {
-	ExpectedVersion *int64  `json:"expected_version"`
-	Name            *string `json:"name"`
-	Description     *string `json:"description"`
-	PriceMinor      *int64  `json:"price_minor"`
-	Currency        *string `json:"currency"`
-	StockQuantity   *int32  `json:"stock_quantity"`
+	ExpectedVersion *int64          `json:"expected_version"`
+	Name            *string         `json:"name"`
+	Description     *string         `json:"description"`
+	PriceMinor      *int64          `json:"price_minor"`
+	Currency        *string         `json:"currency"`
+	StockQuantity   *int32          `json:"stock_quantity"`
+	Images          []string        `json:"images"`
+	AdminProjection json.RawMessage `json:"admin_projection"`
 }
 
 type versionRequest struct {

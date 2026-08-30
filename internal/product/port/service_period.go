@@ -2,6 +2,7 @@ package port
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -28,6 +29,8 @@ type ServicePeriodProduct struct {
 	PriceMinor       int64                  `json:"price_minor"`
 	Currency         string                 `json:"currency"`
 	StockQuantity    int32                  `json:"stock_quantity"`
+	Images           []string               `json:"images"`
+	AdminProjection  json.RawMessage        `json:"admin_projection"`
 	Lifecycle        ServicePeriodLifecycle `json:"lifecycle"`
 	Enabled          bool                   `json:"enabled"`
 	Archived         bool                   `json:"archived"`
@@ -45,14 +48,16 @@ type ServicePeriodPage struct {
 }
 
 type CreateServicePeriodProductCommand struct {
-	ProductCode    string
-	Name           string
-	Description    string
-	PriceMinor     int64
-	Currency       string
-	StockQuantity  int32
-	Actor          int64
-	IdempotencyKey string
+	ProductCode     string
+	Name            string
+	Description     string
+	PriceMinor      int64
+	Currency        string
+	StockQuantity   int32
+	Images          []string
+	AdminProjection json.RawMessage
+	Actor           int64
+	IdempotencyKey  string
 }
 
 type UpdateServicePeriodProductCommand struct {
@@ -63,6 +68,8 @@ type UpdateServicePeriodProductCommand struct {
 	PriceMinor      int64
 	Currency        string
 	StockQuantity   int32
+	Images          []string
+	AdminProjection json.RawMessage
 	Actor           int64
 	IdempotencyKey  string
 }

@@ -19,13 +19,14 @@ import (
 
 const (
 	finalPreflightMode         = "final-preflight"
+	finalProjectMode           = "final-project"
 	finalReconcileMode         = "final-reconcile"
 	finalReconcileDomain       = "final"
 	finalMigrationManifestPath = "docs/release/final-v1-domain-migration-manifest.json"
 	finalManifestDomainCount   = 40
 	finalManifestSchemaFrom    = 132
-	finalManifestSchemaTo      = 142
-	finalVerificationModel     = "36_current_domain_reconciliations_then_read_only_aggregate"
+	finalManifestSchemaTo      = 143
+	finalVerificationModel     = "36_immutable_domain_reconciliations_then_editable_projection_then_read_only_aggregate"
 )
 
 type finalMigrationManifest struct {
@@ -108,12 +109,13 @@ var finalDomainSpecs = map[string]finalDomainSpec{
 }
 
 type finalReconciliationResult struct {
-	ManifestDomainCount  int                        `json:"manifest_domain_count"`
-	VerificationModel    string                     `json:"verification_model"`
-	Domains              []finalDomainProof         `json:"domains"`
-	ReconciliationGroups []finalReconciliationGroup `json:"reconciliation_groups"`
-	IdentityMapping      finalIdentityProof         `json:"identity_mapping"`
-	ExternalEffects      int64                      `json:"external_effects"`
+	ManifestDomainCount  int                          `json:"manifest_domain_count"`
+	VerificationModel    string                       `json:"verification_model"`
+	Domains              []finalDomainProof           `json:"domains"`
+	ReconciliationGroups []finalReconciliationGroup   `json:"reconciliation_groups"`
+	IdentityMapping      finalIdentityProof           `json:"identity_mapping"`
+	EditableProjections  finalEditableProjectionProof `json:"editable_projections"`
+	ExternalEffects      int64                        `json:"external_effects"`
 }
 
 // finalPreflightResult is deliberately limited to the manifest domains that
@@ -202,8 +204,9 @@ func validateFinalMigrationManifest(manifest finalMigrationManifest) error {
 		manifest.Scope.Source != "V2 sealed archive only" || manifest.Scope.SourceDatabaseConnection != "forbidden" || manifest.Scope.ExternalEffects != "disabled" {
 		return fmt.Errorf("final migration manifest scope is not sealed and external-effects disabled")
 	}
-	if len(manifest.Phases) != 2 || manifest.Phases[0].Mode != "import" || manifest.Phases[1].Mode != "reconcile" {
-		return fmt.Errorf("final migration manifest must require import then reconcile")
+	if len(manifest.Phases) != 4 || manifest.Phases[0].Mode != "import" || manifest.Phases[1].Mode != "reconcile" ||
+		manifest.Phases[2].Mode != finalProjectMode || manifest.Phases[3].Mode != finalReconcileMode {
+		return fmt.Errorf("final migration manifest must require import, immutable reconcile, editable projection and aggregate reconcile")
 	}
 	if len(manifest.Domains) != finalManifestDomainCount {
 		return fmt.Errorf("final migration manifest must enumerate %d domains, got %d", finalManifestDomainCount, len(manifest.Domains))
@@ -296,6 +299,9 @@ func reconcileFinalMigration(ctx context.Context, pool *pgxpool.Pool, archiveRun
 		return finalReconciliationResult{}, err
 	}
 	result.IdentityMapping = identity
+	if result.EditableProjections, err = verifyFinalEditableProjection(ctx, tx, archiveRunID); err != nil {
+		return finalReconciliationResult{}, err
+	}
 	if result.ExternalEffects, err = v1domain.FinalExternalEffectCount(ctx, tx); err != nil {
 		return finalReconciliationResult{}, err
 	}

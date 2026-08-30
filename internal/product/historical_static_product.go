@@ -61,12 +61,25 @@ type HistoricalStaticProductReceipt struct {
 	Replayed          bool
 }
 
-// HistoricalStaticProductStore is Product-owned persistence. It must insert
-// only the supplied static definition and share the caller's transaction with
-// HistoricalStaticProductJournal. It must not reserve runtime receipts or emit
-// Product events as part of a historical import.
+// HistoricalEditableProductProjection is current V2 configuration derived
+// from the sealed V1 product row. Persisting it performs no payment, Provider,
+// entitlement, queue, or callback action.
+type HistoricalEditableProductProjection struct {
+	SourceID        int64
+	PayloadDigest   [32]byte
+	TargetProductID productport.ID
+	AdminProjection json.RawMessage
+	LocalLifecycle  productport.LocalProductLifecycle
+	ProjectedAt     time.Time
+}
+
+// HistoricalStaticProductStore is Product-owned migration persistence. It
+// inserts the static definition, then may attach the sealed editable local
+// configuration in the same transaction. It must not reserve runtime receipts
+// or emit Product events as part of an import.
 type HistoricalStaticProductStore interface {
 	InsertHistoricalStaticProduct(context.Context, HistoricalStaticProductDefinition) (productport.Product, error)
+	ProjectHistoricalEditableProduct(context.Context, HistoricalEditableProductProjection) (bool, error)
 }
 
 // HistoricalStaticProductJournal is the narrow migration-owned provenance
@@ -164,6 +177,15 @@ func (writer *HistoricalStaticProductWriter) Import(ctx context.Context, definit
 		return HistoricalStaticProductReceipt{}, err
 	}
 	return receipt, nil
+}
+
+func (writer *HistoricalStaticProductWriter) ProjectEditable(ctx context.Context, projection HistoricalEditableProductProjection) (bool, error) {
+	if writer == nil || writer.store == nil || ctx == nil || projection.SourceID < 1 || projection.TargetProductID < 1 ||
+		projection.PayloadDigest == [32]byte{} || len(projection.AdminProjection) == 0 || projection.ProjectedAt.IsZero() || projection.ProjectedAt.Location() != time.UTC ||
+		(projection.LocalLifecycle != productport.LocalProductEnabled && projection.LocalLifecycle != productport.LocalProductDisabled) {
+		return false, ErrHistoricalStaticProductInvalid
+	}
+	return writer.store.ProjectHistoricalEditableProduct(ctx, projection)
 }
 
 func validV1WeChatPayProductStatic(source V1WeChatPayProductStaticRow) bool {

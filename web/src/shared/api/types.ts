@@ -751,6 +751,9 @@ export interface Product {
   description?: string;
   currency?: string;
   stockQuantity?: number;
+  images?: string[];
+  adminProjection?: ProductAdminProjection;
+  externalPush?: ProductExternalPush;
   version?: number;
   lifecycle?: string;
   status: string;
@@ -767,12 +770,38 @@ export interface SpProduct {
   description?: string;
   currency?: string;
   stockQuantity?: number;
+  images?: string[];
+  adminProjection?: ProductAdminProjection;
+  externalPush?: ProductExternalPush;
   version?: number;
   lifecycle?: string;
   status: string;
   tone: Tone;
   sold: string;
   updated: string;
+}
+
+export interface ProductAdminProjection {
+  schemaVersion: 1;
+  status: string;
+  enabled: boolean;
+  buyButtonText: string;
+  requireMobile: boolean;
+  leadProgramId: number | null;
+  leadChannelId: number | null;
+  leadQrTitle: string;
+  leadQrSubtitle: string;
+  completionRedirectEnabled: boolean;
+  completionRedirectUrl: string;
+  completionTarget: Record<string, unknown> | null;
+  wecomTagging: Record<string, unknown>;
+  slices: Array<Record<string, unknown>>;
+}
+
+export interface ProductExternalPush {
+  enabled: boolean;
+  configurationReference: string;
+  updatedAt: string;
 }
 
 export interface Coupon {

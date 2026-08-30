@@ -41,15 +41,14 @@ type CreateCommand struct {
 	Actor                                                    int64
 }
 
-// UpdateCommand deliberately omits product_code, images, and legacy projection:
-// they have existing compatibility consumers and are not part of the native v2
-// product CAS contract.
 type UpdateCommand struct {
 	ID                                          ID
 	ExpectedVersion                             int64
 	Name, Description, Currency, IdempotencyKey string
 	PriceMinor                                  int64
 	StockQuantity                               int32
+	Images                                      []string
+	LegacyAdminProjection                       json.RawMessage
 	Actor                                       int64
 }
 

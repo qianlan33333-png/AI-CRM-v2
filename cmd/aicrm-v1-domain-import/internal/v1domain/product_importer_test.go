@@ -39,26 +39,52 @@ type productTxKey struct{}
 type productImportFake struct {
 	products                                     map[string]productport.Product
 	terminals                                    map[string]TerminalReceipt
+	projections                                  map[int64]product.HistoricalEditableProductProjection
 	insertCalls, recordCalls, commits, rollbacks int
 	insertErr, recordErr                         error
 }
 
 func (fake *productImportFake) Within(ctx context.Context, callback func(context.Context) error) error {
-	products, terminals := map[string]productport.Product{}, map[string]TerminalReceipt{}
+	products, terminals, projections := map[string]productport.Product{}, map[string]TerminalReceipt{}, map[int64]product.HistoricalEditableProductProjection{}
 	for key, value := range fake.products {
 		products[key] = value
 	}
 	for key, value := range fake.terminals {
 		terminals[key] = value
 	}
+	for key, value := range fake.projections {
+		projections[key] = value
+	}
 	err := callback(context.WithValue(ctx, productTxKey{}, true))
 	if err != nil {
-		fake.products, fake.terminals = products, terminals
+		fake.products, fake.terminals, fake.projections = products, terminals, projections
 		fake.rollbacks++
 		return err
 	}
 	fake.commits++
 	return nil
+}
+
+func (fake *productImportFake) ProjectHistoricalEditableProduct(ctx context.Context, projection product.HistoricalEditableProductProjection) (bool, error) {
+	if ctx.Value(productTxKey{}) != true {
+		return false, errors.New("missing transaction")
+	}
+	if old, found := fake.projections[int64(projection.TargetProductID)]; found {
+		if old.SourceID != projection.SourceID || old.PayloadDigest != projection.PayloadDigest {
+			return false, product.ErrHistoricalStaticProductConflict
+		}
+		return true, nil
+	}
+	for code, item := range fake.products {
+		if item.ID == projection.TargetProductID {
+			item.LegacyAdminProjection = append([]byte(nil), projection.AdminProjection...)
+			item.LocalLifecycle = projection.LocalLifecycle
+			fake.products[code] = item
+			fake.projections[int64(projection.TargetProductID)] = projection
+			return false, nil
+		}
+	}
+	return false, product.ErrHistoricalStaticProductConflict
 }
 
 func (fake *productImportFake) ValidateProductImportScope(run string) error {
@@ -131,7 +157,9 @@ func productArchiveRow(t *testing.T, id int64, mutate func(map[string]any)) v1ar
 	stamp := time.Date(2026, 8, 27, 1, 2, 3, 0, time.UTC)
 	value := map[string]any{"id": id, "product_code": fmt.Sprintf("legacy-%d", id), "name": "Historical product", "amount_total": 990,
 		"currency": "CNY", "status": "active", "enabled": true, "created_at": stamp, "updated_at": stamp,
-		"lead_program_id": 999, "completion_redirect_enabled": true, "completion_redirect_url": "https://never-called.invalid/",
+		"cta_text": "立即购买", "require_mobile": true, "lead_program_id": 999, "lead_channel_id": nil,
+		"completion_redirect_enabled": true, "completion_redirect_url": "https://never-called.invalid/", "completion_target_json": map[string]any{"type": "link"},
+		"lead_qr_title": "扫码咨询", "lead_qr_subtitle": "添加顾问",
 		"wecom_tagging_json": map[string]any{"enabled": true}, "metadata_json": map[string]any{"entitlement": "never activated"}}
 	if mutate != nil {
 		mutate(value)
@@ -146,7 +174,7 @@ func productArchiveRow(t *testing.T, id int64, mutate func(map[string]any)) v1ar
 
 func productImporterFixture(t *testing.T, rows ...v1archive.ArchivedRow) (*ProductImporter, *productImportFake, *productArchiveFake) {
 	t.Helper()
-	fake := &productImportFake{products: map[string]productport.Product{}, terminals: map[string]TerminalReceipt{}}
+	fake := &productImportFake{products: map[string]productport.Product{}, terminals: map[string]TerminalReceipt{}, projections: map[int64]product.HistoricalEditableProductProjection{}}
 	archive := &productArchiveFake{rows: rows}
 	writer, err := product.NewHistoricalStaticProductWriter(fake, fake)
 	if err != nil {
@@ -174,16 +202,23 @@ func TestProductImporterUsesMinorUnitsAndOneTerminalPerRow(t *testing.T) {
 	if len(fake.products) != 2 || len(fake.terminals) != 4 || fake.commits != 4 {
 		t.Fatalf("wrong terminal counts: %+v", fake)
 	}
+	projected, err := importer.ProjectEditable(context.Background(), "archive-run", time.Date(2026, 8, 27, 2, 0, 0, 0, time.UTC))
+	if err != nil || projected != (EditableProductProjectionResult{Projected: 2, Quarantined: 2}) {
+		t.Fatalf("projection=%+v err=%v", projected, err)
+	}
 	for _, item := range fake.products {
-		if item.ID < 700 || item.StockQuantity != 0 || item.LocalLifecycle != productport.LocalProductDisabled || item.Currency != "CNY" || item.CreatedBy != 7 || item.Version != 1 || item.Description != "" || len(item.Images) != 0 {
-			t.Fatalf("unsafe static product: %+v", item)
+		if item.ID < 700 || item.StockQuantity != 0 || item.Currency != "CNY" || item.CreatedBy != 7 || item.Version != 1 || item.Description != "" || len(item.Images) != 0 {
+			t.Fatalf("invalid current product: %+v", item)
 		}
 		var projection map[string]any
 		if err := json.Unmarshal(item.LegacyAdminProjection, &projection); err != nil {
 			t.Fatal(err)
 		}
-		if projection["enabled"] != false || projection["completion_redirect_enabled"] != false || projection["completion_redirect_url"] != "" || projection["lead_program_id"] != nil {
-			t.Fatal("runtime behavior retained")
+		if item.ProductCode == "legacy-11" && (item.LocalLifecycle != productport.LocalProductEnabled || projection["enabled"] != true || projection["buy_button_text"] != "立即购买" || projection["completion_redirect_enabled"] != true || projection["completion_redirect_url"] != "https://never-called.invalid/" || projection["lead_program_id"] != float64(999)) {
+			t.Fatalf("editable configuration not restored: %#v", projection)
+		}
+		if item.ProductCode == "legacy-12" && (item.LocalLifecycle != productport.LocalProductDisabled || projection["enabled"] != false) {
+			t.Fatalf("disabled configuration not restored: %#v", projection)
 		}
 	}
 	if fake.products["legacy-11"].PriceMinor != 990 || fake.products["legacy-12"].PriceMinor != 0 {
@@ -202,6 +237,17 @@ func TestProductImporterUsesMinorUnitsAndOneTerminalPerRow(t *testing.T) {
 	result, err = importer.Import(context.Background(), "archive-run")
 	if err != nil || result != (StaticImportResult{Imported: 2, Quarantined: 2, Replayed: 4}) || fake.insertCalls != 2 || fake.recordCalls != 4 {
 		t.Fatalf("replay result=%+v err=%v", result, err)
+	}
+}
+
+func TestEditableProductProjectionRequiresPriorImmutableImport(t *testing.T) {
+	importer, fake, _ := productImporterFixture(t, productArchiveRow(t, 11, nil))
+	result, err := importer.ProjectEditable(context.Background(), "archive-run", time.Date(2026, 8, 27, 2, 0, 0, 0, time.UTC))
+	if !errors.Is(err, ErrConflict) || result != (EditableProductProjectionResult{}) {
+		t.Fatalf("projection=%+v err=%v", result, err)
+	}
+	if len(fake.products) != 0 || len(fake.terminals) != 0 || len(fake.projections) != 0 || fake.rollbacks != 1 {
+		t.Fatalf("projection created an unreconciled Product: %+v", fake)
 	}
 }
 

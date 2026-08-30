@@ -11,25 +11,33 @@ import (
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 )
 
-func importAudienceHistory(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, run string, actor, dm01Run int64, key []byte) (v1domain.AudienceHistoryImportResult, error) {
+type audienceHistoryImportResult struct {
+	History v1domain.AudienceHistoryImportResult `json:"history"`
+}
+
+func importAudienceHistory(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, run string, actor, dm01Run int64, key []byte) (audienceHistoryImportResult, error) {
 	resolver, err := newAudienceHistoryReferences(ctx, uow, dm01Run, key)
 	if err != nil {
-		return v1domain.AudienceHistoryImportResult{}, err
+		return audienceHistoryImportResult{}, err
 	}
 	journals, err := newAudienceHistoryJournals(run)
 	if err != nil {
-		return v1domain.AudienceHistoryImportResult{}, err
+		return audienceHistoryImportResult{}, err
 	}
 	journal, err := v1domain.NewAudienceHistoryJournal(journals)
 	if err != nil {
-		return v1domain.AudienceHistoryImportResult{}, err
+		return audienceHistoryImportResult{}, err
 	}
 	writer := segmentapp.NewAudienceHistoryWriter(segmentstore.NewAudienceHistoryStore(), journal)
 	importer, err := v1domain.NewAudienceHistoryImporter(archive, uow, writer, resolver, journals, actor)
 	if err != nil {
-		return v1domain.AudienceHistoryImportResult{}, err
+		return audienceHistoryImportResult{}, err
 	}
-	return importer.Import(ctx, run)
+	history, err := importer.Import(ctx, run)
+	if err != nil {
+		return audienceHistoryImportResult{}, err
+	}
+	return audienceHistoryImportResult{History: history}, nil
 }
 
 func newAudienceHistoryJournals(run string) (map[string]*v1domain.Journal, error) {

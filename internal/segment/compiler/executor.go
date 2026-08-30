@@ -24,6 +24,7 @@ type QuerySet interface {
 	LastInteractBefore(context.Context, time.Time) ([]int64, error)
 	LastInteractAfter(context.Context, time.Time) ([]int64, error)
 	DeletedEqual(context.Context, bool) ([]int64, error)
+	LegacyAudiencePackageSnapshot(context.Context, int64) ([]int64, error)
 }
 
 type HXCQuerySet interface {
@@ -149,6 +150,8 @@ func (run execution) leaf(ctx context.Context, input leaf) ([]int64, error) {
 		ids, err = run.queries.LastInteractAfter(ctx, requiredTimestamp(input.bind))
 	case DeletedEqual:
 		ids, err = run.queries.DeletedEqual(ctx, requiredBoolean(input.bind))
+	case LegacyAudiencePackageSnapshot:
+		ids, err = run.queries.LegacyAudiencePackageSnapshot(ctx, requiredInteger(input.bind))
 	case HXCSubscriptionTierEqual:
 		if !hxcOK {
 			return nil, unsafe()
@@ -230,7 +233,7 @@ func (run execution) leaf(ctx context.Context, input leaf) ([]int64, error) {
 
 func validLeafBind(input leaf) bool {
 	switch input.opcode {
-	case StageEqual, OwnerEqual, ChannelEqual:
+	case StageEqual, OwnerEqual, ChannelEqual, LegacyAudiencePackageSnapshot:
 		return input.bind.integer != nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text == nil && input.bind.texts == nil && *input.bind.integer > 0
 	case HXCDaysRemainingGTE, HXCDaysRemainingLTE, HXCUserMessages7DGTE, HXCUserMessages7DLTE, HXCUserMessages30DGTE, HXCUserMessages30DLTE:
 		return input.bind.integer != nil && input.bind.integers == nil && input.bind.timestamp == nil && input.bind.boolean == nil && input.bind.text == nil && input.bind.texts == nil && *input.bind.integer >= 0

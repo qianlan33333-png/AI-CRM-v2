@@ -8595,6 +8595,9 @@ export interface ServicePeriodProduct {
   currency: string;
   /** @minimum 0 */
   stock_quantity: number;
+  /** @maxItems 20 */
+  images: string[];
+  admin_projection: ProductAdminProjection;
   lifecycle: ServicePeriodProductLifecycle;
   enabled: boolean;
   archived: boolean;
@@ -8661,6 +8664,9 @@ export interface ServicePeriodProductCreateRequest {
   currency: string;
   /** @minimum 0 */
   stock_quantity: number;
+  /** @maxItems 20 */
+  images?: string[];
+  admin_projection?: ProductAdminProjection;
 }
 
 export interface ServicePeriodProductUpdateRequest {
@@ -8682,6 +8688,9 @@ export interface ServicePeriodProductUpdateRequest {
   currency: string;
   /** @minimum 0 */
   stock_quantity: number;
+  /** @maxItems 20 */
+  images: string[];
+  admin_projection: ProductAdminProjection;
 }
 
 export interface ServicePeriodVersionRequest {
@@ -18025,6 +18034,7 @@ export interface Product {
   stock_quantity: number;
   /** @maxItems 20 */
   images: string[];
+  admin_projection: ProductAdminProjection;
   /** @minimum 1 */
   created_by: number;
   created_at: string;
@@ -18036,6 +18046,60 @@ export interface Product {
 export interface ProductPage {
   items: Product[];
   next_cursor?: string;
+}
+
+export type ProductAdminProjectionSchemaVersion =
+  (typeof ProductAdminProjectionSchemaVersion)[keyof typeof ProductAdminProjectionSchemaVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProductAdminProjectionSchemaVersion = {
+  NUMBER_1: 1,
+} as const;
+
+/**
+ * @nullable
+ */
+export type ProductAdminProjectionCompletionTarget = {
+  [key: string]: unknown;
+} | null;
+
+export type ProductAdminProjectionWecomTagging = { [key: string]: unknown };
+
+export type ProductAdminProjectionSlicesItem = { [key: string]: unknown };
+
+export interface ProductAdminProjection {
+  schema_version: ProductAdminProjectionSchemaVersion;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  status: string;
+  enabled: boolean;
+  /** @maxLength 2048 */
+  buy_button_text: string;
+  require_mobile: boolean;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  lead_program_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  lead_channel_id?: number | null;
+  /** @maxLength 2048 */
+  lead_qr_title: string;
+  /** @maxLength 2048 */
+  lead_qr_subtitle: string;
+  completion_redirect_enabled: boolean;
+  /** @maxLength 2048 */
+  completion_redirect_url: string;
+  /** @nullable */
+  completion_target?: ProductAdminProjectionCompletionTarget;
+  wecom_tagging: ProductAdminProjectionWecomTagging;
+  /** @maxItems 20 */
+  slices: ProductAdminProjectionSlicesItem[];
 }
 
 export interface LocalProductLifecycleVersionRequest {
@@ -18213,6 +18277,7 @@ export interface CreateProductRequest {
   stock_quantity: number;
   /** @maxItems 20 */
   images: string[];
+  admin_projection?: ProductAdminProjection;
 }
 
 export interface UpdateProductRequest {
@@ -18231,6 +18296,9 @@ export interface UpdateProductRequest {
   currency: string;
   /** @minimum 0 */
   stock_quantity: number;
+  /** @maxItems 20 */
+  images: string[];
+  admin_projection: ProductAdminProjection;
 }
 
 export interface GrantProductLocalEntitlementRequest {
@@ -19599,6 +19667,7 @@ export const SegmentDefinitionPredicateField = {
   added_at: "added_at",
   last_interact_at: "last_interact_at",
   is_deleted: "is_deleted",
+  legacy_audience_package_source_id: "legacy_audience_package_source_id",
 } as const;
 
 export type SegmentDefinitionPredicateOp =

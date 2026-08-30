@@ -122,6 +122,7 @@ type Querier interface {
 	LockSegmentTouchPlanSnapshot(ctx context.Context, segmentID int64) (LockSegmentTouchPlanSnapshotRow, error)
 	ReserveSegmentOperationReceipt(ctx context.Context, arg ReserveSegmentOperationReceiptParams) (ReserveSegmentOperationReceiptRow, error)
 	ReserveSegmentRefreshReceipt(ctx context.Context, arg ReserveSegmentRefreshReceiptParams) (ReserveSegmentRefreshReceiptRow, error)
+	SelectLegacyAudiencePackageSnapshot(ctx context.Context, sourceID int64) ([]int64, error)
 	SelectSegmentAddedAfter(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentAddedBefore(ctx context.Context, instant pgtype.Timestamptz) ([]int64, error)
 	SelectSegmentChannelAny(ctx context.Context, channelIds []int64) ([]int64, error)

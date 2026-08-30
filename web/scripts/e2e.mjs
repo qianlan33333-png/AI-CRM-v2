@@ -608,7 +608,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
       if (serviceProductHttp) {
         const calls = [];
         const downloads = [];
-        const product = { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', enabled: true, archived: false, version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' };
+        const product = { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, images: [], admin_projection: { schema_version: 1, status: 'service_period_enabled', enabled: true, buy_button_text: '', require_mobile: false, lead_program_id: null, lead_channel_id: null, lead_qr_title: '', lead_qr_subtitle: '', completion_redirect_enabled: false, completion_redirect_url: '', completion_target: null, wecom_tagging: {}, slices: [] }, lifecycle: 'enabled', enabled: true, archived: false, version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' };
         const gridColumns = ['member_ref', 'service_product_id', 'customer_id', 'state', 'source', 'starts_at', 'expires_at', 'expired_at', 'removed_at', 'version', 'updated_at', 'display_name'].map((key) => ({ key, label: key, type: 'string', nullable: key !== 'member_ref' }));
         const memberRows = [
           { member_ref: 'spm_abcdefghijklmnopqrstuv', service_product_id: 8, customer_id: 21, display_name: '本地客户', state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, expired_at: null, removed_at: null, version: 2, updated_at: '2026-08-26T08:00:00Z' },
@@ -2803,6 +2803,7 @@ await import('./broadcast-job-history-e2e.mjs');
 await import('./outbound-task-history-e2e.mjs');
 await import('./invalid-source-history-adapter-contract.mjs');
 await import('./invalid-source-history-e2e.mjs');
+await import('./product-edit-e2e.mjs');
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);

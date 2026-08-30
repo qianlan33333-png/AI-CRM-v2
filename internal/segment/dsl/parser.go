@@ -190,7 +190,7 @@ func parseGroup(raw any, pointer string, depth int, budget *parseBudget, isAnd b
 
 func parseValue(field Field, operator Operator, raw any, pointer string, budget *parseBudget) (Value, error) {
 	switch field {
-	case FieldStageID, FieldOwnerStaffID, FieldChannelID:
+	case FieldStageID, FieldOwnerStaffID, FieldChannelID, FieldLegacyAudiencePackageSourceID:
 		if operator == OperatorEqual {
 			value, err := parsePositiveInt(raw, pointer)
 			return IntValue{Value: value}, err
@@ -346,7 +346,7 @@ func knownField(value string) (Field, bool) {
 	case FieldStageID, FieldOwnerStaffID, FieldChannelID, FieldTagID, FieldAddedAt, FieldLastInteractAt, FieldIsDeleted,
 		FieldHXCSubscriptionTier, FieldHXCSubscriptionActive, FieldHXCDaysRemaining, FieldHXCUserMessages7D,
 		FieldHXCUserMessages30D, FieldHXCLastCapability, FieldHXCBusinessStage, FieldHXCMainLineType,
-		FieldHXCUserSegment, FieldHXCFocusTopic, FieldHXCPainTag:
+		FieldHXCUserSegment, FieldHXCFocusTopic, FieldHXCPainTag, FieldLegacyAudiencePackageSourceID:
 		return field, true
 	default:
 		return "", false
@@ -356,7 +356,7 @@ func knownField(value string) (Field, bool) {
 func allowedOperator(field Field, value string) (Operator, bool) {
 	operator := Operator(value)
 	switch field {
-	case FieldStageID, FieldOwnerStaffID, FieldChannelID:
+	case FieldStageID, FieldOwnerStaffID, FieldChannelID, FieldLegacyAudiencePackageSourceID:
 		return operator, operator == OperatorEqual || operator == OperatorIn
 	case FieldTagID:
 		return operator, operator == OperatorHasAny

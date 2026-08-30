@@ -4962,13 +4962,13 @@ func (e GroupOpsHistoryNodePageSource) Valid() bool {
 
 // Defines values for GroupOpsHistoryPlanRevision.
 const (
-	N1 GroupOpsHistoryPlanRevision = 1
+	GroupOpsHistoryPlanRevisionN1 GroupOpsHistoryPlanRevision = 1
 )
 
 // Valid indicates whether the value is a known member of the GroupOpsHistoryPlanRevision enum.
 func (e GroupOpsHistoryPlanRevision) Valid() bool {
 	switch e {
-	case N1:
+	case GroupOpsHistoryPlanRevisionN1:
 		return true
 	default:
 		return false
@@ -11227,6 +11227,21 @@ func (e OwnerMigrationResultHistoryPageSource) Valid() bool {
 	}
 }
 
+// Defines values for ProductAdminProjectionSchemaVersion.
+const (
+	ProductAdminProjectionSchemaVersionN1 ProductAdminProjectionSchemaVersion = 1
+)
+
+// Valid indicates whether the value is a known member of the ProductAdminProjectionSchemaVersion enum.
+func (e ProductAdminProjectionSchemaVersion) Valid() bool {
+	switch e {
+	case ProductAdminProjectionSchemaVersionN1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProfileCatalogHistoryCategoryPageReadOnly.
 const (
 	ProfileCatalogHistoryCategoryPageReadOnlyTrue ProfileCatalogHistoryCategoryPageReadOnly = true
@@ -11946,13 +11961,14 @@ func (e SegmentRefreshStatus) Valid() bool {
 
 // Defines values for SegmentDefinitionPredicateField.
 const (
-	AddedAt        SegmentDefinitionPredicateField = "added_at"
-	ChannelId      SegmentDefinitionPredicateField = "channel_id"
-	IsDeleted      SegmentDefinitionPredicateField = "is_deleted"
-	LastInteractAt SegmentDefinitionPredicateField = "last_interact_at"
-	OwnerStaffId   SegmentDefinitionPredicateField = "owner_staff_id"
-	StageId        SegmentDefinitionPredicateField = "stage_id"
-	TagId          SegmentDefinitionPredicateField = "tag_id"
+	AddedAt                       SegmentDefinitionPredicateField = "added_at"
+	ChannelId                     SegmentDefinitionPredicateField = "channel_id"
+	IsDeleted                     SegmentDefinitionPredicateField = "is_deleted"
+	LastInteractAt                SegmentDefinitionPredicateField = "last_interact_at"
+	LegacyAudiencePackageSourceId SegmentDefinitionPredicateField = "legacy_audience_package_source_id"
+	OwnerStaffId                  SegmentDefinitionPredicateField = "owner_staff_id"
+	StageId                       SegmentDefinitionPredicateField = "stage_id"
+	TagId                         SegmentDefinitionPredicateField = "tag_id"
 )
 
 // Valid indicates whether the value is a known member of the SegmentDefinitionPredicateField enum.
@@ -11965,6 +11981,8 @@ func (e SegmentDefinitionPredicateField) Valid() bool {
 	case IsDeleted:
 		return true
 	case LastInteractAt:
+		return true
+	case LegacyAudiencePackageSourceId:
 		return true
 	case OwnerStaffId:
 		return true
@@ -17563,13 +17581,14 @@ type CreateLocalTagRequest struct {
 
 // CreateProductRequest defines model for CreateProductRequest.
 type CreateProductRequest struct {
-	Currency      string   `json:"currency"`
-	Description   string   `json:"description"`
-	Images        []string `json:"images"`
-	Name          string   `json:"name"`
-	PriceMinor    int64    `json:"price_minor"`
-	ProductCode   string   `json:"product_code"`
-	StockQuantity int32    `json:"stock_quantity"`
+	AdminProjection *ProductAdminProjection `json:"admin_projection,omitempty"`
+	Currency        string                  `json:"currency"`
+	Description     string                  `json:"description"`
+	Images          []string                `json:"images"`
+	Name            string                  `json:"name"`
+	PriceMinor      int64                   `json:"price_minor"`
+	ProductCode     string                  `json:"product_code"`
+	StockQuantity   int32                   `json:"stock_quantity"`
 }
 
 // CreateSegmentRequest defines model for CreateSegmentRequest.
@@ -21981,19 +22000,41 @@ type OwnerMigrationResultHistoryPageSource string
 
 // Product defines model for Product.
 type Product struct {
-	CreatedAt     time.Time `json:"created_at"`
-	CreatedBy     int64     `json:"created_by"`
-	Currency      string    `json:"currency"`
-	Description   string    `json:"description"`
-	Id            int64     `json:"id"`
-	Images        []string  `json:"images"`
-	Name          string    `json:"name"`
-	PriceMinor    int64     `json:"price_minor"`
-	ProductCode   string    `json:"product_code"`
-	StockQuantity int32     `json:"stock_quantity"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	Version       int64     `json:"version"`
+	AdminProjection ProductAdminProjection `json:"admin_projection"`
+	CreatedAt       time.Time              `json:"created_at"`
+	CreatedBy       int64                  `json:"created_by"`
+	Currency        string                 `json:"currency"`
+	Description     string                 `json:"description"`
+	Id              int64                  `json:"id"`
+	Images          []string               `json:"images"`
+	Name            string                 `json:"name"`
+	PriceMinor      int64                  `json:"price_minor"`
+	ProductCode     string                 `json:"product_code"`
+	StockQuantity   int32                  `json:"stock_quantity"`
+	UpdatedAt       time.Time              `json:"updated_at"`
+	Version         int64                  `json:"version"`
 }
+
+// ProductAdminProjection defines model for ProductAdminProjection.
+type ProductAdminProjection struct {
+	BuyButtonText             string                              `json:"buy_button_text"`
+	CompletionRedirectEnabled bool                                `json:"completion_redirect_enabled"`
+	CompletionRedirectUrl     string                              `json:"completion_redirect_url"`
+	CompletionTarget          *map[string]interface{}             `json:"completion_target,omitempty"`
+	Enabled                   bool                                `json:"enabled"`
+	LeadChannelId             *int64                              `json:"lead_channel_id,omitempty"`
+	LeadProgramId             *int64                              `json:"lead_program_id,omitempty"`
+	LeadQrSubtitle            string                              `json:"lead_qr_subtitle"`
+	LeadQrTitle               string                              `json:"lead_qr_title"`
+	RequireMobile             bool                                `json:"require_mobile"`
+	SchemaVersion             ProductAdminProjectionSchemaVersion `json:"schema_version"`
+	Slices                    []map[string]interface{}            `json:"slices"`
+	Status                    string                              `json:"status"`
+	WecomTagging              map[string]interface{}              `json:"wecom_tagging"`
+}
+
+// ProductAdminProjectionSchemaVersion defines model for ProductAdminProjection.SchemaVersion.
+type ProductAdminProjectionSchemaVersion int
 
 // ProductPage defines model for ProductPage.
 type ProductPage struct {
@@ -23215,11 +23256,13 @@ type ServicePeriodMemberViewUpdateRequestState string
 
 // ServicePeriodProduct defines model for ServicePeriodProduct.
 type ServicePeriodProduct struct {
+	AdminProjection  ProductAdminProjection        `json:"admin_projection"`
 	Archived         bool                          `json:"archived"`
 	CreatedAt        time.Time                     `json:"created_at"`
 	Currency         string                        `json:"currency"`
 	Description      string                        `json:"description"`
 	Enabled          bool                          `json:"enabled"`
+	Images           []string                      `json:"images"`
 	Lifecycle        ServicePeriodProductLifecycle `json:"lifecycle"`
 	Name             string                        `json:"name"`
 	PriceMinor       int64                         `json:"price_minor"`
@@ -23235,12 +23278,14 @@ type ServicePeriodProductLifecycle string
 
 // ServicePeriodProductCreateRequest defines model for ServicePeriodProductCreateRequest.
 type ServicePeriodProductCreateRequest struct {
-	Currency      string  `json:"currency"`
-	Description   *string `json:"description,omitempty"`
-	Name          string  `json:"name"`
-	PriceMinor    int64   `json:"price_minor"`
-	ProductCode   string  `json:"product_code"`
-	StockQuantity int32   `json:"stock_quantity"`
+	AdminProjection *ProductAdminProjection `json:"admin_projection,omitempty"`
+	Currency        string                  `json:"currency"`
+	Description     *string                 `json:"description,omitempty"`
+	Images          *[]string               `json:"images,omitempty"`
+	Name            string                  `json:"name"`
+	PriceMinor      int64                   `json:"price_minor"`
+	ProductCode     string                  `json:"product_code"`
+	StockQuantity   int32                   `json:"stock_quantity"`
 }
 
 // ServicePeriodProductPage defines model for ServicePeriodProductPage.
@@ -23284,12 +23329,14 @@ type ServicePeriodProductShareResponseRealExternalCallExecuted bool
 
 // ServicePeriodProductUpdateRequest defines model for ServicePeriodProductUpdateRequest.
 type ServicePeriodProductUpdateRequest struct {
-	Currency        string `json:"currency"`
-	Description     string `json:"description"`
-	ExpectedVersion int64  `json:"expected_version"`
-	Name            string `json:"name"`
-	PriceMinor      int64  `json:"price_minor"`
-	StockQuantity   int32  `json:"stock_quantity"`
+	AdminProjection ProductAdminProjection `json:"admin_projection"`
+	Currency        string                 `json:"currency"`
+	Description     string                 `json:"description"`
+	ExpectedVersion int64                  `json:"expected_version"`
+	Images          []string               `json:"images"`
+	Name            string                 `json:"name"`
+	PriceMinor      int64                  `json:"price_minor"`
+	StockQuantity   int32                  `json:"stock_quantity"`
 }
 
 // ServicePeriodVersionRequest defines model for ServicePeriodVersionRequest.
@@ -24422,12 +24469,14 @@ type UpdateLocalTagNameRequest struct {
 
 // UpdateProductRequest defines model for UpdateProductRequest.
 type UpdateProductRequest struct {
-	Currency        string `json:"currency"`
-	Description     string `json:"description"`
-	ExpectedVersion int64  `json:"expected_version"`
-	Name            string `json:"name"`
-	PriceMinor      int64  `json:"price_minor"`
-	StockQuantity   int32  `json:"stock_quantity"`
+	AdminProjection ProductAdminProjection `json:"admin_projection"`
+	Currency        string                 `json:"currency"`
+	Description     string                 `json:"description"`
+	ExpectedVersion int64                  `json:"expected_version"`
+	Images          []string               `json:"images"`
+	Name            string                 `json:"name"`
+	PriceMinor      int64                  `json:"price_minor"`
+	StockQuantity   int32                  `json:"stock_quantity"`
 }
 
 // UpdateSegmentRequest defines model for UpdateSegmentRequest.

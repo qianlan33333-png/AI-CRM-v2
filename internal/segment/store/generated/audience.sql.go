@@ -11,6 +11,36 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const selectLegacyAudiencePackageSnapshot = `-- name: SelectLegacyAudiencePackageSnapshot :many
+SELECT DISTINCT COALESCE(member.customer_id, 0)::bigint AS customer_id
+FROM segment_v1_audience_members AS member
+JOIN segment_v1_audience_packages AS package ON package.id = member.package_history_id
+JOIN customers AS customer ON customer.id = member.customer_id
+WHERE package.source_id = $1::bigint
+  AND member.customer_id IS NOT NULL
+ORDER BY customer_id
+`
+
+func (q *Queries) SelectLegacyAudiencePackageSnapshot(ctx context.Context, sourceID int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, selectLegacyAudiencePackageSnapshot, sourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var customer_id int64
+		if err := rows.Scan(&customer_id); err != nil {
+			return nil, err
+		}
+		items = append(items, customer_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const selectSegmentAddedAfter = `-- name: SelectSegmentAddedAfter :many
 SELECT id FROM customers WHERE added_at > $1::timestamptz
 `

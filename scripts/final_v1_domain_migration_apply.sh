@@ -172,11 +172,11 @@ fi
 # Goose performs its one bounded migration, and reconcile seals all imports.
 if [[ -n "${AICRM_FINAL_GOOSE_COMMAND:-}" ]]; then
   require_command AICRM_FINAL_GOOSE_COMMAND
-  "$AICRM_FINAL_GOOSE_COMMAND" --from="$expected_start_schema" --to=142 --runtime-env-file="$runtime_env_file"
+  "$AICRM_FINAL_GOOSE_COMMAND" --from="$expected_start_schema" --to=143 --runtime-env-file="$runtime_env_file"
 else
-  (cd "$repository_root"; GOOSE_DRIVER=postgres GOOSE_DBSTRING="$AICRM_DATABASE_URL" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" tool -modfile=tools/go.mod goose -dir migrations up-to 142)
+  (cd "$repository_root"; GOOSE_DRIVER=postgres GOOSE_DBSTRING="$AICRM_DATABASE_URL" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" tool -modfile=tools/go.mod goose -dir migrations up-to 143)
 fi
-"$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect=142 --runtime-env-file="$runtime_env_file"
+"$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect=143 --runtime-env-file="$runtime_env_file"
 while IFS= read -r domain; do
   [[ -n "$domain" ]] || continue
   case " $pending_domains " in *" $domain "*) ;; *) continue ;; esac
@@ -204,6 +204,14 @@ while IFS= read -r domain; do
   case "$domain" in campaign|survey|media|radar|shop) continue ;; esac
   run_reconcile "$domain"
 done < <(sed -n 's/.*"domain"[[:space:]]*:[[:space:]]*"\([a-z0-9-]*\)".*/\1/p' "$repository_root/docs/release/final-v1-domain-migration-manifest.json")
+# Only after every immutable history scope is reconciled, restore the current
+# local Product/Audience objects. This single projection pass is safe for a
+# partially imported baseline and does not create Provider effects.
+if [[ -n "${AICRM_FINAL_IMPORT_COMMAND:-}" ]]; then
+  "$AICRM_FINAL_IMPORT_COMMAND" --mode=final-project --domain=final --archive-run-id="$archive_run_id" --migration-actor="$migration_actor"
+else
+  (cd "$repository_root"; GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" run ./cmd/aicrm-v1-domain-import --mode=final-project --domain=final --archive-run-id="$archive_run_id" --migration-actor="$migration_actor")
+fi
 [[ "$(sha256_file "$source_slice")" = "$source_seal_sha256" ]] || fail 'source slice SHA-256 seal drifted before final reconcile'
 [[ "$(sha256_file "$usage_recovery_file")" = "$usage_recovery_sha256" ]] || fail 'usage recovery SHA-256 seal drifted before final reconcile'
 if [[ -n "${AICRM_FINAL_RECONCILE_COMMAND:-}" ]]; then
@@ -215,4 +223,4 @@ fi
 "$AICRM_FINAL_STATUS_COMMAND" --check=external-effects --expect=0 --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_RUNTIME_COMMAND" --start=api,worker --web=api --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_RUNTIME_COMMAND" --check=release --expected-sha="$expected_sha" --runtime-env-file="$runtime_env_file"
-printf 'final-v1-domain-migration-apply: PASS (schema=%s->142 imported-domains=%s; reconciled-scopes=36; split api+worker started)\n' "$expected_start_schema" "$(printf '%s\n' "$pending_domains" | tr ' ' '\n' | wc -l | tr -d ' ')"
+printf 'final-v1-domain-migration-apply: PASS (schema=%s->143 imported-domains=%s; reconciled-scopes=36; split api+worker started)\n' "$expected_start_schema" "$(printf '%s\n' "$pending_domains" | tr ' ' '\n' | wc -l | tr -d ' ')"

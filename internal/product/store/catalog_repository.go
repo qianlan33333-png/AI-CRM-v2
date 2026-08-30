@@ -134,9 +134,17 @@ func (r *CatalogRepository) Update(ctx context.Context, c productport.UpdateComm
 	if r == nil || e != nil {
 		return productport.Product{}, unavailable(e)
 	}
-	row, e := q.UpdateProduct(ctx, productdb.UpdateProductParams{ProductID: int64(c.ID), ExpectedVersion: c.ExpectedVersion, Name: c.Name, Description: c.Description, PriceMinor: c.PriceMinor, Currency: c.Currency, StockQuantity: c.StockQuantity, UpdatedAt: stamp(now)})
+	row, e := q.UpdateProduct(ctx, productdb.UpdateProductParams{ProductID: int64(c.ID), ExpectedVersion: c.ExpectedVersion, Name: c.Name, Description: c.Description, PriceMinor: c.PriceMinor, Currency: c.Currency, StockQuantity: c.StockQuantity, LegacyAdminProjection: c.LegacyAdminProjection, UpdatedAt: stamp(now)})
 	if e != nil {
 		return productport.Product{}, unavailable(e)
+	}
+	if e = q.DeleteProductImages(ctx, int64(c.ID)); e != nil {
+		return productport.Product{}, unavailable(e)
+	}
+	for position, imageURL := range c.Images {
+		if e = q.InsertProductImage(ctx, productdb.InsertProductImageParams{ProductID: int64(c.ID), Position: int32(position), ImageUrl: imageURL}); e != nil {
+			return productport.Product{}, unavailable(e)
+		}
 	}
 	current, e := q.GetProduct(ctx, int64(c.ID))
 	if e != nil {
