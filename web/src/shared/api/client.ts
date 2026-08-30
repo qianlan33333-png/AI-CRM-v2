@@ -44,7 +44,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { deleteProductDto } from '../../api/admin';
+import { deleteProductDto, listHXCCurrentRowsDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
 import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
 import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, getChannelHistoryDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
@@ -926,7 +926,7 @@ export class HttpApi implements AdminApi {
   /* ---------- 漏斗 ---------- */
 
   listFunnelRows(): Promise<FunnelGridRow[]> {
-    return Promise.reject(new Error('后端能力未就绪：当前漏斗行 DTO 与 Member Grid 查询契约不等价'));
+    return listHXCCurrentRowsDto();
   }
 
   listFunnelViews(): Promise<FunnelView[]> {

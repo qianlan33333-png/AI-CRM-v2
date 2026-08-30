@@ -90,7 +90,17 @@ export interface FunnelGridOpts {
 
 export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: FunnelGridOpts): Promise<void> {
   if (api.mode === 'http') {
-    renderBlockedFunnel(root, opts);
+    if (opts?.product) {
+      renderBlockedFunnel(root, opts);
+      return;
+    }
+    root.className = 'labs sec-funnel';
+    root.innerHTML = '<div class="card" style="padding:18px">正在读取黄小璨最新同步数据…</div>';
+    try {
+      renderLiveHXCCurrent(root, await api.listFunnelRows());
+    } catch (error) {
+      root.innerHTML = `<div class="crumb">客户管理后台 / 运营 / <b>漏斗 / 数据看板</b></div><div class="page-head"><div><div class="page-title">漏斗 / 数据看板</div><div class="page-desc">黄小璨用户当前态只读看板</div></div></div><div class="card" style="padding:18px;color:#D83931">数据读取失败：${esc(error instanceof Error ? error.message : '未知错误')}</div>`;
+    }
     return;
   }
   const [rows, views] = await Promise.all([api.listFunnelRows(), api.listFunnelViews()]);
@@ -688,6 +698,53 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
   });
 
   sync();
+}
+
+const LIVE_HXC_COLUMNS: Array<{ key: string; title: string }> = [
+  { key: 'user_ref', title: 'HXC 用户' },
+  { key: 'match_state', title: 'CRM 匹配状态' },
+  { key: 'subscription_tier', title: '会员等级' },
+  { key: 'current_period_used', title: '本期已用' },
+  { key: 'monthly_chat_quota', title: '月度额度' },
+  { key: 'user_messages_7d', title: '7 天消息数' },
+  { key: 'user_messages_30d', title: '30 天消息数' },
+  { key: 'last_used_at', title: '最近使用' },
+  { key: 'last_capability', title: '最近能力' },
+  { key: 'business_stage', title: '业务阶段' },
+  { key: 'user_segment', title: '用户分层' },
+  { key: 'source_updated_at', title: '源数据更新' },
+];
+
+function renderLiveHXCCurrent(root: HTMLElement, rows: FunnelGridRow[]): void {
+  const meta = rows[0] || {};
+  const total = Number(meta.__total || rows.length);
+  const matched = Number(meta.__matched || 0);
+  const unmatched = Number(meta.__unmatched || 0);
+  const conflict = Number(meta.__conflict || 0);
+  const lastSyncedAt = String(meta.__last_synced_at || '—');
+  const body = rows.map((row) => `<tr>${LIVE_HXC_COLUMNS.map((column) => `<td>${esc(String(row[column.key] ?? '—'))}</td>`).join('')}</tr>`).join('');
+  root.innerHTML = `
+    <div class="crumb">客户管理后台 / 运营 / <b>漏斗 / 数据看板</b></div>
+    <div class="page-head">
+      <div><div class="page-title">黄小璨用户当前态</div><div class="page-desc">只读展示 CRM 已同步快照；不直连源库，不触发群发或外部调用</div></div>
+      <button class="btn primary" id="btnRefreshHxc">刷新列表</button>
+    </div>
+    <div class="stats">
+      <div class="card stat"><div class="stat-l">当前态总数</div><div class="stat-v">${total.toLocaleString()}</div><div class="stat-s">本页展示最近 ${rows.length} 条</div></div>
+      <div class="card stat ok"><div class="stat-l">已匹配 CRM</div><div class="stat-v" style="color:#2EA121">${matched.toLocaleString()}</div><div class="stat-s">具备 OneID 关联</div></div>
+      <div class="card stat warn"><div class="stat-l">待匹配</div><div class="stat-v" style="color:#D97917">${unmatched.toLocaleString()}</div><div class="stat-s">已同步，尚未关联 CRM</div></div>
+      <div class="card stat gray"><div class="stat-l">冲突</div><div class="stat-v">${conflict.toLocaleString()}</div><div class="stat-s">需人工处理</div></div>
+    </div>
+    <div class="card" style="padding:0">
+      <div class="grid-toolbar"><input class="input" id="hxcSearch" placeholder="搜索当前 100 条数据" style="width:260px"><span style="margin-left:auto;color:#646A73;font-size:12px">最近同步：${esc(lastSyncedAt)}</span></div>
+      <div class="grid-scroll"><table class="grid"><thead><tr>${LIVE_HXC_COLUMNS.map((column) => `<th>${esc(column.title)}</th>`).join('')}</tr></thead><tbody id="hxcRows">${body || `<tr><td colspan="${LIVE_HXC_COLUMNS.length}">当前快照没有数据</td></tr>`}</tbody></table></div>
+    </div>`;
+  if (typeof root.querySelector !== 'function') return;
+  root.querySelector('#btnRefreshHxc')?.addEventListener('click', () => { void location.reload(); });
+  root.querySelector('#hxcSearch')?.addEventListener('input', (event) => {
+    const keyword = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    root.querySelectorAll<HTMLTableRowElement>('#hxcRows tr').forEach((row) => { row.hidden = !!keyword && !row.textContent?.toLowerCase().includes(keyword); });
+  });
 }
 
 function renderBlockedFunnel(root: HTMLElement, opts?: FunnelGridOpts): void {

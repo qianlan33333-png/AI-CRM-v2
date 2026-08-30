@@ -285,6 +285,7 @@ type Handler struct {
 	systemHealth                http.Handler
 	hxcSender                   *hxcSenderHandler
 	hxcDirRefresh               http.Handler
+	hxcCurrentDashboard         hxcport.DashboardReader
 	deliveryLineage             legacyDeliveryLineageReaders
 	externalCustomerRead        *legacyExternalCustomerReadHandler
 	campaignDefinitionHistory   campaignport.CampaignDefinitionHistoryReader
