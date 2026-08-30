@@ -52,8 +52,10 @@ func (store *AudienceEditableProjectionStore) ProjectActiveAudienceHistory(ctx c
 	deferredKeys := segmentapp.DeferredRedesignAudiencePackageKeys()
 	if err = tx.QueryRow(ctx, `
 SELECT count(*)
-FROM public.segment_v1_audience_packages
-WHERE original_status <> $1 OR package_key = ANY($2::text[])`, "active", deferredKeys).Scan(&result.HistoryOnlyPreserved); err != nil {
+FROM public.segment_v1_audience_packages AS package
+WHERE original_status <> $1 OR package_key = ANY($2::text[])
+   OR (SELECT count(*) FROM public.segment_v1_audience_members AS member WHERE member.package_history_id=package.id)
+      <> (SELECT count(DISTINCT member.customer_id) FROM public.segment_v1_audience_members AS member WHERE member.package_history_id=package.id AND member.customer_id IS NOT NULL)`, "active", deferredKeys).Scan(&result.HistoryOnlyPreserved); err != nil {
 		return segmentapp.AudienceEditableProjectionResult{}, err
 	}
 	groups, err := loadEditableAudienceGroups(ctx, tx, deferredKeys)
@@ -107,6 +109,8 @@ FROM public.segment_v1_audience_groups AS history
 JOIN public.segment_v1_audience_packages AS package ON package.group_history_id = history.id
 WHERE package.original_status = $1
   AND package.package_key <> ALL($2::text[])
+  AND (SELECT count(*) FROM public.segment_v1_audience_members AS member WHERE member.package_history_id=package.id)
+      = (SELECT count(DISTINCT member.customer_id) FROM public.segment_v1_audience_members AS member WHERE member.package_history_id=package.id AND member.customer_id IS NOT NULL)
 ORDER BY history.id`, "active", deferredKeys)
 	if err != nil {
 		return nil, err
@@ -163,6 +167,7 @@ LEFT JOIN public.segment_v1_audience_members AS member ON member.package_history
 WHERE package.original_status = $1
   AND package.package_key <> ALL($2::text[])
 GROUP BY package.id
+HAVING count(member.id) = count(DISTINCT member.customer_id)
 ORDER BY package.id`, "active", deferredKeys)
 	if err != nil {
 		return nil, err
@@ -180,6 +185,9 @@ ORDER BY package.id`, "active", deferredKeys)
 }
 
 func projectAudiencePackage(ctx context.Context, tx pgx.Tx, item editableAudiencePackage, groupID *int64, actorID int64, at time.Time) (bool, error) {
+	if item.sourceID < 1 || item.name == "" || item.createdAt.IsZero() || item.updatedAt.Before(item.createdAt) || item.sourceMembers != item.mappedMembers {
+		return false, segmentapp.ErrAudienceEditableProjection
+	}
 	var segmentID int64
 	err := tx.QueryRow(ctx, `
 SELECT projection.segment_id
@@ -191,9 +199,6 @@ WHERE projection.package_history_id = $1`, item.historyID).Scan(&segmentID)
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return false, err
-	}
-	if item.sourceID < 1 || item.name == "" || item.createdAt.IsZero() || item.updatedAt.Before(item.createdAt) || item.sourceMembers < item.mappedMembers {
-		return false, segmentapp.ErrAudienceEditableProjection
 	}
 	definition, err := json.Marshal(map[string]any{"field": "legacy_audience_package_source_id", "op": "eq", "value": item.sourceID})
 	if err != nil {

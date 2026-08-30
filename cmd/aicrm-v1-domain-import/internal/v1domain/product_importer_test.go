@@ -214,8 +214,11 @@ func TestProductImporterUsesMinorUnitsAndOneTerminalPerRow(t *testing.T) {
 		if err := json.Unmarshal(item.LegacyAdminProjection, &projection); err != nil {
 			t.Fatal(err)
 		}
-		if item.ProductCode == "legacy-11" && (item.LocalLifecycle != productport.LocalProductEnabled || projection["enabled"] != true || projection["buy_button_text"] != "立即购买" || projection["completion_redirect_enabled"] != true || projection["completion_redirect_url"] != "https://never-called.invalid/" || projection["lead_program_id"] != float64(999)) {
+		if item.ProductCode == "legacy-11" && (item.LocalLifecycle != productport.LocalProductEnabled || projection["enabled"] != true || projection["buy_button_text"] != "立即购买" || projection["completion_redirect_enabled"] != true || projection["completion_redirect_url"] != "https://never-called.invalid/") {
 			t.Fatalf("editable configuration not restored: %#v", projection)
+		}
+		if projection["lead_program_id"] != nil || projection["lead_channel_id"] != nil || projection["completion_target"] != nil || !reflect.DeepEqual(projection["wecom_tagging"], map[string]any{}) {
+			t.Fatalf("legacy cross-domain references were not cleared: %#v", projection)
 		}
 		if item.ProductCode == "legacy-12" && (item.LocalLifecycle != productport.LocalProductDisabled || projection["enabled"] != false) {
 			t.Fatalf("disabled configuration not restored: %#v", projection)
@@ -237,6 +240,31 @@ func TestProductImporterUsesMinorUnitsAndOneTerminalPerRow(t *testing.T) {
 	result, err = importer.Import(context.Background(), "archive-run")
 	if err != nil || result != (StaticImportResult{Imported: 2, Quarantined: 2, Replayed: 4}) || fake.insertCalls != 2 || fake.recordCalls != 4 {
 		t.Fatalf("replay result=%+v err=%v", result, err)
+	}
+}
+
+func TestEditableProductProjectionClearsUntrustedLegacyReferences(t *testing.T) {
+	row := productArchiveRow(t, 11, func(value map[string]any) {
+		value["lead_program_id"] = "unmapped-program"
+		value["lead_channel_id"] = -7
+		value["completion_target_json"] = "not-json"
+		value["wecom_tagging_json"] = []any{"legacy-tag"}
+		value["metadata_json"] = "not-json"
+	})
+	row.RedactedFields = []string{"lead_program_id", "lead_channel_id", "completion_target_json", "wecom_tagging_json", "metadata_json"}
+	importer, fake, _ := productImporterFixture(t, row)
+	if _, err := importer.Import(context.Background(), "archive-run"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importer.ProjectEditable(context.Background(), "archive-run", time.Date(2026, 8, 27, 2, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatal(err)
+	}
+	var projection map[string]any
+	if err := json.Unmarshal(fake.products["legacy-11"].LegacyAdminProjection, &projection); err != nil {
+		t.Fatal(err)
+	}
+	if projection["lead_program_id"] != nil || projection["lead_channel_id"] != nil || projection["completion_target"] != nil || !reflect.DeepEqual(projection["wecom_tagging"], map[string]any{}) {
+		t.Fatalf("legacy references were not cleared: %#v", projection)
 	}
 }
 

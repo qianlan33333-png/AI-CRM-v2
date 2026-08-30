@@ -168,9 +168,10 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 	valid := finalEditableProjectionProof{
 		ProductSourceCount: 29, ProductProjectedCount: 29, ProductReceiptBoundCount: 29,
 		ServicePeriodSourceCount: 2, ServicePeriodProjectedCount: 2,
-		ProductLegacyImageSourceCount: 46, ProductImageReferenceCount: 0,
+		ProductLegacyImageSourceCount: 46, ProductImageReferenceCount: 0, ProductLegacyReferenceCount: 0,
 		AudienceSourceCount: 4, AudienceProjectedCount: 4,
-		AudienceGroupSourceCount: 1, AudienceGroupProjectedCount: 1,
+		AudienceIdentitySkippedCount: 0,
+		AudienceGroupSourceCount:     1, AudienceGroupProjectedCount: 1,
 		AudienceSourceMembers: 517, AudienceMappedMembers: 517, AudienceProjectedMembers: 517,
 		TargetDigest: strings.Repeat("01", 32),
 	}
@@ -182,8 +183,11 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 		func(value *finalEditableProjectionProof) { value.ProductReceiptBoundCount-- },
 		func(value *finalEditableProjectionProof) { value.ServicePeriodProjectedCount-- },
 		func(value *finalEditableProjectionProof) { value.ProductImageReferenceCount++ },
+		func(value *finalEditableProjectionProof) { value.ProductLegacyReferenceCount++ },
 		func(value *finalEditableProjectionProof) { value.AudienceProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.AudienceIdentitySkippedCount++ },
 		func(value *finalEditableProjectionProof) { value.AudienceGroupProjectedCount-- },
+		func(value *finalEditableProjectionProof) { value.AudienceMappedMembers-- },
 		func(value *finalEditableProjectionProof) { value.AudienceProjectedMembers-- },
 		func(value *finalEditableProjectionProof) { value.TargetDigest = "broken" },
 	} {
@@ -192,6 +196,12 @@ func TestFinalEditableProjectionProofRequiresCompleteCurrentObjects(t *testing.T
 		if err := validateFinalEditableProjectionProof(candidate); err == nil {
 			t.Fatalf("incomplete editable projection accepted: %+v", candidate)
 		}
+	}
+	withSkipped := valid
+	withSkipped.AudienceSourceCount = 6
+	withSkipped.AudienceIdentitySkippedCount = 2
+	if err := validateFinalEditableProjectionProof(withSkipped); err != nil {
+		t.Fatalf("explicitly skipped Audience packages rejected: %v", err)
 	}
 }
 

@@ -178,7 +178,7 @@ func (importer *ProductImporter) ProjectEditable(ctx context.Context, archiveRun
 func adaptArchivedProduct(row v1archive.ArchivedRow, actorID int64) (product.HistoricalStaticProductDefinition, product.HistoricalEditableProductProjection, string) {
 	for _, field := range row.RedactedFields {
 		switch field {
-		case "id", "product_code", "name", "amount_total", "currency", "status", "enabled", "cta_text", "require_mobile", "lead_program_id", "lead_channel_id", "metadata_json", "completion_redirect_enabled", "completion_redirect_url", "completion_target_json", "wecom_tagging_json", "lead_qr_title", "lead_qr_subtitle", "created_at", "updated_at":
+		case "id", "product_code", "name", "amount_total", "currency", "status", "enabled", "cta_text", "require_mobile", "completion_redirect_enabled", "completion_redirect_url", "lead_qr_title", "lead_qr_subtitle", "created_at", "updated_at":
 			return product.HistoricalStaticProductDefinition{}, product.HistoricalEditableProductProjection{}, "redacted_product_definition"
 		}
 	}
@@ -187,8 +187,8 @@ func adaptArchivedProduct(row v1archive.ArchivedRow, actorID int64) (product.His
 		return product.HistoricalStaticProductDefinition{}, product.HistoricalEditableProductProjection{}, "invalid_product_json"
 	}
 	if source.ID == nil || source.ProductCode == nil || source.Name == nil || source.AmountTotal == nil || source.Currency == nil ||
-		source.Status == nil || source.Enabled == nil || source.CTAText == nil || source.RequireMobile == nil || len(source.LeadProgramID) == 0 || len(source.LeadChannelID) == 0 ||
-		len(source.Metadata) == 0 || source.CompletionRedirectEnabled == nil || source.CompletionRedirectURL == nil || len(source.CompletionTarget) == 0 || len(source.WeComTagging) == 0 ||
+		source.Status == nil || source.Enabled == nil || source.CTAText == nil || source.RequireMobile == nil ||
+		source.CompletionRedirectEnabled == nil || source.CompletionRedirectURL == nil ||
 		source.LeadQRTitle == nil || source.LeadQRSubtitle == nil || source.CreatedAt == nil || source.UpdatedAt == nil {
 		return product.HistoricalStaticProductDefinition{}, product.HistoricalEditableProductProjection{}, "invalid_product_definition"
 	}
@@ -214,26 +214,14 @@ func adaptArchivedProduct(row v1archive.ArchivedRow, actorID int64) (product.His
 }
 
 func editableProductProjection(source productJSON) (json.RawMessage, productport.LocalProductLifecycle, bool) {
-	leadProgramID, ok := nullablePositiveInt64(source.LeadProgramID)
-	if !ok {
-		return nil, "", false
-	}
-	leadChannelID, ok := nullablePositiveInt64(source.LeadChannelID)
-	if !ok || !json.Valid(source.Metadata) || !json.Valid(source.CompletionTarget) || !json.Valid(source.WeComTagging) {
-		return nil, "", false
-	}
-	var metadata, completionTarget, weComTagging any
-	if json.Unmarshal(source.Metadata, &metadata) != nil || json.Unmarshal(source.CompletionTarget, &completionTarget) != nil || json.Unmarshal(source.WeComTagging, &weComTagging) != nil {
-		return nil, "", false
-	}
 	projection, err := json.Marshal(map[string]any{
 		"schema_version": 1, "status": *source.Status, "enabled": *source.Enabled,
 		"buy_button_text": *source.CTAText, "require_mobile": *source.RequireMobile,
-		"lead_program_id": leadProgramID, "lead_channel_id": leadChannelID,
+		"lead_program_id": nil, "lead_channel_id": nil,
 		"lead_qr_title": *source.LeadQRTitle, "lead_qr_subtitle": *source.LeadQRSubtitle,
 		"completion_redirect_enabled": *source.CompletionRedirectEnabled,
-		"completion_redirect_url":     *source.CompletionRedirectURL, "completion_target": completionTarget,
-		"wecom_tagging": weComTagging, "slices": []string{},
+		"completion_redirect_url":     *source.CompletionRedirectURL, "completion_target": nil,
+		"wecom_tagging": map[string]any{}, "slices": []string{},
 	})
 	if err != nil {
 		return nil, "", false
@@ -243,15 +231,4 @@ func editableProductProjection(source productJSON) (json.RawMessage, productport
 		lifecycle = productport.LocalProductEnabled
 	}
 	return projection, lifecycle, true
-}
-
-func nullablePositiveInt64(raw json.RawMessage) (*int64, bool) {
-	if string(raw) == "null" {
-		return nil, true
-	}
-	var value int64
-	if json.Unmarshal(raw, &value) != nil || value < 1 {
-		return nil, false
-	}
-	return &value, true
 }

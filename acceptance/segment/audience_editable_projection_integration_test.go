@@ -121,3 +121,66 @@ WHERE projection.package_history_id=$1`, historyPackage).Scan(&segmentID, &lifec
 		t.Fatal(err)
 	}
 }
+
+func TestAudienceEditableProjectionSkipsIncompleteIdentityMappingPostgres(t *testing.T) {
+	databaseURL := os.Getenv("AICRM_SEGMENT_EDITABLE_PROJECTION_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("set AICRM_SEGMENT_EDITABLE_PROJECTION_DATABASE_URL for PostgreSQL projection test")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	at := time.Date(2026, 8, 30, 4, 30, 0, 0, time.UTC)
+	actorID, err := authfixture.CreateAdminUser(ctx, pool, "audience-editable-identity-coverage-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	customerID, err := contactfixture.CreateCustomerRecord(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var historyGroup, historyPackage int64
+	if err = pool.QueryRow(ctx, `INSERT INTO segment_v1_audience_groups(source_id,name,created_at,updated_at) VALUES(91,'Incomplete identity group',$1,$1) RETURNING id`, at).Scan(&historyGroup); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `
+INSERT INTO segment_v1_audience_packages
+  (source_id,group_history_id,current_version_source_id,package_key,name,natural_language_definition,
+   original_status,query_mode,identity_policy,incremental_enabled,daily_enabled,
+   incremental_interval_seconds,daily_refresh_time,timezone,lookback_seconds,paused_reason,
+   created_at,updated_at,runtime_digest)
+VALUES (92,$1,NULL,'incomplete-identity','Incomplete identity package','legacy staff condition','active','full_sql',
+        'external_userid',false,false,180,'08:00','Asia/Shanghai',86400,'',$2,$2,decode(repeat('44',32),'hex'))
+RETURNING id`, historyGroup, at).Scan(&historyPackage); err != nil {
+		t.Fatal(err)
+	}
+	for sourceID, mappedID := range []any{customerID, nil} {
+		if _, err = pool.Exec(ctx, `
+INSERT INTO segment_v1_audience_members
+  (source_id,package_history_id,customer_id,identity_kind,original_status,first_entered_at,last_seen_at,last_updated_at,created_at,updated_at,payload_digest)
+VALUES ($1,$2,$3,'external_userid','active',$4,$4,$4,$4,$4,decode(repeat('55',32),'hex'))`, 910+sourceID, historyPackage, mappedID, at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	service := segmentapp.NewAudienceEditableProjectionService(platformstore.NewUnitOfWork(pool), segmentstore.NewAudienceEditableProjectionStore())
+	result, err := service.Project(ctx, actorID, at)
+	if err != nil {
+		t.Fatalf("incomplete identity mapping should be skipped: %v", err)
+	}
+	if result.HistoryOnlyPreserved < 1 {
+		t.Fatalf("skipped package was not reported: %#v", result)
+	}
+	var packageProjections, groupProjections int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM ai_audience_v1_editable_package_projections WHERE package_history_id=$1`, historyPackage).Scan(&packageProjections); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM ai_audience_v1_editable_group_projections WHERE group_history_id=$1`, historyGroup).Scan(&groupProjections); err != nil {
+		t.Fatal(err)
+	}
+	if packageProjections != 0 || groupProjections != 0 {
+		t.Fatalf("failed package projection was not rolled back: package=%d group=%d", packageProjections, groupProjections)
+	}
+}

@@ -19,8 +19,10 @@ type finalEditableProjectionProof struct {
 	ServicePeriodProjectedCount   int64  `json:"service_period_projected_count"`
 	ProductLegacyImageSourceCount int64  `json:"product_legacy_image_source_count"`
 	ProductImageReferenceCount    int64  `json:"product_image_reference_count"`
+	ProductLegacyReferenceCount   int64  `json:"product_legacy_reference_count"`
 	AudienceSourceCount           int64  `json:"audience_source_count"`
 	AudienceProjectedCount        int64  `json:"audience_projected_count"`
+	AudienceIdentitySkippedCount  int64  `json:"audience_identity_skipped_count"`
 	AudienceGroupSourceCount      int64  `json:"audience_group_source_count"`
 	AudienceGroupProjectedCount   int64  `json:"audience_group_projected_count"`
 	AudienceSourceMembers         int64  `json:"audience_source_members"`
@@ -45,8 +47,15 @@ WITH source AS (
   SELECT count(*) AS product_count,
          count(*) FILTER (WHERE receipt.target_id IS NOT NULL) AS receipt_bound,
          count(*) FILTER (WHERE projection.service_period_projected_at IS NOT NULL) AS service_period_projected,
-         count(*) FILTER (WHERE projection.legacy_materials_cleared_at IS NOT NULL) AS materials_cleared
+         count(*) FILTER (WHERE projection.legacy_materials_cleared_at IS NOT NULL) AS materials_cleared,
+         count(*) FILTER (WHERE
+           COALESCE(item.legacy_admin_projection->'lead_program_id','null'::jsonb) <> 'null'::jsonb OR
+           COALESCE(item.legacy_admin_projection->'lead_channel_id','null'::jsonb) <> 'null'::jsonb OR
+           COALESCE(item.legacy_admin_projection->'completion_target','null'::jsonb) <> 'null'::jsonb OR
+           COALESCE(item.legacy_admin_projection->'wecom_tagging','{}'::jsonb) <> '{}'::jsonb
+         ) AS legacy_reference_count
   FROM public.product_v1_editable_projections AS projection
+  JOIN public.products AS item ON item.id=projection.product_id
   LEFT JOIN public.v1_domain_import_receipts AS receipt
     ON receipt.archive_run_id=$1 AND receipt.import_version=$2
    AND receipt.table_id='public/wechat_pay_products' AND receipt.target_table='products'
@@ -69,11 +78,12 @@ SELECT source.product_count, projected.product_count, projected.receipt_bound,
        service_period.source_count, projected.service_period_projected,
        page_slices.source_count,
        CASE WHEN projected.materials_cleared=projected.product_count THEN product_images.projected_count ELSE -1 END,
+       projected.legacy_reference_count,
        product_images.projected_count
 FROM source, projected, service_period, page_slices, product_images`, archiveRunID, staticImportVersion).Scan(
 		&proof.ProductSourceCount, &proof.ProductProjectedCount, &proof.ProductReceiptBoundCount,
 		&proof.ServicePeriodSourceCount, &proof.ServicePeriodProjectedCount,
-		&proof.ProductLegacyImageSourceCount, &proof.ProductImageReferenceCount, &actualProductImages)
+		&proof.ProductLegacyImageSourceCount, &proof.ProductImageReferenceCount, &proof.ProductLegacyReferenceCount, &actualProductImages)
 	if err != nil {
 		return finalEditableProjectionProof{}, err
 	}
@@ -83,12 +93,14 @@ FROM source, projected, service_period, page_slices, product_images`, archiveRun
 	deferredKeys := segmentapp.DeferredRedesignAudiencePackageKeys()
 	var actualAudienceSourceMembers, actualAudienceMappedMembers int64
 	err = tx.QueryRow(ctx, `
-WITH eligible AS (
+WITH candidate AS (
   SELECT package.id, package.group_history_id,
          (SELECT count(*) FROM public.segment_v1_audience_members AS member WHERE member.package_history_id=package.id) AS source_members,
          (SELECT count(DISTINCT member.customer_id) FROM public.segment_v1_audience_members AS member WHERE member.package_history_id=package.id AND member.customer_id IS NOT NULL) AS mapped_members
   FROM public.segment_v1_audience_packages AS package
   WHERE package.original_status='active' AND package.package_key<>ALL($1::text[])
+), eligible AS (
+  SELECT * FROM candidate WHERE source_members=mapped_members
 ), expected AS (
   SELECT count(*) AS package_count,
          count(DISTINCT group_history_id) FILTER (WHERE group_history_id IS NOT NULL) AS group_count,
@@ -102,12 +114,14 @@ WITH eligible AS (
          COALESCE(sum((SELECT count(*) FROM public.segment_members AS member WHERE member.segment_id=projection.segment_id)),0)::bigint AS current_members
   FROM public.ai_audience_v1_editable_package_projections AS projection
 )
-SELECT expected.package_count, actual.package_count,
+SELECT (SELECT count(*) FROM candidate), actual.package_count,
+       (SELECT count(*) FROM candidate WHERE source_members<>mapped_members),
        expected.group_count, (SELECT count(*) FROM public.ai_audience_v1_editable_group_projections),
        expected.source_members, expected.mapped_members, actual.current_members,
        actual.source_members, actual.mapped_members
 FROM expected, actual`, deferredKeys).Scan(
 		&proof.AudienceSourceCount, &proof.AudienceProjectedCount,
+		&proof.AudienceIdentitySkippedCount,
 		&proof.AudienceGroupSourceCount, &proof.AudienceGroupProjectedCount,
 		&proof.AudienceSourceMembers, &proof.AudienceMappedMembers, &proof.AudienceProjectedMembers,
 		&actualAudienceSourceMembers, &actualAudienceMappedMembers)
@@ -196,11 +210,11 @@ func validateFinalEditableProjectionProof(proof finalEditableProjectionProof) er
 	if proof.ServicePeriodProjectedCount != proof.ServicePeriodSourceCount {
 		return fmt.Errorf("editable service-period definitions are incomplete")
 	}
-	if proof.ProductImageReferenceCount != 0 {
+	if proof.ProductImageReferenceCount != 0 || proof.ProductLegacyReferenceCount != 0 {
 		return fmt.Errorf("editable Product retains legacy material references")
 	}
-	if proof.AudienceProjectedCount != proof.AudienceSourceCount || proof.AudienceGroupProjectedCount != proof.AudienceGroupSourceCount ||
-		proof.AudienceMappedMembers != proof.AudienceProjectedMembers {
+	if proof.AudienceSourceCount != proof.AudienceProjectedCount+proof.AudienceIdentitySkippedCount || proof.AudienceGroupProjectedCount != proof.AudienceGroupSourceCount ||
+		proof.AudienceSourceMembers != proof.AudienceMappedMembers || proof.AudienceMappedMembers != proof.AudienceProjectedMembers {
 		return fmt.Errorf("editable Audience definitions are incomplete")
 	}
 	return nil
