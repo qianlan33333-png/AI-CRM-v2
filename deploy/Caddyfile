@@ -45,6 +45,11 @@ aa.youcangogogo.com {
 id-dev.youcangogogo.com {
 	import aicrm-security
 
+	@admin_root path /admin
+	handle @admin_root {
+		redir * /admin/products.html 308
+	}
+
 	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
 	handle @backend {
 		header Cache-Control "private, no-store"

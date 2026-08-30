@@ -10,6 +10,7 @@ require (
 	github.com/riverqueue/river v0.24.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.24.0
 	github.com/riverqueue/river/rivertype v0.24.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20260824205408-89f4e9bb5b38
 	golang.org/x/sync v0.21.0
 	golang.org/x/sys v0.29.0
 	gopkg.in/yaml.v3 v3.0.1
