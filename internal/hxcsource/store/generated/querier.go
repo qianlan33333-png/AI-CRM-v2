@@ -9,7 +9,7 @@ import (
 )
 
 type Querier interface {
-	ReadHXCCurrentView(ctx context.Context) ([]AicrmHxcUserCurrentV1, error)
+	ReadHXCCurrentSource(ctx context.Context) ([]ReadHXCCurrentSourceRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

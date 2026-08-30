@@ -1,9 +1,181 @@
--- name: ReadHXCCurrentView :many
-SELECT hxc_user_id, unionid, phone, subscription_tier, subscription_expires_at,
-monthly_chat_quota, current_period_used, consultation_limit, consultation_used,
-sessions_7d, sessions_30d, sessions_total, user_messages_7d, user_messages_30d,
-user_messages_total, capability_usage, last_used_at, last_capability, business_stage,
-main_line_type, user_segment, focus_topics, pain_tag, source_updated_at
-FROM aicrm_hxc_user_current_v1
+-- name: ReadHXCCurrentSource :many
+WITH
+active_users AS (
+  SELECT id, unionid, phone, member_level, member_expires_at, updated_at
+  FROM new_version_users
+  WHERE is_deleted = 0
+),
+unique_phones AS (
+  SELECT phone
+  FROM active_users
+  WHERE phone IS NOT NULL AND TRIM(phone) <> ''
+  GROUP BY phone
+  HAVING COUNT(*) = 1
+),
+membership_ranked AS (
+  SELECT
+    u.id AS user_id,
+    m.consultation_limit,
+    m.consultation_used,
+    COALESCE(m.updated_at, m.created_at, m.end_date, m.start_date) AS source_updated_at,
+    ROW_NUMBER() OVER (
+      PARTITION BY u.id
+      ORDER BY
+        (m.user_id = u.id) DESC,
+        (m.status = 'active' AND m.end_date >= UTC_TIMESTAMP()) DESC,
+        (m.status = 'active') DESC,
+        m.end_date DESC,
+        COALESCE(m.updated_at, m.created_at, m.end_date, m.start_date) DESC,
+        m.id DESC
+    ) AS row_num
+  FROM active_users u
+  LEFT JOIN unique_phones p ON p.phone = u.phone
+  JOIN new_version_memberships m
+    ON m.user_id = u.id
+    OR ((m.user_id IS NULL OR m.user_id = '') AND p.phone IS NOT NULL AND m.phone = p.phone)
+),
+membership_current AS (
+  SELECT user_id, consultation_limit, consultation_used, source_updated_at
+  FROM membership_ranked
+  WHERE row_num = 1
+),
+conversation_usage AS (
+  SELECT
+    user_id,
+    COUNT(*) AS sessions_total,
+    SUM(created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY) AS sessions_30d,
+    SUM(created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS sessions_7d,
+    SUM(NOT ((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AND chat_mode = 'peer') AS peer_total,
+    SUM(NOT ((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AND chat_mode = 'peer' AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY) AS peer_30d,
+    SUM(NOT ((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AND chat_mode = 'peer' AND created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS peer_7d,
+    MAX(CASE WHEN NOT ((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AND chat_mode = 'peer' THEN updated_at END) AS peer_last_used_at,
+    SUM((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AS lesson_total,
+    SUM(((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY) AS lesson_30d,
+    SUM(((lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson') AND created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS lesson_7d,
+    MAX(CASE WHEN (lesson_id IS NOT NULL AND lesson_id <> '') OR content_type = 'lesson' THEN updated_at END) AS lesson_last_used_at,
+    MAX(updated_at) AS source_updated_at
+  FROM new_version_conversations
+  WHERE is_deleted = 0
+  GROUP BY user_id
+),
+message_usage AS (
+  SELECT
+    user_id,
+    COUNT(*) AS messages_total,
+    SUM(created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY) AS messages_30d,
+    SUM(created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS messages_7d,
+    MAX(created_at) AS last_used_at,
+    MAX(created_at) AS source_updated_at
+  FROM new_version_messages
+  WHERE is_deleted = 0 AND role = 'user'
+  GROUP BY user_id
+),
+coach_usage AS (
+  SELECT
+    user_id,
+    COUNT(DISTINCT session_id) AS coach_total,
+    COUNT(DISTINCT CASE WHEN COALESCE(started_at, created_at, updated_at) >= UTC_TIMESTAMP() - INTERVAL 30 DAY THEN session_id END) AS coach_30d,
+    COUNT(DISTINCT CASE WHEN COALESCE(started_at, created_at, updated_at) >= UTC_TIMESTAMP() - INTERVAL 7 DAY THEN session_id END) AS coach_7d,
+    MAX(COALESCE(ended_at, updated_at, started_at, created_at)) AS last_used_at,
+    MAX(COALESCE(updated_at, ended_at, started_at, created_at)) AS source_updated_at
+  FROM new_version_consultation_states
+  WHERE is_deep_consult = 1 OR session_type = 'topic_consult'
+  GROUP BY user_id
+),
+assessment_usage AS (
+  SELECT
+    user_id,
+    COUNT(*) AS assessment_total,
+    SUM(COALESCE(completed_at, updated_at, created_at) >= UTC_TIMESTAMP() - INTERVAL 30 DAY) AS assessment_30d,
+    SUM(COALESCE(completed_at, updated_at, created_at) >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS assessment_7d,
+    MAX(COALESCE(completed_at, updated_at, created_at)) AS last_used_at,
+    MAX(COALESCE(updated_at, completed_at, created_at)) AS source_updated_at
+  FROM new_version_assessments
+  WHERE status = 'completed'
+  GROUP BY user_id
+),
+review_usage AS (
+  SELECT
+    user_id,
+    COUNT(*) AS review_total,
+    SUM(COALESCE(surfaced_at, created_at) >= UTC_TIMESTAMP() - INTERVAL 30 DAY) AS review_30d,
+    SUM(COALESCE(surfaced_at, created_at) >= UTC_TIMESTAMP() - INTERVAL 7 DAY) AS review_7d,
+    MAX(COALESCE(surfaced_at, created_at)) AS last_used_at,
+    MAX(COALESCE(surfaced_at, created_at)) AS source_updated_at
+  FROM new_version_growth_reviews
+  GROUP BY user_id
+)
+SELECT
+  u.id AS hxc_user_id,
+  CAST(NULLIF(TRIM(u.unionid), '') AS CHAR(64)) AS unionid,
+  CAST(NULLIF(TRIM(u.phone), '') AS CHAR(20)) AS phone,
+  CAST(COALESCE(NULLIF(TRIM(s.tier), ''), NULLIF(TRIM(u.member_level), ''), 'free') AS CHAR(20)) AS subscription_tier,
+  COALESCE(s.expires_at, u.member_expires_at) AS subscription_expires_at,
+  CAST(CASE WHEN COALESCE(s.monthly_chat_quota, 0) < 0 THEN 2147483647 ELSE COALESCE(s.monthly_chat_quota, 0) END AS SIGNED) AS monthly_chat_quota,
+  CAST(GREATEST(COALESCE(s.current_period_used, 0), 0) AS SIGNED) AS current_period_used,
+  CAST(GREATEST(COALESCE(mc.consultation_limit, 0), 0) AS SIGNED) AS consultation_limit,
+  CAST(GREATEST(COALESCE(mc.consultation_used, 0), 0) AS SIGNED) AS consultation_used,
+  CAST(COALESCE(c.sessions_7d, 0) AS SIGNED) AS sessions_7d,
+  CAST(COALESCE(c.sessions_30d, 0) AS SIGNED) AS sessions_30d,
+  COALESCE(c.sessions_total, 0) AS sessions_total,
+  CAST(COALESCE(msg.messages_7d, 0) AS SIGNED) AS user_messages_7d,
+  CAST(COALESCE(msg.messages_30d, 0) AS SIGNED) AS user_messages_30d,
+  COALESCE(msg.messages_total, 0) AS user_messages_total,
+  JSON_OBJECT(
+    'peer_chat', JSON_OBJECT('count_7d', COALESCE(c.peer_7d, 0), 'count_30d', COALESCE(c.peer_30d, 0), 'count_total', COALESCE(c.peer_total, 0), 'last_used_at', IF(c.peer_last_used_at IS NULL, NULL, DATE_FORMAT(c.peer_last_used_at, '%Y-%m-%dT%H:%i:%s.000Z'))),
+    'coach_consult', JSON_OBJECT('count_7d', COALESCE(coach.coach_7d, 0), 'count_30d', COALESCE(coach.coach_30d, 0), 'count_total', COALESCE(coach.coach_total, 0), 'last_used_at', IF(coach.last_used_at IS NULL, NULL, DATE_FORMAT(coach.last_used_at, '%Y-%m-%dT%H:%i:%s.000Z'))),
+    'lesson', JSON_OBJECT('count_7d', COALESCE(c.lesson_7d, 0), 'count_30d', COALESCE(c.lesson_30d, 0), 'count_total', COALESCE(c.lesson_total, 0), 'last_used_at', IF(c.lesson_last_used_at IS NULL, NULL, DATE_FORMAT(c.lesson_last_used_at, '%Y-%m-%dT%H:%i:%s.000Z'))),
+    'assessment', JSON_OBJECT('count_7d', COALESCE(a.assessment_7d, 0), 'count_30d', COALESCE(a.assessment_30d, 0), 'count_total', COALESCE(a.assessment_total, 0), 'last_used_at', IF(a.last_used_at IS NULL, NULL, DATE_FORMAT(a.last_used_at, '%Y-%m-%dT%H:%i:%s.000Z'))),
+    'weekly_review', JSON_OBJECT('count_7d', COALESCE(r.review_7d, 0), 'count_30d', COALESCE(r.review_30d, 0), 'count_total', COALESCE(r.review_total, 0), 'last_used_at', IF(r.last_used_at IS NULL, NULL, DATE_FORMAT(r.last_used_at, '%Y-%m-%dT%H:%i:%s.000Z')))
+  ) AS capability_usage,
+  NULLIF(GREATEST(
+    COALESCE(c.peer_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)),
+    COALESCE(coach.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)),
+    COALESCE(c.lesson_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)),
+    COALESCE(a.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)),
+    COALESCE(r.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)),
+    COALESCE(msg.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME))
+  ), CAST('1000-01-01 00:00:00' AS DATETIME)) AS last_used_at,
+  CAST(CASE
+    WHEN c.peer_last_used_at IS NULL AND coach.last_used_at IS NULL AND c.lesson_last_used_at IS NULL AND a.last_used_at IS NULL AND r.last_used_at IS NULL THEN NULL
+    WHEN COALESCE(r.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)) >= GREATEST(COALESCE(c.peer_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)), COALESCE(coach.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)), COALESCE(c.lesson_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)), COALESCE(a.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME))) THEN 'weekly_review'
+    WHEN COALESCE(a.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)) >= GREATEST(COALESCE(c.peer_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)), COALESCE(coach.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)), COALESCE(c.lesson_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME))) THEN 'assessment'
+    WHEN COALESCE(c.lesson_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)) >= GREATEST(COALESCE(c.peer_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)), COALESCE(coach.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME))) THEN 'lesson'
+    WHEN COALESCE(coach.last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)) >= COALESCE(c.peer_last_used_at, CAST('1000-01-01 00:00:00' AS DATETIME)) THEN 'coach_consult'
+    ELSE 'peer_chat'
+  END AS CHAR(20)) AS last_capability,
+  CAST(COALESCE(NULLIF(TRIM(bg.business_stage), ''), NULLIF(TRIM(d.stage), '')) AS CHAR(100)) AS business_stage,
+  CAST(COALESCE(NULLIF(TRIM(bg.main_line_type), ''), NULLIF(TRIM(d.main_line_type), '')) AS CHAR(100)) AS main_line_type,
+  CAST(NULLIF(TRIM(d.user_segment), '') AS CHAR(100)) AS user_segment,
+  CAST(CASE
+    WHEN JSON_TYPE(bg.focus_topics) = 'ARRAY' AND JSON_LENGTH(bg.focus_topics) > 0 THEN bg.focus_topics
+    WHEN JSON_TYPE(i.interest_keys) = 'ARRAY' THEN i.interest_keys
+    ELSE JSON_ARRAY()
+  END AS JSON) AS focus_topics,
+  CAST(NULLIF(TRIM(bg.pain_tag), '') AS CHAR(100)) AS pain_tag,
+  CAST(GREATEST(
+    u.updated_at,
+    COALESCE(s.updated_at, u.updated_at),
+    COALESCE(mc.source_updated_at, u.updated_at),
+    COALESCE(c.source_updated_at, u.updated_at),
+    COALESCE(msg.source_updated_at, u.updated_at),
+    COALESCE(coach.source_updated_at, u.updated_at),
+    COALESCE(a.source_updated_at, u.updated_at),
+    COALESCE(r.source_updated_at, u.updated_at),
+    COALESCE(bg.updated_at, u.updated_at),
+    COALESCE(d.updated_at, u.updated_at),
+    COALESCE(i.updated_at, u.updated_at)
+  ) AS DATETIME) AS source_updated_at
+FROM active_users u
+LEFT JOIN new_version_user_subscriptions s ON s.user_id COLLATE utf8mb4_general_ci = u.id
+LEFT JOIN membership_current mc ON mc.user_id = u.id
+LEFT JOIN conversation_usage c ON c.user_id = u.id
+LEFT JOIN message_usage msg ON msg.user_id = u.id
+LEFT JOIN coach_usage coach ON coach.user_id = u.id
+LEFT JOIN assessment_usage a ON a.user_id COLLATE utf8mb4_general_ci = u.id
+LEFT JOIN review_usage r ON r.user_id COLLATE utf8mb4_general_ci = u.id
+LEFT JOIN new_version_user_backgrounds bg ON bg.user_id COLLATE utf8mb4_general_ci = u.id
+LEFT JOIN new_version_user_diagnoses d ON d.user_id COLLATE utf8mb4_general_ci = u.id
+LEFT JOIN new_version_user_interests i ON i.user_id COLLATE utf8mb4_general_ci = u.id
 ORDER BY hxc_user_id
 LIMIT 10001;
