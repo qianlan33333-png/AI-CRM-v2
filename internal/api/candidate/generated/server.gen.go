@@ -23546,9 +23546,11 @@ type SidebarAgentConfigSignatureSignatureType string
 
 // SidebarBootstrapResponse defines model for SidebarBootstrapResponse.
 type SidebarBootstrapResponse struct {
-	ContextToken *string                       `json:"context_token,omitempty"`
-	CustomerId   *int64                        `json:"customer_id,omitempty"`
-	ExpiresAt    *time.Time                    `json:"expires_at,omitempty"`
+	ContextToken *string    `json:"context_token,omitempty"`
+	CustomerId   *int64     `json:"customer_id,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+
+	// OwnerStaffId Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.
 	OwnerStaffId *int64                        `json:"owner_staff_id,omitempty"`
 	Safety       SidebarSafety                 `json:"safety"`
 	State        SidebarBootstrapResponseState `json:"state"`
@@ -23578,9 +23580,11 @@ type SidebarChatActivityResponse struct {
 
 // SidebarContextResponse defines model for SidebarContextResponse.
 type SidebarContextResponse struct {
-	ContextToken *string                     `json:"context_token,omitempty"`
-	CustomerId   *int64                      `json:"customer_id,omitempty"`
-	ExpiresAt    *time.Time                  `json:"expires_at,omitempty"`
+	ContextToken *string    `json:"context_token,omitempty"`
+	CustomerId   *int64     `json:"customer_id,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+
+	// OwnerStaffId Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.
 	OwnerStaffId *int64                      `json:"owner_staff_id,omitempty"`
 	Safety       SidebarSafety               `json:"safety"`
 	State        SidebarContextResponseState `json:"state"`
@@ -23684,11 +23688,13 @@ type SidebarPhoneBindingResponseStatus string
 
 // SidebarProfile defines model for SidebarProfile.
 type SidebarProfile struct {
-	CustomerId   int64     `json:"customer_id"`
-	Description  string    `json:"description"`
-	Industry     string    `json:"industry"`
-	Name         string    `json:"name"`
-	Needs        string    `json:"needs"`
+	CustomerId  int64  `json:"customer_id"`
+	Description string `json:"description"`
+	Industry    string `json:"industry"`
+	Name        string `json:"name"`
+	Needs       string `json:"needs"`
+
+	// OwnerStaffId Zero means the customer is currently unassigned and is visible only to an admin or ops viewer.
 	OwnerStaffId int64     `json:"owner_staff_id"`
 	PainPoints   string    `json:"pain_points"`
 	Source       string    `json:"source"`

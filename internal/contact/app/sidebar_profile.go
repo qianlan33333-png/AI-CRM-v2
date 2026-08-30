@@ -235,7 +235,7 @@ func mergeSidebarProfileObject(extra json.RawMessage, patch contactport.SidebarP
 }
 
 func sidebarProfileProjection(record SidebarProfileRecord) (contactport.SidebarProfile, error) {
-	if record.CustomerID < 1 || record.OwnerStaffID < 1 || record.Name == "" || record.UpdatedAt.IsZero() || !IsChannelNeutralCustomerExtra(record.Extra) {
+	if record.CustomerID < 1 || record.OwnerStaffID < 0 || record.Name == "" || record.UpdatedAt.IsZero() || !IsChannelNeutralCustomerExtra(record.Extra) {
 		return contactport.SidebarProfile{}, contactport.ErrSidebarProfileUnavailable
 	}
 	var root map[string]json.RawMessage
@@ -280,7 +280,7 @@ func validSidebarProfileCommand(command contactport.SidebarProfileUpdateCommand)
 }
 
 func validSidebarProfile(profile contactport.SidebarProfile, customerID contactport.CustomerID, ownerStaffID int64) bool {
-	return profile.CustomerID == customerID && profile.OwnerStaffID == ownerStaffID && profile.Name != "" && !profile.UpdatedAt.IsZero()
+	return profile.CustomerID == customerID && profile.OwnerStaffID == ownerStaffID && profile.OwnerStaffID >= 0 && profile.Name != "" && !profile.UpdatedAt.IsZero()
 }
 
 func validSidebarProfileReceipt(receipt SidebarProfileReceipt, reservation SidebarProfileReceiptReservation) bool {

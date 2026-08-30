@@ -114,6 +114,18 @@ func TestSidebarProfileUpdateIsCASReceiptAndReplaySafe(t *testing.T) {
 	}
 }
 
+func TestSidebarProfileReadRepresentsUnassignedOwnerAsZero(t *testing.T) {
+	now := time.Date(2026, 8, 30, 12, 0, 0, 0, time.UTC)
+	store := &sidebarProfileStoreFake{record: SidebarProfileRecord{
+		CustomerID: 41, OwnerStaffID: 0, Name: "unassigned customer", Extra: json.RawMessage(`{}`), UpdatedAt: now,
+	}}
+	service := NewSidebarProfileService(sidebarProfileUOW{}, store, &sidebarProfileEvents{})
+	profile, err := service.ResolveSidebarProfile(context.Background(), 41)
+	if err != nil || profile.CustomerID != 41 || profile.OwnerStaffID != 0 || profile.Name != "unassigned customer" {
+		t.Fatalf("profile=%+v err=%v", profile, err)
+	}
+}
+
 func TestSidebarProfileUpdateRejectsStaleVersionBeforeSideEffects(t *testing.T) {
 	now := time.Date(2026, 8, 24, 12, 0, 0, 0, time.UTC)
 	store := &sidebarProfileStoreFake{record: SidebarProfileRecord{CustomerID: 41, OwnerStaffID: 7, Name: "customer", Extra: json.RawMessage(`{}`), UpdatedAt: now}}

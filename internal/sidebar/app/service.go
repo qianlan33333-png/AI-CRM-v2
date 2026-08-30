@@ -566,6 +566,9 @@ func validPrincipal(value authport.Principal) bool {
 }
 
 func principalAllowsOwner(value authport.Principal, owner int64) bool {
+	if owner == 0 {
+		return value.Role == authport.RoleAdmin || value.Role == authport.RoleOps
+	}
 	return owner > 0 && (value.Role == authport.RoleAdmin || value.Role == authport.RoleOps || value.Role == authport.RoleSales && value.StaffID != nil && *value.StaffID == owner)
 }
 
