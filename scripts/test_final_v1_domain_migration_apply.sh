@@ -53,7 +53,7 @@ case "${1:-}" in
   --check=compose-config) ;;
   --check=release) [[ "$*" = *"--expected-sha=${AICRM_FINAL_TEST_SHA:?}"* ]] ;;
   --stop=app,api,worker) ;;
-  --check=schema) [[ "$*" = *--expect=135* || "$*" = *--expect=143* ]] ;;
+  --check=schema) [[ "$*" = *--expect=135* || "$*" = *--expect=144* ]] ;;
   --check=external-effects) [[ "$*" = *--expect=0* ]] ;;
   --check=archive) [[ "$*" = *"--expected-sha=${AICRM_FINAL_TEST_ARCHIVE_SHA:?}"* ]] ;;
   --mode=final-preflight)
@@ -61,7 +61,7 @@ case "${1:-}" in
     printf '%s\n' "${AICRM_FINAL_TEST_PREFLIGHT_DOMAINS:?}"
     ;;
   --check=stopped) [[ "$*" = *--services=app,api,worker* ]] ;;
-  --from=135) [[ "$*" = *--to=143* ]] ;;
+  --from=135) [[ "$*" = *--to=144* ]] ;;
   --mode=import) [[ "${AICRM_FINAL_TEST_FAIL_DOMAIN:-}" = '' || "$*" != *"--domain=$AICRM_FINAL_TEST_FAIL_DOMAIN"* ]] ;;
   --mode=reconcile) ;;
   --mode=final-project) [[ "$*" = *--domain=final* && "$*" = *--migration-actor=1* ]] ;;
@@ -95,7 +95,7 @@ if run_apply "${arguments[@]}" >"$fixture/compose-control.log" 2>&1; then fail '
 grep -Fq 'runtime environment must not set COMPOSE_*' "$fixture/compose-control.log" || fail 'runtime COMPOSE_* rejection changed'
 sed -i.bak '$d' "$runtime_env" && rm -f "$runtime_env.bak"
 AICRM_WECOM_OUTBOUND_ENABLED=true run_apply "${arguments[@]}" >"$fixture/success.log"
-grep -Fq 'PASS (schema=135->143 imported-domains=5; reconciled-scopes=36; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
+grep -Fq 'PASS (schema=135->144 imported-domains=5; reconciled-scopes=36; split api+worker started)' "$fixture/success.log" || fail 'success receipt is missing'
 [[ "$(grep -c '^--mode=import ' "$log")" = 5 ]] || fail 'did not import exactly the pending domains'
 [[ "$(grep -c '^--mode=reconcile ' "$log")" = 36 ]] || fail 'did not reconcile every manifest package'
 [[ "$(grep -c '^--mode=final-project ' "$log")" = 1 ]] || fail 'editable current objects were not projected exactly once'
@@ -111,8 +111,8 @@ last_effect_line="$(grep -n '^--check=external-effects ' "$log" | tail -1 | cut 
 start_line="$(grep -n '^--start=api,worker ' "$log" | cut -d: -f1)"
 [[ "$last_domain_reconcile_line" -lt "$project_line" && "$project_line" -lt "$final_line" ]] || fail 'editable projection must follow immutable reconciliation and precede aggregate reconciliation'
 [[ "$final_line" -lt "$last_effect_line" && "$last_effect_line" -lt "$start_line" ]] || fail 'post-reconcile effects gate must precede startup'
-grep -Fqx -- "--from=135 --to=143 --runtime-env-file=$runtime_env" "$log" || fail 'Goose was not one bounded 135->143 command'
-grep -Fqx -- "--check=schema --expect=143 --runtime-env-file=$runtime_env" "$log" || fail 'post-Goose schema gate is missing'
+grep -Fqx -- "--from=135 --to=144 --runtime-env-file=$runtime_env" "$log" || fail 'Goose was not one bounded 135->144 command'
+grep -Fqx -- "--check=schema --expect=144 --runtime-env-file=$runtime_env" "$log" || fail 'post-Goose schema gate is missing'
 grep -Fqx -- "--mode=final-preflight --domain=final --archive-run-id=archive-final --preflight-output=lines" "$log" || fail 'formal baseline preflight is missing'
 preflight_line="$(grep -n '^--mode=final-preflight ' "$log" | cut -d: -f1)"
 goose_line="$(grep -n '^--from=135 ' "$log" | cut -d: -f1)"
@@ -156,5 +156,5 @@ if AICRM_FINAL_TEST_FAIL_DOMAIN=hxc-member-usage-history run_apply "${arguments[
 no_go_path='/usr/bin:/bin:/usr/sbin:/sbin'
 if PATH="$no_go_path" command -v go >/dev/null 2>&1; then fail 'no-Go fixture PATH unexpectedly resolves go'; fi
 PATH="$no_go_path" run_apply "${arguments[@]}" >"$fixture/no-go.log"
-grep -Fq 'PASS (schema=135->143 imported-domains=5; reconciled-scopes=36; split api+worker started)' "$fixture/no-go.log" || fail 'fully injected execution required Go on PATH'
+grep -Fq 'PASS (schema=135->144 imported-domains=5; reconciled-scopes=36; split api+worker started)' "$fixture/no-go.log" || fail 'fully injected execution required Go on PATH'
 printf 'test-final-v1-domain-migration-apply: PASS\n'

@@ -172,11 +172,11 @@ fi
 # Goose performs its one bounded migration, and reconcile seals all imports.
 if [[ -n "${AICRM_FINAL_GOOSE_COMMAND:-}" ]]; then
   require_command AICRM_FINAL_GOOSE_COMMAND
-  "$AICRM_FINAL_GOOSE_COMMAND" --from="$expected_start_schema" --to=143 --runtime-env-file="$runtime_env_file"
+  "$AICRM_FINAL_GOOSE_COMMAND" --from="$expected_start_schema" --to=144 --runtime-env-file="$runtime_env_file"
 else
-  (cd "$repository_root"; GOOSE_DRIVER=postgres GOOSE_DBSTRING="$AICRM_DATABASE_URL" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" tool -modfile=tools/go.mod goose -dir migrations up-to 143)
+  (cd "$repository_root"; GOOSE_DRIVER=postgres GOOSE_DBSTRING="$AICRM_DATABASE_URL" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" tool -modfile=tools/go.mod goose -dir migrations up-to 144)
 fi
-"$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect=143 --runtime-env-file="$runtime_env_file"
+"$AICRM_FINAL_STATUS_COMMAND" --check=schema --expect=144 --runtime-env-file="$runtime_env_file"
 while IFS= read -r domain; do
   [[ -n "$domain" ]] || continue
   case " $pending_domains " in *" $domain "*) ;; *) continue ;; esac
@@ -223,4 +223,4 @@ fi
 "$AICRM_FINAL_STATUS_COMMAND" --check=external-effects --expect=0 --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_RUNTIME_COMMAND" --start=api,worker --web=api --runtime-env-file="$runtime_env_file"
 "$AICRM_FINAL_RUNTIME_COMMAND" --check=release --expected-sha="$expected_sha" --runtime-env-file="$runtime_env_file"
-printf 'final-v1-domain-migration-apply: PASS (schema=%s->143 imported-domains=%s; reconciled-scopes=36; split api+worker started)\n' "$expected_start_schema" "$(printf '%s\n' "$pending_domains" | tr ' ' '\n' | wc -l | tr -d ' ')"
+printf 'final-v1-domain-migration-apply: PASS (schema=%s->144 imported-domains=%s; reconciled-scopes=36; split api+worker started)\n' "$expected_start_schema" "$(printf '%s\n' "$pending_domains" | tr ' ' '\n' | wc -l | tr -d ' ')"

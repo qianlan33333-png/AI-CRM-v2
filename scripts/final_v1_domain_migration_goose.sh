@@ -22,11 +22,11 @@ for argument in "$@"; do
     --from=*) [[ -z "$from" ]] || fail 'duplicate --from'; from="${argument#--from=}" ;;
     --to=*) [[ -z "$to" ]] || fail 'duplicate --to'; to="${argument#--to=}" ;;
     --runtime-env-file=*) [[ -z "$runtime_env_file" ]] || fail 'duplicate --runtime-env-file'; runtime_env_file="${argument#--runtime-env-file=}" ;;
-    *) fail 'only --from=135 --to=143 --runtime-env-file=<absolute-file> are accepted' ;;
+    *) fail 'only --from=135 --to=144 --runtime-env-file=<absolute-file> are accepted' ;;
   esac
 done
 
-[[ "$from" = 135 && "$to" = 143 ]] || fail 'only one bounded Goose migration from 135 to 143 is accepted'
+[[ "$from" = 135 && "$to" = 144 ]] || fail 'only one bounded Goose migration from 135 to 144 is accepted'
 [[ "$runtime_env_file" = /* && -f "$runtime_env_file" && ! -L "$runtime_env_file" ]] || fail 'runtime environment file is invalid'
 
 read_env_value() {
@@ -49,7 +49,7 @@ script_directory="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 repository_root="$(CDPATH= cd -- "$script_directory/.." && pwd -P)"
 migrations="$repository_root/migrations"
 [[ -d "$migrations" && ! -L "$migrations" ]] || fail 'migrations directory is invalid'
-for version in $(seq 136 143); do
+for version in $(seq 136 144); do
   matches=("$migrations"/"$(printf '%05d' "$version")"_*.sql)
   [[ -f "${matches[0]:-}" && ! -L "${matches[0]:-}" ]] || fail "required migration $version is missing"
 done
@@ -57,4 +57,4 @@ done
 # The DSN remains process environment data; it is never sourced, formatted, or
 # placed in the Goose argument vector.
 env -u BASH_ENV -u ENV GOOSE_DRIVER=postgres GOOSE_DBSTRING="$database_url" \
-  "$goose_command" -dir "$migrations" up-to 143
+  "$goose_command" -dir "$migrations" up-to 144

@@ -1,7 +1,7 @@
 {
   "schema": {
     "from": 132,
-    "to": 143,
+    "to": 144,
     "forbidden_hxc_objects": ["hxc_activation_funnel", "hxc_activation_broadcast"]
   },
   "scope": {
