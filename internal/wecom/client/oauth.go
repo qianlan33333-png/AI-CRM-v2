@@ -39,6 +39,7 @@ type HumanOAuthClient struct {
 	callbackURL    string
 	corpID         CorpID
 	desktopAgentID int64
+	identityPath   string
 	httpClient     *http.Client
 	tokenProvider  TokenProvider
 }
@@ -68,9 +69,15 @@ func NewHumanOAuthClient(config HumanOAuthConfig) (*HumanOAuthClient, error) {
 	if config.DesktopAgentID > 0 && callbackPath != "/auth/wecom/callback" {
 		return nil, ErrInvalidConfig
 	}
+	identityPath := "/cgi-bin/auth/getuserinfo"
+	if callbackPath == "/api/sidebar/v2/oauth/callback" {
+		// A sidebar snsapi_base code belongs to the member OAuth endpoint.
+		// /cgi-bin/auth/getuserinfo is only for the desktop SSO code flow.
+		identityPath = "/cgi-bin/user/getuserinfo"
+	}
 	return &HumanOAuthClient{
 		baseURL: baseURL, authorizeURL: authorizeURL, callbackURL: callbackURL.String(), corpID: config.CorpID, desktopAgentID: config.DesktopAgentID,
-		httpClient: config.HTTPClient, tokenProvider: config.TokenProvider,
+		identityPath: identityPath, httpClient: config.HTTPClient, tokenProvider: config.TokenProvider,
 	}, nil
 }
 
@@ -123,7 +130,7 @@ func (client *HumanOAuthClient) Exchange(ctx context.Context, code string) (Huma
 	if err != nil {
 		return HumanIdentity{}, err
 	}
-	endpoint := client.baseURL.ResolveReference(&url.URL{Path: "/cgi-bin/auth/getuserinfo"})
+	endpoint := client.baseURL.ResolveReference(&url.URL{Path: client.identityPath})
 	query := url.Values{}
 	query.Set("access_token", token.Value())
 	query.Set("code", code)

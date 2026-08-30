@@ -145,7 +145,16 @@ func TestHumanOAuthProviderAdapterRejectsExternalOrMalformedIdentity(t *testing.
 }
 
 func TestHumanOAuthProviderAdapterAcceptsOnlyExplicitSidebarCallbackPath(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	var identityPath string
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/cgi-bin/gettoken":
+			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"access-fixture","expires_in":7200}`))
+		default:
+			identityPath = request.URL.Path
+			_, _ = writer.Write([]byte(`{"errcode":0,"userid":"sidebar-member"}`))
+		}
+	}))
 	defer server.Close()
 	credentials, err := NewCredentials("corp-fixture", "secret-fixture")
 	if err != nil {
@@ -166,6 +175,10 @@ func TestHumanOAuthProviderAdapterAcceptsOnlyExplicitSidebarCallbackPath(t *test
 	redirect, err := client.AuthorizationURL(state)
 	if err != nil || !strings.Contains(redirect, "redirect_uri=https%3A%2F%2Fcrm.example.test%2Fapi%2Fsidebar%2Fv2%2Foauth%2Fcallback") {
 		t.Fatalf("sidebar redirect/error = %q/%v", redirect, err)
+	}
+	identity, err := client.Exchange(context.Background(), "sidebar-code")
+	if err != nil || identity.UserID != "sidebar-member" || identityPath != "/cgi-bin/user/getuserinfo" {
+		t.Fatalf("sidebar Exchange=%+v path=%q err=%v", identity, identityPath, err)
 	}
 	if _, err = NewHumanOAuthClient(HumanOAuthConfig{
 		BaseURL: server.URL, AuthorizeURL: server.URL + "/connect/oauth2/authorize", CallbackURL: "https://crm.example.test/api/sidebar/v2/oauth/callback", CallbackPath: "/auth/wecom/callback",
