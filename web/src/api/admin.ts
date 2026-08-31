@@ -1761,10 +1761,11 @@ async function uniqueMediaId(kind: 'image' | 'attachment' | 'mini', name: string
   if (matches.length !== 1) throw new Error(matches.length ? `存在多个同名素材「${name}」，请刷新后按资源 ID 操作` : `素材「${name}」不存在或已删除`);
   return kind === 'mini' ? Number(matches[0].id) : text(matches[0].id, '');
 }
-export async function saveImageItemDto(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void> {
-  if (!originalName) { if (!patch.file) throw new Error('请选择真实图片文件后再上传'); await call(uploadLegacyImage({ image: patch.file, name: patch.name, description: patch.desc, tags: patch.tags, category: patch.tag }, apiRequestOptions())); return; }
+export async function saveImageItemDto(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<ImageItem> {
+  if (!originalName) { if (!patch.file) throw new Error('请选择真实图片文件后再上传'); const result = obj(await call(uploadLegacyImage({ image: patch.file, name: patch.name, description: patch.desc, tags: patch.tags, category: patch.tag }, apiRequestOptions()))); return imagePageDto(result.item || result); }
   const id = patch.resourceId || String(await uniqueMediaId('image', originalName));
-  await call(updateLegacyImage(id, { name: patch.name, description: patch.desc, tags: patch.tags == null ? undefined : splitTags(patch.tags), category: patch.tag, enabled: patch.enabled }, apiRequestOptions()));
+  const result = obj(await call(updateLegacyImage(id, { name: patch.name, description: patch.desc, tags: patch.tags == null ? undefined : splitTags(patch.tags), category: patch.tag, enabled: patch.enabled }, apiRequestOptions())));
+  return imagePageDto(result.item || result);
 }
 export async function deleteImageItemDto(item: ImageItem): Promise<void> { const id = item.resourceId || String(await uniqueMediaId('image', item.name)); await call(deleteLegacyImage(id, undefined, apiRequestOptions())); }
 export async function getImageThumbnailDto(item: ImageItem): Promise<Blob> { const id = item.resourceId || String(await uniqueMediaId('image', item.name)); return (await request(getGetLegacyImageVariantUrl(id, 'thumb_320'))).blob(); }
