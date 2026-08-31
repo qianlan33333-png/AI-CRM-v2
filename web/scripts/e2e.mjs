@@ -486,6 +486,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
           }
           if (url.pathname === '/api/admin/wecom/tags') return json({ items: [] });
           if (url.pathname === '/api/admin/wecom/tag-groups') return json({ items: [] });
+          if (url.pathname === '/api/admin/channels/49/acquisition-assets' && (init.method || 'GET') === 'GET') return json({ items: [], limit: 20, has_more: false, next_cursor: '' });
           if (url.pathname.startsWith('/api/admin/channels/49/')) return json({ code: 'unavailable' }, 503);
           return json({ code: 'unexpected_channel_request' }, 500);
         };
@@ -2219,7 +2220,7 @@ console.log('admin/channelForm.html?id=49（HTTP 历史停用渠道安全默认�
   const calls = dom.window.__channelHttpTest.calls;
   const empty = (id) => d.querySelector(id)?.value === '';
   ok('编辑页经真实列表和详情 GET 显示停用定义', d.querySelector('#channelName')?.value === 'V1 历史渠道' && d.querySelector('#channelCode')?.value === 'v1-history-49' && d.querySelector('#channelStatus')?.value === 'inactive' && calls.some((call) => call.path === '/api/admin/channels' && call.method === 'GET') && calls.some((call) => call.path === '/api/admin/channels/49' && call.method === 'GET'));
-  ok('空 QR、场景、欢迎语、素材、标签与客服保持空且不伪造资产', ['#channelScene', '#channelQrUrl', '#channelLinkUrl', '#channelFinalUrl', '#channelOwner', '#channelTagName', '#channelTagGroup', '#channelWelcome', '#channelImageIds', '#channelMiniIds', '#channelAttachmentIds', '#channelGroupInviteIds'].every(empty) && !d.querySelector('#channelAutoAccept')?.checked && d.querySelector('#channelFinalUrlPreview')?.textContent.includes('二维码载体不生成本地链接预览') && d.body.textContent.includes('尚未申请资产') && ![...d.querySelectorAll('button')].some((button) => ['打开', '下载', '复制'].includes(button.textContent.trim())) && calls.every((call) => call.method === 'GET'));
+  ok('空 QR、场景、欢迎语、素材、标签与客服保持空且本地资产读取不受企微开关影响', ['#channelScene', '#channelQrUrl', '#channelLinkUrl', '#channelFinalUrl', '#channelOwner', '#channelTagName', '#channelTagGroup', '#channelWelcome', '#channelImageIds', '#channelMiniIds', '#channelAttachmentIds', '#channelGroupInviteIds'].every(empty) && !d.querySelector('#channelAutoAccept')?.checked && d.querySelector('#channelFinalUrlPreview')?.textContent.includes('二维码载体不生成本地链接预览') && d.body.textContent.includes('尚未申请资产') && !d.body.textContent.includes('资产状态读取失败') && calls.some((call) => call.path === '/api/admin/channels/49/acquisition-assets' && call.method === 'GET') && ![...d.querySelectorAll('button')].some((button) => ['打开', '下载', '复制'].includes(button.textContent.trim())) && calls.every((call) => call.method === 'GET'));
   dom.window.close();
 }
 

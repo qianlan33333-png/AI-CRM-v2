@@ -26,6 +26,8 @@ var whitelistRoutePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`^/api/admin/questionnaires(?:/preflight|/[1-9][0-9]*(?:/(?:duplicate|disable|enable|results|submissions))?)?$`),
 	regexp.MustCompile(`^/api/admin/radar-links(?:/new/options|/[1-9][0-9]*(?:/(?:enable|disable))?)?$`),
 	regexp.MustCompile(`^/api/admin/channels(?:/[1-9][0-9]*)?$`),
+	regexp.MustCompile(`^/api/admin/channels/[1-9][0-9]*/(?:contacts|acquisition-preview|assignees)$`),
+	regexp.MustCompile(`^/api/admin/channels/[1-9][0-9]*/(?:acquisition-staff|qrcode/(?:generate|download)|acquisition-assets(?:/eer_[1-9][0-9]{0,18}(?:/reconcile)?)?)$`),
 	regexp.MustCompile(`^/api/admin/ai-audience/(?:package-groups(?:/[1-9][0-9]*)?|packages(?:/[1-9][0-9]*(?:/(?:copy|pause|configuration|configuration-preview|configuration-materialize|members))?)?)$`),
 	regexp.MustCompile(`^/api/admin/automation-agents(?:/[1-9][0-9]*(?:/(?:fixed-content|precheck|activate|copy|pause|publish))?)?$`),
 	regexp.MustCompile(`^/api/admin/hxc-current$`),
