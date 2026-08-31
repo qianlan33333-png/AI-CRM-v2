@@ -3340,7 +3340,7 @@ paths:
     get:
       tags: [p4-product]
       operationId: getLegacyWechatPayProductShare
-      summary: Read a closed local share descriptor without claiming a public purchase route
+      summary: Read the existing same-origin public detail path for one enabled ordinary product
       x-p4-decision-evidence: P4-I01A-2026-08-14
       x-aicrm-capability: products.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -3351,7 +3351,7 @@ paths:
       x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/ProductID" }]
       responses:
-        "200": { description: Closed local share descriptor, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleShare" } } } }
+        "200": { description: "Same-origin read-only product page path; no checkout, payment, or Provider effect", content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleShare" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -26063,16 +26063,15 @@ components:
     LocalProductLifecycleShare:
       type: object
       additionalProperties: false
-      required: [ok, product_id, product_code, lifecycle, available, reason]
+      required: [ok, product_id, product_code, lifecycle, public_path, local_only, real_external_call_executed]
       properties:
-        ok: {type: boolean}
+        ok: {type: boolean, enum: [true]}
         product_id: {type: integer, format: int64, minimum: 1}
         product_code: {type: string, minLength: 1, maxLength: 200}
-        lifecycle: {type: string, enum: [draft, disabled, enabled]}
-        available: {type: boolean}
-        reason: {type: string, minLength: 1, enum: [no_authoritative_public_purchase_route]}
-        purchase_url: {type: string}
-        qr_code_url: {type: string}
+        lifecycle: {type: string, enum: [enabled]}
+        public_path: {type: string, pattern: '^/p/ordinary/[1-9][0-9]{0,18}$', maxLength: 80}
+        local_only: {type: boolean, enum: [true]}
+        real_external_call_executed: {type: boolean, enum: [false]}
     CommerceExternalPushConfigurationRequest:
       type: object
       additionalProperties: false

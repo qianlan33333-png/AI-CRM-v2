@@ -9990,18 +9990,12 @@ func (e LocalProductLifecycleProductLifecycle) Valid() bool {
 
 // Defines values for LocalProductLifecycleShareLifecycle.
 const (
-	LocalProductLifecycleShareLifecycleDisabled LocalProductLifecycleShareLifecycle = "disabled"
-	LocalProductLifecycleShareLifecycleDraft    LocalProductLifecycleShareLifecycle = "draft"
-	LocalProductLifecycleShareLifecycleEnabled  LocalProductLifecycleShareLifecycle = "enabled"
+	LocalProductLifecycleShareLifecycleEnabled LocalProductLifecycleShareLifecycle = "enabled"
 )
 
 // Valid indicates whether the value is a known member of the LocalProductLifecycleShareLifecycle enum.
 func (e LocalProductLifecycleShareLifecycle) Valid() bool {
 	switch e {
-	case LocalProductLifecycleShareLifecycleDisabled:
-		return true
-	case LocalProductLifecycleShareLifecycleDraft:
-		return true
 	case LocalProductLifecycleShareLifecycleEnabled:
 		return true
 	default:
@@ -10009,15 +10003,45 @@ func (e LocalProductLifecycleShareLifecycle) Valid() bool {
 	}
 }
 
-// Defines values for LocalProductLifecycleShareReason.
+// Defines values for LocalProductLifecycleShareLocalOnly.
 const (
-	NoAuthoritativePublicPurchaseRoute LocalProductLifecycleShareReason = "no_authoritative_public_purchase_route"
+	LocalProductLifecycleShareLocalOnlyTrue LocalProductLifecycleShareLocalOnly = true
 )
 
-// Valid indicates whether the value is a known member of the LocalProductLifecycleShareReason enum.
-func (e LocalProductLifecycleShareReason) Valid() bool {
+// Valid indicates whether the value is a known member of the LocalProductLifecycleShareLocalOnly enum.
+func (e LocalProductLifecycleShareLocalOnly) Valid() bool {
 	switch e {
-	case NoAuthoritativePublicPurchaseRoute:
+	case LocalProductLifecycleShareLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LocalProductLifecycleShareOk.
+const (
+	LocalProductLifecycleShareOkTrue LocalProductLifecycleShareOk = true
+)
+
+// Valid indicates whether the value is a known member of the LocalProductLifecycleShareOk enum.
+func (e LocalProductLifecycleShareOk) Valid() bool {
+	switch e {
+	case LocalProductLifecycleShareOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LocalProductLifecycleShareRealExternalCallExecuted.
+const (
+	LocalProductLifecycleShareRealExternalCallExecutedFalse LocalProductLifecycleShareRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LocalProductLifecycleShareRealExternalCallExecuted enum.
+func (e LocalProductLifecycleShareRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LocalProductLifecycleShareRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -14922,13 +14946,13 @@ func (e WeComContactHistoryRelationPageReadOnly) Valid() bool {
 
 // Defines values for WeComContactHistoryRelationPageRealExternalCallExecuted.
 const (
-	WeComContactHistoryRelationPageRealExternalCallExecutedFalse WeComContactHistoryRelationPageRealExternalCallExecuted = false
+	False WeComContactHistoryRelationPageRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the WeComContactHistoryRelationPageRealExternalCallExecuted enum.
 func (e WeComContactHistoryRelationPageRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case WeComContactHistoryRelationPageRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -21112,21 +21136,26 @@ type LocalProductLifecycleProductLifecycle string
 
 // LocalProductLifecycleShare defines model for LocalProductLifecycleShare.
 type LocalProductLifecycleShare struct {
-	Available   bool                                `json:"available"`
-	Lifecycle   LocalProductLifecycleShareLifecycle `json:"lifecycle"`
-	Ok          bool                                `json:"ok"`
-	ProductCode string                              `json:"product_code"`
-	ProductId   int64                               `json:"product_id"`
-	PurchaseUrl *string                             `json:"purchase_url,omitempty"`
-	QrCodeUrl   *string                             `json:"qr_code_url,omitempty"`
-	Reason      LocalProductLifecycleShareReason    `json:"reason"`
+	Lifecycle                LocalProductLifecycleShareLifecycle                `json:"lifecycle"`
+	LocalOnly                LocalProductLifecycleShareLocalOnly                `json:"local_only"`
+	Ok                       LocalProductLifecycleShareOk                       `json:"ok"`
+	ProductCode              string                                             `json:"product_code"`
+	ProductId                int64                                              `json:"product_id"`
+	PublicPath               string                                             `json:"public_path"`
+	RealExternalCallExecuted LocalProductLifecycleShareRealExternalCallExecuted `json:"real_external_call_executed"`
 }
 
 // LocalProductLifecycleShareLifecycle defines model for LocalProductLifecycleShare.Lifecycle.
 type LocalProductLifecycleShareLifecycle string
 
-// LocalProductLifecycleShareReason defines model for LocalProductLifecycleShare.Reason.
-type LocalProductLifecycleShareReason string
+// LocalProductLifecycleShareLocalOnly defines model for LocalProductLifecycleShare.LocalOnly.
+type LocalProductLifecycleShareLocalOnly bool
+
+// LocalProductLifecycleShareOk defines model for LocalProductLifecycleShare.Ok.
+type LocalProductLifecycleShareOk bool
+
+// LocalProductLifecycleShareRealExternalCallExecuted defines model for LocalProductLifecycleShare.RealExternalCallExecuted.
+type LocalProductLifecycleShareRealExternalCallExecuted bool
 
 // LocalProductLifecycleVersionRequest defines model for LocalProductLifecycleVersionRequest.
 type LocalProductLifecycleVersionRequest struct {
@@ -29389,7 +29418,7 @@ type ServerInterface interface {
 	// Record a local accepted external-push test without a Provider call or job
 	// (POST /api/admin/wechat-pay/products/{product_id}/external-push/test)
 	QueueWechatPayProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId ProductID, params QueueWechatPayProductExternalPushTestParams)
-	// Read a closed local share descriptor without claiming a public purchase route
+	// Read the existing same-origin public detail path for one enabled ordinary product
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID)
 	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
@@ -31411,7 +31440,7 @@ func (_ Unimplemented) QueueWechatPayProductExternalPushTest(w http.ResponseWrit
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Read a closed local share descriptor without claiming a public purchase route
+// Read the existing same-origin public detail path for one enabled ordinary product
 // (GET /api/admin/wechat-pay/products/{product_id}/share)
 func (_ Unimplemented) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -78760,7 +78789,7 @@ type StrictServerInterface interface {
 	// Record a local accepted external-push test without a Provider call or job
 	// (POST /api/admin/wechat-pay/products/{product_id}/external-push/test)
 	QueueWechatPayProductExternalPushTest(ctx context.Context, request QueueWechatPayProductExternalPushTestRequestObject) (QueueWechatPayProductExternalPushTestResponseObject, error)
-	// Read a closed local share descriptor without claiming a public purchase route
+	// Read the existing same-origin public detail path for one enabled ordinary product
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(ctx context.Context, request GetLegacyWechatPayProductShareRequestObject) (GetLegacyWechatPayProductShareResponseObject, error)
 	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund

@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -61,14 +62,13 @@ type LocalProductLifecycleDeleteResponse struct {
 }
 
 type LocalProductLifecycleShareResponse struct {
-	OK          bool   `json:"ok"`
-	ProductID   int64  `json:"product_id"`
-	ProductCode string `json:"product_code"`
-	Lifecycle   string `json:"lifecycle"`
-	Available   bool   `json:"available"`
-	Reason      string `json:"reason"`
-	PurchaseURL string `json:"purchase_url,omitempty"`
-	QRCodeURL   string `json:"qr_code_url,omitempty"`
+	OK                       bool   `json:"ok"`
+	ProductID                int64  `json:"product_id"`
+	ProductCode              string `json:"product_code"`
+	Lifecycle                string `json:"lifecycle"`
+	PublicPath               string `json:"public_path"`
+	LocalOnly                bool   `json:"local_only"`
+	RealExternalCallExecuted bool   `json:"real_external_call_executed"`
 }
 
 func (handler *LocalProductLifecycleHandler) SetLocalProductEnabled(writer http.ResponseWriter, request *http.Request, productID int64, enabled bool) {
@@ -256,17 +256,14 @@ func localProductLifecycleProductResponse(product productport.LocalProduct) (Loc
 }
 
 func localProductLifecycleShareResponse(share productport.LocalProductShare) (LocalProductLifecycleShareResponse, error) {
-	if share.ProductID < 1 || share.ProductCode == "" ||
-		(!share.Available && share.Reason == "") ||
-		(share.Available && (share.PurchaseURL == "" || share.QRCodeURL == "")) ||
-		(!share.Available && (share.PurchaseURL != "" || share.QRCodeURL != "")) {
+	if share.ProductID < 1 || share.ProductCode == "" || strings.TrimSpace(share.ProductCode) != share.ProductCode {
 		return LocalProductLifecycleShareResponse{}, productapp.ErrUnavailable
 	}
-	if share.Lifecycle != productport.LocalProductDraft && share.Lifecycle != productport.LocalProductEnabled && share.Lifecycle != productport.LocalProductDisabled {
+	if share.Lifecycle != productport.LocalProductEnabled {
 		return LocalProductLifecycleShareResponse{}, productapp.ErrUnavailable
 	}
 	return LocalProductLifecycleShareResponse{
 		OK: true, ProductID: int64(share.ProductID), ProductCode: share.ProductCode, Lifecycle: string(share.Lifecycle),
-		Available: share.Available, Reason: share.Reason, PurchaseURL: share.PurchaseURL, QRCodeURL: share.QRCodeURL,
+		PublicPath: "/p/ordinary/" + strconv.FormatInt(int64(share.ProductID), 10), LocalOnly: true, RealExternalCallExecuted: false,
 	}, nil
 }

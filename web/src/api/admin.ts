@@ -88,6 +88,7 @@ import {
 } from "./generated/p4-tag-compat/p4-tag-compat";
 import {
   getProduct,
+  getLegacyWechatPayProductShare,
   listProducts,
   copyLegacyWechatPayProduct,
   createProduct,
@@ -1494,6 +1495,14 @@ export async function readRadarSharePath(linkId: number): Promise<string> {
   return sharePath;
 }
 export async function readCouponSharePath(couponId: number): Promise<string> { const projection = obj(await call(getLegacyCouponShare(couponId, apiRequestOptions()))); if (typeof projection.url !== 'string') throw new Error('后端尚未提供可用的优惠券分享路径'); return projection.url; }
+export async function readProductSharePath(productId: number): Promise<string> {
+  if (!Number.isSafeInteger(productId) || productId < 1) throw new Error('商品 ID 无效');
+  const projection = obj(await call(getLegacyWechatPayProductShare(productId, apiRequestOptions())));
+  const responseId = Number(projection.product_id);
+  const publicPath = typeof projection.public_path === 'string' ? projection.public_path : '';
+  if (projection.ok !== true || responseId !== productId || projection.lifecycle !== 'enabled' || publicPath !== `/p/ordinary/${productId}` || projection.local_only !== true || projection.real_external_call_executed !== false) throw new Error('商品分享响应不完整或越过本地边界');
+  return publicPath;
+}
 export async function readServiceProductSharePath(serviceProductId: number): Promise<string> {
   if (!Number.isSafeInteger(serviceProductId) || serviceProductId < 1) throw new Error('周期商品 ID 无效');
   const projection = obj(await call(getServicePeriodProductShare(serviceProductId, apiRequestOptions())));

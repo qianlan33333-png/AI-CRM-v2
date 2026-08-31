@@ -18222,21 +18222,7 @@ export type LocalProductLifecycleShareLifecycle =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LocalProductLifecycleShareLifecycle = {
-  draft: "draft",
-  disabled: "disabled",
   enabled: "enabled",
-} as const;
-
-/**
- * @minLength 1
- */
-export type LocalProductLifecycleShareReason =
-  (typeof LocalProductLifecycleShareReason)[keyof typeof LocalProductLifecycleShareReason];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const LocalProductLifecycleShareReason = {
-  no_authoritative_public_purchase_route:
-    "no_authoritative_public_purchase_route",
 } as const;
 
 export interface LocalProductLifecycleShare {
@@ -18249,11 +18235,13 @@ export interface LocalProductLifecycleShare {
    */
   product_code: string;
   lifecycle: LocalProductLifecycleShareLifecycle;
-  available: boolean;
-  /** @minLength 1 */
-  reason: LocalProductLifecycleShareReason;
-  purchase_url?: string;
-  qr_code_url?: string;
+  /**
+   * @maxLength 80
+   * @pattern ^/p/ordinary/[1-9][0-9]{0,18}$
+   */
+  public_path: string;
+  local_only: boolean;
+  real_external_call_executed: boolean;
 }
 
 export interface CommerceExternalPushConfigurationRequest {

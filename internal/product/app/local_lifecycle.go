@@ -24,7 +24,6 @@ const (
 	LocalProductProjectionDraftStatus    = "draft"
 	LocalProductProjectionEnabledStatus  = "active"
 	LocalProductProjectionDisabledStatus = "disabled"
-	LocalProductShareUnavailableReason   = "no_authoritative_public_purchase_route"
 )
 
 var ErrLocalProductDeleteNotAllowed = errors.New("local product can only delete an unreferenced draft")
@@ -311,9 +310,11 @@ func (service *LocalProductLifecycleService) ShareLocalProduct(ctx context.Conte
 		if projectErr != nil {
 			return projectErr
 		}
+		if projected.Lifecycle != productport.LocalProductEnabled || !projected.Enabled {
+			return ErrNotFound
+		}
 		result = productport.LocalProductShare{
 			ProductID: projected.ID, ProductCode: projected.ProductCode, Lifecycle: projected.Lifecycle,
-			Available: false, Reason: LocalProductShareUnavailableReason,
 		}
 		return nil
 	})
