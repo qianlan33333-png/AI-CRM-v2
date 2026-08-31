@@ -16,13 +16,19 @@ const registry = JSON.parse(read('src/admin/registry.json'));
 const campaign = registry.screens.find((item) => item.key === 'campaigns');
 ok(campaign?.isNav === false, 'Cloud Campaign 只能作为隐藏路由保留');
 
-const blockedPages = ['active', 'auth', 'done', 'error', 'expired', 'loading', 'pay', 'qr', 'signup'];
+const blockedPages = ['active', 'auth', 'done', 'error', 'expired', 'pay', 'qr', 'signup'];
 for (const page of blockedPages) {
   const dom = new JSDOM(`<body>${read(`src/h5/templates/${page}.html`)}</body>`);
   const banner = dom.window.document.querySelector('[data-h5-blocked]');
   ok(banner, `H5 ${page} 必须显示明确 blocked 状态`);
   ok(banner.parentElement === dom.window.document.body, `H5 ${page} blocked 提示不得塞入 44px 标题栏`);
   ok(dom.window.document.querySelector('button:not([disabled])') === null, `H5 ${page} 不得暴露可执行的伪业务按钮`);
+}
+const loading = read('src/h5/templates/loading.html');
+ok(!loading.includes('data-h5-blocked') && !loading.includes('blockedReason'), 'H5 loading 骨架屏不得渲染 blocked 横幅');
+for (const page of ['done', 'qr']) {
+  const html = read(`src/h5/templates/${page}.html`);
+  ok(html.includes('data-h5-local-exit'), `H5 ${page} 必须提供非禁用的纯本地出口（链接/导航元素）`);
 }
 
 const all = read('src/h5/templates/all.html');
@@ -41,8 +47,16 @@ ok(!orders.includes('共 486 条'), '交易页不得显示硬编码订单总数'
 const automation = read('src/admin/sections/automationAgents.ts');
 ok(automation.includes('客户管理后台 / 配置及后台') && automation.includes('grid-template-columns:226px'), '自动化 HTTP 运行态必须使用 Kimi 列表/编辑层级');
 
-const commerce = read('src/admin/sections/commerce.ts');
-ok((commerce.match(/alignKimiWorkspace\(stage\)/g) || []).length >= 3, '优惠券与 Member Grid HTTP 运行态必须套用 Kimi 工作区层级');
+const legacyLoader = read('src/admin/legacy.ts');
+ok(!legacyLoader.includes('sections/commerce'), '优惠券与 Member Grid 不得再由 sections/commerce 整页接管');
+for (const page of ['couponForm', 'couponData', 'spProductData']) {
+  const template = read(`src/admin/templates/${page}.html`);
+  ok(template.includes('height:52px'), `${page} 必须保留 Kimi 52px 工作区头部层级`);
+}
+const couponFormTpl = read('src/admin/templates/couponForm.html');
+ok(couponFormTpl.includes('id="coupon-target-refs"') && couponFormTpl.includes('id="option-search"') && couponFormTpl.includes('name="coupon-validity"'), '优惠券表单必须含真实 target_refs、商品选项目录与领取/有效期单选组');
+const spDataTpl = read('src/admin/templates/spProductData.html');
+ok(spDataTpl.includes('id="member-grid-apply"') && spDataTpl.includes('id="member-grid-share-toggle"'), '周期商品数据页必须含真实 Member Grid 筛选与分享控件');
 
 const groupOps = read('src/admin/templates/groupops.html');
 const groupOpsDetail = read('src/admin/templates/groupopsDetail.html');

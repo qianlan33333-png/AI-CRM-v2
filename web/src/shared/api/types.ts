@@ -473,6 +473,12 @@ export interface CustomerListMeta {
   nextCursor: string | null;
 }
 
+/** 订单列表服务端分页元信息（limit/offset 模式）。 */
+export interface OrderListMeta {
+  total: number;
+  hasMore: boolean;
+}
+
 export interface Tag {
   name: string;
 }
@@ -561,7 +567,10 @@ export interface Channel {
   /** 渠道编码（选渠道码组件行内展示） */
   code: string;
   type: string;
+  /** 原始状态枚举（active/inactive/archived），表单逻辑使用；列表展示请用 statusLabel。 */
   status: string;
+  /** 状态中文标签（HTTP 适配器提供；mock 行缺省时回退 status）。 */
+  statusLabel?: string;
   tone: Tone;
   mat: string;
   tag: string;
@@ -859,6 +868,7 @@ export interface ImageItem {
   enabled: boolean;
   uploadedAt: string;
   thumbnailUrl?: string;
+  originalUrl?: string;
   thumbnailError?: string;
 }
 
@@ -898,6 +908,17 @@ export interface Agent {
   material: string;
   status: string;
   tone: Tone;
+  id?: number;
+  boundPackageId?: number | null;
+  boundPackageName?: string;
+  rolePrompt?: string;
+  taskPrompt?: string;
+  fixedContentText?: string;
+  imageLibraryIds?: number[];
+  miniProgramLibraryIds?: number[];
+  attachmentLibraryIds?: number[];
+  groupInviteLibraryIds?: number[];
+  legacyConfiguration?: Record<string, unknown>;
 }
 
 export interface Label {
@@ -1007,7 +1028,9 @@ export interface AdminDb {
   groupChats: GroupChat[];
   customerList: CustomerListMeta;
   customerDetail: CustomerDetailView;
+  orderList: OrderListMeta;
   rows: RowsData;
+  hxcSenders: Agent[];
 }
 
 /* ================= 负责人迁移（本地安全事务） ================= */

@@ -45,7 +45,7 @@ const registry = JSON.parse(read(path.join(SRC, 'admin/registry.json')));
 const navItems = JSON.parse(read(path.join(SRC, 'admin/nav.json')));
 const h5Registry = JSON.parse(read(path.join(SRC, 'h5/registry.json')));
 const packageJson = JSON.parse(read(path.join(REPOSITORY, 'package.json')));
-const richPages = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData', 'campaigns']);
+const richPages = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'campaigns']);
 
 function sourceSHA() {
   if (process.env.AICRM_SOURCE_SHA) return process.env.AICRM_SOURCE_SHA;

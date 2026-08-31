@@ -15,7 +15,10 @@ import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, Channel
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
 import { buildChannelFinalUrl, channelAcquisitionAssetReady, listAudienceTemplatesDto, previewAudienceTemplateDto, saveAudienceTemplateConfigurationDto, type AudienceTemplate, type AudienceTemplateEvaluation, type AudienceTemplateKey, type AudienceTemplateParameters } from '../api/admin';
-import type { AdminDbWithMiniProgramList, AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, MiniProgramListPage, QuestionnaireWriteInput } from '../api/admin';
+import { getCouponDto, listCouponClaimRowsDto, listCouponProductOptionsDto, getServicePeriodMemberDto, getServicePeriodMemberGridMetaDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, setMemberGridExternalShareDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from '../api/admin';
+import type { AdminDbWithMiniProgramList, AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, MiniProgramListPage, OrderListQuery, QuestionnaireWriteInput } from '../api/admin';
+import type { CouponProductOptionPage, MemberGridGroupBy, MemberGridSort, MemberGridSourceFilter, MemberGridStaffOption, MemberGridState, MemberGridViewID, ServicePeriodMemberDetail, ServicePeriodMemberGridMeta, ServicePeriodMemberGridPage } from '../api/admin';
+import { ApiError } from '../api/transport';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText } from './sections/util';
@@ -82,9 +85,12 @@ type AdminState = {
   migConfirmed: boolean;
   /** 问卷运营配置 · 绑定渠道码 code（'' = 未改） */
   opsChannelId: string;
-  /** 商品/周期商品表单 · 引流渠道码 code */
-  pfChannelId: string;
-  spfChannelId: string;
+  /** 商品表单 · 引流渠道选择（resourceId 数字字符串，'' = 显式清空；null = 沿用表单输入） */
+  pfChannelId: string | null;
+  spfChannelId: string | null;
+  /** 商品表单 · 页面素材 URL 草稿（null = 沿用商品详情） */
+  pfImageUrls: string[] | null;
+  spfImageUrls: string[] | null;
   /** 客户列表筛选与 opaque cursor 导航 */
   customerFilters: CustomerListFilters;
   customerCursors: string[];
@@ -115,10 +121,12 @@ type AdminState = {
   channelHistory: ChannelHistoryPage | null;
   channelHistoryLoading: boolean;
   channelHistoryError: string;
+  /** 渠道列表搜索只过滤当前真实服务端页，不伪造跨页命中。 */
+  channelQuery: string;
   /** 优惠券列表仅对已加载行做本地筛选，不产生新的服务端请求。 */
   couponQuery: string;
   couponStatus: string;
-  /** 订单页沿用 Kimi 壳的本地筛选；导出仍单独调用真实 OpenAPI。 */
+  /** 订单筛选：http 模式下发服务端过滤+分页；mock 模式仅本地筛选。 */
   orderFilters: {
     transactionId: string;
     payer: string;
@@ -127,6 +135,32 @@ type AdminState = {
     createdFrom: string;
     createdTo: string;
   };
+  orderOffset: number;
+  orderLoading: boolean;
+  orderError: string;
+  /** 优惠券表单草稿（快照 DOM 后驱动预览与适用范围 chips） */
+  couponDraft: CouponFormDraft;
+  /** 优惠券表单 · 服务端商品选项目录（仅 HTTP 模式真实读取） */
+  couponOptionQ: string;
+  couponOptionType: 'all' | 'standard_product' | 'service_period';
+  couponOptions: CouponProductOptionPage | null;
+  couponOptionsLoading: boolean;
+  couponOptionsError: string;
+  /** 优惠券数据 · 领取明细分页（仅 HTTP 模式） */
+  couponClaimsOffset: number;
+  couponClaimsTotal: number;
+  couponClaimsLoading: boolean;
+  couponClaimsError: string;
+  /** 周期商品数据 · Member Grid（仅 HTTP 模式真实读取） */
+  mgMeta: ServicePeriodMemberGridMeta | null;
+  mgPage: ServicePeriodMemberGridPage | null;
+  mgFilters: MemberGridFilters;
+  mgCursors: string[];
+  mgStaff: MemberGridStaffOption[];
+  mgStaffError: string;
+  mgDetail: ServicePeriodMemberDetail | null;
+  mgSharePath: string;
+  mgBusy: boolean;
 };
 
 /** 全部屏幕键（go 跳转表） */
@@ -148,6 +182,60 @@ type CustomerListFilters = {
   owner: string;
   mobile: string;
   tag: string;
+};
+
+/** 优惠券表单草稿：全部字段为输入控件原值字符串，保存时再校验/转换。 */
+type CouponFormDraft = {
+  name: string;
+  discount: string;
+  totalIssueLimit: string;
+  perUserIssueLimit: string;
+  claimStartsAt: string;
+  claimEndsAt: string;
+  validityMode: 'fixed_range' | 'relative_days';
+  useStartsAt: string;
+  useEndsAt: string;
+  relativeValidityDays: string;
+  instructions: string;
+  targetRefs: string;
+};
+
+type MemberGridFilters = { state: MemberGridState; source: MemberGridSourceFilter; sort: MemberGridSort; groupBy: MemberGridGroupBy; viewId: MemberGridViewID };
+
+const emptyCouponDraft = (): CouponFormDraft => ({
+  name: '', discount: '', totalIssueLimit: '', perUserIssueLimit: '1',
+  claimStartsAt: '', claimEndsAt: '', validityMode: 'relative_days',
+  useStartsAt: '', useEndsAt: '', relativeValidityDays: '7', instructions: '', targetRefs: '',
+});
+
+const couponDraftFrom = (coupon: AdminDb['rows']['coupons'][number] | undefined): CouponFormDraft => {
+  if (!coupon) return emptyCouponDraft();
+  const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
+  return {
+    name: coupon.name || '',
+    discount: ((coupon.discountAmountTotal || 0) / 100).toFixed(2),
+    totalIssueLimit: coupon.totalIssueLimit ? String(coupon.totalIssueLimit) : '',
+    perUserIssueLimit: coupon.perUserIssueLimit ? String(coupon.perUserIssueLimit) : '1',
+    claimStartsAt: dateInput(coupon.claimStartsAt),
+    claimEndsAt: dateInput(coupon.claimEndsAt),
+    validityMode: coupon.validityMode === 'fixed_range' ? 'fixed_range' : 'relative_days',
+    useStartsAt: dateInput(coupon.useStartsAt),
+    useEndsAt: dateInput(coupon.useEndsAt),
+    relativeValidityDays: coupon.relativeValidityDays ? String(coupon.relativeValidityDays) : '',
+    instructions: coupon.instructions || '',
+    targetRefs: (coupon.targetRefs || []).join('\n'),
+  };
+};
+
+/** Member Grid 错误文案：401/403/409 明确区分，其余透出 HTTP 状态。 */
+const memberGridErrorText = (error: unknown, action: string): string => {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return `${action}失败：登录状态已失效（HTTP 401）`;
+    if (error.status === 403) return `${action}失败：权限或 CSRF 校验未通过（HTTP 403）`;
+    if (error.status === 409) return `${action}失败：数据版本已变化，请刷新后重试（HTTP 409）`;
+    return `${action}失败（HTTP ${error.status}）`;
+  }
+  return `${action}失败：${error instanceof Error ? error.message : '未知错误'}`;
 };
 
 export class AdminController extends PageBase {
@@ -194,8 +282,10 @@ export class AdminController extends PageBase {
     migPreview: null,
     migConfirmed: false,
     opsChannelId: '',
-    pfChannelId: 'shalongyaoyue',
-    spfChannelId: 'shalongyaoyue',
+    pfChannelId: null,
+    spfChannelId: null,
+    pfImageUrls: null,
+    spfImageUrls: null,
     customerFilters: { keyword: '', owner: '', mobile: '', tag: '' },
     customerCursors: [],
     customerPage: 0,
@@ -225,9 +315,32 @@ export class AdminController extends PageBase {
     channelHistory: null,
     channelHistoryLoading: false,
     channelHistoryError: '',
+    channelQuery: '',
     couponQuery: '',
     couponStatus: '',
     orderFilters: { transactionId: '', payer: '', product: '', status: '', createdFrom: '', createdTo: '' },
+    orderOffset: 0,
+    orderLoading: false,
+    orderError: '',
+    couponDraft: emptyCouponDraft(),
+    couponOptionQ: '',
+    couponOptionType: 'all',
+    couponOptions: null,
+    couponOptionsLoading: false,
+    couponOptionsError: '',
+    couponClaimsOffset: 0,
+    couponClaimsTotal: 0,
+    couponClaimsLoading: false,
+    couponClaimsError: '',
+    mgMeta: null,
+    mgPage: null,
+    mgFilters: { state: 'all', source: '', sort: 'updated_at_desc', groupBy: '', viewId: 'default' },
+    mgCursors: [''],
+    mgStaff: [],
+    mgStaffError: '',
+    mgDetail: null,
+    mgSharePath: '',
+    mgBusy: false,
   };
 
   db: AdminDb = emptyAdminDb();
@@ -257,8 +370,20 @@ export class AdminController extends PageBase {
       context.customerList = parsed.query;
     }
     if (this.page === 'mpLib') context.miniProgramList = this.miniProgramListQuery(this.state.miniProgramOffset, this.state.miniProgramQuery);
+    if (this.page === 'orders' && this.api.mode === 'http') context.orderList = this.orderListQuery(this.state.orderOffset);
     try {
-      this.db = await this.api.loadDb(context);
+      if (this.page === 'couponForm' && this.api.mode === 'http') {
+        // 优惠券表单只读真实详情与商品选项目录，不经过全量优惠券列表。
+        this.db = emptyAdminDb();
+        const raw = this.qs().get('id');
+        if (raw) {
+          const couponId = Number(raw);
+          if (!Number.isSafeInteger(couponId) || couponId < 1) throw new Error('优惠券或周期商品 ID 无效');
+          this.db.rows.coupons = [await getCouponDto(couponId)];
+        }
+      } else {
+        this.db = await this.api.loadDb(context);
+      }
       if (this.page === 'mpLib') {
         if (this.api.mode === 'http') this.validateMiniProgramPage(this.db, context.miniProgramList!);
         this.state.miniProgramLoading = false;
@@ -329,9 +454,30 @@ export class AdminController extends PageBase {
       this.state.postEnabled = ops.postEnabled;
       this.state.postType = ops.postType;
       this.state.pushEnabled = ops.pushEnabled;
+      this.state.opsChannelId = ops.channelId;
       this.state.opsLogScope = 'questionnaire';
       this.globalQuestionnairePushLogs = null;
     }
+    if (this.page === 'couponForm') {
+      this.state.couponDraft = couponDraftFrom(this.qs().get('id') ? this.db.rows.coupons[0] : undefined);
+      this.state.couponOptions = null;
+      this.state.couponOptionsError = '';
+      this.state.couponOptionQ = '';
+      this.state.couponOptionType = 'all';
+      if (this.api.mode === 'http') await this.loadCouponOptions(0);
+    }
+    if (this.page === 'couponData' && this.api.mode === 'http') {
+      // 领取明细以服务端分页为准；初始页与 readAdminPage 的映射同源。
+      const couponId = this.pageId();
+      if (!Number.isSafeInteger(couponId) || couponId < 1) throw new Error('领取数据需要有效优惠券 ID');
+      const claimsPage = await listCouponClaimRowsDto(couponId, { limit: 50, offset: 0 });
+      this.db.couponClaims[0] = claimsPage.items;
+      this.state.couponClaimsOffset = claimsPage.offset;
+      this.state.couponClaimsTotal = claimsPage.total;
+      this.state.couponClaimsLoading = false;
+      this.state.couponClaimsError = '';
+    }
+    if (this.page === 'spProductData' && this.api.mode === 'http') await this.initMemberGrid();
     if (this.__render) this.__render();
   }
 
@@ -533,7 +679,18 @@ export class AdminController extends PageBase {
       toast(`后端能力未就绪：${kind}暂无可用公开分享地址`, true);
       return;
     }
-    const shareUrl = path ? new URL(path, location.origin).toString() : 'https://mock.invalid/s/' + code;
+    let shareUrl: string;
+    if (path) {
+      // 同源安全规范化：只接受当前源内的地址，拒绝跨源或 javascript: 等协议注入。
+      const url = new URL(path, location.origin);
+      if (url.origin !== location.origin) {
+        toast('后端返回的分享地址不在当前站点源内，已阻止展示', true);
+        return;
+      }
+      shareUrl = url.toString();
+    } else {
+      shareUrl = 'https://mock.invalid/s/' + code;
+    }
     this.setState({
       modal: 'share',
       shareKind: kind,
@@ -622,7 +779,9 @@ export class AdminController extends PageBase {
   /* ================= 人群包编辑器（audienceEdit） ================= */
 
   private audiencePkg() {
-    return this.db.audiencePackages.find((p) => p.id === this.pageId()) || this.db.audiencePackages[0];
+    const id = this.pageId();
+    if (!id || id <= 0) return undefined;
+    return this.db.audiencePackages.find((p) => p.id === id);
   }
 
   private aeSelectOpts(cur: string, opts: [string, string][]): Record<string, unknown>[] {
@@ -1108,8 +1267,10 @@ export class AdminController extends PageBase {
     this.shareChannelLink(value ? { name: this.channelFormValue('channelName'), finalUrl: value, linkUrl: value, copyText: value } as Channel : null);
   }
 
-  private channelName(code: string): string {
-    return this.db.rows.channels.find((c) => c.code === code)?.name || '不配置引流渠道码';
+  private channelName(idOrCode: string | null): string {
+    if (!idOrCode) return '不配置引流渠道码';
+    const hit = this.db.rows.channels.find((c) => String(c.resourceId ?? '') === idOrCode) || this.db.rows.channels.find((c) => c.code === idOrCode);
+    return hit?.name || '不配置引流渠道码';
   }
 
   /** 合并素材已选：同类型整体替换，跨类型累加，上限 9 */
@@ -1273,6 +1434,31 @@ export class AdminController extends PageBase {
     }).catch((error) => { this.setState({ saving: false }); toast(error instanceof Error ? error.message : '微信支付交易导出失败', true); });
   }
 
+  private orderListQuery(offset: number): OrderListQuery {
+    const f = this.state.orderFilters;
+    return {
+      offset,
+      limit: 50,
+      ...(f.status ? { status: f.status } : {}),
+      ...(f.createdFrom ? { createdFrom: f.createdFrom } : {}),
+      ...(f.createdTo ? { createdTo: f.createdTo } : {}),
+    };
+  }
+
+  private loadOrderPage(offset: number): void {
+    if (this.api.mode !== 'http') return;
+    if (this.state.orderLoading) return;
+    // 越界保护：不允许负页，也不允许在没有 hasMore 时请求更深的页。
+    if (offset < 0) return;
+    if (offset > this.state.orderOffset && !this.db.orderList.hasMore) return;
+    this.setState({ orderLoading: true, orderError: '', orderOffset: offset });
+    void this.api.loadDb({ page: 'orders', orderList: this.orderListQuery(offset) }).then((db) => {
+      this.db.rows.orders = db.rows.orders;
+      this.db.orderList = db.orderList;
+      this.setState({ orderLoading: false });
+    }).catch((error) => this.setState({ orderLoading: false, orderError: error instanceof Error ? error.message : '订单列表读取失败' }));
+  }
+
   private queryOrders(): void {
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value.trim() || '';
     const createdFrom = value('orderCreatedFrom');
@@ -1282,10 +1468,12 @@ export class AdminController extends PageBase {
       transactionId: value('orderTransactionId'), payer: value('orderMobile'), product: value('orderProductCode'),
       status: value('orderStatus'), createdFrom, createdTo,
     } });
+    if (this.api.mode === 'http') this.loadOrderPage(0);
   }
 
   private clearOrderFilters(): void {
     this.setState({ orderFilters: { transactionId: '', payer: '', product: '', status: '', createdFrom: '', createdTo: '' } });
+    if (this.api.mode === 'http') this.loadOrderPage(0);
   }
 
   private migDownloadTemplate(): void {
@@ -1346,8 +1534,10 @@ export class AdminController extends PageBase {
 
   /* ---- 渠道码选择（问卷运营配置 / 商品表单 / 周期商品表单） ---- */
   private pickChannelFor(target: 'ops' | 'pf' | 'spf'): void {
-    const cur = target === 'ops' ? this.state.opsChannelId : target === 'pf' ? this.state.pfChannelId : this.state.spfChannelId;
-    void this.pick({ kind: 'channel', noneOption: '不配置引流渠道码', selected: cur ? [cur] : [] }).then((r) => {
+    const cur = target === 'ops' ? this.state.opsChannelId
+      : target === 'pf' ? (this.state.pfChannelId ?? this.channelFormValue('pfLeadChannelId'))
+      : (this.state.spfChannelId ?? this.channelFormValue('spfLeadChannelId'));
+    void this.pick({ kind: 'channel', db: this.db, noneOption: '不配置引流渠道码', selected: cur ? [cur] : [] }).then((r) => {
       if (r === null) return;
       const id = r[0]?.id || '';
       if (target === 'ops') this.setState({ opsChannelId: id });
@@ -1356,10 +1546,55 @@ export class AdminController extends PageBase {
     });
   }
 
+  /* ---- 商品表单 · 页面素材草稿 ---- */
+  private currentCommerceImageUrls(kind: 'product' | 'service'): string[] {
+    const draft = kind === 'product' ? this.state.pfImageUrls : this.state.spfImageUrls;
+    if (draft !== null) return draft;
+    const id = Number(this.qs().get('id') || '') || undefined;
+    const current = kind === 'product' ? this.db.rows.products.find((row) => row.resourceId === id) : this.db.rows.spProducts.find((row) => row.resourceId === id);
+    return current?.images || [];
+  }
+
+  private setCommerceImageUrls(kind: 'product' | 'service', urls: string[]): void {
+    this.setState(kind === 'product' ? { pfImageUrls: urls } : { spfImageUrls: urls });
+  }
+
+  private pickCommerceImages(kind: 'product' | 'service'): void {
+    const current = this.currentCommerceImageUrls(kind);
+    const selected = this.db.rows.images.filter((img) => Boolean(img.originalUrl && current.includes(img.originalUrl))).map((img) => String(img.resourceId));
+    void this.pick({ kind: 'image', db: this.db, selected, max: 10 }).then((r) => {
+      if (r === null) return;
+      if (r.length > 10) { toast('页面素材最多 10 张', true); return; }
+      if (r.some((item) => typeof item.url !== 'string' || !item.url.startsWith('/api/admin/image-library/'))) { toast('图片地址无效，未保存选择', true); return; }
+      this.setCommerceImageUrls(kind, r.map((item) => item.url!));
+    });
+  }
+
+  private removeCommerceImage(kind: 'product' | 'service', url: string): void {
+    this.setCommerceImageUrls(kind, this.currentCommerceImageUrls(kind).filter((item) => item !== url));
+  }
+
+  private uploadCommerceImage(kind: 'product' | 'service', event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!input || !file) return;
+    if (!file.type.startsWith('image/')) { toast('请选择图片文件', true); input.value = ''; return; }
+    if (file.size > 2 * 1024 * 1024) { toast('图片不能超过 2MB', true); input.value = ''; return; }
+    void this.api.saveImageItem(null, { name: file.name, file }).then(() => {
+      toast(`${kind === 'product' ? '普通' : '周期'}商品图片已上传到素材库`);
+      input.value = '';
+      void this.init();
+    }).catch((error) => {
+      input.value = '';
+      toast(error instanceof Error ? error.message : '图片上传失败', true);
+    });
+  }
+
   /* ================= 问卷 · 运营配置 ================= */
 
   private currentQid(): number {
-    return this.db.rows.questionnaires[0]?.resourceId ?? this.pageId();
+    // 只认 URL ?id=；缺失时返回 0，由页面渲染明确空态，绝不静默落到列表第一条。
+    return this.pageId();
   }
 
   private currentOps(): QuestionnaireOps | undefined {
@@ -1374,10 +1609,19 @@ export class AdminController extends PageBase {
     const ops = this.currentOps();
     if (!ops) { toast('后端未返回可编辑的问卷运营配置 DTO，未发送请求', true); return; }
     const next: QuestionnaireOps = deepCopy(ops);
-    next.completionNavigationTargetId = this.opsInputVal('opsNavigationTarget');
-    next.completionChannelId = this.opsInputVal('opsChannelResourceId');
-    next.pushEnabled = (document.getElementById('opsPushEnabled') as HTMLInputElement | null)?.checked === true;
-    next.externalPushConfigurationReference = this.opsInputVal('opsConfigurationReference');
+    // 开关与卡片选择是真实保存语义：关闭提交后动作即清空两个字段；二维码卡片只保存渠道引用，跳转卡片只保存导航引用。
+    if (!this.state.postEnabled) {
+      next.completionNavigationTargetId = '';
+      next.completionChannelId = '';
+    } else if (this.state.postType === 'channel_qr') {
+      next.completionNavigationTargetId = '';
+      next.completionChannelId = this.state.opsChannelId || this.opsInputVal('opsChannelResourceId');
+    } else {
+      next.completionChannelId = '';
+      next.completionNavigationTargetId = this.opsInputVal('opsNavigationTarget');
+    }
+    next.pushEnabled = this.state.pushEnabled;
+    next.externalPushConfigurationReference = this.state.pushEnabled ? this.opsInputVal('opsConfigurationReference') : '';
     void this.api.saveQuestionnaireOps(this.currentQid(), next).then(() => {
       toast('本地 opaque 运营配置已保存；未触发外部推送');
       this.paramsDraft = null;
@@ -1525,13 +1769,18 @@ export class AdminController extends PageBase {
       const projection = current?.adminProjection || { schemaVersion: 1 as const, status: 'draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] };
       const optionalID = (name: string): number | null => { const raw = value(name); if (!raw) return null; const parsed = Number(raw); if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error(`${name} 必须是正整数`); return parsed; };
       try {
-        const images = value('Images').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        const draftUrls = kind === 'product' ? this.state.pfImageUrls : this.state.spfImageUrls;
+        const images = draftUrls !== null ? draftUrls : this.currentCommerceImageUrls(kind);
         if (images.length > 20 || images.some((url) => url.length > 2048 || (!url.startsWith('/') && !/^https:\/\//.test(url)))) throw new Error('页面素材最多 20 条，且必须是同源路径或 HTTPS 地址');
         const completionTarget = value('CompletionTarget') ? JSON.parse(value('CompletionTarget')) as Record<string, unknown> : null;
         const wecomTagging = value('WecomTagging') ? JSON.parse(value('WecomTagging')) as Record<string, unknown> : {};
         if ((completionTarget !== null && (Array.isArray(completionTarget) || typeof completionTarget !== 'object')) || Array.isArray(wecomTagging) || typeof wecomTagging !== 'object') throw new Error('跳转和企微标签配置必须是 JSON 对象');
         input.images = images;
-        input.adminProjection = { ...projection, buyButtonText: value('BuyButtonText'), requireMobile: value('RequireMobile') === 'true', leadProgramId: optionalID('LeadProgramId'), leadChannelId: optionalID('LeadChannelId'), leadQrTitle: value('LeadQrTitle'), leadQrSubtitle: value('LeadQrSubtitle'), completionRedirectEnabled: value('CompletionRedirectEnabled') === 'true', completionRedirectUrl: value('CompletionRedirectUrl'), completionTarget, wecomTagging };
+        const channelSel = kind === 'product' ? this.state.pfChannelId : this.state.spfChannelId;
+        const leadChannelId = channelSel !== null
+          ? (channelSel === '' ? null : (() => { const parsed = Number(channelSel); if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error('引流渠道选择无效'); return parsed; })())
+          : optionalID('LeadChannelId');
+        input.adminProjection = { ...projection, buyButtonText: value('BuyButtonText'), requireMobile: value('RequireMobile') === 'true', leadProgramId: optionalID('LeadProgramId'), leadChannelId, leadQrTitle: value('LeadQrTitle'), leadQrSubtitle: value('LeadQrSubtitle'), completionRedirectEnabled: value('CompletionRedirectEnabled') === 'true', completionRedirectUrl: value('CompletionRedirectUrl'), completionTarget, wecomTagging };
         const pushEnabled = value('ExternalPushEnabled') === 'true';
         const configurationReference = value('ExternalPushReference');
         if (pushEnabled && !/^[A-Za-z0-9._:-]{1,128}$/.test(configurationReference)) throw new Error('启用外推时必须填写 1-128 位配置引用');
@@ -1582,6 +1831,116 @@ export class AdminController extends PageBase {
     confirmBox('归档发送人配置', `仅归档 ${senderUserid} 的本地配置，不删除企微成员。确认继续？`, '确认归档', true, () => { void this.api.archiveHxcSender(senderUserid).then(() => { toast('本地发送人配置已归档；未调用企微 Provider'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '发送人归档失败', true)); });
   }
 
+  private automationAgentId(raw: unknown): number {
+    const id = Number(raw);
+    if (!Number.isSafeInteger(id) || id < 1) throw new Error('Automation agent ID 无效');
+    return id;
+  }
+
+  private saveAutomationAgentFromForm(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
+    const rawId = this.qs().get('id');
+    let id: number | undefined;
+    if (rawId !== null && rawId !== '') {
+      try {
+        id = this.automationAgentId(rawId);
+      } catch (error) {
+        toast((error instanceof Error ? error.message : 'Automation agent ID 无效') + '，未发送请求', true);
+        return;
+      }
+    }
+    const name = value('agentName');
+    const code = value('agentCode');
+    const typeRaw = value('agentType');
+    if (!name) { toast('Automation agent 名称不能为空，未发送请求', true); return; }
+    if (!code) { toast('Automation agent 代码不能为空，未发送请求', true); return; }
+    if (typeRaw !== 'agent' && typeRaw !== 'fixed_script') { toast('Automation agent 类型无效，未发送请求', true); return; }
+    const automationType: 'agent' | 'fixed_script' = typeRaw;
+    const input = {
+      ...(id === undefined ? {} : { id }),
+      name,
+      code,
+      automationType,
+      rolePrompt: value('agentRolePrompt'),
+      taskPrompt: value('agentTaskPrompt'),
+    };
+    void this.api.saveAutomationAgent(input).then((saved) => {
+      const savedId = this.automationAgentId(saved.id);
+      toast(`Automation agent 已保存，状态 ${saved.status ?? '—'}`);
+      this.goto('agentEdit', `?id=${encodeURIComponent(String(savedId))}`);
+    }).catch((error) => toast(error instanceof Error ? error.message : 'Automation agent 保存失败', true));
+  }
+
+  private copyAutomationAgent(raw: unknown): void {
+    let id: number;
+    try {
+      id = this.automationAgentId(raw);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Automation agent ID 无效', true);
+      return;
+    }
+    void this.api.copyAutomationAgent(id).then((copied) => {
+      const copiedId = this.automationAgentId(copied.id);
+      toast(`Automation agent #${copiedId} 已复制，状态 ${copied.status ?? '—'}`);
+      void this.init();
+    }).catch((error) => toast(error instanceof Error ? error.message : 'Automation agent 复制失败', true));
+  }
+
+  private pauseAutomationAgent(raw: unknown): void {
+    let id: number;
+    try {
+      id = this.automationAgentId(raw);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Automation agent ID 无效', true);
+      return;
+    }
+    confirmBox('暂停 Automation agent', `确认暂停 automation agent #${id}？`, '确认暂停', true, () => {
+      void this.api.pauseAutomationAgent(id).then((paused) => {
+        toast(`Automation agent #${id} 已暂停，状态 ${paused.status ?? '—'}`);
+        void this.init();
+      }).catch((error) => toast(error instanceof Error ? error.message : 'Automation agent 暂停失败', true));
+    });
+  }
+
+  private archiveAutomationAgent(raw: unknown): void {
+    let id: number;
+    try {
+      id = this.automationAgentId(raw);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Automation agent ID 无效', true);
+      return;
+    }
+    confirmBox('归档 Automation agent', `确认归档 automation agent #${id}？`, '确认归档', true, () => {
+      void this.api.archiveAutomationAgent(id).then(() => {
+        toast(`Automation agent #${id} 已归档`);
+        void this.init();
+      }).catch((error) => toast(error instanceof Error ? error.message : 'Automation agent 归档失败', true));
+    });
+  }
+
+  private precheckAutomationAgent(...args: unknown[]): void {
+    let id: number;
+    try {
+      if (args.length > 0) {
+        id = this.automationAgentId(args[0]);
+      } else {
+        const rawId = this.qs().get('id');
+        if (rawId === null || rawId === '') {
+          toast('请先保存自动化话术，再执行预检，未发送请求', true);
+          return;
+        }
+        id = this.automationAgentId(rawId);
+      }
+    } catch (error) {
+      toast((error instanceof Error ? error.message : 'Automation agent ID 无效') + '，未发送请求', true);
+      return;
+    }
+    void this.api.precheckAutomationAgent(id).then((result) => {
+      const reasons = result.reasons.length > 0 ? `；原因：${result.reasons.join('；')}` : '';
+      toast(`Automation agent #${result.agentId} 预检：配置就绪 ${result.configurationReady ? '是' : '否'}，物料已配置 ${result.materialsConfigured ? '是' : '否'}，执行已启用 ${result.executionEnabled ? '是' : '否'}，可激活 ${result.canActivate ? '是' : '否'}，真实外部调用 ${result.realExternalCallExecuted ? '已执行' : '未执行'}${reasons}`, !result.canActivate);
+    }).catch((error) => toast(error instanceof Error ? error.message : 'Automation agent 预检失败', true));
+  }
+
   private refreshHxcDirectory(): void {
     if (this.api.mode !== 'http') return this.blocked('发送资格校验只支持当前 HttpApi / OpenAPI；Mock 不提供伪成功');
     confirmBox('校验 HXC 发送资格', '仅读取企微成员资格并回读既有本地 staff 目录；不会创建、更新发送人，也不会发送消息。', '确认校验', true, () => {
@@ -1589,24 +1948,282 @@ export class AdminController extends PageBase {
     });
   }
 
+  /** 把优惠券表单 DOM 原值快照进草稿（切单选/翻页/加引用前调用，避免重渲染丢输入）。 */
+  private snapshotCouponDraft(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value || '';
+    this.state.couponDraft = {
+      ...this.state.couponDraft,
+      name: value('coupon-name'),
+      discount: value('coupon-discount').trim(),
+      totalIssueLimit: value('coupon-total').trim(),
+      perUserIssueLimit: value('coupon-per-user').trim(),
+      claimStartsAt: value('coupon-claim-start'),
+      claimEndsAt: value('coupon-claim-end'),
+      useStartsAt: value('coupon-use-start'),
+      useEndsAt: value('coupon-use-end'),
+      relativeValidityDays: value('coupon-relative-days').trim(),
+      instructions: value('coupon-instructions'),
+      targetRefs: value('coupon-target-refs'),
+    };
+  }
+
+  private couponDraftRefs(): string[] {
+    return this.state.couponDraft.targetRefs.split(/[\s,，]+/).map((item) => item.trim()).filter(Boolean);
+  }
+
+  private setCouponValidity(mode: 'fixed_range' | 'relative_days'): void {
+    this.snapshotCouponDraft();
+    this.setState({ couponDraft: { ...this.state.couponDraft, validityMode: mode } });
+  }
+
+  private addCouponTargetRef(event: Event): void {
+    const ref = (event.currentTarget as HTMLElement | null)?.getAttribute('data-target-ref') || '';
+    if (!ref) return;
+    this.snapshotCouponDraft();
+    const refs = this.couponDraftRefs();
+    if (!refs.includes(ref)) refs.push(ref);
+    this.setState({ couponDraft: { ...this.state.couponDraft, targetRefs: refs.join('\n') } });
+  }
+
+  private removeCouponTargetRef(event: Event): void {
+    const ref = (event.currentTarget as HTMLElement | null)?.getAttribute('data-remove-ref') || '';
+    this.snapshotCouponDraft();
+    this.setState({ couponDraft: { ...this.state.couponDraft, targetRefs: this.couponDraftRefs().filter((item) => item !== ref).join('\n') } });
+  }
+
+  private async loadCouponOptions(offset: number): Promise<void> {
+    if (this.api.mode !== 'http') return;
+    this.setState({ couponOptionsLoading: true, couponOptionsError: '' });
+    try {
+      const q = this.state.couponOptionQ.trim();
+      const page = await listCouponProductOptionsDto({ q: q || undefined, productType: this.state.couponOptionType, limit: 20, offset });
+      this.setState({ couponOptions: page, couponOptionsLoading: false, couponOptionsError: '' });
+    } catch (error) {
+      this.setState({ couponOptionsLoading: false, couponOptionsError: error instanceof Error ? error.message : '商品选项读取失败' });
+    }
+  }
+
+  private searchCouponOptions(): void {
+    if (this.api.mode !== 'http') return this.blocked('商品选项目录只能由当前 HttpApi / OpenAPI 读取；测试 Mock 不提供伪数据');
+    this.snapshotCouponDraft();
+    const type = (document.getElementById('option-type') as HTMLSelectElement | null)?.value || 'all';
+    this.setState({
+      couponOptionQ: (document.getElementById('option-query') as HTMLInputElement | null)?.value || '',
+      couponOptionType: type === 'standard_product' || type === 'service_period' ? type : 'all',
+    });
+    void this.loadCouponOptions(0);
+  }
+
+  private pageCouponOptions(direction: -1 | 1): void {
+    const page = this.state.couponOptions;
+    if (this.api.mode !== 'http' || !page) return;
+    this.snapshotCouponDraft();
+    const offset = direction < 0 ? Math.max(0, page.offset - page.limit) : page.offset + page.limit;
+    if (offset === page.offset || offset >= page.total) return;
+    void this.loadCouponOptions(offset);
+  }
+
+  private async loadCouponClaimsPage(offset: number): Promise<void> {
+    const couponId = this.pageId();
+    if (this.api.mode !== 'http' || !Number.isSafeInteger(couponId) || couponId < 1 || this.state.couponClaimsLoading) return;
+    this.setState({ couponClaimsLoading: true, couponClaimsError: '' });
+    try {
+      const page = await listCouponClaimRowsDto(couponId, { limit: 50, offset });
+      this.db.couponClaims[0] = page.items;
+      this.setState({ couponClaimsOffset: page.offset, couponClaimsTotal: page.total, couponClaimsLoading: false, couponClaimsError: '' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '领取记录读取失败';
+      this.setState({ couponClaimsLoading: false, couponClaimsError: message });
+      toast(message, true);
+    }
+  }
+
+  /* ================= 周期商品数据 · Member Grid（仅 HTTP） ================= */
+
+  private memberGridProductId(): number {
+    const id = this.pageId();
+    if (!Number.isSafeInteger(id) || id < 1) throw new Error('Member Grid 需要有效周期商品 ID');
+    return id;
+  }
+
+  private async initMemberGrid(): Promise<void> {
+    const productId = this.memberGridProductId();
+    const meta = await getServicePeriodMemberGridMetaDto(productId);
+    let staff: MemberGridStaffOption[] = [];
+    let staffError = '';
+    try {
+      staff = await listMemberGridStaffDto();
+    } catch (error) {
+      staffError = memberGridErrorText(error, '真实 active staff 目录读取');
+    }
+    const page = await queryServicePeriodMemberGridDto(productId, { viewId: 'default', sort: 'updated_at_desc', limit: 50 });
+    this.state.mgMeta = meta;
+    this.state.mgStaff = staff;
+    this.state.mgStaffError = staffError;
+    this.state.mgPage = page;
+    this.state.mgFilters = { state: 'all', source: '', sort: 'updated_at_desc', groupBy: '', viewId: 'default' };
+    this.state.mgCursors = [''];
+    this.state.mgDetail = null;
+    this.state.mgSharePath = '';
+  }
+
+  private mgShowError(error: unknown, action: string): void {
+    toast(memberGridErrorText(error, action), true);
+  }
+
+  private async reloadMemberGridPage(): Promise<void> {
+    const productId = this.memberGridProductId();
+    const filters = this.state.mgFilters;
+    const cursor = this.state.mgCursors[this.state.mgCursors.length - 1] || '';
+    const page = await queryServicePeriodMemberGridDto(productId, { state: filters.state, source: filters.source, sort: filters.sort, groupBy: filters.groupBy, viewId: filters.viewId, limit: 50, cursor: cursor || undefined });
+    this.setState({ mgPage: page });
+  }
+
+  private async refreshMemberGrid(): Promise<void> {
+    const meta = await getServicePeriodMemberGridMetaDto(this.memberGridProductId());
+    this.setState({ mgMeta: meta });
+    await this.reloadMemberGridPage();
+  }
+
+  private applyMemberGridFilters(): void {
+    if (this.api.mode !== 'http' || !this.state.mgMeta || this.state.mgBusy) return;
+    const value = (id: string): string => (document.getElementById(id) as HTMLSelectElement | null)?.value || '';
+    const viewId: MemberGridViewID = value('member-grid-view') === 'default' ? 'default' : '';
+    const rawState = value('member-grid-state');
+    const rawSource = value('member-grid-source');
+    const filters: MemberGridFilters = viewId === 'default'
+      ? { state: 'all', source: '', sort: 'updated_at_desc', groupBy: '', viewId: 'default' }
+      : {
+        state: (['active', 'expired', 'removed', 'all'].includes(rawState) ? rawState : 'all') as MemberGridState,
+        source: (['', 'manual', 'paid_order'].includes(rawSource) ? rawSource : '') as MemberGridSourceFilter,
+        sort: value('member-grid-sort') === 'starts_at_desc' ? 'starts_at_desc' : 'updated_at_desc',
+        groupBy: value('member-grid-group') === 'state' ? 'state' : '',
+        viewId: '',
+      };
+    this.setState({ mgFilters: filters, mgCursors: [''], mgDetail: null, mgBusy: true });
+    void this.reloadMemberGridPage().catch((error) => this.mgShowError(error, 'Member Grid 查询')).finally(() => this.setState({ mgBusy: false }));
+  }
+
+  private previousMemberGridPage(): void {
+    if (this.api.mode !== 'http' || this.state.mgCursors.length < 2 || this.state.mgBusy) return;
+    this.setState({ mgCursors: this.state.mgCursors.slice(0, -1), mgBusy: true });
+    void this.reloadMemberGridPage().catch((error) => this.mgShowError(error, 'Member Grid 上一页读取')).finally(() => this.setState({ mgBusy: false }));
+  }
+
+  private nextMemberGridPage(): void {
+    const page = this.state.mgPage;
+    if (this.api.mode !== 'http' || !page?.hasMore || !page.nextCursor || this.state.mgBusy) return;
+    this.setState({ mgCursors: [...this.state.mgCursors, page.nextCursor], mgBusy: true });
+    void this.reloadMemberGridPage().catch((error) => this.mgShowError(error, 'Member Grid 下一页读取')).finally(() => this.setState({ mgBusy: false }));
+  }
+
+  private editMemberGridRow(event: Event): void {
+    if (this.api.mode !== 'http') return;
+    const ref = (event.currentTarget as HTMLElement | null)?.getAttribute('data-member-edit') || '';
+    if (!ref) return;
+    void getServicePeriodMemberDto(this.memberGridProductId(), ref)
+      .then((member) => this.setState({ mgDetail: member }))
+      .catch((error) => this.mgShowError(error, '成员详情读取'));
+  }
+
+  private saveMemberGridFields(): void {
+    const detail = this.state.mgDetail;
+    if (this.api.mode !== 'http' || !detail) return;
+    const remark = (document.getElementById('member-remark') as HTMLTextAreaElement | null)?.value || '';
+    const alliance = (document.getElementById('member-alliance') as HTMLInputElement | null)?.value || '';
+    void updateServicePeriodMemberFieldsDto(this.memberGridProductId(), detail.memberRef, { expectedVersion: detail.version, remark, alliance })
+      .then(async (saved) => {
+        this.setState({ mgDetail: saved });
+        toast('成员备注/联盟已保存（本地）');
+        await this.reloadMemberGridPage();
+      })
+      .catch((error) => this.mgShowError(error, '成员字段保存'));
+  }
+
+  private addMemberGridCollaborator(): void {
+    if (this.api.mode !== 'http' || !this.state.mgMeta || this.state.mgBusy) return;
+    const staffId = Number((document.getElementById('member-grid-staff') as HTMLSelectElement | null)?.value || '');
+    const staff = this.state.mgStaff.find((item) => item.staffId === staffId);
+    const permission = (document.getElementById('member-grid-permission') as HTMLSelectElement | null)?.value === 'edit' ? 'edit' as const : 'view' as const;
+    if (!staff) {
+      this.mgShowError(new Error('请选择真实 active staff'), '本地协作者添加');
+      return;
+    }
+    this.setState({ mgBusy: true });
+    void createServicePeriodMemberGridCollaboratorDto(this.memberGridProductId(), { staffId, permission })
+      .then(() => this.refreshMemberGrid())
+      .then(() => toast('本地协作者配置已保存；未发送企微邀请/Provider'))
+      .catch((error) => this.mgShowError(error, '本地协作者添加'))
+      .finally(() => this.setState({ mgBusy: false }));
+  }
+
+  private updateMemberGridCollaborator(event: Event): void {
+    if (this.api.mode !== 'http' || !this.state.mgMeta || this.state.mgBusy) return;
+    const collaboratorId = Number((event.currentTarget as HTMLElement | null)?.getAttribute('data-collab-update') || '');
+    const collaborator = this.state.mgMeta.collaboratorRows.find((item) => item.collaboratorId === collaboratorId);
+    if (!collaborator) return;
+    const selected = document.querySelector<HTMLSelectElement>(`[data-collab-permission="${collaboratorId}"]`)?.value === 'edit' ? 'edit' as const : 'view' as const;
+    this.setState({ mgBusy: true });
+    void updateServicePeriodMemberGridCollaboratorDto(this.memberGridProductId(), collaboratorId, { expectedVersion: collaborator.version, permission: selected })
+      .then(() => this.refreshMemberGrid())
+      .then(() => toast('本地协作者权限已保存；未改变企微/Provider 权限'))
+      .catch((error) => this.mgShowError(error, '本地协作者权限保存'))
+      .finally(() => this.setState({ mgBusy: false }));
+  }
+
+  private removeMemberGridCollaborator(event: Event): void {
+    if (this.api.mode !== 'http' || !this.state.mgMeta || this.state.mgBusy) return;
+    const collaboratorId = Number((event.currentTarget as HTMLElement | null)?.getAttribute('data-collab-remove') || '');
+    const collaborator = this.state.mgMeta.collaboratorRows.find((item) => item.collaboratorId === collaboratorId);
+    if (!collaborator || !window.confirm(`确认移除本地协作者 staff ${collaborator.staffId}？`)) return;
+    this.setState({ mgBusy: true });
+    void deleteServicePeriodMemberGridCollaboratorDto(this.memberGridProductId(), collaboratorId, collaborator.version)
+      .then(() => this.refreshMemberGrid())
+      .then(() => toast('本地协作者已移除；未调用企微/Provider'))
+      .catch((error) => this.mgShowError(error, '本地协作者移除'))
+      .finally(() => this.setState({ mgBusy: false }));
+  }
+
+  private toggleMemberGridShare(): void {
+    const meta = this.state.mgMeta;
+    if (this.api.mode !== 'http' || !meta || this.state.mgBusy) return;
+    const enable = !meta.externalShareEnabled;
+    this.setState({ mgBusy: true });
+    void setMemberGridExternalShareDto(this.memberGridProductId(), enable, meta.externalShareVersion)
+      .then((result) => {
+        this.setState({ mgMeta: { ...meta, externalShareEnabled: result.enabled, externalShareVersion: result.version }, mgSharePath: result.publicPath, mgBusy: false });
+        toast(enable ? '公开只读会员网格已开启；请立即保存本次返回的新链接' : '公开只读会员网格已关闭；旧链接已失效');
+      })
+      .catch((error) => {
+        this.setState({ mgBusy: false });
+        this.mgShowError(error, enable ? '公开分享开启' : '公开分享关闭');
+      });
+  }
+
+  private copyMemberGridShare(): void {
+    if (!this.state.mgSharePath) return;
+    copyText(new URL(this.state.mgSharePath, location.origin).toString(), toast);
+  }
+
   private saveCouponForm(publish: boolean): void {
     if (this.api.mode !== 'http') return this.blocked('优惠券规则写入只能由当前 HttpApi / OpenAPI 执行；测试 Mock 不提供伪成功');
-    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
-    const validityMode = value('couponValidityMode') === 'fixed_range' ? 'fixed_range' : 'relative_days';
+    this.snapshotCouponDraft();
+    const draft = this.state.couponDraft;
+    const validityMode = draft.validityMode === 'fixed_range' ? 'fixed_range' : 'relative_days';
     const input: CouponWriteInput = {
       id: Number(this.qs().get('id') || '') || undefined,
-      name: value('couponName'),
-      discount: value('couponDiscount'),
-      totalIssueLimit: Number(value('couponTotal')),
-      perUserIssueLimit: Number(value('couponPerUser')),
-      claimStartsAt: value('couponClaimStart'),
-      claimEndsAt: value('couponClaimEnd'),
+      name: draft.name.trim(),
+      discount: draft.discount,
+      totalIssueLimit: Number(draft.totalIssueLimit),
+      perUserIssueLimit: Number(draft.perUserIssueLimit),
+      claimStartsAt: draft.claimStartsAt,
+      claimEndsAt: draft.claimEndsAt,
       validityMode,
-      useStartsAt: value('couponUseStart') || undefined,
-      useEndsAt: value('couponUseEnd') || undefined,
-      relativeValidityDays: Number(value('couponRelativeDays')) || undefined,
-      instructions: value('couponInstructions'),
-      targetRefs: value('couponTargetRefs').split(/[\s,，]+/).map((item) => item.trim()).filter(Boolean),
+      useStartsAt: draft.useStartsAt || undefined,
+      useEndsAt: draft.useEndsAt || undefined,
+      relativeValidityDays: Number(draft.relativeValidityDays) || undefined,
+      instructions: draft.instructions,
+      targetRefs: this.couponDraftRefs(),
     };
     if (!input.name || !/^\d+(\.\d{1,2})?$/.test(input.discount)) return toast('请填写名称与最多两位小数的非负减免金额', true);
     if (!Number.isInteger(input.totalIssueLimit) || input.totalIssueLimit < 1 || !Number.isInteger(input.perUserIssueLimit) || input.perUserIssueLimit < 1) return toast('发行总量和单用户限领必须为正整数', true);
@@ -1911,13 +2528,13 @@ export class AdminController extends PageBase {
     const aeRecordRows = aeRecords.map((r) => ({ ...r, cs: mk(r.tone) }));
     const aeAgents = rows.agents.map((a) => ({
       ...a,
-      isBound: pkg ? pkg.boundAutomation === a.name : false,
-      bind: () => this.bindAutomation(a.name),
+      isBound: pkg ? pkg.bindingAgentId === a.id : false,
+      bind: () => this.bindAutomation(String(a.id)),
       card: {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
         padding: '12px 14px', borderRadius: '8px', marginBottom: '8px',
-        border: pkg && pkg.boundAutomation === a.name ? '1px solid #528BFF' : '1px solid #DEE0E3',
-        background: pkg && pkg.boundAutomation === a.name ? '#F5F8FF' : '#fff',
+        border: pkg && pkg.bindingAgentId === a.id ? '1px solid #528BFF' : '1px solid #DEE0E3',
+        background: pkg && pkg.bindingAgentId === a.id ? '#F5F8FF' : '#fff',
       } as StyleObj,
     }));
 
@@ -1944,8 +2561,49 @@ export class AdminController extends PageBase {
       ...this.db.staff.map((member) => ({ ...member, selected: selectedGroupOpsStaff.has(Number(member.uid)), unselected: !selectedGroupOpsStaff.has(Number(member.uid)) })),
       ...[...selectedGroupOpsStaff].filter((staffID) => !visibleGroupOpsStaff.has(staffID)).map((staffID) => ({ uid: String(staffID), name: `已绑定 staff ${staffID}`, dept: '目录当前不可见', selected: true, unselected: false })),
     ];
+    const groupOpsDetailId = this.qs().get('id') || '';
+    const groupOpsIsNew = !groupOpsDetailId;
     const hxcEditId = this.qs().get('id') || '';
-    const hxcEdit = rows.agents.find((item) => item.code === hxcEditId || item.senderId === hxcEditId);
+    const hxcEdit = this.db.hxcSenders.find((item) => item.code === hxcEditId || item.senderId === hxcEditId);
+    const agentEditIdRaw = this.qs().get('id') || '';
+    const agentEditNumericId = Number(agentEditIdRaw);
+    const agentEditDetail = rows.agents.find((item) => Number(item.id) === agentEditNumericId);
+    const agentEditTypeLabel = agentEditDetail
+      ? (agentEditDetail.type === '固定话术' ? '固定话术' : 'Agent 机器人')
+      : this.qs().get('type') === 'fixed_script'
+        ? '固定话术'
+        : 'Agent 机器人';
+    const agentEditValue = agentEditDetail
+      ? {
+          id: agentEditDetail.id,
+          name: agentEditDetail.name,
+          code: agentEditDetail.code,
+          automationType: agentEditTypeLabel === '固定话术' ? 'fixed_script' : 'agent',
+          typeLabel: agentEditTypeLabel,
+          status: agentEditDetail.status,
+          material: agentEditDetail.material,
+          bound: agentEditDetail.boundPackageName || '未绑定',
+          rolePrompt: agentEditDetail.rolePrompt || '',
+          taskPrompt: agentEditDetail.taskPrompt || '',
+          isCreate: false,
+          isExisting: true,
+          codeReadonly: true,
+        }
+      : {
+          id: null,
+          name: '',
+          code: '',
+          automationType: agentEditTypeLabel === '固定话术' ? 'fixed_script' : 'agent',
+          typeLabel: agentEditTypeLabel,
+          status: '草稿',
+          material: '0 图片 / 0 小程序 / 0 PDF / 0 群邀请',
+          bound: '未绑定',
+          rolePrompt: '',
+          taskPrompt: '',
+          isCreate: true,
+          isExisting: false,
+          codeReadonly: false,
+        };
     const runVals = run
       ? {
           ...run,
@@ -2178,21 +2836,54 @@ export class AdminController extends PageBase {
     const claims = this.db.couponClaims[couponIdx] || [];
     const claimRows = claims.map((c) => ({ ...c, cs: mk(c.tone) }));
     const cntOf = (st: string): number => claims.filter((c) => c.status === st).length;
+    // HTTP 模式下统计卡只统计当前真实分页；累计领取以服务端 total 为准，不从单页推断。
+    const claimStatSub = this.api.mode === 'http' ? '（当前页）' : '';
     const couponStats = [
-      { label: '累计领取', value: String(claims.length), sub: '发行 ' + (coupon?.issue.split('/')[0].trim() || '-') },
-      { label: '当前可用', value: String(cntOf('可用') || 0), sub: '未使用且在有效期内' },
-      { label: '支付预占', value: String(cntOf('已预占') || 0), sub: '下单未支付锁定' },
-      { label: '已使用', value: String(cntOf('已使用') || 0), sub: '已核销抵扣' },
-      { label: '已过期', value: String(cntOf('已过期') || 0), sub: '超过有效期未使用' },
+      { label: '累计领取', value: String(this.api.mode === 'http' ? s.couponClaimsTotal : claims.length), sub: '发行 ' + (coupon?.issue.split('/')[0].trim() || '-') },
+      { label: '当前可用', value: String(cntOf('可用') || 0), sub: '未使用且在有效期内' + claimStatSub },
+      { label: '支付预占', value: String(cntOf('已预占') || 0), sub: '下单未支付锁定' + claimStatSub },
+      { label: '已使用', value: String(cntOf('已使用') || 0), sub: '已核销抵扣' + claimStatSub },
+      { label: '已过期', value: String(cntOf('已过期') || 0), sub: '超过有效期未使用' + claimStatSub },
     ];
+
+    /* ---- 周期商品数据 · Member Grid VM ---- */
+    const mgMeta = s.mgMeta;
+    const mgPage = s.mgPage;
+    const mgFilters = s.mgFilters;
+    const mgStateLabel = (state: string): string => ({ active: '有效', expired: '已过期', removed: '已移除', all: '全部' }[state] || state);
+    const mgSourceLabel = (source: string): string => ({ manual: '手动', paid_order: '已支付订单' }[source] || source);
+    const mgTime = (value: string | null): string => value ? value.replace('T', ' ').replace('Z', '') : '—';
+    const mgStaffLabel = (staff: MemberGridStaffOption): string => `${staff.displayName}（${staff.senderUserid}） · staff ${staff.staffId}`;
+    const mgRows: Record<string, unknown>[] = [];
+    if (mgPage) {
+      let previousState = '';
+      for (const row of mgPage.rows) {
+        if (mgFilters.groupBy === 'state' && row.state !== previousState) {
+          mgRows.push({ isGroup: true, isMember: false, groupState: row.state, groupLabel: mgStateLabel(row.state) });
+          previousState = row.state;
+        }
+        mgRows.push({ isGroup: false, isMember: true, displayName: row.displayName, memberRef: row.memberRef, stateLabel: mgStateLabel(row.state), sourceLabel: mgSourceLabel(row.source), startsAt: mgTime(row.startsAt), expiresAt: mgTime(row.expiresAt), version: 'v' + row.version });
+      }
+    }
 
     const productFormValue = this.qs().get('id') ? rows.products[0] : undefined;
     const serviceFormValue = this.qs().get('id') ? rows.spProducts[0] : undefined;
     const couponFormValue = this.qs().get('id') ? rows.coupons[0] : undefined;
     const questionnaireFormValue = this.page === 'questionnaireDetail' && this.qs().get('id') ? rows.questionnaires[0] : undefined;
+    const questionnairePreviewQuestions = (questionnaireFormValue?.questions || []).map((raw, index) => {
+      const question = raw as { type?: string; title?: string; placeholder_text?: string; options?: { option_text?: string }[] };
+      const labels: Record<string, string> = { single_choice: '单选', multi_choice: '多选', textarea: '文本', mobile: '手机号' };
+      return {
+        tag: labels[question.type || ''] || '题目',
+        title: question.title || `题目 ${index + 1}`,
+        input: question.type === 'textarea' || question.type === 'mobile',
+        isOpts: question.type === 'single_choice' || question.type === 'multi_choice',
+        ph: question.placeholder_text || (question.type === 'mobile' ? '请输入手机号' : '请输入回答'),
+        opts: (question.options || []).map((option) => option.option_text || '未命名选项'),
+      };
+    });
     const channelFormValue = this.page === 'channelForm' && Boolean(this.qs().get('id')) ? rows.channels[0] : undefined;
     const channelFinalUrlPreview = channelFormValue?.carrierType === 'link' ? buildChannelFinalUrl(channelFormValue.linkUrl || '', channelFormValue.customerChannel || '') : '';
-    const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
     const channelAssetKind = (channel: Channel | null | undefined): ChannelAcquisitionAsset['kind'] => channel?.carrierType === 'link' ? 'customer_acquisition_link' : 'contact_way_qrcode';
     const channelAssetView = (asset: ChannelAcquisitionAsset | undefined) => {
       const ready = channelAcquisitionAssetReady(asset);
@@ -2245,6 +2936,7 @@ export class AdminController extends PageBase {
     const formStaffRows = s.cfStaff
       ? s.cfStaff.map((member) => ({ name: member.name, uid: member.uid || member.id }))
       : (s.channelFormPreview?.assignees || []).map((member) => ({ name: member.name, uid: member.staffId }));
+    const channelRows = rows.channels.filter((channel) => !s.channelQuery || `${channel.name} ${channel.code}`.toLowerCase().includes(s.channelQuery.toLowerCase()));
 
     /* ================= 配置中心 ================= */
     const configRows = this.db.configCategories.map((c) => ({
@@ -2315,10 +3007,17 @@ export class AdminController extends PageBase {
       height: '28px', minWidth: '28px', padding: '0 8px', border: '1px solid #DEE0E3', borderRadius: '6px',
       background: '#fff', color: enabled ? '#1F2329' : '#BBBFC4', fontSize: '12px', cursor: enabled ? 'pointer' : 'not-allowed',
     });
+    const orderButtonStyle = customerButtonStyle;
     const orderFilters = this.state.orderFilters;
     const includes = (value: string, query: string): boolean => !query || value.toLowerCase().includes(query.toLowerCase());
     const orderStatusValue = (label: string): string => ({ '已支付': 'paid', '退款中': 'refunding', '未支付': 'unpaid', '已退款': 'refunded', '已关闭': 'closed' }[label] || label);
-    const orderRows = rows.orders.filter((order) =>
+    // http 模式：状态/时间窗由服务端过滤；单号/付款人/商品只本地筛选当前页并在 UI 明示范围。
+    const orderRows = this.api.mode === 'http'
+      ? rows.orders.filter((order) =>
+        includes(`${order.no} ${order.plat}`, orderFilters.transactionId) &&
+        includes(`${order.payer} ${order.uid}`, orderFilters.payer) &&
+        includes(order.product, orderFilters.product))
+      : rows.orders.filter((order) =>
       includes(`${order.no} ${order.plat}`, orderFilters.transactionId) &&
       includes(`${order.payer} ${order.uid}`, orderFilters.payer) &&
       includes(order.product, orderFilters.product) &&
@@ -2326,9 +3025,17 @@ export class AdminController extends PageBase {
       (!orderFilters.createdFrom || order.time.slice(0, 10) >= orderFilters.createdFrom) &&
       (!orderFilters.createdTo || order.time.slice(0, 10) <= orderFilters.createdTo));
 
+    // 手机号不在客户列表契约内时显示占位，绝不伪造或泄露生产手机号。
+    const customerRows = rows.customers.map((r) => ({
+      ...r,
+      mobileText: (r as { mobile?: string }).mobile || '当前契约未返回',
+      view: () => this.goto('customerDetail', '?id=' + encodeURIComponent(r.id)),
+    }));
+
     return {
       go,
       customersPage: {
+        rows: customerRows,
         filters: this.state.customerFilters,
         totalLabel: `共 ${customerMeta.total.toLocaleString()} 位客户${customerEstimate}`,
         rangeLabel: this.state.customerLoading ? '正在读取客户列表…' : rows.customers.length ? `第 ${customerStart} – ${customerEnd} 条，共 ${customerMeta.total.toLocaleString()} 条${customerEstimate}` : `暂无客户，共 ${customerMeta.total.toLocaleString()} 条${customerEstimate}`,
@@ -2358,6 +3065,7 @@ export class AdminController extends PageBase {
         addedAt: customerContext?.profile.addedAt || '—',
         lastInteractAt: customerContext?.profile.lastInteractAt || '—',
         channelId: customerContext?.profile.channelId == null ? '—' : String(customerContext.profile.channelId),
+        stageName: customerItem.stageId == null ? '未设置' : (rows.orderKv.find((st) => st.v === String(customerItem.stageId))?.k || '未设置'),
         hxcAvailable: customerContext?.hxc.available === true,
         hxcUnavailable: customerContext?.hxc.available !== true,
         hxcStatusAvailable: Boolean(customerContext?.hxc.status),
@@ -2386,6 +3094,13 @@ export class AdminController extends PageBase {
       },
       productFormPage: {
         title: productFormValue ? '编辑普通商品' : '创建普通商品',
+        summary: {
+          code: productFormValue?.code || '新建', price: productFormValue?.price || '0.00',
+          status: productFormValue?.adminProjection?.enabled ? '已上架' : '未上架',
+          images: String(productFormValue?.images?.length || 0),
+          tagging: Object.keys(productFormValue?.adminProjection?.wecomTagging || {}).length ? '已配置' : '未配置',
+          push: productFormValue?.externalPush?.enabled ? '已启用' : '未启用',
+        },
         item: productFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0, images: [], adminProjection: { schemaVersion: 1, status: 'draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] }, externalPush: { enabled: false, configurationReference: '', updatedAt: '' } },
         imagesText: (productFormValue?.images || []).join('\n'),
         completionTargetText: productFormValue?.adminProjection?.completionTarget ? JSON.stringify(productFormValue.adminProjection.completionTarget, null, 2) : '',
@@ -2394,9 +3109,29 @@ export class AdminController extends PageBase {
         completionRedirectOff: productFormValue?.adminProjection?.completionRedirectEnabled !== true,
         externalPushOff: productFormValue?.externalPush?.enabled !== true,
         save: () => this.saveCommerceProduct('product'),
+        imageRows: this.currentCommerceImageUrls('product').map((url) => {
+          const img = this.db.rows.images.find((item) => item.originalUrl === url);
+          return { url, name: img?.name || url, thumbnailUrl: img?.thumbnailUrl || '', remove: () => this.removeCommerceImage('product', url) };
+        }),
+        hasImages: this.currentCommerceImageUrls('product').length > 0,
+        noImages: this.currentCommerceImageUrls('product').length === 0,
+        imageCount: String(this.currentCommerceImageUrls('product').length),
+        pickImages: () => this.pickCommerceImages('product'),
+        uploadImage: (event: Event) => this.uploadCommerceImage('product', event),
+        channelText: this.channelName(this.state.pfChannelId ?? (productFormValue?.adminProjection?.leadChannelId != null ? String(productFormValue.adminProjection.leadChannelId) : '')),
+        leadChannelId: this.state.pfChannelId ?? (productFormValue?.adminProjection?.leadChannelId != null ? String(productFormValue.adminProjection.leadChannelId) : ''),
+        pickChannel: () => this.pickChannelFor('pf'),
+        wecomTaggingBlockedReason: '当前 OpenAPI 仅定义 wecom_tagging 对象，未定义标签选择 DTO；保留原值，不发送额外请求',
       },
       spProductFormPage: {
         title: serviceFormValue ? '编辑周期商品' : '创建周期商品',
+        summary: {
+          code: serviceFormValue?.code || '新建', price: serviceFormValue?.price || '0.00',
+          status: serviceFormValue?.adminProjection?.enabled ? '已上架' : '未上架',
+          images: String(serviceFormValue?.images?.length || 0),
+          tagging: Object.keys(serviceFormValue?.adminProjection?.wecomTagging || {}).length ? '已配置' : '未配置',
+          push: serviceFormValue?.externalPush?.enabled ? '已启用' : '未启用',
+        },
         item: serviceFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0, images: [], adminProjection: { schemaVersion: 1, status: 'service_period_draft', enabled: false, buyButtonText: '', requireMobile: false, leadProgramId: null, leadChannelId: null, leadQrTitle: '', leadQrSubtitle: '', completionRedirectEnabled: false, completionRedirectUrl: '', completionTarget: null, wecomTagging: {}, slices: [] }, externalPush: { enabled: false, configurationReference: '', updatedAt: '' } },
         imagesText: (serviceFormValue?.images || []).join('\n'),
         completionTargetText: serviceFormValue?.adminProjection?.completionTarget ? JSON.stringify(serviceFormValue.adminProjection.completionTarget, null, 2) : '',
@@ -2405,30 +3140,80 @@ export class AdminController extends PageBase {
         completionRedirectOff: serviceFormValue?.adminProjection?.completionRedirectEnabled !== true,
         externalPushOff: serviceFormValue?.externalPush?.enabled !== true,
         save: () => this.saveCommerceProduct('service'),
+        imageRows: this.currentCommerceImageUrls('service').map((url) => {
+          const img = this.db.rows.images.find((item) => item.originalUrl === url);
+          return { url, name: img?.name || url, thumbnailUrl: img?.thumbnailUrl || '', remove: () => this.removeCommerceImage('service', url) };
+        }),
+        hasImages: this.currentCommerceImageUrls('service').length > 0,
+        noImages: this.currentCommerceImageUrls('service').length === 0,
+        imageCount: String(this.currentCommerceImageUrls('service').length),
+        pickImages: () => this.pickCommerceImages('service'),
+        uploadImage: (event: Event) => this.uploadCommerceImage('service', event),
+        channelText: this.channelName(this.state.spfChannelId ?? (serviceFormValue?.adminProjection?.leadChannelId != null ? String(serviceFormValue.adminProjection.leadChannelId) : '')),
+        leadChannelId: this.state.spfChannelId ?? (serviceFormValue?.adminProjection?.leadChannelId != null ? String(serviceFormValue.adminProjection.leadChannelId) : ''),
+        pickChannel: () => this.pickChannelFor('spf'),
+        wecomTaggingBlockedReason: '当前 OpenAPI 仅定义 wecom_tagging 对象，未定义标签选择 DTO；保留原值，不发送额外请求',
       },
-      couponFormPage: {
-        title: couponFormValue ? '编辑优惠券' : '创建优惠券',
-        item: couponFormValue ? {
-          ...couponFormValue,
-          discount: ((couponFormValue.discountAmountTotal || 0) / 100).toFixed(2),
-          claimStartsAtInput: dateInput(couponFormValue.claimStartsAt),
-          claimEndsAtInput: dateInput(couponFormValue.claimEndsAt),
-          useStartsAtInput: dateInput(couponFormValue.useStartsAt),
-          useEndsAtInput: dateInput(couponFormValue.useEndsAt),
-          targetRefsText: (couponFormValue.targetRefs || []).join(', '),
-          fixedSelected: couponFormValue.validityMode === 'fixed_range',
-          relativeSelected: couponFormValue.validityMode !== 'fixed_range',
-        } : {
-          name: '', discount: '0.00', totalIssueLimit: 1, perUserIssueLimit: 1,
-          claimStartsAtInput: '', claimEndsAtInput: '', validityMode: 'relative_days',
-          useStartsAtInput: '', useEndsAtInput: '', relativeValidityDays: 7,
-          instructions: '', targetRefsText: '', fixedSelected: false, relativeSelected: true,
-        },
-        saveDraft: () => this.saveCouponForm(false),
-        savePublish: () => this.saveCouponForm(true),
-      },
+      couponFormPage: (() => {
+        const draft = s.couponDraft;
+        const selectedRefs = this.couponDraftRefs();
+        const options = s.couponOptions;
+        const optionItems = (options?.items || []).map((item) => ({ ...item, priceText: `¥${(item.priceMinor / 100).toFixed(2)} ${item.currency}` }));
+        const claimWindow = draft.claimStartsAt && draft.claimEndsAt ? `${draft.claimStartsAt.slice(5, 10)} – ${draft.claimEndsAt.slice(5, 10)} 可领` : '领取时间未填写';
+        const validityText = draft.validityMode === 'fixed_range'
+          ? (draft.useStartsAt && draft.useEndsAt ? `${draft.useStartsAt.slice(0, 10)} – ${draft.useEndsAt.slice(0, 10)} 可用` : '固定使用区间未填写')
+          : `领后 ${draft.relativeValidityDays || '—'} 天有效`;
+        return {
+          title: couponFormValue ? '编辑优惠券' : '创建优惠券',
+          draft: {
+            ...draft,
+            fixedSelected: draft.validityMode === 'fixed_range',
+            relativeSelected: draft.validityMode !== 'fixed_range',
+          },
+          preview: {
+            name: draft.name || '未命名优惠券',
+            discount: draft.discount && /^\d+(\.\d{1,2})?$/.test(draft.discount) ? `¥${draft.discount}` : '¥—',
+            window: `${claimWindow} · ${validityText}`,
+          },
+          refs: selectedRefs.map((ref) => ({ ref })),
+          hasRefs: selectedRefs.length > 0,
+          noRefs: selectedRefs.length === 0,
+          options: {
+            http: this.api.mode === 'http',
+            mock: this.api.mode !== 'http',
+            query: s.couponOptionQ,
+            typeAll: s.couponOptionType === 'all',
+            typeStandard: s.couponOptionType === 'standard_product',
+            typeService: s.couponOptionType === 'service_period',
+            typeAllOff: s.couponOptionType !== 'all',
+            typeStandardOff: s.couponOptionType !== 'standard_product',
+            typeServiceOff: s.couponOptionType !== 'service_period',
+            items: optionItems,
+            empty: Boolean(options) && optionItems.length === 0,
+            loading: s.couponOptionsLoading,
+            error: s.couponOptionsError,
+            hasError: Boolean(s.couponOptionsError),
+            totalLabel: options ? `共 ${options.total} 个可选商品` : '',
+            showPrevious: Boolean(options && options.offset > 0),
+            showNext: Boolean(options && options.offset + options.items.length < options.total),
+          },
+          setRelative: () => this.setCouponValidity('relative_days'),
+          setFixed: () => this.setCouponValidity('fixed_range'),
+          addRef: (event: Event) => this.addCouponTargetRef(event),
+          removeRef: (event: Event) => this.removeCouponTargetRef(event),
+          searchOptions: () => this.searchCouponOptions(),
+          previousOptions: () => this.pageCouponOptions(-1),
+          nextOptions: () => this.pageCouponOptions(1),
+          retryOptions: () => void this.loadCouponOptions(0),
+          saveDraft: () => this.saveCouponForm(false),
+          savePublish: () => this.saveCouponForm(true),
+        };
+      })(),
       questionnaireFormPage: {
         title: questionnaireFormValue ? '编辑问卷' : '创建问卷',
+        displayName: questionnaireFormValue?.title || '新建问卷',
+        previewQuestions: questionnairePreviewQuestions,
+        previewEmpty: questionnairePreviewQuestions.length === 0,
         item: questionnaireFormValue ? {
           ...questionnaireFormValue,
           questionsJson: JSON.stringify(questionnaireFormValue.questions || [], null, 2),
@@ -2481,6 +3266,7 @@ export class AdminController extends PageBase {
       },
       channelFormPage: {
         title: s.channelFormNotFound ? '渠道不存在' : channelFormValue ? '编辑渠道' : '创建渠道',
+        displayName: channelFormValue?.name || (s.channelFormNotFound ? '渠道不存在' : '新建渠道'),
         notFound: s.channelFormNotFound,
         exists: !s.channelFormNotFound,
         finalUrlPreview: channelFormValue?.carrierType === 'link' ? channelFinalUrlPreview || '填写链接 URL 后生成本地预览' : '二维码载体不生成本地链接预览',
@@ -2492,6 +3278,12 @@ export class AdminController extends PageBase {
         tags: channelTagOptions,
         staffRows: formStaffRows,
         staffCount: `${formStaffRows.length} / 5`,
+        summary: {
+          type: channelFormValue?.channelType === 'wecom_customer_acquisition' ? '企微获客链接' : '普通二维码',
+          status: channelFormValue?.status === 'active' ? '启用' : channelFormValue?.status === 'archived' ? '归档' : '停用',
+          users: channelFormValue?.users || '0',
+          assignees: String(formStaffRows.length),
+        },
         hasStaff: formStaffRows.length > 0,
         noStaff: formStaffRows.length === 0,
         pickStaff: () => this.cfAddStaff(),
@@ -2591,39 +3383,65 @@ export class AdminController extends PageBase {
         queueTotal: groupOpsRows.reduce((total, plan) => total + (plan.queueCount || 0), 0),
         members: this.db.staff,
         memberCount: this.db.staff.length,
+        hasPlans: groupOpsRows.length > 0,
+        noPlans: groupOpsRows.length === 0,
+        hasMembers: this.db.staff.length > 0,
+        noMembers: this.db.staff.length === 0,
         create: () => this.goto('groupopsDetail'),
         directory: () => this.openGroupOpsDirectory(),
       },
       groupOpsDetailPage: {
-        item: groupOpsDetail ? { ...groupOpsDetail, staffCount: groupOpsDetail.staffIds.length, assetCount: groupOpsDetail.assets.length, nodeCount: groupOpsDetail.nodes.length, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, staffCount: 0, assetCount: 0, nodeCount: 0, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', webhookUrl: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        isNew: groupOpsIsNew,
+        title: groupOpsIsNew ? '新建群运营计划' : (groupOpsDetail ? groupOpsDetail.plan.name : ''),
+        noNodes: !Boolean(groupOpsDetail?.nodes.length),
+        hasDetail: groupOpsIsNew || Boolean(groupOpsDetail),
+        noDetail: !groupOpsIsNew && !groupOpsDetail,
+        missingReason: (!groupOpsIsNew && !groupOpsDetail) ? '群运营计划不存在或当前账号不可见' : '',
+        item: groupOpsDetail ? { ...groupOpsDetail, staffCount: groupOpsDetail.staffIds.length, assetCount: groupOpsDetail.assets.length, nodeCount: groupOpsDetail.nodes.length, staffSummary: groupOpsDetail.staffIds.length ? groupOpsDetail.staffIds.map((staffID) => this.db.staff.find((member) => Number(member.uid) === Number(staffID))?.name || `未知 staff #${staffID}`).join('、') : '未选择', assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, staffCount: 0, assetCount: 0, nodeCount: 0, staffSummary: '未选择', assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialPlan: { references: [] } }], null, 2), webhookReference: '', webhookUrl: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        nodeRows: (groupOpsDetail?.nodes || []).map((node) => ({
+          position: String(node.position),
+          kindLabel: node.kind === 'delay' ? '延时' : '消息',
+          summary: node.kind === 'delay' ? `等待 ${node.delayMinutes ?? 0} 分钟` : (node.messageText || '').slice(0, 60) || '（空消息）',
+          material: (node.materialPlan?.references || []).length
+            ? (node.materialPlan?.references || []).map((reference) => `${reference.kind === 'image' ? '图片' : reference.kind === 'miniprogram' ? '小程序' : reference.kind === 'attachment' ? '附件' : reference.kind || '素材'} #${reference.id ?? ''}`).join('、')
+            : '—',
+        })),
+        hasNodes: Boolean(groupOpsDetail?.nodes.length),
+        kv: rows.orderKv,
+        events: rows.orderEvents,
         members: groupOpsMemberOptions,
         directory: () => this.openGroupOpsDirectory(),
         save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'), copyWebhookUrl: () => { const value = groupOpsDetail?.webhookUrl || ''; if (!value) return toast('尚未配置可复制的 Webhook URL', true); copyText(value, (message, error) => toast(message, error)); },
       },
       hxcPage: {
-        rows: rows.agents.map((item) => ({ ...item, cs: mk(item.tone), edit: () => this.goto('agentEdit', '?id=' + encodeURIComponent(item.code)), archive: () => this.archiveHxcSender(item.code) })),
-        orderText: rows.agents.map((item) => item.senderId || item.code).join('\n'),
+        rows: this.db.hxcSenders.map((item) => ({ ...item, cs: mk(item.tone), edit: () => this.goto('agentEdit', '?id=' + encodeURIComponent(item.code)), archive: () => this.archiveHxcSender(item.code) })),
+        orderText: this.db.hxcSenders.map((item) => item.senderId || item.code).join('\n'),
         create: () => this.goto('agentEdit'),
         refresh: () => this.refreshHxcDirectory(),
         reorder: () => this.reorderHxcSenders(),
-        item: hxcEdit ? { ...hxcEdit, activeOff: hxcEdit.isActive === false } : { senderId: '', code: '', name: '', priority: rows.agents.length, isActive: true, activeOff: false },
+        item: hxcEdit ? { ...hxcEdit, activeOff: hxcEdit.isActive === false } : { senderId: '', code: '', name: '', priority: this.db.hxcSenders.length, isActive: true, activeOff: false },
         save: () => this.saveHxcSender(),
         back: () => this.goto('agents'),
+      },
+      agentsPage: {
+        createAgent: () => this.goto('agentEdit', '?type=agent'),
+        createFixedScript: () => this.goto('agentEdit', '?type=fixed_script'),
       },
 
       /* ---- 渠道表单 ---- */
       cgo, cn, cp,
       stepTitle: ['基础配置', '渠道载体', '客服分配', '欢迎语素材', '入渠标签'][cstep - 1],
-      welcomePreview:
-        '{{客户名}} 恭喜你报名成功#5天沙龙邀约破局共学营\n⭕辛苦填一下问卷，让我们更好了解你的需求，给你提供更好的服务：\nhttps://www.xinliushangye.com/s/salon-yixiang-gongxueying\n\n⏰开营时间：8月6日\n🎯进群时间：8月5日',
-      welcomeText:
-        '{{客户名}} 恭喜你报名成功#5天沙龙邀约破局共学营\n⭕辛苦填一下问卷，让我们更好了解你的需求，给你提供更好的服务：\nhttps://www.xinliushangye.com/s/salon-yixiang-gongxueying\n\n⏰开营时间：8月6日\n🎯进群时间：8月5日',
 
       /* ---- Agent 编辑 ---- */
       ago, an, ap,
       aTitle: ['基本信息', '当前绑定人群包', 'Prompt 配置', '固定素材'][astep - 1],
-      promptTokens: ['插入 {{问卷信息}}', '插入 {{最近20条聊天信息}}', '插入 {{用户标签}}', '插入 {{激活信息}}'].map((t) => ({ t })),
-      taskPrompt: '问卷信息：\n{{问卷信息}}\n\n从下面 12 门课程中推荐 2 门：',
+      agentEditItem: agentEditValue,
+      agentEditPage: {
+        item: agentEditValue,
+        save: () => this.saveAutomationAgentFromForm(),
+        precheck: () => this.precheckAutomationAgent(),
+        back: () => this.goto('agents'),
+      },
 
       /* ---- 通用选择器写回（渠道表单 / Agent / 迁移 / 表单渠道码） ---- */
       cf: (() => {
@@ -2647,25 +3465,27 @@ export class AdminController extends PageBase {
           addMp: () => this.cfAddMaterial('mp'),
           addAttach: () => this.cfAddMaterial('attach'),
           addGroup: () => this.cfAddMaterial('group'),
-          tagsText: s.cfTags ? (s.cfTags.length ? s.cfTags.map((t) => t.name).join(' / ') : '未配置') : '沙龙邀约 / 共学营',
+          tagsText: s.cfTags ? (s.cfTags.length ? s.cfTags.map((t) => t.name).join(' / ') : '未配置') : '未配置',
           pickTags: () => this.cfPickTags(),
         };
       })(),
       ag: (() => {
-        const src = s.agMats || this.defaultAgMats();
-        const mats = src.map((m) =>
-          this.matRow(m, () => this.setState({ agMats: src.filter((x) => !(x.id === m.id && x.kind === m.kind)) })),
-        );
-        const cnt = (k: string): number => src.filter((m) => m.kind === k).length;
+        const detail = agentEditDetail;
+        const fixedContentText = detail?.fixedContentText || '';
+        const groups = [
+          { label: '图片', ids: detail?.imageLibraryIds || [] },
+          { label: '小程序', ids: detail?.miniProgramLibraryIds || [] },
+          { label: 'PDF', ids: detail?.attachmentLibraryIds || [] },
+          { label: '客户群', ids: detail?.groupInviteLibraryIds || [] },
+        ];
+        const counts = groups.map((g) => g.ids.length);
         return {
-          mats,
-          hasMats: mats.length > 0,
-          noMats: mats.length === 0,
-          matCountText: '已选 ' + cnt('image') + ' 图片 / ' + cnt('mp') + ' 小程序 / ' + cnt('attach') + ' PDF / ' + cnt('group') + ' 客户群',
-          addImage: () => this.agAddMaterial('image'),
-          addMp: () => this.agAddMaterial('mp'),
-          addAttach: () => this.agAddMaterial('attach'),
-          addGroup: () => this.agAddMaterial('group'),
+          matCountText: '已选 ' + counts[0] + ' 图片 / ' + counts[1] + ' 小程序 / ' + counts[2] + ' PDF / ' + counts[3] + ' 客户群',
+          fixedContentText,
+          hasFixedContent: Boolean(fixedContentText),
+          noFixedContent: !fixedContentText,
+          materialGroups: groups.map((g) => ({ label: g.label, value: g.ids.length ? g.ids.join(', ') : '—' })),
+          materialsBlockedReason: '当前 OpenAPI 未提供独立固定素材更新 operation；本区域不会发送请求',
         };
       })(),
       mig: (() => {
@@ -2726,6 +3546,8 @@ export class AdminController extends PageBase {
       /* 人群包编辑器 */
       ae: {
         pkg: aePkg,
+        hasPackage: Boolean(aePkg),
+        noPackage: !aePkg,
         nav: aeNav,
         goPanel: aeGo,
         panel: aePanel,
@@ -2736,6 +3558,8 @@ export class AdminController extends PageBase {
         senders: aeSenders,
         sendersText: aeSenders.map((sender) => sender.userid).join('\n'),
         members: aeMembers,
+        hasMembers: aeMembers.length > 0,
+        noMembers: aeMembers.length === 0,
         memberTotal: aeMembers.length + ' 人（共 ' + (aePkg?.countText || '0') + ' 人，显示前 200）',
         records: aeRecordRows,
         recordTotal: aeRecords.length ? '共 ' + aeRecords.length + ' 条' : '暂无发送记录',
@@ -2768,7 +3592,9 @@ export class AdminController extends PageBase {
 
       /* 问卷运营配置 */
       qops: {
-        q: qRow ? { ...qRow, index: qid, status: qRow.off ? '已停用' : '启用中' } : null,
+        missingId: this.pageId() < 1,
+        hasId: this.pageId() >= 1,
+        q: qRow ? { ...qRow, status: qRow.off ? '已停用' : '启用中' } : null,
         ops,
         nav: opsNav,
         goTab: opsGo,
@@ -2983,10 +3809,102 @@ export class AdminController extends PageBase {
         claims: claimRows,
         hasClaims: claimRows.length > 0,
         noClaims: claimRows.length === 0,
+        claimsPaging: {
+          http: this.api.mode === 'http',
+          loading: s.couponClaimsLoading,
+          error: s.couponClaimsError,
+          hasError: Boolean(s.couponClaimsError),
+          rangeLabel: claimRows.length ? `第 ${s.couponClaimsOffset + 1} – ${s.couponClaimsOffset + claimRows.length} 条，共 ${s.couponClaimsTotal} 条` : `当前页暂无领取记录，共 ${s.couponClaimsTotal} 条`,
+          showPrevious: s.couponClaimsOffset > 0 && !s.couponClaimsLoading,
+          showNext: s.couponClaimsOffset + claimRows.length < s.couponClaimsTotal && !s.couponClaimsLoading,
+          previous: () => void this.loadCouponClaimsPage(Math.max(0, s.couponClaimsOffset - 50)),
+          next: () => void this.loadCouponClaimsPage(s.couponClaimsOffset + 50),
+          retry: () => void this.loadCouponClaimsPage(s.couponClaimsOffset),
+        },
         editConfig: () => coupon?.resourceId ? this.goto('couponForm', '?id=' + coupon.resourceId) : this.goto('couponForm'),
         back: () => this.goto('coupons'),
         shareIt: () => couponRows[couponIdx]?.shareIt(),
       },
+      spDataPage: (() => {
+        const isHttp = this.api.mode === 'http';
+        const product = mgMeta?.product || rows.spProducts.find((p) => p.resourceId === this.pageId()) || rows.spProducts[0];
+        const ready = Boolean(mgMeta && mgPage);
+        return {
+          http: isHttp,
+          mock: !isHttp,
+          ready,
+          productId: String(this.pageId() || ''),
+          hasProductId: this.pageId() >= 1,
+          productName: product?.name || '周期商品',
+          boundary: {
+            rows: String(mgPage?.rows.length ?? 0),
+            views: String(mgMeta?.views.length ?? 0),
+            share: mgMeta ? (mgMeta.externalShareEnabled ? '已开启' : '已关闭') : '未读取',
+          },
+          f: {
+            viewDefault: mgFilters.viewId === 'default', viewCustom: mgFilters.viewId !== 'default',
+            stateAll: mgFilters.state === 'all', stateActive: mgFilters.state === 'active', stateExpired: mgFilters.state === 'expired', stateRemoved: mgFilters.state === 'removed',
+            stateAllOff: mgFilters.state !== 'all', stateActiveOff: mgFilters.state !== 'active', stateExpiredOff: mgFilters.state !== 'expired', stateRemovedOff: mgFilters.state !== 'removed',
+            sourceAll: mgFilters.source === '', sourceManual: mgFilters.source === 'manual', sourcePaid: mgFilters.source === 'paid_order',
+            sourceAllOff: mgFilters.source !== '', sourceManualOff: mgFilters.source !== 'manual', sourcePaidOff: mgFilters.source !== 'paid_order',
+            sortUpdated: mgFilters.sort === 'updated_at_desc', sortStarts: mgFilters.sort === 'starts_at_desc',
+            sortUpdatedOff: mgFilters.sort !== 'updated_at_desc', sortStartsOff: mgFilters.sort !== 'starts_at_desc',
+            groupNone: mgFilters.groupBy === '', groupState: mgFilters.groupBy === 'state',
+            groupNoneOff: mgFilters.groupBy !== '', groupStateOff: mgFilters.groupBy !== 'state',
+          },
+          rows: mgRows,
+          rowsEmpty: ready && mgRows.length === 0,
+          columns: (mgMeta?.columns || []).map((column) => ({ ...column, nullableText: column.nullable ? ' · nullable' : '' })),
+          views: (mgMeta?.views || []).map((view) => ({ name: view.name })),
+          staff: s.mgStaff.map((staff) => ({ id: String(staff.staffId), label: mgStaffLabel(staff) })),
+          staffEmpty: s.mgStaff.length === 0,
+          staffError: s.mgStaffError,
+          hasStaffError: Boolean(s.mgStaffError),
+          collaborators: (mgMeta?.collaboratorRows || []).map((collaborator) => {
+            const staff = s.mgStaff.find((item) => item.staffId === collaborator.staffId);
+            return {
+              id: String(collaborator.collaboratorId),
+              label: staff ? mgStaffLabel(staff) : `staff ${collaborator.staffId}（目录未返回）`,
+              version: 'v' + collaborator.version,
+              isView: collaborator.permission === 'view',
+              isEdit: collaborator.permission === 'edit',
+            };
+          }),
+          collaboratorsEmpty: (mgMeta?.collaboratorRows || []).length === 0,
+          detail: s.mgDetail ? {
+            open: true,
+            memberRef: s.mgDetail.memberRef,
+            version: 'v' + s.mgDetail.version,
+            remark: s.mgDetail.remark || '',
+            alliance: s.mgDetail.alliance || '',
+          } : { open: false, memberRef: '', version: '', remark: '', alliance: '' },
+          share: {
+            enabled: Boolean(mgMeta?.externalShareEnabled),
+            disabled: !mgMeta?.externalShareEnabled,
+            statusLabel: mgMeta?.externalShareEnabled ? '已开启' : '已关闭',
+            toggleText: mgMeta?.externalShareEnabled ? '关闭公开网格' : '开启并生成链接',
+            path: s.mgSharePath,
+            hasPath: Boolean(s.mgSharePath),
+            noPath: !s.mgSharePath,
+            lostHint: Boolean(mgMeta?.externalShareEnabled) && !s.mgSharePath,
+          },
+          historyHref: `spProductData.html?member_grid_history=1&history_kind=view&product_id=${this.pageId()}`,
+          showPrevious: s.mgCursors.length > 1 && !s.mgBusy,
+          showNext: Boolean(mgPage?.hasMore) && !s.mgBusy,
+          apply: () => this.applyMemberGridFilters(),
+          previous: () => this.previousMemberGridPage(),
+          next: () => this.nextMemberGridPage(),
+          editMember: (event: Event) => this.editMemberGridRow(event),
+          cancelEdit: () => this.setState({ mgDetail: null }),
+          saveEdit: () => this.saveMemberGridFields(),
+          addCollaborator: () => this.addMemberGridCollaborator(),
+          updateCollaborator: (event: Event) => this.updateMemberGridCollaborator(event),
+          removeCollaborator: (event: Event) => this.removeMemberGridCollaborator(event),
+          toggleShare: () => this.toggleMemberGridShare(),
+          copyShare: () => this.copyMemberGridShare(),
+          back: () => this.goto('spProducts'),
+        };
+      })(),
       couponPage: {
         query: s.couponQuery,
         status: s.couponStatus,
@@ -3047,11 +3965,21 @@ export class AdminController extends PageBase {
         clear: () => this.clearOrderFilters(),
         exportWechat: () => this.exportWechatOrders(),
         saving: this.state.saving,
-        summary: orderRows.length === rows.orders.length ? `当前加载 ${orderRows.length} 条` : `当前筛选 ${orderRows.length} / ${rows.orders.length} 条`,
+        summary: this.api.mode === 'http'
+          ? (orderRows.length ? `第 ${this.state.orderOffset + 1} – ${this.state.orderOffset + orderRows.length} 条，共 ${this.db.orderList.total} 条` : `暂无订单，共 ${this.db.orderList.total} 条`)
+          : (orderRows.length === rows.orders.length ? `当前加载 ${orderRows.length} 条` : `当前筛选 ${orderRows.length} / ${rows.orders.length} 条`),
         empty: orderRows.length === 0,
+        serverPaged: this.api.mode === 'http',
+        localFilterNote: this.api.mode !== 'http',
+        loading: this.state.orderLoading,
+        error: this.state.orderError,
+        previous: () => { if (this.state.orderOffset > 0) this.loadOrderPage(this.state.orderOffset - 50); },
+        next: () => { if (this.db.orderList.hasMore) this.loadOrderPage(this.state.orderOffset + 50); },
+        previousStyle: orderButtonStyle(this.state.orderOffset > 0 && !this.state.orderLoading),
+        nextStyle: orderButtonStyle(this.db.orderList.hasMore && !this.state.orderLoading),
       },
       rows: {
-        customers: rows.customers.map((r) => ({ ...r, view: () => this.goto('customerDetail', '?id=' + encodeURIComponent(r.id)) })),
+        customers: customerRows,
         tags: rows.tags,
         qa: rows.qa,
         msgs: rows.msgs.map((m) => ({
@@ -3073,8 +4001,8 @@ export class AdminController extends PageBase {
           rowStyle: r.off ? { background: '#FAFAFB' } : {},
           nameStyle: { fontSize: '13px', fontWeight: 600, color: r.off ? '#A6AAB0' : '#1F2329' },
           delStyle: { fontSize: '13px', cursor: r.off ? 'pointer' : 'not-allowed', color: r.off ? '#D83931' : '#BBBFC4' },
-          view: () => this.goto('questionnaireDetail', '?id=' + (r.resourceId ?? idx)),
-          opsGo: () => this.goto('questionnaireOps', '?id=' + (r.resourceId ?? idx)),
+          view: () => r.resourceId ? this.goto('questionnaireDetail', '?id=' + r.resourceId) : this.blocked('问卷缺少服务端 ID，无法打开详情'),
+          opsGo: () => r.resourceId ? this.goto('questionnaireOps', '?id=' + r.resourceId) : this.blocked('问卷缺少服务端 ID，无法打开运营配置'),
           copyIt: () => r.resourceId && void this.api.duplicateQuestionnaire(r.resourceId).then(() => { toast('问卷副本已创建'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '问卷复制失败', true)),
           toggleIt: () => {
             if (!r.resourceId) return toast('问卷缺少服务端 ID', true);
@@ -3095,10 +4023,26 @@ export class AdminController extends PageBase {
         edQs: rows.edQs.map((q) => ({ ...q, isOpts: !q.input })),
         edAssignees: rows.edAssignees,
         chStats: rows.chStats,
-        channels: rows.channels.map((r) => ({
+        channelQuery: s.channelQuery,
+        setChannelQuery: (event: Event) => this.setState({ channelQuery: (event.currentTarget as HTMLInputElement).value }),
+        channels: channelRows.map((r) => ({
           ...r,
+          statusLabel: r.statusLabel || r.status,
+          qrReady: /^(\/|https?:\/\/)/.test(r.qr || ''),
+          qrMissing: !/^(\/|https?:\/\/)/.test(r.qr || ''),
           view: () => this.openChannelDrawer(r.resourceId),
           edit: () => this.goto('channelForm', r.resourceId == null ? '' : '?id=' + r.resourceId),
+          download: () => {
+            if (!/^(\/|https?:\/\/)/.test(r.qr || '')) return this.blocked('当前渠道后端未返回二维码地址，请先申请获客资产');
+            const anchor = document.createElement('a');
+            anchor.href = r.qr;
+            anchor.download = `${r.code || 'channel'}-qrcode`;
+            anchor.target = '_blank';
+            anchor.rel = 'noopener';
+            anchor.click();
+          },
+          archive: () => this.blocked('当前 OpenAPI 没有渠道归档 operation'),
+          del: () => this.blocked('当前 OpenAPI 没有渠道删除 operation'),
           cs: mk(r.tone), tcs: mk(r.tagTone), typeCs: mk('blue'), matCs: mk('gray'), welCs: mk('ok'),
         })),
         orders: orderRows.map((r) => ({ ...r, cs: mk(r.tone), view: () => this.goto('orderDetail', '?id=' + encodeURIComponent(r.no)) })),
@@ -3116,7 +4060,24 @@ export class AdminController extends PageBase {
         images: imageCards,
         mpItems: mpCards,
         attachItems: attachRows,
-        agents: rows.agents.map((r) => ({ ...r, cs: mk(r.tone), typeCs: mk('gray'), matCs: mk('gray') })),
+        agents: rows.agents.map((r) => ({
+          ...r,
+          cs: mk(r.tone), typeCs: mk('gray'), matCs: mk('gray'),
+          edit: () => {
+            let id: number;
+            try {
+              id = this.automationAgentId(r.id);
+            } catch (error) {
+              toast((error instanceof Error ? error.message : 'Automation agent ID 无效') + '，未发送请求', true);
+              return;
+            }
+            this.goto('agentEdit', '?id=' + encodeURIComponent(String(id)));
+          },
+          copy: () => this.copyAutomationAgent(r.id),
+          precheck: () => this.precheckAutomationAgent(r.id),
+          pause: () => this.pauseAutomationAgent(r.id),
+          archive: () => this.archiveAutomationAgent(r.id),
+        })),
         agentSlots: rows.agentSlots,
         agentDeps: rows.agentDeps,
       },

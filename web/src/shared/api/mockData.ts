@@ -502,7 +502,9 @@ export const SEED_DB: AdminDb = {
   staff: STAFF_DIRECTORY,
   groupChats: GROUP_CHATS,
   customerList: { total: 6, totalIsEstimate: false, nextCursor: null },
+  orderList: { total: 0, hasMore: false },
   customerDetail: { status: 'not_found', context: null, survey: null, error: '' },
+  hxcSenders: [],
   rows: {
     customers: [
       { name: '李思远', id: 'wmA8c3DQAA_x91', owner: '张敏', mobile: '138****4021' },
@@ -623,7 +625,7 @@ export const SEED_DB: AdminDb = {
       { name: '内测答谢券', code: 'nx150e', off: '¥150', scope: '体验期 7 天', window: '05-01 00:00 – 05-31 23:59', issue: '100 / 12', status: '已停用', tone: 'red' },
     ],
     images: [
-      { resourceId: '1', name: '直播预告主视觉.png', size: '1080×1920 · 482 KB', tag: '直播', tone: 'blue', bg: 'linear-gradient(135deg,#DCE7FF,#B9CDFF)', desc: '每周三直播预告封面，含二维码区', tags: '直播,预告', enabled: true, uploadedAt: '2026-08-01 10:24' },
+      { resourceId: '1', name: '直播预告主视觉.png', size: '1080×1920 · 482 KB', tag: '直播', tone: 'blue', bg: 'linear-gradient(135deg,#DCE7FF,#B9CDFF)', desc: '每周三直播预告封面，含二维码区', tags: '直播,预告', enabled: true, uploadedAt: '2026-08-01 10:24', originalUrl: '/_test/materials/image/1' },
       { name: '课程卡片-增长.jpg', size: '750×1000 · 213 KB', tag: '课程', tone: 'purple', bg: 'linear-gradient(135deg,#EADCFF,#CFB6FF)', desc: '增长陪跑课程卡片竖版', tags: '课程,卡片', enabled: true, uploadedAt: '2026-07-30 16:02' },
       { name: '欢迎语配图.png', size: '900×600 · 156 KB', tag: '欢迎语', tone: 'ok', bg: 'linear-gradient(135deg,#D8F5DE,#AEE7BD)', desc: '新好友欢迎语横版配图', tags: '欢迎语', enabled: true, uploadedAt: '2026-07-28 09:41' },
       { name: '优惠券横幅.png', size: '1200×400 · 98 KB', tag: '活动', tone: 'warn', bg: 'linear-gradient(135deg,#FFE9CC,#FFD09B)', desc: '领券活动横幅', tags: '活动,优惠券', enabled: true, uploadedAt: '2026-07-26 20:15' },

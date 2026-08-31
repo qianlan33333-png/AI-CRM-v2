@@ -22,7 +22,7 @@
                   <p style="margin:3px 0 0;font-size:12px;color:#8F959E">渠道码中心只管理渠道资产、渠道用户、欢迎语、标签和客服分配。</p>
                 </div>
                 <div style="display:flex;gap:8px;flex:none">
-                  <input placeholder="搜索渠道名称" style="height:32px;width:200px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff">
+                  <input value="{{ rows.channelQuery }}" onInput="{{ rows.setChannelQuery }}" placeholder="搜索渠道名称" aria-label="搜索渠道名称" style="height:32px;width:200px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff">
                   <button onClick="{{ go.channelForm }}" style="height:32px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">新建渠道</button>
                 </div>
               </div>
@@ -40,7 +40,7 @@
                     <tr>
                       <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;font-size:13px;font-weight:500">{{ r.name }}</td>
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5"><span style="{{ r.typeCs }}">{{ r.type }}</span></td>
-                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5"><span style="{{ r.cs }}">{{ r.status }}</span></td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5"><span style="{{ r.cs }}">{{ r.statusLabel }}</span></td>
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5">
                         <div style="display:flex;gap:6px;flex-wrap:wrap">
                           <span style="{{ r.welCs }}">欢迎语</span><span style="{{ r.matCs }}">{{ r.mat }}</span><span style="{{ r.tcs }}">{{ r.tag }}</span>
@@ -48,12 +48,13 @@
                       </td>
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;text-align:right;font-variant-numeric:tabular-nums">{{ r.users }}</td>
                       <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;text-align:right">
-                        <div style="display:inline-flex;flex-wrap:wrap;justify-content:flex-end;gap:8px">
-                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #C7DAFF;border-radius:6px;background:#EFF4FF;font-size:13px;color:#245BDB;cursor:pointer">{{ r.qr }}</a>
-                          <a onClick="{{ r.view }}" style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#1F2329;cursor:pointer">查看</a>
-                          <a onClick="{{ r.edit }}" style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#1F2329;cursor:pointer">编辑</a>
-                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#646A73;cursor:pointer">下架</a>
-                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#646A73;cursor:pointer">删除</a>
+                        <div style="display:inline-flex;flex-wrap:wrap;justify-content:flex-end;gap:16px;max-width:290px">
+                          <sc-if value="{{ r.qrReady }}"><a onClick="{{ r.download }}" style="font-size:13px;color:#3370FF;cursor:pointer;white-space:nowrap">下载二维码</a></sc-if>
+                          <sc-if value="{{ r.qrMissing }}"><span aria-disabled="true" title="{{ r.qr }}" style="font-size:13px;color:#A6AAB0;white-space:nowrap">后端未返回二维码地址</span></sc-if>
+                          <a onClick="{{ r.view }}" style="font-size:13px;color:#3370FF;cursor:pointer;white-space:nowrap">查看</a>
+                          <a onClick="{{ r.edit }}" style="font-size:13px;color:#3370FF;cursor:pointer;white-space:nowrap">编辑</a>
+                          <a onClick="{{ r.archive }}" aria-disabled="true" title="后端暂无渠道归档 operation" style="font-size:13px;color:#3370FF;cursor:not-allowed;white-space:nowrap">下架</a>
+                          <a onClick="{{ r.del }}" aria-disabled="true" title="后端暂无渠道删除 operation" style="font-size:13px;color:#3370FF;cursor:not-allowed;white-space:nowrap">删除</a>
                         </div>
                       </td>
                     </tr>

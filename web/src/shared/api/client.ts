@@ -8,6 +8,7 @@
  */
 import type {
   AdminDb,
+  Agent,
   AiRecipient,
   AudienceGroup,
   AudiencePackage,
@@ -54,6 +55,7 @@ import type { AIAudiencePackageSender } from "../../api/generated/health.schemas
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
 import { archiveHxcSenderDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';
+import { archiveAutomationAgentDto, copyAutomationAgentDto, pauseAutomationAgentDto, precheckAutomationAgentDto, saveAutomationAgentDto, type AutomationAgentPrecheck, type AutomationAgentWriteInput } from '../../api/admin';
 import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
@@ -77,10 +79,17 @@ export interface AdminApi {
   getChannelAcquisitionAsset(channelId: number, effectId: string): Promise<ChannelAcquisitionAsset>;
   exportWechatOrders(input: WechatOrderExportInput): Promise<Blob>;
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult>;
-  saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]>;
+  saveHxcSender(input: HxcSenderWriteInput): Promise<Agent>;
   reorderHxcSenders(ids: string[]): Promise<void>;
   archiveHxcSender(senderUserid: string): Promise<void>;
   refreshHxcDirectory(): Promise<{ syncedCount: number }>;
+
+  /* ---- 自动化 Agent ---- */
+  saveAutomationAgent(input: AutomationAgentWriteInput): Promise<Agent>;
+  copyAutomationAgent(agentId: number): Promise<Agent>;
+  pauseAutomationAgent(agentId: number): Promise<Agent>;
+  archiveAutomationAgent(agentId: number): Promise<void>;
+  precheckAutomationAgent(agentId: number): Promise<AutomationAgentPrecheck>;
 
   /* ---- 内容雷达 ---- */
   toggleRadarLink(id: number, enabled: boolean): Promise<void>;
@@ -306,6 +315,7 @@ export class MockApi implements AdminApi {
   loadDb(context?: AdminReadContext): Promise<AdminDb> {
     this.db = this.restore();
     if (!this.db.customerList) this.db.customerList = { total: this.db.rows.customers.length, totalIsEstimate: false, nextCursor: null };
+    this.db.orderList = { total: this.db.rows.orders.length, hasMore: false };
     if (!this.db.customerDetail) this.db.customerDetail = { status: 'not_found', context: null, survey: null, error: '' };
     if (context?.page === 'customers') return delay(this.readCustomerList(context.customerList), 120);
     if (context?.page === 'customerDetail') return delay(this.readCustomerDetail(context.id), 120);
@@ -313,6 +323,11 @@ export class MockApi implements AdminApi {
       const result = deepCopy(this.db);
       const id = Number(context.id);
       result.rows.channels = Number.isSafeInteger(id) && id > 0 ? result.rows.channels.filter((item) => item.resourceId === id) : [];
+      return delay(result, 120);
+    }
+    if (context?.page === 'groupopsDetail' && !context.id) {
+      const result = deepCopy(this.db);
+      result.groupOpsDetail = null;
       return delay(result, 120);
     }
     return delay(this.db, 120);
@@ -357,10 +372,26 @@ export class MockApi implements AdminApi {
   saveChannel(input: ChannelWriteInput): Promise<Channel> { const item = input.id == null ? { resourceId: Date.now(), name: input.channel_name || '', code: input.channel_code || '', type: input.channel_type || 'qrcode', status: input.status || 'inactive', tone: 'warn' as const, mat: '—', tag: input.entry_tag_name || '—', tagTone: 'gray' as const, users: '0', qr: '' } : this.db.rows.channels.find((row) => row.resourceId === input.id)!; Object.assign(item, { name: input.channel_name, code: input.channel_code, channelType: input.channel_type, carrierType: input.carrier_type, status: input.status, sceneValue: input.scene_value, qrUrl: input.qr_url, ownerStaffId: input.owner_staff_id, customerChannel: input.customer_channel, linkUrl: input.link_url, finalUrl: input.final_url, welcomeMessage: input.welcome_message, welcomeImageLibraryIds: input.welcome_image_library_ids, welcomeMiniprogramLibraryIds: input.welcome_miniprogram_library_ids, welcomeAttachmentLibraryIds: input.welcome_attachment_library_ids, welcomeGroupInviteLibraryIds: input.welcome_group_invite_library_ids, autoAcceptFriend: input.auto_accept_friend, entryTagId: input.entry_tag_id, entryTagName: input.entry_tag_name, entryTagGroupName: input.entry_tag_group_name, assignmentMode: input.assignment_mode, assignmentStrategy: input.assignment_strategy, overflowPolicy: input.overflow_policy, assignmentConfig: input.assignment_config_json }); if (input.id == null) this.db.rows.channels.push(item); this.persist(); return delay(item); }
   exportWechatOrders(_input: WechatOrderExportInput): Promise<Blob> { return delay(new Blob(['local_id,provider,product_code,amount_minor,currency,status,created_at\n'], { type: 'text/csv' })); }
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { if (!input.checked || input.transactionIdConfirmation !== input.orderNo) return Promise.reject(new Error('必须勾选确认并完整输入当前订单号')); return delay({ id: `mock-refund-${input.orderNo}`, state: 'reserved', provider: input.provider, realExternalCallExecuted: false, deliveryProven: false }); }
-  saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { const item = this.db.rows.agents.find((row) => row.code === input.senderUserid) || { name: input.displayName, code: input.senderUserid, type: 'HXC 本地发送人', material: '', status: '', tone: 'gray' as const }; Object.assign(item, { senderId: input.id, priority: input.priority, isActive: input.active, name: input.displayName || input.senderUserid, material: `优先级 ${input.priority}`, status: input.active ? '启用中' : '已停用', tone: input.active ? 'ok' : 'gray' }); if (!this.db.rows.agents.includes(item)) this.db.rows.agents.push(item); this.persist(); return delay(item); }
-  reorderHxcSenders(ids: string[]): Promise<void> { this.db.rows.agents.sort((a, b) => ids.indexOf(a.senderId || a.code) - ids.indexOf(b.senderId || b.code)); this.persist(); return delay(undefined); }
-  archiveHxcSender(senderUserid: string): Promise<void> { const item = this.db.rows.agents.find((row) => row.code === senderUserid); if (item) { item.isActive = false; item.status = '已归档'; item.tone = 'gray'; this.persist(); } return delay(undefined); }
+  saveHxcSender(input: HxcSenderWriteInput): Promise<Agent> { const item = this.db.hxcSenders.find((row) => row.code === input.senderUserid) || { name: input.displayName, code: input.senderUserid, type: 'HXC 本地发送人', material: '', status: '', tone: 'gray' as const }; Object.assign(item, { senderId: input.id, priority: input.priority, isActive: input.active, name: input.displayName || input.senderUserid, material: `优先级 ${input.priority}`, status: input.active ? '启用中' : '已停用', tone: input.active ? 'ok' : 'gray' }); if (!this.db.hxcSenders.includes(item)) this.db.hxcSenders.push(item); this.persist(); return delay(item); }
+  reorderHxcSenders(ids: string[]): Promise<void> { this.db.hxcSenders.sort((a, b) => ids.indexOf(a.senderId || a.code) - ids.indexOf(b.senderId || b.code)); this.persist(); return delay(undefined); }
+  archiveHxcSender(senderUserid: string): Promise<void> { const item = this.db.hxcSenders.find((row) => row.code === senderUserid); if (item) { item.isActive = false; item.status = '已归档'; item.tone = 'gray'; this.persist(); } return delay(undefined); }
   refreshHxcDirectory(): Promise<{ syncedCount: number }> { return Promise.reject(new Error('HXC 发送资格校验只支持当前 HTTP / OpenAPI 后端')); }
+
+  saveAutomationAgent(input: AutomationAgentWriteInput): Promise<Agent> {
+    const existing = input.id == null ? undefined : this.db.rows.agents.find((row) => row.id === input.id);
+    if (input.id != null && !existing) return Promise.reject(new Error('自动化 Agent 不存在或当前账号不可见'));
+    const code = existing?.code || input.code?.trim() || '';
+    if (!code) return Promise.reject(new Error('新建 Automation agent 必须提供 code'));
+    const item: Agent = existing || { id: Math.max(0, ...this.db.rows.agents.map((row) => row.id || 0)) + 1, name: '', code, type: '', material: '图文 0 · 小程序 0 · 附件 0 · 群邀请 0', status: '已暂停', tone: 'gray' };
+    Object.assign(item, { name: input.name, code, type: input.automationType === 'fixed_script' ? '固定话术' : 'Agent 机器人', rolePrompt: input.rolePrompt, taskPrompt: input.taskPrompt });
+    if (!existing) this.db.rows.agents.push(item);
+    this.persist();
+    return delay(item);
+  }
+  copyAutomationAgent(agentId: number): Promise<Agent> { const source = this.db.rows.agents.find((row) => row.id === agentId); if (!source) return Promise.reject(new Error('自动化 Agent 不存在或当前账号不可见')); const copy = { ...deepCopy(source), id: Math.max(0, ...this.db.rows.agents.map((row) => row.id || 0)) + 1, name: `${source.name}（副本）`, code: `${source.code}-copy` }; this.db.rows.agents.push(copy); this.persist(); return delay(copy); }
+  pauseAutomationAgent(agentId: number): Promise<Agent> { const item = this.db.rows.agents.find((row) => row.id === agentId); if (!item) return Promise.reject(new Error('自动化 Agent 不存在或当前账号不可见')); item.status = '已暂停'; item.tone = 'gray'; this.persist(); return delay(item); }
+  archiveAutomationAgent(agentId: number): Promise<void> { const item = this.db.rows.agents.find((row) => row.id === agentId); if (!item) return Promise.reject(new Error('自动化 Agent 不存在或当前账号不可见')); item.status = '已归档'; item.tone = 'gray'; this.persist(); return delay(undefined); }
+  precheckAutomationAgent(agentId: number): Promise<AutomationAgentPrecheck> { const item = this.db.rows.agents.find((row) => row.id === agentId); if (!item) return Promise.reject(new Error('自动化 Agent 不存在或当前账号不可见')); const configurationReady = Boolean(item.rolePrompt?.trim() || item.taskPrompt?.trim()); const materialsConfigured = Boolean(item.imageLibraryIds?.length || item.miniProgramLibraryIds?.length || item.attachmentLibraryIds?.length || item.groupInviteLibraryIds?.length); const reasons = [...(configurationReady ? [] : ['prompt_unconfigured']), ...(materialsConfigured ? [] : ['material_unconfigured']), 'execution_disabled']; return delay({ agentId, configurationReady, materialsConfigured, executionEnabled: false, canActivate: false, reasons, realExternalCallExecuted: false }); }
 
   /* ---------- 内容雷达 ---------- */
 
@@ -852,10 +883,15 @@ export class HttpApi implements AdminApi {
   getChannelAcquisitionAsset(channelId: number, effectId: string): Promise<ChannelAcquisitionAsset> { return getChannelAcquisitionAssetDto(channelId, effectId); }
   exportWechatOrders(input: WechatOrderExportInput): Promise<Blob> { return exportWechatOrdersDto(input); }
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { return createRefundIntentDto(input); }
-  saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { return saveHxcSenderDto(input); }
+  saveHxcSender(input: HxcSenderWriteInput): Promise<Agent> { return saveHxcSenderDto(input); }
   reorderHxcSenders(ids: string[]): Promise<void> { return reorderHxcSendersDto(ids); }
   archiveHxcSender(senderUserid: string): Promise<void> { return archiveHxcSenderDto(senderUserid); }
   refreshHxcDirectory(): Promise<{ syncedCount: number }> { return refreshHxcDirectoryDto(); }
+  saveAutomationAgent(input: AutomationAgentWriteInput): Promise<Agent> { return saveAutomationAgentDto(input); }
+  copyAutomationAgent(agentId: number): Promise<Agent> { return copyAutomationAgentDto(agentId); }
+  pauseAutomationAgent(agentId: number): Promise<Agent> { return pauseAutomationAgentDto(agentId); }
+  archiveAutomationAgent(agentId: number): Promise<void> { return archiveAutomationAgentDto(agentId); }
+  precheckAutomationAgent(agentId: number): Promise<AutomationAgentPrecheck> { return precheckAutomationAgentDto(agentId); }
 
   /* ---------- 内容雷达 ---------- */
 

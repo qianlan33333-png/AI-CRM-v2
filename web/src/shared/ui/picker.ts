@@ -19,6 +19,7 @@ export type PickerKind = 'tags' | 'channel' | 'members' | 'image' | 'mp' | 'atta
 export interface PickerItem {
   id: string;
   name: string;
+  url?: string;
   /** 副信息行（尺寸 / 编码·人数 / 剩余人数…） */
   sub?: string;
   /** 右侧 chip（类型） */
@@ -85,16 +86,16 @@ export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<Picke
     items = db.wecomTags.map((t) => ({ id: String(t.id), name: t.name, dept: String(t.groupId) }));
   } else if (kind === 'channel') {
     items = db.rows.channels
-      .filter((c) => c.status === '启用')
-      .map((c) => ({ id: c.code, name: c.name, sub: c.code + ' · ' + c.users + ' 人', chip: c.type }));
+      .filter((c) => c.status === 'active' && typeof c.resourceId === 'number' && Number.isSafeInteger(c.resourceId) && c.resourceId > 0)
+      .map((c) => ({ id: String(c.resourceId), name: c.name, sub: c.code + ' · ' + c.users + ' 人', chip: c.type }));
   } else if (kind === 'members') {
     const depts = Array.from(new Set(db.staff.map((s) => s.dept)));
     sideGroups = [{ id: '', name: '全部成员' }, ...depts.map((d) => ({ id: d, name: d }))];
     items = db.staff.map((s) => ({ id: s.uid, name: s.name, uid: s.uid, dept: s.dept }));
   } else if (kind === 'image') {
     items = db.rows.images
-      .filter((m) => m.enabled)
-      .map((m) => ({ id: m.resourceId || m.name, name: m.name, sub: '图片 · ' + m.size.split(' · ')[0], bg: m.bg }));
+      .filter((m) => m.enabled && !!m.resourceId && /^[1-9]\d*$/.test(m.resourceId) && !!m.originalUrl)
+      .map((m) => ({ id: String(m.resourceId), name: m.name, url: m.originalUrl || '', sub: '图片 · ' + m.size.split(' · ')[0], bg: m.bg }));
   } else if (kind === 'mp') {
     items = db.rows.mpItems
       .filter((m) => m.enabled)

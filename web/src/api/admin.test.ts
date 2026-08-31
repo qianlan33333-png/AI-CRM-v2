@@ -557,7 +557,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(serviceProductPageDto({ id: 2, name: '周期', status: 'disabled', images: [], admin_projection: servicePeriodAdminProjection('disabled') }).tone === 'gray', 'service product response mapping');
   const couponProjection = couponPageDto({ name: '券', code: 'C', status: 'published', availability_status: 'active' });
   assert(couponProjection.status === 'published' && couponProjection.availabilityStatus === 'active' && couponProjection.tone === 'ok', 'coupon response mapping preserves lifecycle and availability separately');
-  assert(imagePageDto({ id: 11, file_name: 'a.png', enabled: false }).resourceId === '11', 'image response mapping keeps resource id');
+  const imageRow = imagePageDto({ id: 11, file_name: 'a.png', enabled: false, original_url: '/api/admin/image-library/11/variants/original', thumb_320_url: '/api/admin/image-library/11/variants/thumb_320' });
+  assert(imageRow.resourceId === '11' && imageRow.originalUrl === '/api/admin/image-library/11/variants/original' && imageRow.thumbnailUrl === '/api/admin/image-library/11/variants/thumb_320', 'image response mapping keeps resource id and mapped variant URLs');
   assert(attachmentPageDto({ id: 12, file_name: 'a.pdf', mime_type: 'application/pdf' }).resourceId === '12', 'attachment response mapping keeps resource id');
   assert(miniProgramPageDto({ id: 13, name: '小程序', thumbnail_status: 'ready' }).resourceId === 13, 'mini-program response mapping keeps resource id');
   assert(tagPageDto({ id: 1, group_id: 2, name: '新客', user_count: 6 }).users === 6, 'tag response mapping');
@@ -910,7 +911,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   const groupOpsMaterialReadCalls: string[] = [];
   globalThis.fetch = async (input) => {
     const url = String(input); groupOpsMaterialReadCalls.push(url);
-    const body = url === '/api/admin/image-library' ? { items: [{ id: 7, name: '欢迎图', mime_type: 'image/png', file_size: 1024, enabled: true, created_at: '' }] } : url === '/api/admin/miniprogram-library' ? { items: [{ id: 8, name: '课程卡', appid: 'wx-app', pagepath: 'pages/course', title: '课程', thumbnail_status: 'ready', enabled: true }] } : { items: [{ id: 9, file_name: '资料.pdf', mime_type: 'application/pdf', file_size: 2048, enabled: true, created_at: '' }] };
+    const body = url === '/api/admin/image-library' ? { items: [{ id: 7, name: '欢迎图', mime_type: 'image/png', file_size: 1024, enabled: true, created_at: '', original_url: '/api/admin/image-library/7/variants/original', thumb_320_url: '/api/admin/image-library/7/variants/thumb_320' }] } : url === '/api/admin/miniprogram-library' ? { items: [{ id: 8, name: '课程卡', appid: 'wx-app', pagepath: 'pages/course', title: '课程', thumbnail_status: 'ready', enabled: true }] } : { items: [{ id: 9, file_name: '资料.pdf', mime_type: 'application/pdf', file_size: 2048, enabled: true, created_at: '' }] };
     return new Response(JSON.stringify(body), { status: 200 });
   };
   try {

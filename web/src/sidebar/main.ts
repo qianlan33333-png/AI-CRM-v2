@@ -118,7 +118,10 @@ type SidebarTab =
   | "orders"
   | "periodic_orders"
   | "products"
-  | "materials";
+  | "products_periodic"
+  | "coupons"
+  | "materials"
+  | "radar_links";
 
 export class SidebarBootstrapCoordinator<T> {
   private flight: {
@@ -165,7 +168,9 @@ function isSidebarTab(value: string | undefined): value is SidebarTab {
     value === "orders" ||
     value === "periodic_orders" ||
     value === "products" ||
-    value === "materials"
+    value === "products_periodic" ||
+    value === "materials" ||
+    value === "radar_links"
   );
 }
 
@@ -242,6 +247,82 @@ type ChatType = "all" | "private" | "group";
 type MaterialFilter = "q" | "category" | "tags";
 type ThumbnailStatus = "pending" | "ready" | "not_found" | "error";
 
+/** 本地时间轴/订单时间统一本地化展示；解析失败时原样返回服务端值。 */
+function formatDateTime(value: string): string {
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return value;
+  const date = new Date(time);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** 仅掩码本次会话内用户亲自输入且绑定成功的 11 位手机号。 */
+function maskMobileDigits(digits: string): string {
+  return digits.length === 11
+    ? `${digits.slice(0, 3)}****${digits.slice(7)}`
+    : digits;
+}
+
+/**
+ * remark 幂等键按 member_ref 固化：同一 member 的同一次编辑（同版本同内容）
+ * 重试永远使用同一个键；内容或版本变化派生新键，避免与已完成的命令冲突。
+ */
+function stableRemarkIdempotencyKey(
+  memberRef: string,
+  expectedVersion: number,
+  remark: string,
+): string {
+  const payload = `${memberRef}${expectedVersion}${remark}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < payload.length; i += 1) {
+    hash ^= payload.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `sidebar-periodic-remark-${memberRef}-${(hash >>> 0).toString(16)}`;
+}
+
+/** 时间线 event_type 中文映射；未命中的类型回退为「动态」并附原始类型小字。 */
+const TIMELINE_EVENT_LABELS: Record<string, string> = {
+  "customer.created": "客户创建",
+  "customer.updated": "客户资料更新",
+  "customer.stage_changed": "客户阶段变更",
+  "store.update": "客户资料更新",
+  "store.stage": "客户阶段变更",
+  "store.tag.add": "添加标签",
+  "store.tag.remove": "移除标签",
+  "survey.submitted": "提交问卷",
+  survey_submitted: "提交问卷",
+  "survey.callback": "问卷回调",
+  "order.checkout_created": "订单创建",
+  "order.payment_settled": "支付成功",
+  "order.refund_requested": "退款申请",
+  "order.refund_settled": "退款完成",
+  "extension.payment_succeeded": "支付成功",
+  "channel.acquisition.entrant": "渠道获客进入",
+  "channel.acquisition.entrant.reconciled": "渠道获客归并",
+  "wecom.callback": "企微回调",
+};
+
+const PERIODIC_STATE_LABELS: Record<string, string> = {
+  active: "生效中",
+  expired: "已过期",
+  removed: "已移除",
+};
+
+const THUMBNAIL_STATUS_LABELS: Record<ThumbnailStatus, string> = {
+  pending: "处理中",
+  ready: "就绪",
+  not_found: "无缩略图",
+  error: "读取失败",
+};
+
 function validateSidebarSafety(safety: SidebarSafety, label: string): void {
   if (
     !safety ||
@@ -280,9 +361,12 @@ export class SidebarController {
   private readonly sdkStatus: HTMLElement | null;
   private readonly customerName: HTMLElement | null;
   private readonly customerMeta: HTMLElement | null;
-  private readonly externalUserid: HTMLElement | null;
-  private readonly workflowTitle: HTMLElement | null;
   private readonly bindingState: HTMLElement | null;
+  private readonly phoneEditButton: HTMLButtonElement | null;
+  private readonly phoneModal: HTMLElement | null;
+  private readonly phoneInput: HTMLInputElement | null;
+  private readonly phoneModalStatus: HTMLElement | null;
+  private readonly phoneModalSave: HTMLButtonElement | null;
   private eventsBound = false;
   private profileSaveTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly pendingProfileFields = new Set<ProfileField>();
@@ -358,7 +442,10 @@ export class SidebarController {
   private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
   private readonly thumbnailURLs = new Map<number, string>();
   private phoneBindingLoading = false;
-  private phoneBindingMessage = "";
+  /** 手机号绑定幂等键：同一 mobile 在结果未知期间复用，明确结果后清除。 */
+  private phoneBindKey: { mobile: string; key: string } | null = null;
+  private phoneBound = false;
+  private phoneMaskedMobile = "";
 
   constructor(
     private readonly api: BoundSidebarApi = sidebarApi,
@@ -374,9 +461,18 @@ export class SidebarController {
     this.sdkStatus = doc.getElementById("sidebar-jssdk-status");
     this.customerName = doc.getElementById("customer-name");
     this.customerMeta = doc.getElementById("customer-mobile");
-    this.externalUserid = doc.getElementById("customer-external-userid");
-    this.workflowTitle = doc.getElementById("workflow-title");
     this.bindingState = doc.getElementById("binding-state");
+    this.phoneEditButton = doc.getElementById(
+      "customer-phone-edit",
+    ) as HTMLButtonElement | null;
+    this.phoneModal = doc.getElementById("phone-modal");
+    this.phoneInput = doc.getElementById(
+      "sidebar-phone-input",
+    ) as HTMLInputElement | null;
+    this.phoneModalStatus = doc.getElementById("sidebar-phone-status");
+    this.phoneModalSave = doc.getElementById(
+      "phone-modal-save",
+    ) as HTMLButtonElement | null;
   }
 
   async boot(): Promise<void> {
@@ -390,6 +486,19 @@ export class SidebarController {
   private bindEvents(): void {
     if (this.eventsBound) return;
     this.eventsBound = true;
+    this.phoneEditButton?.addEventListener("click", () =>
+      this.openPhoneModal(),
+    );
+    this.doc
+      .getElementById("phone-modal-close")
+      ?.addEventListener("click", () => this.closePhoneModal());
+    this.doc
+      .getElementById("phone-modal-cancel")
+      ?.addEventListener("click", () => this.closePhoneModal());
+    this.phoneModalSave?.addEventListener("click", () => void this.bindPhone());
+    this.phoneModal?.addEventListener("click", (event) => {
+      if (event.target === this.phoneModal) this.closePhoneModal();
+    });
     this.tabs.addEventListener("click", (event) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
         "[data-sidebar-tab]",
@@ -510,12 +619,17 @@ export class SidebarController {
         void this.loadMaterials();
       } else if (action === "materials-search") {
         void this.loadMaterials();
+      } else if (action === "materials-clear") {
+        this.materialFilters = { q: "", category: "", tags: "" };
+        this.renderActiveContent();
+        void this.loadMaterials();
       } else if (action === "materials-more") {
         const response = this.materials;
         if (response)
           void this.loadMaterials(response.offset + response.items.length);
-      } else if (action === "bind-phone") {
-        void this.bindPhone();
+      } else if (action === "refresh-timeline") {
+        button.disabled = true;
+        void this.loadTimeline();
       } else if (action === "open-related-questionnaires") {
         this.activateTab("questionnaires");
       } else if (action === "open-related-orders") {
@@ -979,7 +1093,9 @@ export class SidebarController {
     this.thumbnailStatuses.clear();
     this.clearThumbnailURLs();
     this.phoneBindingLoading = false;
-    this.phoneBindingMessage = "";
+    this.phoneBound = false;
+    this.phoneMaskedMobile = "";
+    this.closePhoneModal();
     this.renderTop();
     this.renderTabs(true);
     this.renderActiveContent();
@@ -1017,23 +1133,29 @@ export class SidebarController {
   private renderTop(): void {
     const profile = this.workbench?.profile;
     if (!profile) return;
-    if (this.customerName)
-      this.customerName.textContent =
-        profile.name || `客户 #${profile.customer_id}`;
-    if (this.customerMeta)
-      this.customerMeta.textContent = `客户 ID ${profile.customer_id} · 负责人 #${profile.owner_staff_id}`;
-    if (this.externalUserid)
-      this.externalUserid.textContent = this.externalUserId
-        ? `外部联系人 ID ${this.externalUserId}`
-        : "";
-    if (this.workflowTitle)
-      this.workflowTitle.textContent = "本地工作台 · 外部效果以回执为准";
-    if (this.bindingState) {
-      this.bindingState.textContent = "context ready";
-      this.bindingState.className = "binding-state ready";
-    }
+    if (this.customerName) this.customerName.textContent = profile.name;
+    this.renderPhoneBindingState();
+    if (this.phoneEditButton) this.phoneEditButton.hidden = false;
     const root = this.doc.getElementById("sidebar-workbench-root");
     if (root) root.dataset.sidebarCustomerId = String(profile.customer_id);
+  }
+
+  /**
+   * 手机号绑定态徽章：契约不提供已绑定手机号字段，只能诚实呈现
+   * 本次会话内经 bind-mobile 链路确认的绑定结果与掩码号。
+   */
+  private renderPhoneBindingState(): void {
+    if (this.bindingState) {
+      this.bindingState.textContent = this.phoneBound
+        ? "手机号已绑定"
+        : "手机号未绑定";
+      this.bindingState.className = `binding-state${this.phoneBound ? " ready" : ""}`;
+    }
+    if (this.customerMeta)
+      this.customerMeta.textContent =
+        this.phoneBound && this.phoneMaskedMobile
+          ? `手机号 ${this.phoneMaskedMobile}`
+          : "";
   }
 
   private renderTabs(ready: boolean): void {
@@ -1098,7 +1220,11 @@ export class SidebarController {
       !this.periodicOrdersLoading
     )
       void this.loadPeriodicOrders();
-    else if (tab === "products" && !this.products && !this.productsLoading)
+    else if (
+      (tab === "products" || tab === "products_periodic") &&
+      !this.products &&
+      !this.productsLoading
+    )
       void this.loadProducts();
     else if (tab === "materials" && !this.materials && !this.materialsLoading)
       void this.loadMaterials();
@@ -1122,9 +1248,22 @@ export class SidebarController {
                   ? this.renderOrdersPanel()
                   : this.activeTab === "periodic_orders"
                     ? this.renderPeriodicOrdersPanel()
-                    : this.activeTab === "products"
+                    : this.activeTab === "products" ||
+                        this.activeTab === "products_periodic"
                       ? this.renderProductsPanel()
-                      : this.renderMaterialsPanel();
+                      : this.activeTab === "coupons"
+                        ? this.renderBlockedPanel(
+                            "coupons",
+                            "优惠券",
+                            "当前后端未提供侧边栏优惠券接口；面板已安全停用，不会发起请求，也不展示示例内容。",
+                          )
+                        : this.activeTab === "radar_links"
+                          ? this.renderBlockedPanel(
+                              "radar-links",
+                              "雷达链接",
+                              "当前后端未提供侧边栏雷达链接接口；面板已安全停用，不会发起请求。",
+                            )
+                          : this.renderMaterialsPanel();
     const subTabs = this.renderSecondaryTabs();
     this.content.replaceChildren(...(subTabs ? [subTabs, panel] : [panel]));
   }
@@ -1132,18 +1271,54 @@ export class SidebarController {
   private topLevelTab(tab: SidebarTab): SidebarTab {
     if (tab === "timeline" || tab === "chat_activity") return "profile";
     if (tab === "periodic_orders") return "orders";
+    if (tab === "products_periodic") return "products";
+    if (tab === "radar_links") return "materials";
     return tab;
+  }
+
+  private renderBlockedPanel(
+    section: string,
+    title: string,
+    message: string,
+  ): HTMLElement {
+    const panel = this.panelShell(section, title, "后端未提供该面板接口");
+    const status = createElement(this.doc, "div", "sidebar-status warn", message);
+    status.dataset.sidebarBlocked = "true";
+    panel.append(status);
+    return panel;
   }
 
   private renderSecondaryTabs(): HTMLElement | null {
     const top = this.topLevelTab(this.activeTab);
-    const definitions = top === "profile"
-      ? [["profile", "基础信息"], ["timeline", "用户时间线"], ["chat_activity", "聊天活动"]] as const
-      : top === "orders"
-        ? [["orders", "普通订单"], ["periodic_orders", "周期订单"]] as const
-        : null;
+    const definitions =
+      top === "profile"
+        ? ([
+            ["profile", "基础信息"],
+            ["timeline", "用户时间线"],
+            ["chat_activity", "聊天活动"],
+          ] as const)
+        : top === "orders"
+          ? ([
+              ["orders", "普通订单"],
+              ["periodic_orders", "周期订单"],
+            ] as const)
+          : top === "products"
+            ? ([
+                ["products", "普通商品"],
+                ["products_periodic", "周期性商品"],
+              ] as const)
+            : top === "materials"
+              ? ([
+                  ["materials", "图片素材"],
+                  ["radar_links", "雷达链接"],
+                ] as const)
+              : null;
     if (!definitions) return null;
-    const nav = createElement(this.doc, "div", `secondary-tabs${top === "profile" ? " profile-tabs" : ""}`);
+    const nav = createElement(
+      this.doc,
+      "div",
+      `secondary-tabs${top === "profile" ? " profile-tabs" : ""}`,
+    );
     for (const [key, label] of definitions) {
       const button = createElement(this.doc, "button", "secondary-tab", label);
       button.type = "button";
@@ -1153,42 +1328,6 @@ export class SidebarController {
       nav.append(button);
     }
     return nav;
-  }
-
-  private renderOverview(workbench: SidebarWorkbenchResponse): HTMLElement {
-    const panel = createElement(this.doc, "section", "sidebar-panel");
-    panel.dataset.sidebarSection = "workbench-overview";
-    const head = createElement(this.doc, "div", "panel-head");
-    head.append(createElement(this.doc, "h2", undefined, "工作台概览"));
-    head.append(createElement(this.doc, "span", "panel-meta", "V2 本地投影"));
-    panel.append(head);
-    const safety = createElement(
-      this.doc,
-      "div",
-      "panel-meta",
-      workbench.safety.local_only
-        ? "数据来源：本地 CRM · 真实企微外呼：未执行"
-        : "数据来源：受控本地投影 · 外部效果需单独核对",
-    );
-    safety.dataset.sidebarSafety = "local";
-    panel.append(safety);
-    const grid = createElement(this.doc, "div", "summary-grid");
-    grid.append(
-      this.summaryItem("问卷", workbench.questionnaire_count),
-      this.summaryItem("订单", workbench.order_count),
-      this.summaryItem("周期订单", workbench.periodic_order_count),
-      this.summaryItem("素材", workbench.material_count),
-    );
-    panel.append(grid);
-    return panel;
-  }
-
-  private summaryItem(label: string, value: number): HTMLElement {
-    const item = createElement(this.doc, "div", "summary-item");
-    item.dataset.summaryKey = label;
-    item.append(createElement(this.doc, "div", "summary-label", label));
-    item.append(createElement(this.doc, "div", "summary-value", String(value)));
-    return item;
   }
 
   private renderProfile(workbench: SidebarWorkbenchResponse): HTMLElement {
@@ -1233,86 +1372,88 @@ export class SidebarController {
       this.doc,
       "div",
       "panel-meta",
-      `最后本地更新：${workbench.profile.updated_at}`,
+      `最后本地更新：${formatDateTime(workbench.profile.updated_at)}`,
     );
     updated.id = "profile-updated-at";
     panel.append(updated);
-    const phone = createElement(this.doc, "div", "profile-field");
-    phone.append(
-      createElement(this.doc, "span", undefined, "手机号绑定（本地 Identity）"),
-    );
-    const phoneInput = createElement(this.doc, "input") as HTMLInputElement;
-    phoneInput.id = "sidebar-phone-input";
-    phoneInput.type = "tel";
-    phoneInput.inputMode = "tel";
-    phoneInput.placeholder = "+8613800138000";
-    phoneInput.maxLength = 16;
-    phoneInput.setAttribute("aria-label", "手机号（E.164）");
-    phone.append(phoneInput);
-    const phoneActions = createElement(this.doc, "div", "context-actions");
-    const bindPhone = createElement(
-      this.doc,
-      "button",
-      "btn primary",
-      this.phoneBindingLoading ? "绑定中…" : "绑定手机号",
-    ) as HTMLButtonElement;
-    bindPhone.type = "button";
-    bindPhone.disabled = this.phoneBindingLoading;
-    bindPhone.dataset.sidebarAction = "bind-phone";
-    markBound(bindPhone);
-    phoneActions.append(bindPhone);
-    phone.append(phoneActions);
-    const phoneStatus = createElement(
-      this.doc,
-      "div",
-      "panel-meta",
-      this.phoneBindingMessage ||
-        "仅绑定当前客户；不支持从其他客户强制抢占手机号。",
-    );
-    phoneStatus.id = "sidebar-phone-status";
-    phone.append(phoneStatus);
-    panel.append(phone);
     return panel;
+  }
+
+  private openPhoneModal(): void {
+    if (!this.workbench || !this.contextToken) return;
+    if (this.phoneInput) {
+      this.phoneInput.value = "";
+      this.phoneInput.classList.remove("input-error");
+    }
+    this.setPhoneModalStatus(
+      "仅绑定当前客户；不支持从其他客户强制抢占手机号。",
+    );
+    if (this.phoneModal) this.phoneModal.hidden = false;
+    this.phoneInput?.focus();
+  }
+
+  private closePhoneModal(): void {
+    if (this.phoneModal) this.phoneModal.hidden = true;
+  }
+
+  private setPhoneModalStatus(message: string, failed = false): void {
+    if (!this.phoneModalStatus) return;
+    this.phoneModalStatus.className = `panel-meta${failed ? " error" : ""}`;
+    this.phoneModalStatus.textContent = message;
+  }
+
+  private setPhoneModalBusy(): void {
+    if (!this.phoneModalSave) return;
+    this.phoneModalSave.disabled = this.phoneBindingLoading;
+    this.phoneModalSave.textContent = this.phoneBindingLoading
+      ? "保存中…"
+      : "保存";
   }
 
   private async bindPhone(): Promise<void> {
     if (!this.contextToken || this.phoneBindingLoading) return;
-    const input = this.doc.getElementById(
-      "sidebar-phone-input",
-    ) as HTMLInputElement | null;
-    const mobile = input?.value.trim() || "";
-    if (!/^\+[1-9][0-9]{1,14}$/.test(mobile)) {
-      this.phoneBindingMessage = "请输入 E.164 手机号，例如 +8613800138000。";
-      this.renderActiveContent();
+    const digits = (this.phoneInput?.value || "").replace(/\D/g, "");
+    if (!/^1[0-9]{10}$/.test(digits)) {
+      this.phoneInput?.classList.add("input-error");
+      this.setPhoneModalStatus("请输入 11 位手机号。", true);
       return;
     }
+    this.phoneInput?.classList.remove("input-error");
+    // 服务端契约要求 E.164；11 位国内号在提交时补 +86 前缀。
+    const mobile = `+86${digits}`;
+    // 幂等键按 context+mobile 固化：结果未知（网络/5xx）时重试复用同一键；输入变化或拿到明确结果后才换键。
+    if (!this.phoneBindKey || this.phoneBindKey.mobile !== mobile) {
+      this.phoneBindKey = { mobile, key: newSidebarIdempotencyKey("sidebar-phone") };
+    }
     this.phoneBindingLoading = true;
-    this.phoneBindingMessage = "正在写入本地 Identity…";
-    this.renderActiveContent();
-    const rerendered = this.doc.getElementById(
-      "sidebar-phone-input",
-    ) as HTMLInputElement | null;
-    if (rerendered) rerendered.value = mobile;
+    this.setPhoneModalBusy();
+    this.setPhoneModalStatus("正在写入本地 Identity…");
     try {
-      const response = await this.api.bindPhone(this.contextToken, { mobile });
+      const response = await this.api.bindPhone(this.contextToken, { mobile }, this.phoneBindKey.key);
       this.validatePhoneBinding(response);
-      this.phoneBindingMessage =
+      if (response.status === "rejected") {
+        this.phoneBindKey = null;
+        this.setPhoneModalStatus("该手机号已属于其他客户，本次未改动。", true);
+        return;
+      }
+      this.phoneBindKey = null;
+      this.phoneBound = true;
+      this.phoneMaskedMobile = maskMobileDigits(digits);
+      this.renderPhoneBindingState();
+      this.closePhoneModal();
+      this.setContextStatus(
         response.status === "bound"
           ? "手机号已绑定到当前客户（本地事实）。"
-          : response.status === "already_bound"
-            ? "该手机号已绑定到当前客户，无需重复操作。"
-            : "该手机号已属于其他客户，本次未改动。";
+          : "该手机号已绑定到当前客户，无需重复操作。",
+      );
     } catch (error) {
-      this.phoneBindingMessage = `手机号绑定失败：${errorMessage(error, "请稍后重试。")}`;
+      this.setPhoneModalStatus(
+        `手机号绑定失败：${errorMessage(error, "请稍后重试。")}`,
+        true,
+      );
     } finally {
       this.phoneBindingLoading = false;
-      if (this.activeTab === "profile") {
-        this.renderActiveContent();
-        const current = this.doc.getElementById(
-          "sidebar-phone-input",
-        ) as HTMLInputElement | null;
-        if (current) current.value = mobile;
-      }
+      this.setPhoneModalBusy();
     }
   }
 
@@ -1496,19 +1637,16 @@ export class SidebarController {
   ): HTMLElement {
     const card = createElement(this.doc, "article", "list-item");
     card.dataset.questionnaireSubmissionId = String(item.submission_id);
+    // 契约不含问卷名与题目文本，只呈现可核验的提交时间、作答计数与原始分。
+    const answered = item.choice_answers.length;
     const main = createElement(this.doc, "div", "item-main");
     main.append(
-      createElement(
-        this.doc,
-        "div",
-        "item-title",
-        `问卷 #${item.questionnaire_id}`,
-      ),
+      createElement(this.doc, "div", "item-title", "问卷提交记录"),
       createElement(
         this.doc,
         "div",
         "item-meta",
-        `提交时间 ${item.submitted_at} · 得分 ${item.score}`,
+        `提交时间 ${formatDateTime(item.submitted_at)} · 已作答 ${answered} 题 · 得分 ${item.score}（服务端原始分）`,
       ),
     );
     card.append(main);
@@ -1517,24 +1655,22 @@ export class SidebarController {
       this.doc,
       "summary",
       "link-button",
-      `展开答案（${item.choice_answers.length}）`,
+      `展开答案（${answered}）`,
     );
     details.append(summary);
-    if (!item.choice_answers.length) {
+    if (!answered) {
       details.append(createElement(this.doc, "div", "empty", "暂无选择题答案"));
     } else {
       const answers = createElement(this.doc, "div", "answer-list");
       for (const answer of item.choice_answers) {
         const type = answer.question_type === "multi_choice" ? "多选" : "单选";
-        const optionIds = answer.option_ids.length
-          ? answer.option_ids.map((optionId) => `选项 #${optionId}`).join("、")
-          : "未选择选项";
+        const chosen = answer.option_ids.length;
         answers.append(
           createElement(
             this.doc,
             "div",
             "answer-item",
-            `第 ${answer.sort_order + 1} 题 · 问题 #${answer.question_id} · ${type} · ${optionIds}`,
+            `第 ${answer.sort_order + 1} 题 · ${type} · ${chosen ? `已选 ${chosen} 个选项` : "未选择选项"}`,
           ),
         );
       }
@@ -1601,6 +1737,22 @@ export class SidebarController {
       "时间线",
       response ? `${response.items.length} 条 · 安全元数据` : "安全元数据",
     );
+    const toolbar = createElement(this.doc, "div", "context-actions");
+    toolbar.append(
+      createElement(this.doc, "span", "panel-meta", "最新动态在前"),
+    );
+    const refresh = createElement(
+      this.doc,
+      "button",
+      "btn ghost",
+      this.timelineLoading ? "正在刷新…" : "刷新",
+    );
+    refresh.type = "button";
+    refresh.disabled = this.timelineLoading;
+    refresh.dataset.sidebarAction = "refresh-timeline";
+    markBound(refresh);
+    toolbar.append(refresh);
+    panel.append(toolbar);
     if (!response) {
       if (this.timelineError)
         this.appendRetry(
@@ -1628,15 +1780,25 @@ export class SidebarController {
       for (const item of response.items) {
         const card = createElement(this.doc, "article", "list-item");
         card.dataset.timelineEventId = String(item.id);
+        const label = TIMELINE_EVENT_LABELS[item.event_type];
         card.append(
-          createElement(this.doc, "div", "item-title", item.event_type),
+          createElement(this.doc, "div", "item-title", label || "动态"),
           createElement(
             this.doc,
             "div",
             "item-meta",
-            `发生时间 ${item.occurred_at}`,
+            `发生时间 ${formatDateTime(item.occurred_at)}`,
           ),
         );
+        if (!label)
+          card.append(
+            createElement(
+              this.doc,
+              "div",
+              "panel-meta",
+              `原始类型 ${item.event_type}`,
+            ),
+          );
         const relatedTab = ["survey.submitted", "survey_submitted"].includes(
           item.event_type,
         )
@@ -1814,7 +1976,7 @@ export class SidebarController {
             this.doc,
             "div",
             "item-meta",
-            `发送时间 ${item.sent_at}`,
+            `发送时间 ${formatDateTime(item.sent_at)}`,
           ),
         );
         list.append(card);
@@ -1927,19 +2089,20 @@ export class SidebarController {
       for (const item of response.items) {
         const card = createElement(this.doc, "article", "list-item");
         card.dataset.otherStaffChatAt = item.sent_at;
+        // 契约不含员工姓名与会话类型字段，员工仅以 ID 语义标注，不猜姓名。
         card.append(
           createElement(
             this.doc,
             "div",
             "item-title",
-            `${item.staff_userid} · ${item.message_type === "image" ? "图片" : "文本"}`,
+            `员工 ID ${item.staff_userid} · ${item.message_type === "image" ? "图片" : "文本"}`,
           ),
           createElement(this.doc, "div", "item-body", item.content_masked),
           createElement(
             this.doc,
             "div",
             "item-meta",
-            `发送时间 ${item.sent_at}`,
+            `发送时间 ${formatDateTime(item.sent_at)}`,
           ),
         );
         list.append(card);
@@ -2071,7 +2234,7 @@ export class SidebarController {
             this.doc,
             "div",
             "item-meta",
-            `渠道 ${item.provider_label || item.provider} · 创建 ${item.created_at}`,
+            `渠道 ${item.provider_label || item.provider} · 创建 ${formatDateTime(item.created_at)}`,
           ),
         );
         card.append(detail);
@@ -2229,47 +2392,72 @@ export class SidebarController {
   ): HTMLElement {
     const card = createElement(this.doc, "article", "list-item");
     card.dataset.periodicMemberRef = member.member_ref;
-    card.append(
+    // 契约无商品名/金额/订单号字段，标题用真实 source 语义，技术串不直出。
+    const titleRow = createElement(this.doc, "div", "item-title-row");
+    titleRow.append(
       createElement(
         this.doc,
         "div",
         "item-title",
-        `${member.state} · 服务商品 #${member.service_product_id}`,
+        member.source === "paid_order"
+          ? "周期服务 · 付费订单"
+          : "周期服务 · 人工登记",
       ),
       createElement(
         this.doc,
-        "div",
-        "item-meta",
-        `${member.source === "paid_order" ? "付费订单" : "人工登记"} · ${member.starts_at}${member.expires_at ? ` 至 ${member.expires_at}` : ""} · version ${member.version}`,
-      ),
-      createElement(
-        this.doc,
-        "div",
-        "item-meta",
-        `member_ref ${member.member_ref}${member.alliance ? ` · 联盟 ${member.alliance}` : ""}`,
+        "span",
+        `state-chip ${member.state}`,
+        PERIODIC_STATE_LABELS[member.state] || member.state,
       ),
     );
+    if (member.state === "active" && member.expires_at) {
+      const days = Math.ceil(
+        (Date.parse(member.expires_at) - Date.now()) / 86400000,
+      );
+      if (Number.isFinite(days) && days >= 1)
+        titleRow.append(
+          createElement(this.doc, "span", "state-chip active", `剩 ${days} 天`),
+        );
+    }
+    card.append(titleRow);
+    const rangeParts = [`生效 ${formatDateTime(member.starts_at)}`];
+    if (member.expires_at)
+      rangeParts.push(`到期 ${formatDateTime(member.expires_at)}`);
+    if (member.state === "expired" && member.expired_at)
+      rangeParts.push(`过期 ${formatDateTime(member.expired_at)}`);
+    if (member.state === "removed" && member.removed_at)
+      rangeParts.push(`移除 ${formatDateTime(member.removed_at)}`);
+    if (member.alliance) rangeParts.push(`联盟 ${member.alliance}`);
+    card.append(
+      createElement(this.doc, "div", "item-meta", rangeParts.join(" · ")),
+    );
     const label = createElement(this.doc, "label", "remark-editor");
-    label.append(createElement(this.doc, "span", undefined, "周期订单备注"));
-    const textarea = createElement(this.doc, "textarea");
-    textarea.dataset.periodicRemark = member.member_ref;
-    textarea.rows = 2;
-    textarea.maxLength = 500;
-    textarea.value =
+    label.append(createElement(this.doc, "span", undefined, "备注"));
+    const row = createElement(this.doc, "div", "remark-row");
+    const input = createElement(this.doc, "input") as HTMLInputElement;
+    input.type = "text";
+    input.dataset.periodicRemark = member.member_ref;
+    input.maxLength = 500;
+    input.placeholder = "填写备注后保存";
+    input.value =
       this.periodicRemarkDrafts.get(member.member_ref) ?? member.remark ?? "";
-    textarea.setAttribute("aria-label", `周期订单 ${member.member_ref} 备注`);
-    label.append(textarea);
-    card.append(label);
-    const controls = createElement(this.doc, "div", "context-actions");
-    const save = createElement(this.doc, "button", "btn primary", "保存备注");
+    input.setAttribute("aria-label", "周期订单备注");
+    row.append(input);
+    const save = createElement(
+      this.doc,
+      "button",
+      "btn primary",
+      this.periodicRemarkSaving.has(member.member_ref) ? "保存中…" : "保存",
+    );
     save.type = "button";
     save.dataset.sidebarAction = "periodic-remark-save";
     save.dataset.memberRef = member.member_ref;
     save.dataset.serviceProductId = String(member.service_product_id);
     save.disabled = this.periodicRemarkSaving.has(member.member_ref);
     markBound(save);
-    controls.append(save);
-    card.append(controls);
+    row.append(save);
+    label.append(row);
+    card.append(label);
     const status = this.periodicRemarkStatuses.get(member.member_ref);
     if (status) {
       const receipt = createElement(
@@ -2325,6 +2513,7 @@ export class SidebarController {
         serviceProductId,
         memberRef,
         { expected_version: current.version, remark },
+        stableRemarkIdempotencyKey(memberRef, current.version, remark),
       );
       this.validatePeriodicRemark(response);
       const index = this.periodicOrders?.items.findIndex(
@@ -2681,10 +2870,11 @@ export class SidebarController {
 
   private renderProductsPanel(): HTMLElement {
     const response = this.products;
+    const periodic = this.activeTab === "products_periodic";
     const panel = this.panelShell(
       "products",
-      "商品",
-      "仅已启用的本地普通/周期商品；卡片仅链接同源只读详情页",
+      periodic ? "周期性商品" : "普通商品",
+      "仅已启用的本地商品；卡片仅链接同源只读详情页",
     );
     if (!response) {
       if (this.productsError)
@@ -2697,13 +2887,22 @@ export class SidebarController {
       else this.appendLoading(panel, "正在读取可分享商品…");
       return panel;
     }
-    if (!response.items.length)
+    const items = response.items.filter(
+      (product) =>
+        product.kind === (periodic ? "service_period" : "ordinary"),
+    );
+    if (!items.length)
       panel.append(
-        createElement(this.doc, "div", "empty", "暂无可分享的已启用商品"),
+        createElement(
+          this.doc,
+          "div",
+          "empty",
+          periodic ? "暂无可分享的周期性商品" : "暂无可分享的普通商品",
+        ),
       );
     else {
       const list = createElement(this.doc, "div", "list");
-      for (const product of response.items) {
+      for (const product of items) {
         const card = createElement(this.doc, "article", "list-item");
         card.dataset.productId = String(product.product_id);
         card.dataset.productKind = product.kind;
@@ -2881,6 +3080,11 @@ export class SidebarController {
     search.dataset.sidebarAction = "materials-search";
     markBound(search);
     filters.append(search);
+    const clear = createElement(this.doc, "button", "btn ghost", "清空");
+    clear.type = "button";
+    clear.dataset.sidebarAction = "materials-clear";
+    markBound(clear);
+    filters.append(clear);
     panel.append(filters);
     if (response?.quick_keywords?.length) {
       const quick = createElement(this.doc, "div", "quick-keywords");
@@ -2928,19 +3132,11 @@ export class SidebarController {
         const card = createElement(this.doc, "article", "list-item");
         card.dataset.materialId = String(item.id);
         const status = this.thumbnailStatuses.get(item.id) || "pending";
-        const statusLabel =
-          status === "ready"
-            ? "thumbnail: ready"
-            : status === "not_found"
-              ? "thumbnail: not_found"
-              : status === "error"
-                ? "thumbnail: 读取失败"
-                : "thumbnail: pending";
         const badge = createElement(
           this.doc,
           "span",
           "thumbnail-status",
-          statusLabel,
+          THUMBNAIL_STATUS_LABELS[status],
         );
         badge.dataset.thumbnailStatus = status;
         const previewURL = this.thumbnailURLs.get(item.id);
@@ -2963,13 +3159,13 @@ export class SidebarController {
             this.doc,
             "div",
             "item-meta",
-            `${item.file_name} · ${item.mime_type} · ${item.file_size} bytes · ${item.width}×${item.height}`,
+            `${item.file_name} · ${formatFileSize(item.file_size)} · ${item.width}×${item.height}`,
           ),
           createElement(
             this.doc,
             "div",
             "item-meta",
-            `分类 ${item.category || "未分类"}${item.tags.length ? ` · 标签 ${item.tags.join("、")}` : ""} · 更新 ${item.updated_at}`,
+            `分类 ${item.category || "未分类"}${item.tags.length ? ` · 标签 ${item.tags.join("、")}` : ""} · 更新 ${formatDateTime(item.updated_at)}`,
           ),
           badge,
         );
@@ -3091,7 +3287,8 @@ export class SidebarController {
       }
       profile.updated_at = response.profile.updated_at;
       const updated = this.doc.getElementById("profile-updated-at");
-      if (updated) updated.textContent = `最后本地更新：${profile.updated_at}`;
+      if (updated)
+        updated.textContent = `最后本地更新：${formatDateTime(profile.updated_at)}`;
       this.renderProfileReceipt(response);
     } catch (error) {
       for (const field of fields) {
