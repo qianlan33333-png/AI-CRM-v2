@@ -1642,6 +1642,26 @@ console.log('admin/tags.html（新建标签测试 Mock 建行）');
 {
   const dom = await loadPage('admin/tags.html');
   const d = dom.window.document;
+  const groupCards = [...d.querySelectorAll('[data-tag-group-card]')];
+  ok('标签组以可选卡片展示并回显组内数量', groupCards.length === 5 && groupCards.every((card) => /\d+/.test(card.textContent)) && groupCards.some((card) => card.getAttribute('aria-pressed') === 'true'));
+  ok('V1 标准组操作入口完整', ['编辑组名', '删除组'].every((label) => [...d.querySelectorAll('button')].some((button) => button.textContent.trim() === label)));
+  ok('V1 标准标签操作入口完整', ['详情', '复制 tag_id', '编辑', '删除'].every((label) => [...d.querySelectorAll('tbody button')].some((button) => button.textContent.trim() === label)));
+  ok('每组按 20 条分页并展示页码摘要', /\u7b2c\s*1\s*\/\s*1\s*\u9875/.test(d.body.textContent) && d.body.textContent.includes('每页 20 个'));
+  const tagSearch = d.querySelector('input[placeholder="搜索标签组 / 标签 / tag_id"]');
+  input(dom, tagSearch, '行业');
+  await sleep(30);
+  ok('搜索标签组后当前组与组操作保持一致', d.querySelectorAll('[data-tag-group-card]').length === 1 && d.querySelector('h2')?.textContent !== '行业' && [...d.querySelectorAll('h2')].some((heading) => heading.textContent === '行业'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '编辑组名'));
+  await sleep(30);
+  ok('搜索切换后编辑的是当前可见组', d.querySelector('#fTagGroupName')?.value === '行业');
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '取消'));
+  input(dom, d.querySelector('input[placeholder="搜索标签组 / 标签 / tag_id"]'), '');
+  await sleep(30);
+  click(dom, [...d.querySelectorAll('tbody button')].find((button) => button.textContent.trim() === '详情'));
+  await sleep(30);
+  ok('标签详情展示 tag_id、所属组与使用人数', d.body.textContent.includes('tag_id') && d.body.textContent.includes('所属标签组') && d.body.textContent.includes('使用人数'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '关闭'));
+  await sleep(30);
   const before = d.querySelectorAll('tbody tr').length;
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '新建标签'));
   await sleep(30);
@@ -1653,6 +1673,11 @@ console.log('admin/tags.html（新建标签测试 Mock 建行）');
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '同步企微标签'));
   await sleep(850);
   ok('标签同步只确认受理，未宣称 Provider 成功', d.querySelector('#fb-toast')?.textContent.includes('已受理') && d.querySelector('#fb-toast')?.textContent.includes('尚未收到 Provider 同步结果'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '删除组'));
+  ok('删除标签组前明确警告组内标签会一并删除', d.querySelector('#fb-body')?.textContent.includes('组内标签将同时删除'));
+  click(dom, d.querySelector('#fb-ok'));
+  await sleep(500);
+  ok('删除标签组真实更新组列表与组内标签', d.querySelectorAll('[data-tag-group-card]').length === 4 && !d.body.textContent.includes('教育培训'));
   dom.window.close();
 }
 

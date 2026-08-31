@@ -27,6 +27,7 @@ import { createWeComAcquisitionLink, deleteWeComAcquisitionLink, getWeComAcquisi
 const ACCENT = '#3370ff';
 const CHANNEL_HISTORY_PAGE_SIZE = 50;
 const MINI_PROGRAM_PAGE_SIZE = 50;
+const TAG_PAGE_SIZE = 20;
 
 type AdminState = {
   cstep: number;
@@ -48,9 +49,10 @@ type AdminState = {
   audienceTemplatePreview: AudienceTemplateEvaluation | null;
   /* ---- 企微标签 ---- */
   tagGroupId: number;
-  tagMode: '' | 'create-group' | 'create-tag' | 'edit-group' | 'edit-tag';
+  tagMode: '' | 'create-group' | 'create-tag' | 'edit-group' | 'edit-tag' | 'detail';
   editingTagId: number;
   tagQ: string;
+  tagPage: number;
   /* ---- 问卷运营配置 ---- */
   opsTab: number;
   postEnabled: boolean;
@@ -258,6 +260,7 @@ export class AdminController extends PageBase {
     tagMode: '',
     editingTagId: 0,
     tagQ: '',
+    tagPage: 1,
     opsTab: 1,
     postEnabled: true,
     postType: 'channel_qr',
@@ -1671,6 +1674,18 @@ export class AdminController extends PageBase {
     });
   }
 
+  private deleteTagGroup(groupId = this.state.tagGroupId): void {
+    const group = this.db.tagGroups.find((item) => item.id === groupId) || this.db.tagGroups[0];
+    if (!group) return;
+    confirmBox('删除标签组', `确认删除标签组「${group.name}」？组内标签将同时删除，已打标客户不受影响。`, '确认删除', true, () => {
+      void this.api.deleteTagGroup(group.id).then(() => {
+        toast('标签组已删除');
+        this.setState({ tagGroupId: 0, tagPage: 1 });
+        void this.init();
+      }).catch((error) => toast(error instanceof Error ? error.message : '标签组删除失败', true));
+    });
+  }
+
   /* ================= 素材库 ================= */
 
   private readModalInputs(ids: string[]): Record<string, string> {
@@ -2652,27 +2667,40 @@ export class AdminController extends PageBase {
     const opsLogRows = opsLogSource.filter((row) => { const keyword = s.opsLogKeyword.trim().toLowerCase(); return (!keyword || row.sid.toLowerCase().includes(keyword) || row.uid.toLowerCase().includes(keyword)) && (!s.opsLogStatus || row.status === s.opsLogStatus); });
 
     /* ================= 企微标签 ================= */
-    const tagQ = s.tagQ.trim();
-    const tagGroups = this.db.tagGroups.map((g) => {
-      const on = s.tagGroupId === g.id;
+    const tagQ = s.tagQ.trim().toLowerCase();
+    const visibleTagGroups = this.db.tagGroups.filter((group) => {
+      if (!tagQ) return true;
+      return group.name.toLowerCase().includes(tagQ) || this.db.wecomTags.some((tag) => tag.groupId === group.id && (tag.name.toLowerCase().includes(tagQ) || String(tag.id).includes(tagQ)));
+    });
+    const curTagGroup = visibleTagGroups.find((group) => group.id === s.tagGroupId) || visibleTagGroups[0] || this.db.tagGroups[0];
+    const tagGroups = visibleTagGroups.map((g) => {
+      const on = curTagGroup?.id === g.id;
       return {
         ...g,
         count: this.db.wecomTags.filter((x) => x.groupId === g.id).length,
-        pick: () => this.setState({ tagGroupId: g.id }),
+        pick: () => this.setState({ tagGroupId: g.id, tagPage: 1 }),
         row: {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', height: '34px',
-          padding: '0 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px',
-          background: on ? '#EFF4FF' : 'transparent', color: on ? accent : '#1F2329', fontWeight: on ? 600 : 400,
+          padding: '0 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px',
+          border: on ? `1px solid ${accent}` : '1px solid #DEE0E3',
+          background: on ? '#EFF4FF' : '#fff', color: on ? '#1F2329' : '#1F2329', fontWeight: on ? 600 : 500,
+          width: '100%', marginBottom: '8px', textAlign: 'left',
         } as StyleObj,
         cnt: { fontSize: '12px', color: on ? accent : '#A6AAB0' } as StyleObj,
+        pressed: String(on),
       };
     });
-    const curTagGroup = this.db.tagGroups.find((g) => g.id === s.tagGroupId) || this.db.tagGroups[0];
-    const tagRows = this.db.wecomTags
+    const filteredTagRows = this.db.wecomTags
       .filter((x) => x.groupId === (curTagGroup?.id ?? 1))
-      .filter((x) => !tagQ || x.name.includes(tagQ))
+      .filter((x) => !tagQ || curTagGroup?.name.toLowerCase().includes(tagQ) || x.name.toLowerCase().includes(tagQ) || String(x.id).includes(tagQ));
+    const tagPageCount = Math.max(1, Math.ceil(filteredTagRows.length / TAG_PAGE_SIZE));
+    const tagPage = Math.min(Math.max(1, s.tagPage), tagPageCount);
+    const tagRows = filteredTagRows
+      .slice((tagPage - 1) * TAG_PAGE_SIZE, tagPage * TAG_PAGE_SIZE)
       .map((x) => ({
         ...x,
+        detail: () => this.openTagModal('detail', x.id),
+        copyId: () => copyText(String(x.id), (message, error) => toast(error ? message : 'tag_id 已复制', error)),
         edit: () => this.openTagModal('edit-tag', x.id),
         del: () =>
           confirmBox('删除标签', '确认删除标签「' + x.name + '」？已打标客户不受影响。', '确认删除', true, () => {
@@ -2685,17 +2713,24 @@ export class AdminController extends PageBase {
     const tagCapacity = this.db.wecomTags.length;
     const tm = s.tagMode;
     const editingTag = this.db.wecomTags.find((x) => x.id === s.editingTagId);
+    const editingTagGroup = editingTag ? this.db.tagGroups.find((group) => group.id === editingTag.groupId) : undefined;
     const tagModal = {
-      title: tm === 'create-group' ? '新建标签组' : tm === 'create-tag' ? '新建标签' : tm === 'edit-group' ? '编辑组名' : '编辑标签',
+      title: tm === 'create-group' ? '新建标签组' : tm === 'create-tag' ? '新建标签' : tm === 'edit-group' ? '编辑组名' : tm === 'detail' ? '标签详情' : '编辑标签',
       isCreateGroup: tm === 'create-group',
       isCreateTag: tm === 'create-tag',
       isEditGroup: tm === 'edit-group',
       isEditTag: tm === 'edit-tag',
+      isDetail: tm === 'detail',
       isGroupForm: tm === 'create-group' || tm === 'edit-group',
       isTagForm: tm === 'create-tag' || tm === 'edit-tag',
       groupName: tm === 'edit-group' ? curTagGroup?.name || '' : '',
       tagName: tm === 'edit-tag' ? editingTag?.name || '' : '',
-      groupOpts: this.db.tagGroups.map((g) => ({ v: String(g.id), t: g.name, sel: g.id === s.tagGroupId, not: g.id !== s.tagGroupId })),
+      detailName: editingTag?.name || '',
+      detailId: editingTag?.id || 0,
+      detailGroup: editingTagGroup?.name || '',
+      detailUsers: editingTag?.users || 0,
+      copyId: () => editingTag && copyText(String(editingTag.id), (message, error) => toast(error ? message : 'tag_id 已复制', error)),
+      groupOpts: this.db.tagGroups.map((g) => ({ v: String(g.id), t: g.name, sel: g.id === curTagGroup?.id, not: g.id !== curTagGroup?.id })),
       okLabel: tm === 'create-group' || tm === 'create-tag' ? '创建' : '保存',
     };
 
@@ -3647,13 +3682,25 @@ export class AdminController extends PageBase {
         groups: tagGroups,
         cur: curTagGroup,
         rows: tagRows,
+        groupCount: tagGroups.length,
+        rowCount: filteredTagRows.length,
+        page: tagPage,
+        pageCount: tagPageCount,
+        pageSummary: `第 ${tagPage} / ${tagPageCount} 页，共 ${filteredTagRows.length} 个`,
+        hasPrev: tagPage > 1,
+        hasNext: tagPage < tagPageCount,
+        noPrev: tagPage <= 1,
+        noNext: tagPage >= tagPageCount,
+        prev: () => tagPage > 1 && this.setState({ tagPage: tagPage - 1 }),
+        next: () => tagPage < tagPageCount && this.setState({ tagPage: tagPage + 1 }),
         capacity: tagCapacity,
         capacityPct: Math.min(100, Math.round((tagCapacity / 1000) * 100)) + '%',
         modal: tagModal,
         modalOpen: s.modal === 'tag',
         openCreateGroup: () => this.openTagModal('create-group'),
-        openCreateTag: () => this.openTagModal('create-tag'),
-        openEditGroup: () => this.openTagModal('edit-group'),
+        openCreateTag: () => this.setState({ modal: 'tag', tagMode: 'create-tag', tagGroupId: curTagGroup?.id || 0 }),
+        openEditGroup: () => this.setState({ modal: 'tag', tagMode: 'edit-group', tagGroupId: curTagGroup?.id || 0 }),
+        deleteGroup: () => this.deleteTagGroup(curTagGroup?.id),
         closeModal: () => this.closeModal(),
         save: () => this.saveTagModal(),
         sync: (ev: Event) => {
@@ -3665,7 +3712,7 @@ export class AdminController extends PageBase {
             }),
           ).catch((error) => toast(error instanceof Error ? error.message : '标签同步受理失败', true));
         },
-        search: (ev: Event) => this.setState({ tagQ: (ev.target as HTMLInputElement).value }),
+        search: (ev: Event) => this.setState({ tagQ: (ev.target as HTMLInputElement).value, tagPage: 1 }),
       },
 
       /* 分享组件 */
