@@ -5,15 +5,15 @@
               <div style="font-size:16px;font-weight:600;line-height:22px">问卷</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex:none">
-              <button onClick="{{ questionnairePage.blockedTemplate }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">创建测评问卷模板</button>
+              <button onClick="{{ questionnairePage.createTemplate }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">创建测评问卷模板</button>
               <button onClick="{{ questionnairePage.create }}" style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">创建新问卷</button>
             </div>
           </div>
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
               <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid #EFF0F1">
-                <label style="flex:1 1 260px;min-width:0"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">搜索问卷</span><input placeholder="按问卷名称搜索" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"></label>
-                <label style="flex:0 0 180px"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">状态筛选</span><select style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff;width:100%;color:#1F2329"><option>全部</option><option>启用中</option><option>已停用</option></select></label>
+                <label style="flex:1 1 260px;min-width:0"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">搜索问卷</span><input value="{{ questionnairePage.query }}" onInput="{{ questionnairePage.setQuery }}" placeholder="按问卷名称或 ID 搜索" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"></label>
+                <label style="flex:0 0 180px"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">状态筛选</span><select onChange="{{ questionnairePage.setStatus }}" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff;width:100%;color:#1F2329"><sc-for list="{{ questionnairePage.statusOptions }}" as="o"><sc-if value="{{ o.selected }}"><option value="{{ o.value }}" selected="selected">{{ o.label }}</option></sc-if><sc-if value="{{ o.unselected }}"><option value="{{ o.value }}">{{ o.label }}</option></sc-if></sc-for></select></label>
               </div>
               <table style="width:100%;border-collapse:collapse">
                 <thead><tr>
@@ -28,13 +28,13 @@
                     <tr style="{{ r.rowStyle }}">
                       <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                          <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+                          <span style="{{ r.nameStyle }}">{{ r.name }}</span><span style="font-size:12px;color:#A6AAB0">{{ r.idText }}</span>
                           <sc-if value="{{ r.assess }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">多维测评</span></sc-if>
                           <span style="{{ r.cs }}">{{ r.status }}</span>
                         </div>
                       </td>
-                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73">{{ r.action }}</td>
-                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ r.created }}</td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73">{{ r.actionText }}</td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ r.createdText }}</td>
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;text-align:right;font-variant-numeric:tabular-nums">{{ r.count }}</td>
                       <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;text-align:right">
                         <div style="display:inline-flex;flex-wrap:wrap;justify-content:flex-end;gap:8px">

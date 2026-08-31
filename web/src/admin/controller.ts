@@ -128,6 +128,9 @@ type AdminState = {
   /** 优惠券列表仅对已加载行做本地筛选，不产生新的服务端请求。 */
   couponQuery: string;
   couponStatus: string;
+  /** 问卷列表与 V1 一致：当前已加载集合内按名称/ID 搜索并按启停筛选。 */
+  questionnaireQuery: string;
+  questionnaireStatus: '' | 'enabled' | 'disabled';
   /** 订单筛选：http 模式下发服务端过滤+分页；mock 模式仅本地筛选。 */
   orderFilters: {
     transactionId: string;
@@ -321,6 +324,8 @@ export class AdminController extends PageBase {
     channelQuery: '',
     couponQuery: '',
     couponStatus: '',
+    questionnaireQuery: '',
+    questionnaireStatus: '',
     orderFilters: { transactionId: '', payer: '', product: '', status: '', createdFrom: '', createdTo: '' },
     orderOffset: 0,
     orderLoading: false,
@@ -3267,7 +3272,15 @@ export class AdminController extends PageBase {
       },
       questionnairePage: {
         create: () => this.goto('questionnaireDetail'),
-        blockedTemplate: () => this.blocked('当前 OpenAPI 没有独立的测评问卷模板资源；可在问卷 JSON 中配置 assessment 字段'),
+        createTemplate: () => this.goto('questionnaireDetail', '?mode=assessment'),
+        query: s.questionnaireQuery,
+        statusOptions: [
+          { value: '', label: '全部', selected: !s.questionnaireStatus, unselected: Boolean(s.questionnaireStatus) },
+          { value: 'enabled', label: '启用中', selected: s.questionnaireStatus === 'enabled', unselected: s.questionnaireStatus !== 'enabled' },
+          { value: 'disabled', label: '已停用', selected: s.questionnaireStatus === 'disabled', unselected: s.questionnaireStatus !== 'disabled' },
+        ],
+        setQuery: (event: Event) => this.setState({ questionnaireQuery: (event.currentTarget as HTMLInputElement).value }),
+        setStatus: (event: Event) => this.setState({ questionnaireStatus: (event.currentTarget as HTMLSelectElement).value as '' | 'enabled' | 'disabled' }),
       },
       channelDrawer: {
         open: s.channelDrawerOpen,
@@ -4040,9 +4053,26 @@ export class AdminController extends PageBase {
           },
         })),
         qStats: rows.qStats,
-        questionnaires: rows.questionnaires.map((r, idx) => ({
+        questionnaires: rows.questionnaires
+          .filter((r) => {
+            const query = s.questionnaireQuery.trim().toLowerCase();
+            if (s.questionnaireStatus === 'enabled' && r.off) return false;
+            if (s.questionnaireStatus === 'disabled' && !r.off) return false;
+            return !query || `${r.name} ${r.internalName || ''} ${r.resourceId || ''}`.toLowerCase().includes(query);
+          })
+          .sort((left, right) => Number(left.off) - Number(right.off) || Date.parse(right.created) - Date.parse(left.created))
+          .map((r, idx) => ({
           ...r,
           status: r.off ? '已停用' : '启用中',
+          idText: r.resourceId ? `#${r.resourceId}` : '',
+          actionText: !r.action || r.action === 'active' || r.action === 'disabled' ? '未配置' : r.action,
+          createdText: (() => {
+            const date = new Date(r.created);
+            if (Number.isNaN(date.getTime())) return r.created || '—';
+            const parts = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(date);
+            const value = (type: Intl.DateTimeFormatPartTypes): string => parts.find((part) => part.type === type)?.value || '';
+            return `${value('year')}-${value('month')}-${value('day')} ${value('hour')}:${value('minute')}`;
+          })(),
           cs: mk(r.off ? 'red' : 'ok'),
           toggle: r.off ? '启用' : '停用',
           rowStyle: r.off ? { background: '#FAFAFB' } : {},
@@ -4058,7 +4088,13 @@ export class AdminController extends PageBase {
             if (enabled) run(); else confirmBox('停用问卷', '停用后公开定义不能继续提交。确认停用？', '确认停用', true, run);
           },
           shareIt: () => r.publicPath ? this.openShare('问卷', r.name, 'q' + idx, r.publicPath) : this.blocked('问卷尚未发布公开定义，后端未返回 public_path'),
-          download: () => this.blocked('当前 OpenAPI 提供提交列表读取，但没有问卷结果文件导出 operation'),
+          download: () => {
+            if (!r.resourceId) return toast('问卷缺少服务端 ID，无法下载', true);
+            const anchor = document.createElement('a');
+            anchor.href = `/api/admin/questionnaires/${r.resourceId}/export`;
+            anchor.download = `questionnaire-${r.resourceId}-submissions.csv`;
+            anchor.click();
+          },
           del: () => {
             if (!r.resourceId || !r.off) return toast('仅已停用问卷可删除', true);
             confirmBox('删除问卷', '删除会保留后端按契约允许保留的历史数据。确认删除？', '确认删除', true, () => { void this.api.deleteQuestionnaire(r.resourceId!).then(() => { toast('问卷已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '问卷删除失败', true)); });

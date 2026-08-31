@@ -12,6 +12,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DIST = path.join(ROOT, 'dist');
 const TEST_BUNDLES = {
   admin: await buildTestBrowserBundle(path.join(ROOT, 'src/admin/main.ts')),
+  questionnaireEditor: await buildTestBrowserBundle(path.join(ROOT, 'src/admin/sections/questionnaireEditor.ts')),
   h5: await buildTestBrowserBundle(path.join(ROOT, 'src/h5/main.ts')),
   sidebar: await buildTestBrowserBundle(path.join(ROOT, 'src/sidebar/main.ts')),
   memberGridShare: await buildTestBrowserBundle(path.join(ROOT, 'src/public/main.ts')),
@@ -58,6 +59,73 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
     },
   });
   await sleep(20);
+  return { dom, trace };
+}
+
+async function loadQuestionnaireEditor({ q = '', questionnaire } = {}) {
+  const trace = [];
+  const saved = questionnaire || {
+    id: 55,
+    name: '激活黄小璨AI登记',
+    title: '激活黄小璨AI登记',
+    description: '您在问卷中填写的信息会被录入黄小璨进行对黄小璨的初始设置',
+    answer_display_mode: 'all_in_one',
+    assessment_enabled: false,
+    assessment_config: {},
+    slug: 'q-20260825034422',
+    is_disabled: false,
+    public_path: '/q/q-20260825034422',
+    questions: [{
+      id: 60,
+      type: 'mobile',
+      title: '请输入手机号',
+      placeholder_text: '请输入登录AI分身的唯一手机号码',
+      assessment_dimension_key: '',
+      sidebar_profile_field: '',
+      required: true,
+      sort_order: 0,
+      options: [],
+    }],
+    score_rules: [],
+  };
+  const list = [saved];
+  const response = (data, status = 200) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    headers: new Headers({ 'Content-Type': 'application/json' }),
+    json: async () => data,
+    text: async () => JSON.stringify(data),
+    clone() { return this; },
+  });
+  const file = path.join(DIST, 'admin/questionnaireDetail.html');
+  let html = fs.readFileSync(file, 'utf8');
+  html = html.replace(/<script type="module" src="[^\"]*assets\/questionnaireEditor-[^\"]+\.js"><\/script>/, () => `<script>${TEST_BUNDLES.questionnaireEditor}</script>`);
+  const dom = new JSDOM(html, {
+    url: 'http://localhost/admin/questionnaireDetail.html' + (q ? '?' + q : ''),
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse(window) {
+      window.Headers = Headers;
+      window.confirm = () => true;
+      window.fetch = async (input, init = {}) => {
+        const url = new URL(String(input), window.location.origin);
+        const method = init.method || 'GET';
+        const body = init.body ? JSON.parse(String(init.body)) : null;
+        trace.push({ path: url.pathname, method, body, credentials: init.credentials });
+        if (url.pathname === '/api/admin/wecom/tags') return response({ items: [] });
+        if (url.pathname === '/api/admin/questionnaires' && method === 'GET') return response({ questionnaires: list });
+        if (url.pathname === '/api/admin/questionnaires' && method === 'POST') {
+          const created = { ...body, id: 81, public_path: `/q/${body.slug}`, questions: body.questions, score_rules: body.score_rules };
+          list.unshift(created);
+          return response({ questionnaire: created });
+        }
+        if (url.pathname === `/api/admin/questionnaires/${saved.id}` && method === 'GET') return response({ questionnaire: saved });
+        if (url.pathname === `/api/admin/questionnaires/${saved.id}` && method === 'PUT') return response({ questionnaire: { ...saved, ...body } });
+        return response({ code: 'unexpected_questionnaire_editor_request' }, 500);
+      };
+    },
+  });
+  await sleep(50);
   return { dom, trace };
 }
 
@@ -1269,15 +1337,34 @@ console.log('admin/questionnaires.html');
 
 console.log('admin/questionnaireDetail.html（新建/编辑路由）');
 {
-  const createDom = await loadPage('admin/questionnaireDetail.html');
-  const createDoc = createDom.window.document;
-  ok('问卷新建路由保持创建态', createDoc.body.textContent.includes('创建问卷') && !!createDoc.querySelector('#questionnaireName') && !!createDoc.querySelector('#questionnaireQuestions'));
-  createDom.window.close();
+  const created = await loadQuestionnaireEditor();
+  const createDoc = created.dom.window.document;
+  ok('问卷新建路由呈现 V1 三栏可视化编辑器', createDoc.body.textContent.includes('添加题目') && !!createDoc.querySelector('.phone-frame') && createDoc.querySelector('#inspector-title').textContent === '问卷设置');
+  input(created.dom, createDoc.querySelector('#field-name'), 'V2 可视化问卷');
+  input(created.dom, createDoc.querySelector('#field-title'), '公开标题');
+  input(created.dom, createDoc.querySelector('#field-slug'), 'v2-visual-editor');
+  click(created.dom, createDoc.querySelector('#add-single'));
+  input(created.dom, createDoc.querySelector('#question-title'), '你现在最需要什么？');
+  input(created.dom, createDoc.querySelector('[data-option-field="option_text"]'), '增长方案');
+  click(created.dom, createDoc.querySelector('#save-btn'));
+  await sleep(250);
+  const createCall = created.trace.find((entry) => entry.path === '/api/admin/questionnaires' && entry.method === 'POST');
+  ok('可视化创建调用真实 V2 POST 且保留同源会话', createCall?.credentials === 'include');
+  ok('可视化载荷沿用 V1 内容并满足 V2 0-based 顺序契约', createCall?.body?.name === 'V2 可视化问卷' && createCall?.body?.questions?.[0]?.title === '你现在最需要什么？' && createCall?.body?.questions?.[0]?.sort_order === 0 && createCall?.body?.questions?.[0]?.options?.[0]?.sort_order === 0);
+  ok('创建成功切换为编辑路由并保留三栏编辑态', created.dom.window.location.search === '?id=81' && createDoc.querySelector('#topbar-title').textContent === '公开标题');
+  created.dom.window.close();
 
-  const editDom = await loadPage('admin/questionnaireDetail.html', { id: 1 });
-  const editDoc = editDom.window.document;
-  ok('问卷编辑路由保持编辑态', editDoc.body.textContent.includes('编辑问卷') && !!editDoc.querySelector('#questionnaireName') && !!editDoc.querySelector('#questionnaireQuestions'));
-  editDom.window.close();
+  const edited = await loadQuestionnaireEditor({ q: 'id=55' });
+  const editDoc = edited.dom.window.document;
+  ok('问卷编辑路由读取指定 V2 问卷详情', edited.trace.some((entry) => entry.path === '/api/admin/questionnaires/55' && entry.method === 'GET') && editDoc.querySelector('#topbar-title').textContent === '激活黄小璨AI登记');
+  ok('已有题目在手机预览和右侧编辑区可继续编辑', editDoc.querySelectorAll('#preview-questions .preview-question').length === 1 && editDoc.body.textContent.includes('请输入手机号'));
+  edited.dom.window.close();
+
+  const assessment = await loadQuestionnaireEditor({ q: 'mode=assessment' });
+  click(assessment.dom, assessment.dom.window.document.querySelector('#save-btn'));
+  await sleep(30);
+  ok('V2 未开放测评写契约时明确阻断且不伪造保存', !assessment.trace.some((entry) => ['POST', 'PUT'].includes(entry.method)) && assessment.dom.window.document.querySelector('#toast').textContent.includes('未开放写入'));
+  assessment.dom.window.close();
 }
 
 console.log('admin/customers.html（独立 V1 聊天历史）');
