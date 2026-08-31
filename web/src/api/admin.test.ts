@@ -1,5 +1,6 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, dispatchCampaignOutboundRecipientDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getCampaignTouchPlanReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, groupOpsOperationMembersDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderDetailDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, setMemberGridExternalShareDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
+import { archiveTagGroupDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
 import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
@@ -570,6 +571,12 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(ownerPreview.rows[0].customerId === 7 && ownerPreview.rows[0].targetOwnerStaffId === 9 && ownerPreview.issues[0].line === 3, 'owner reassignment response mapping');
 
   const savedFetch = globalThis.fetch;
+  let archivedTagGroupRequest: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => { archivedTagGroupRequest = { input: String(input), init }; return new Response('{}', { status: 200 }); };
+  try { await archiveTagGroupDto(7); }
+  finally { globalThis.fetch = savedFetch; }
+  assert(archivedTagGroupRequest?.input === '/api/admin/wecom/tag-groups/7' && archivedTagGroupRequest.init?.method === 'DELETE', 'tag group archive uses the generated V1-compatible endpoint');
+
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'bad' }), { status: 503 });
   try { await readAdminRows(); assert(false, 'failed production read must not return seed'); } catch { /* expected: no SEED_DB fallback */ }
   finally { globalThis.fetch = savedFetch; }

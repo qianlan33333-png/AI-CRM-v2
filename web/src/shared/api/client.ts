@@ -56,7 +56,7 @@ import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, 
 import { archiveHxcSenderDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';
 import { archiveAutomationAgentDto, copyAutomationAgentDto, pauseAutomationAgentDto, precheckAutomationAgentDto, saveAutomationAgentDto, type AutomationAgentPrecheck, type AutomationAgentWriteInput } from '../../api/admin';
-import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
+import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, archiveTagGroupDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -136,6 +136,7 @@ export interface AdminApi {
 
   /* ---- 企微标签 ---- */
   saveTagGroup(input: { id?: number; name: string; firstTag?: string }): Promise<TagGroup>;
+  deleteTagGroup(id: number): Promise<void>;
   saveTag(input: { id?: number; groupId: number; name: string }): Promise<WecomTag>;
   deleteTag(id: number): Promise<void>;
   syncWecomTags(): Promise<void>;
@@ -665,6 +666,13 @@ export class MockApi implements AdminApi {
     return delay(tg, 400);
   }
 
+  async deleteTagGroup(id: number): Promise<void> {
+    this.db.tagGroups = this.db.tagGroups.filter((x) => x.id !== id);
+    this.db.wecomTags = this.db.wecomTags.filter((x) => x.groupId !== id);
+    this.persist();
+    return delay(undefined);
+  }
+
   async deleteTag(id: number): Promise<void> {
     this.db.wecomTags = this.db.wecomTags.filter((x) => x.id !== id);
     this.persist();
@@ -1014,6 +1022,10 @@ export class HttpApi implements AdminApi {
 
   async saveTag(input: { id?: number; groupId: number; name: string }): Promise<WecomTag> {
     return saveTagDto(input);
+  }
+
+  deleteTagGroup(id: number): Promise<void> {
+    return archiveTagGroupDto(id);
   }
 
   deleteTag(id: number): Promise<void> {
