@@ -1182,6 +1182,20 @@ const imageVariantUrl = (source: Record<string, unknown>, field: 'original_url' 
   return value;
 };
 export const imagePageDto = (value: unknown): ImageItem => { const x = obj(value); const resourceId = imageResourceId(x); return { resourceId, name: text(x.name, text(x.file_name, text(x.filename))), size: text(x.file_size, text(x.size)), tag: text(x.category), tone: toneFor(x.status), bg: '#EFF4FF', desc: text(x.description, ''), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), enabled: x.enabled !== false, uploadedAt: text(x.created_at), originalUrl: imageVariantUrl(x, 'original_url', resourceId), thumbnailUrl: imageVariantUrl(x, 'thumb_320_url', resourceId) }; };
+const savedImageItemDto = (value: unknown, patch: Partial<ImageItem> & { name: string }): ImageItem => {
+  const x = obj(value);
+  const resourceId = imageResourceId(x);
+  return imagePageDto({
+    ...x,
+    name: text(x.name, patch.name),
+    description: text(x.description, patch.desc || ''),
+    tags: x.tags == null ? splitTags(patch.tags) : x.tags,
+    category: text(x.category, patch.tag || ''),
+    enabled: typeof x.enabled === 'boolean' ? x.enabled : patch.enabled !== false,
+    original_url: x.original_url ?? `/api/admin/image-library/${resourceId}/variants/original`,
+    thumb_320_url: x.thumb_320_url ?? `/api/admin/image-library/${resourceId}/variants/thumb_320`,
+  });
+};
 export const miniProgramPageDto = (value: unknown): MpItem => { const x = obj(value); return { resourceId: Number(x.id), name: text(x.name), appid: text(x.appid, text(x.app_id)), pagepath: text(x.pagepath, text(x.page_path)), cardTitle: text(x.title), thumbStatus: text(x.thumbnail_status), thumbOk: x.thumbnail_status === 'ready', enabled: x.enabled !== false, bg: '#EFF4FF' }; };
 export const attachmentPageDto = (value: unknown): AttachItem => { const x = obj(value); return { resourceId: text(x.id, ''), name: text(x.name, text(x.file_name, text(x.filename))), type: text(x.mime_type, text(x.content_type)), size: text(x.file_size, text(x.size)), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), uploadedAt: text(x.created_at), enabled: x.enabled !== false }; };
 export const tagGroupPageDto = (value: unknown): TagGroup => { const x = obj(value); return { id: Number(x.id), name: text(x.name) }; };
@@ -1762,10 +1776,10 @@ async function uniqueMediaId(kind: 'image' | 'attachment' | 'mini', name: string
   return kind === 'mini' ? Number(matches[0].id) : text(matches[0].id, '');
 }
 export async function saveImageItemDto(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<ImageItem> {
-  if (!originalName) { if (!patch.file) throw new Error('请选择真实图片文件后再上传'); const result = obj(await call(uploadLegacyImage({ image: patch.file, name: patch.name, description: patch.desc, tags: patch.tags, category: patch.tag }, apiRequestOptions()))); return imagePageDto(result.item || result); }
+  if (!originalName) { if (!patch.file) throw new Error('请选择真实图片文件后再上传'); const result = obj(await call(uploadLegacyImage({ image: patch.file, name: patch.name, description: patch.desc, tags: patch.tags, category: patch.tag }, apiRequestOptions()))); return savedImageItemDto(result.item || result, patch); }
   const id = patch.resourceId || String(await uniqueMediaId('image', originalName));
   const result = obj(await call(updateLegacyImage(id, { name: patch.name, description: patch.desc, tags: patch.tags == null ? undefined : splitTags(patch.tags), category: patch.tag, enabled: patch.enabled }, apiRequestOptions())));
-  return imagePageDto(result.item || result);
+  return savedImageItemDto(result.item || result, patch);
 }
 export async function deleteImageItemDto(item: ImageItem): Promise<void> { const id = item.resourceId || String(await uniqueMediaId('image', item.name)); await call(deleteLegacyImage(id, undefined, apiRequestOptions())); }
 export async function getImageThumbnailDto(item: ImageItem): Promise<Blob> { const id = item.resourceId || String(await uniqueMediaId('image', item.name)); return (await request(getGetLegacyImageVariantUrl(id, 'thumb_320'))).blob(); }

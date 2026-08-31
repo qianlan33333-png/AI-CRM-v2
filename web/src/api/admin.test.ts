@@ -1209,9 +1209,10 @@ export async function runAdminAdapterTests(): Promise<void> {
   let imageRequest: { input: string; init?: RequestInit } | undefined;
   globalThis.fetch = async (input, init) => { imageRequest = { input: String(input), init }; return new Response(JSON.stringify({ item: { id: 15 } }), { status: 200 }); };
   try {
-    await saveImageItemDto('旧名', { resourceId: '15', name: '新名', desc: '说明', tags: '一, 二', enabled: true });
+    const savedImage = await saveImageItemDto('旧名', { resourceId: '15', name: '新名', desc: '说明', tags: '一, 二', enabled: true });
     assert(imageRequest?.input === '/api/admin/image-library/15' && imageRequest.init?.method === 'PUT', 'image update generated URL/method');
     assert(JSON.parse(String(imageRequest.init?.body)).tags.length === 2, 'image metadata mapping');
+    assert(savedImage.originalUrl === '/api/admin/image-library/15/variants/original' && savedImage.name === '新名', 'image update result keeps canonical variant URL and draft metadata');
   } finally { globalThis.fetch = savedFetch; }
 
   let imageVariantRequest: { input: string; init?: RequestInit } | undefined;
