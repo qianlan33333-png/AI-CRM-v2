@@ -99,6 +99,23 @@ ${moduleScript('../', assets.admin)}
 }
 
 function adminPage(screen, assets) {
+  if (screen.key === 'questionnaireDetail') {
+    const template = read(path.join(SRC, 'admin/templates/questionnaireEditorStandalone.html'));
+    return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${screen.label} · AI-CRM 管理后台</title>
+${stylesheet('../', assets.questionnaireEditorStyles)}
+</head>
+<body data-page="${screen.key}">
+${template}
+${moduleScript('../', assets.questionnaireEditor)}
+</body>
+</html>
+`;
+  }
   const rich = richPages.has(screen.key);
   const shell = adminShell(screen, assets, rich);
   if (rich) return shell;
@@ -197,6 +214,8 @@ async function main() {
       sidebar: path.join(SRC, 'sidebar/main.ts'),
       sidebarStyles: path.join(SRC, 'sidebar/sidebar.css'),
       memberGridShare: path.join(SRC, 'public/main.ts'),
+      questionnaireEditor: path.join(SRC, 'admin/sections/questionnaireEditor.ts'),
+      questionnaireEditorStyles: path.join(SRC, 'admin/sections/questionnaireEditorStyles.css'),
       tokens: path.join(SRC, 'shared/ui/tokens.css'),
       labs: path.join(SRC, 'admin/sections/labs.css'),
     },
@@ -219,12 +238,14 @@ async function main() {
     const name = Object.entries({
       admin: path.join(SRC, 'admin/main.ts'), h5: path.join(SRC, 'h5/main.ts'),
       sidebar: path.join(SRC, 'sidebar/main.ts'), memberGridShare: path.join(SRC, 'public/main.ts'),
+      questionnaireEditor: path.join(SRC, 'admin/sections/questionnaireEditor.ts'),
+      questionnaireEditorStyles: path.join(SRC, 'admin/sections/questionnaireEditorStyles.css'),
       sidebarStyles: path.join(SRC, 'sidebar/sidebar.css'),
       tokens: path.join(SRC, 'shared/ui/tokens.css'), labs: path.join(SRC, 'admin/sections/labs.css'),
     }).find(([, entry]) => path.resolve(REPOSITORY, metadata.entryPoint) === entry)?.[0];
     if (name) entries[name] = outputPath(output);
   }
-  for (const required of ['admin', 'h5', 'sidebar', 'sidebarStyles', 'memberGridShare', 'tokens', 'labs']) {
+  for (const required of ['admin', 'h5', 'sidebar', 'sidebarStyles', 'memberGridShare', 'questionnaireEditor', 'questionnaireEditorStyles', 'tokens', 'labs']) {
     if (!entries[required]) throw new Error(`missing build entry: ${required}`);
   }
 
