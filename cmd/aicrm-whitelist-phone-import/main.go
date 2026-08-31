@@ -34,6 +34,7 @@ var (
 
 type sourceRow struct {
 	unionID, mobile, source, updatedAt string
+	orderReferences                    []string
 	verified                           bool
 }
 
@@ -51,6 +52,7 @@ type classifiedRow struct {
 	sourceRow
 	phone       string
 	customerID  int64
+	mapping     string
 	disposition disposition
 	reason      string
 }
@@ -66,6 +68,8 @@ type report struct {
 	RejectedUnverified int    `json:"rejected_unverified"`
 	RejectedUnmatched  int    `json:"rejected_unmatched"`
 	RejectedConflict   int    `json:"rejected_conflict"`
+	UnionIDMatchedRows int    `json:"unionid_matched_rows"`
+	OrderMatchedRows   int    `json:"order_matched_rows"`
 }
 
 func main() {
@@ -143,18 +147,23 @@ func run(ctx context.Context, args []string, input io.Reader, output io.Writer, 
 
 func readSource(input io.Reader) ([]sourceRow, string, error) {
 	reader := csv.NewReader(input)
-	reader.FieldsPerRecord = 5
+	reader.FieldsPerRecord = -1
 	records, err := reader.ReadAll()
 	if err != nil || len(records) < 1 {
 		return nil, "", errors.New("invalid source CSV")
 	}
 	wantHeader := []string{"unionid", "mobile_normalized", "mobile_verified", "mobile_source", "updated_at"}
-	if strings.Join(records[0], "\x00") != strings.Join(wantHeader, "\x00") {
+	wantOrderHeader := append(append([]string{}, wantHeader...), "order_reference_digests")
+	hasOrderReferences := strings.Join(records[0], "\x00") == strings.Join(wantOrderHeader, "\x00")
+	if !hasOrderReferences && strings.Join(records[0], "\x00") != strings.Join(wantHeader, "\x00") {
 		return nil, "", errors.New("unexpected source CSV header")
 	}
 	rows := make([]sourceRow, 0, len(records)-1)
 	seen := make(map[string]struct{}, len(records)-1)
 	for _, record := range records[1:] {
+		if len(record) != len(records[0]) {
+			return nil, "", errors.New("invalid source CSV")
+		}
 		unionID := strings.TrimSpace(record[0])
 		if unionID == "" || len(unionID) > 512 {
 			return nil, "", errors.New("source row has invalid unionid")
@@ -167,16 +176,43 @@ func readSource(input io.Reader) ([]sourceRow, string, error) {
 		if !verified && record[2] != "f" && record[2] != "false" {
 			return nil, "", errors.New("source row has invalid verification state")
 		}
-		rows = append(rows, sourceRow{unionID: unionID, mobile: strings.TrimSpace(record[1]), verified: verified, source: strings.TrimSpace(record[3]), updatedAt: strings.TrimSpace(record[4])})
+		var orderReferences []string
+		if hasOrderReferences {
+			orderReferences, err = parseOrderReferences(record[5])
+			if err != nil {
+				return nil, "", err
+			}
+		}
+		rows = append(rows, sourceRow{unionID: unionID, mobile: strings.TrimSpace(record[1]), verified: verified, source: strings.TrimSpace(record[3]), updatedAt: strings.TrimSpace(record[4]), orderReferences: orderReferences})
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].unionID < rows[j].unionID })
 	hash := sha256.New()
 	for _, row := range rows {
-		for _, value := range []string{row.unionID, row.mobile, fmt.Sprint(row.verified), row.source, row.updatedAt} {
+		for _, value := range []string{row.unionID, row.mobile, fmt.Sprint(row.verified), row.source, row.updatedAt, strings.Join(row.orderReferences, ";")} {
 			_, _ = fmt.Fprintf(hash, "%d:%s", len(value), value)
 		}
 	}
 	return rows, hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func parseOrderReferences(value string) ([]string, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+	seen := map[string]struct{}{}
+	for _, reference := range strings.Split(value, ";") {
+		parts := strings.Split(strings.TrimSpace(reference), ":")
+		if len(parts) != 2 || (parts[0] != "merchant" && parts[0] != "transaction") || !isSHA256(parts[1]) {
+			return nil, errors.New("source row has invalid order reference digest")
+		}
+		seen[parts[0]+":"+parts[1]] = struct{}{}
+	}
+	result := make([]string, 0, len(seen))
+	for reference := range seen {
+		result = append(result, reference)
+	}
+	sort.Strings(result)
+	return result, nil
 }
 
 func classify(ctx context.Context, tx pgx.Tx, rows []sourceRow, digest string) ([]classifiedRow, report, error) {
@@ -193,12 +229,33 @@ func classify(ctx context.Context, tx pgx.Tx, rows []sourceRow, digest string) (
 		default:
 			item.phone = normalizePhone(row.mobile)
 			reference := sha256.Sum256([]byte("aicrm_v2_frozen\x00unionid\x00" + row.unionID))
-			if err := tx.QueryRow(ctx, `SELECT customer_id FROM public.source_subject_refs WHERE source_system='aicrm_v2_frozen' AND source_entity='unionid' AND reference_digest=$1`, reference[:]).Scan(&item.customerID); errors.Is(err, pgx.ErrNoRows) {
-				item.disposition, item.reason = rejectUnmatched, "unionid is outside the V2 whitelist customer set"
-			} else if err != nil {
+			candidateMappings := map[int64]string{}
+			var unionCustomerID int64
+			if err := tx.QueryRow(ctx, `SELECT customer_id FROM public.source_subject_refs WHERE source_system='aicrm_v2_frozen' AND source_entity='unionid' AND reference_digest=$1`, reference[:]).Scan(&unionCustomerID); err == nil {
+				candidateMappings[unionCustomerID] = "unionid"
+			} else if !errors.Is(err, pgx.ErrNoRows) {
 				return nil, report{}, err
-			} else {
+			}
+			orderCustomers, resolveErr := resolveByOrderEvidence(ctx, tx, row.orderReferences)
+			if resolveErr != nil {
+				return nil, report{}, resolveErr
+			}
+			for _, customerID := range orderCustomers {
+				if _, found := candidateMappings[customerID]; !found {
+					candidateMappings[customerID] = "order_digest"
+				}
+			}
+			switch len(candidateMappings) {
+			case 0:
+				item.disposition, item.reason = rejectUnmatched, "unionid and exact order evidence are outside the V2 whitelist customer set"
+			case 1:
+				for item.customerID, item.mapping = range candidateMappings {
+				}
 				item.disposition = migrate
+			default:
+				item.disposition, item.reason = rejectConflict, "unionid and exact order evidence map to different V2 customers"
+			}
+			if item.disposition == migrate {
 				if phoneCustomers[item.phone] == nil {
 					phoneCustomers[item.phone] = map[int64]struct{}{}
 				}
@@ -215,6 +272,11 @@ func classify(ctx context.Context, tx pgx.Tx, rows []sourceRow, digest string) (
 		switch item.disposition {
 		case migrate:
 			result.MigratedRows++
+			if item.mapping == "order_digest" {
+				result.OrderMatchedRows++
+			} else {
+				result.UnionIDMatchedRows++
+			}
 		case rejectInvalid:
 			result.RejectedInvalid++
 		case rejectUnverified:
@@ -226,6 +288,42 @@ func classify(ctx context.Context, tx pgx.Tx, rows []sourceRow, digest string) (
 		}
 	}
 	return classified, result, nil
+}
+
+func resolveByOrderEvidence(ctx context.Context, tx pgx.Tx, references []string) ([]int64, error) {
+	merchantDigests := []string{}
+	transactionDigests := []string{}
+	for _, reference := range references {
+		parts := strings.SplitN(reference, ":", 2)
+		if parts[0] == "merchant" {
+			merchantDigests = append(merchantDigests, parts[1])
+		} else {
+			transactionDigests = append(transactionDigests, parts[1])
+		}
+	}
+	if len(merchantDigests) == 0 && len(transactionDigests) == 0 {
+		return nil, nil
+	}
+	rows, err := tx.Query(ctx, `
+SELECT DISTINCT customer_id
+FROM public.order_list_projections
+WHERE customer_id IS NOT NULL AND (
+  (merchant_order_no<>'' AND encode(sha256(convert_to(merchant_order_no,'UTF8')),'hex')=ANY($1::text[])) OR
+  (platform_transaction_no<>'' AND encode(sha256(convert_to(platform_transaction_no,'UTF8')),'hex')=ANY($2::text[])))
+ORDER BY customer_id`, merchantDigests, transactionDigests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var customers []int64
+	for rows.Next() {
+		var customerID int64
+		if err = rows.Scan(&customerID); err != nil {
+			return nil, err
+		}
+		customers = append(customers, customerID)
+	}
+	return customers, rows.Err()
 }
 
 func apply(ctx context.Context, tx pgx.Tx, runID string, rows []classifiedRow, result *report, key []byte) error {
@@ -268,7 +366,7 @@ RETURNING id,(xmax=0)`, row.customerID, row.phone, phoneSource, fingerprint).Sca
 			targetID, dispositionValue, reason = &value, "MIGRATE", ""
 		}
 		sourceKey := hmacDigest(key, "crm_user_identity\x00"+row.unionID)
-		payload := hmacDigest(key, strings.Join([]string{row.unionID, row.mobile, fmt.Sprint(row.verified), row.source, row.updatedAt}, "\x00"))
+		payload := hmacDigest(key, strings.Join([]string{row.unionID, row.mobile, fmt.Sprint(row.verified), row.source, row.updatedAt, strings.Join(row.orderReferences, ";")}, "\x00"))
 		if _, err := tx.Exec(ctx, `INSERT INTO public.whitelist_import_domain_receipts(run_id,domain,source_entity,source_key_digest,source_payload_digest,target_entity,target_id,disposition,reason,created_at) VALUES($1,'identity',$2,$3,$4,'identities',$5,$6,$7,now())`, runID, phoneSource, sourceKey, payload, targetID, dispositionValue, reason); err != nil {
 			return err
 		}

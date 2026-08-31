@@ -29,6 +29,29 @@ func TestReadSourceRejectsDuplicateUnionIDAndInvalidShape(t *testing.T) {
 	}
 }
 
+func TestReadSourceAcceptsSortedExactOrderEvidence(t *testing.T) {
+	digestA := strings.Repeat("a", 64)
+	digestB := strings.Repeat("b", 64)
+	input := "unionid,mobile_normalized,mobile_verified,mobile_source,updated_at,order_reference_digests\n" +
+		"union-a,13800000000,true,mobile_bind,2026-08-29T00:00:00Z,transaction:" + digestB + ";merchant:" + digestA + ";merchant:" + digestA + "\n"
+	rows, _, err := readSource(strings.NewReader(input))
+	if err != nil || len(rows) != 1 {
+		t.Fatalf("rows=%d err=%v", len(rows), err)
+	}
+	want := []string{"merchant:" + digestA, "transaction:" + digestB}
+	if strings.Join(rows[0].orderReferences, "|") != strings.Join(want, "|") {
+		t.Fatalf("order references=%v want %v", rows[0].orderReferences, want)
+	}
+}
+
+func TestReadSourceRejectsInvalidOrderEvidence(t *testing.T) {
+	input := "unionid,mobile_normalized,mobile_verified,mobile_source,updated_at,order_reference_digests\n" +
+		"union-a,13800000000,true,mobile_bind,2026-08-29T00:00:00Z,merchant:not-a-digest\n"
+	if _, _, err := readSource(strings.NewReader(input)); err == nil {
+		t.Fatal("invalid order reference accepted")
+	}
+}
+
 func TestNormalizePhoneAcceptsOnlyCanonicalE164OrMainlandMobile(t *testing.T) {
 	for input, want := range map[string]string{
 		"13800138000":    "+8613800138000",
