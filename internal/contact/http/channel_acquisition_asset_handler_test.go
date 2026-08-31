@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -140,10 +139,20 @@ func mustAcquisitionAssetFragment(t *testing.T, commands channelAcquisitionAsset
 	return fragment
 }
 
-func TestCH02DisabledAcquisitionAssetFragmentFailsClosed(t *testing.T) {
-	response := httptest.NewRecorder()
-	NewDisabledChannelAcquisitionAssetRouteFragment().ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/admin/channels/41/acquisition-assets", nil))
-	if response.Code != http.StatusServiceUnavailable || !errors.Is(contactapp.ErrChannelAcquisitionAssetUnavailable, contactapp.ErrChannelAcquisitionAssetUnavailable) {
-		t.Fatalf("status/body=%d/%s", response.Code, response.Body.String())
+func TestCH02ReadOnlyAcquisitionAssetFragmentKeepsReadsAvailableAndWritesClosed(t *testing.T) {
+	queries := &acquisitionAssetQueryStub{page: contactapp.ChannelAcquisitionAssetPage{Items: []contactapp.ChannelAcquisitionAssetItem{}, Limit: 20}}
+	handler, err := NewReadOnlyChannelAcquisitionAssetRouteFragment(queries, &channelAcquisitionCSRFStub{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := httptest.NewRecorder()
+	handler.ServeHTTP(read, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-assets", "", authport.CapabilityChannelsRead))
+	if read.Code != http.StatusOK || read.Body.String() != "{\"items\":[],\"limit\":20,\"has_more\":false,\"next_cursor\":\"\"}\n" || queries.calls != 1 {
+		t.Fatalf("read status/calls/body=%d/%d/%s", read.Code, queries.calls, read.Body.String())
+	}
+	write := httptest.NewRecorder()
+	handler.ServeHTTP(write, acquisitionAssetRequest(http.MethodPost, "/api/admin/channels/41/acquisition-assets", `{"kind":"contact_way_qrcode"}`, authport.CapabilityChannelsWrite))
+	if write.Code != http.StatusServiceUnavailable || !strings.Contains(write.Body.String(), "DEPENDENCY_UNAVAILABLE") {
+		t.Fatalf("write status/body=%d/%s", write.Code, write.Body.String())
 	}
 }

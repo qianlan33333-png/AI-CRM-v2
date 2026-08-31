@@ -1576,8 +1576,32 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	channelAcquisitionAssetsFragment := contacthttp.NewDisabledChannelAcquisitionAssetRouteFragment()
-	channelAcquisitionQRCodeDownload := contacthttp.NewDisabledChannelAcquisitionQRCodeDownloadHandler()
+	assetRepository := contactstore.NewChannelAcquisitionAssetRepository()
+	assetCursor, err := contactapp.NewChannelAcquisitionAssetCursorCodec(config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	assetQueries, err := contactapp.NewChannelAcquisitionAssetQueryService(uow, assetRepository, assetCursor)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelAcquisitionAssetsFragment, err := contacthttp.NewReadOnlyChannelAcquisitionAssetRouteFragment(assetQueries, service)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelAcquisitionQRCodeDownload, err := contacthttp.NewChannelAcquisitionQRCodeDownloadHandler(assetQueries, &http.Client{
+		Timeout: 5 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}, "work.weixin.qq.com")
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	customerAcquisitionLinksFragment := wecomhttp.NewDisabledCustomerAcquisitionLinkHandler()
 	if config.WeCom.CustomerAcquisition.Enabled {
 		assetEffects, assetErr := contactapp.NewChannelAcquisitionAssetEERRuntime(externalEffectsRuntime, externalEffectsRuntimeRepository)
@@ -1590,20 +1614,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, assetErr
 		}
-		assetRepository := contactstore.NewChannelAcquisitionAssetRepository()
 		assetCommands, assetErr := contactapp.NewChannelAcquisitionAssetCommandService(
 			uow, assetRepository, assetEffects, assetJobs, config.WeCom.CustomerAcquisition.CorpID,
 		)
-		if assetErr != nil {
-			pool.Close()
-			return nil, assetErr
-		}
-		assetCursor, assetErr := contactapp.NewChannelAcquisitionAssetCursorCodec(config.Identity.HMACKey.Value())
-		if assetErr != nil {
-			pool.Close()
-			return nil, assetErr
-		}
-		assetQueries, assetErr := contactapp.NewChannelAcquisitionAssetQueryService(uow, assetRepository, assetCursor)
 		if assetErr != nil {
 			pool.Close()
 			return nil, assetErr
@@ -1614,16 +1627,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, assetErr
 		}
 		channelAcquisitionAssetsFragment, assetErr = contacthttp.NewChannelAcquisitionAssetRouteFragment(assetHandler)
-		if assetErr != nil {
-			pool.Close()
-			return nil, assetErr
-		}
-		channelAcquisitionQRCodeDownload, assetErr = contacthttp.NewChannelAcquisitionQRCodeDownloadHandler(assetQueries, &http.Client{
-			Timeout: 5 * time.Second,
-			CheckRedirect: func(*http.Request, []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		}, "work.weixin.qq.com")
 		if assetErr != nil {
 			pool.Close()
 			return nil, assetErr

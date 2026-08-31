@@ -35,7 +35,10 @@ func TestWhitelistGatewayExposesOnlyFrozenBusinessRoutes(t *testing.T) {
 		{http.MethodGet, "/api/admin/campaigns", http.StatusNotFound},
 		{http.MethodGet, "/api/admin/messages", http.StatusNotFound},
 		{http.MethodPost, "/api/admin/wechat-pay/products/41/external-push", http.StatusNotFound},
-		{http.MethodPost, "/api/admin/channels/3/qrcode/generate", http.StatusNotFound},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-preview", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/channels/3/acquisition-assets", http.StatusNoContent},
+		{http.MethodPost, "/api/admin/channels/3/qrcode/generate", http.StatusNoContent},
+		{http.MethodGet, "/api/admin/channels/3/qrcode/download", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/audience-history/packages", http.StatusNotFound},
 	} {
 		response := httptest.NewRecorder()
