@@ -583,6 +583,24 @@ export async function runAdminAdapterTests(): Promise<void> {
 
   const questionnaireCalls: Array<{ input: string; init?: RequestInit }> = [];
   const questionnaireApi = { id: 41, name: 'growth', title: '增长诊断', description: '说明', answer_display_mode: 'all_in_one', assessment_enabled: false, assessment_config: {}, slug: 'growth', is_disabled: false, questions: [{ type: 'textarea', title: '目标', assessment_dimension_key: '', sidebar_profile_field: '', required: true, sort_order: 0, placeholder_text: '', validation: {}, options: [] }], score_rules: [], enabled: true, status: 'active', version: 2, question_count: 1, submission_count: 0, created_at: '', updated_at: '', public_path: '/q/growth', submitted_path: '/q/growth/submitted' };
+  const questionnaireOpsReadCalls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    questionnaireOpsReadCalls.push(url);
+    if (url === '/api/admin/questionnaires?limit=50&offset=0') return new Response(JSON.stringify({ items: [questionnaireApi] }), { status: 200 });
+    if (url === '/api/admin/channels?limit=50&include_archived=true') return new Response(JSON.stringify({ channels: [] }), { status: 200 });
+    if (url === '/api/admin/questionnaires/41') return new Response(JSON.stringify({ questionnaire: questionnaireApi }), { status: 200 });
+    if (url === '/api/admin/questionnaires/41/operations') return new Response(JSON.stringify({ questionnaire_id: 41, completion: {}, external_push: { enabled: false }, local_only: true }), { status: 200 });
+    if (url === '/admin/questionnaires/41/external-push-logs') return new Response(JSON.stringify({ items: [], total: 0, limit: 50, offset: 0, has_more: false, local_only: true }), { status: 200 });
+    throw new Error(`unexpected questionnaire operations read: ${url}`);
+  };
+  try {
+    const opsPage = await readAdminPage({ page: 'questionnaireOps', id: '41' });
+    assert(opsPage.rows.questionnaires[0]?.resourceId === 41 && opsPage.qOps[41]?.localOnly, 'questionnaire operations page maps the real detail and operations projection');
+    assert(questionnaireOpsReadCalls.length === 5 && !questionnaireOpsReadCalls.includes('/admin/questionnaires/41/operations'), 'questionnaire operations page does not request the legacy HTML-compatible operations route');
+    assert(!questionnaireOpsReadCalls.some((url) => url.endsWith('/results') || url.includes('/submissions') || url.includes('/safe-analysis')), 'questionnaire operations page does not load editor-only results and analysis');
+  } finally { globalThis.fetch = savedFetch; }
+
   globalThis.fetch = async (input, init) => { questionnaireCalls.push({ input: String(input), init }); return new Response(JSON.stringify(String(input).includes('/public-publish') ? { questionnaire_id: 41, slug: 'growth', definition_version: 2, state: 'public' } : String(input).endsWith('/enable') ? { questionnaire: questionnaireApi } : { questionnaire_id: 41, questionnaire: questionnaireApi, data: { questionnaire: questionnaireApi } }), { status: 200 }); };
   try {
     const saved = await saveQuestionnaireDto({ name: 'growth', title: '增长诊断', description: '说明', answer_display_mode: 'all_in_one', assessment_enabled: false, assessment_config: {}, slug: 'growth', is_disabled: false, questions: questionnaireApi.questions as LegacyQuestionnaire['questions'], score_rules: [] }, true);

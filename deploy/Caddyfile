@@ -29,7 +29,7 @@
 aa.youcangogogo.com {
 	import aicrm-security
 
-	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
+	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /admin/questionnaires/external-push-logs /admin/questionnaires/*/external-push-logs /login /logout /healthz /readyz
 	handle @backend {
 		header Cache-Control "private, no-store"
 		reverse_proxy 127.0.0.1:8080
@@ -45,7 +45,7 @@ aa.youcangogogo.com {
 id-dev.youcangogogo.com {
 	import aicrm-security
 
-	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
+	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /admin/questionnaires/external-push-logs /admin/questionnaires/*/external-push-logs /login /logout /healthz /readyz
 	handle @backend {
 		header Cache-Control "private, no-store"
 		reverse_proxy 127.0.0.1:18124

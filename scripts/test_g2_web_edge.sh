@@ -64,6 +64,12 @@ expect_failure "$fixture_directory" 'missing public survey backend route'
 
 fixture_directory="$(new_fixture)"
 cleanup_directories+=("$fixture_directory")
+sed -i.bak 's# /admin/questionnaires/external-push-logs /admin/questionnaires/\*/external-push-logs##' "$fixture_directory/deploy/Caddyfile"
+rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
+expect_failure "$fixture_directory" 'missing questionnaire operations log backend routes'
+
+fixture_directory="$(new_fixture)"
+cleanup_directories+=("$fixture_directory")
 sed -i.bak '/encode zstd gzip/d' "$fixture_directory/deploy/Caddyfile"
 rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
 expect_failure "$fixture_directory" 'missing response compression'
