@@ -2,14 +2,26 @@
  * 漏斗 / 数据看板 —— 多维表格模块（方向稿 funnel-grid.html 的 TypeScript 移植）
  * 能力：视图系统（草稿 / 未保存提醒 / 保存 / 另存 / 重命名 / 副本 / 删除）、
  *       筛选条件构建器（文本/枚举/布尔/数字/日期五种）、分组（可折叠）、
- *       排序（表头点击切换）、全局搜索、行勾选、分享浮窗、群发浮窗、CSV 导出。
+ *       排序（表头点击切换）、全局搜索、行勾选、分享浮窗、群发浮窗、CSV 导出、
+ *       HXC 本地发送人管理（真实 API 仅 http 模式；只写 CRM 本地白名单）。
  * 行数据经 AdminApi 全量加载，筛选/分组/排序在前端视图层完成（与原型一致）。
  */
 import type { AdminApi } from '../../shared/api/client';
-import type { FunnelField, FunnelFieldType, FunnelFilter, FunnelGridRow, FunnelView, Tone } from '../../shared/api/types';
-import { toast } from '../../shared/ui/feedback';
+import type { Agent, FunnelField, FunnelFieldType, FunnelFilter, FunnelGridRow, FunnelView, Tone } from '../../shared/api/types';
+import { toast, confirmBox } from '../../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerKind } from '../../shared/ui/picker';
 import { downloadCsv } from '../../shared/ui/download';
+import { getLegacyHXCSendConfig } from '../../api/generated/p4-hxc-compat/p4-hxc-compat';
+import type { LegacyHXCSenderReadResponse } from '../../api/generated/health.schemas';
+import { apiRequestOptions, unwrapGenerated } from '../../api/transport';
+import {
+  archiveHxcSenderDto,
+  hxcSenderPageDto,
+  refreshHxcDirectoryDto,
+  reorderHxcSendersDto,
+  saveHxcSenderDto,
+  type HxcSenderWriteInput,
+} from '../../api/admin';
 import { esc, copyText } from './util';
 
 /* ================= 字段定义（与生产 Tabulator 列对齐，取代表性子集） ================= */
@@ -89,7 +101,8 @@ export interface FunnelGridOpts {
 }
 
 export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: FunnelGridOpts): Promise<void> {
-  if (api.mode === 'http') {
+  const apiMode: string = api.mode;
+  if (apiMode === 'http') {
     if (opts?.product) {
       renderBlockedFunnel(root, opts);
       return;
@@ -97,7 +110,7 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
     root.className = 'labs sec-funnel';
     root.innerHTML = '<div class="card" style="padding:18px">正在读取黄小璨最新同步数据…</div>';
     try {
-      renderLiveHXCCurrent(root, await api.listFunnelRows());
+      renderLiveHXCCurrent(root, await api.listFunnelRows(), api);
     } catch (error) {
       root.innerHTML = `<div class="crumb">客户管理后台 / 运营 / <b>漏斗 / 数据看板</b></div><div class="page-head"><div><div class="page-title">漏斗 / 数据看板</div><div class="page-desc">黄小璨用户当前态只读看板</div></div></div><div class="card" style="padding:18px;color:#D83931">数据读取失败：${esc(error instanceof Error ? error.message : '未知错误')}</div>`;
     }
@@ -124,6 +137,13 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
       <div class="card stat warn"><div class="stat-l">仅激活未打开（拉回重点）</div><div class="stat-v" style="color:#D97917">1,286</div><div class="stat-s">有会员资格 / 从未登录</div></div>
       <div class="card stat blue"><div class="stat-l">注册但无会员</div><div class="stat-v" style="color:#D83931">143</div><div class="stat-s">异常：登录过但会员缺失</div></div>
       <div class="card stat gray"><div class="stat-l">未激活</div><div class="stat-v" style="color:#646A73">10,363</div><div class="stat-s">在 CRM 但未开通</div></div>`;
+
+  // 协作者目录只有 mock 演示数据；http 模式没有真实数据源，不渲染假人名。
+  const collabHtml =
+    apiMode === 'http'
+      ? '<div class="muted" style="font-size:12px;padding:8px 0">协作者目录未接入</div>'
+      : `<div class="collab"><div class="collab-av">黄</div><div style="flex:1"><b style="font-size:13px">HuangYouCan</b><div class="muted" style="font-size:12px">所有者</div></div><span class="chip gray">可编辑</span></div>
+        <div class="collab"><div class="collab-av" style="background:linear-gradient(135deg,#34C19B,#00A870)">林</div><div style="flex:1"><b style="font-size:13px">林小楷 LinKaiYan</b><div class="muted" style="font-size:12px">增长顾问</div></div><span class="chip blue">可查看</span></div>`;
 
   /* ---------- 状态 ---------- */
   let cur = 0;
@@ -233,8 +253,7 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
             <h3>邀请协作者</h3><p>从已同步的企微员工目录邀请，可设置为可查看或可编辑。</p>
             <div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;display:flex;align-items:center;height:34px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;font-size:13px;color:#8F959E">通过「选择客服」组件邀请</div><button class="btn" id="btnInvite">选择客服</button></div>
             <div id="collabList" style="margin-top:8px">
-              <div class="collab"><div class="collab-av">黄</div><div style="flex:1"><b style="font-size:13px">HuangYouCan</b><div class="muted" style="font-size:12px">所有者</div></div><span class="chip gray">可编辑</span></div>
-              <div class="collab"><div class="collab-av" style="background:linear-gradient(135deg,#34C19B,#00A870)">林</div><div style="flex:1"><b style="font-size:13px">林小楷 LinKaiYan</b><div class="muted" style="font-size:12px">增长顾问</div></div><span class="chip blue">可查看</span></div>
+              ${collabHtml}
             </div>
           </div>
           <div class="share-sec">
@@ -264,13 +283,16 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
             <button class="btn sm" data-mat="attach">＋ 附件</button>
           </div>
           <div id="bcMats" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-          <div class="muted" style="font-size:12px">发送人：HuangYouCan（在「发送人管理」中可调整优先级）</div>
+          <div class="muted" style="font-size:12px" id="bcSenderLine">发送人：HuangYouCan（在「发送人管理」中可调整优先级）</div>
         </div>
         <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="bcOk">创建群发任务</button></div>
       </div>
     </div>`;
 
   const $ = <T extends HTMLElement>(s: string): T => root.querySelector(s) as T;
+
+  /* ---------- HXC 发送人管理（弹层在本文件底部 setupHxcSenders 注入） ---------- */
+  const sendersManager = setupHxcSenders(root, api);
 
   /* ---------- 视图栏 ---------- */
   function renderTabs(): void {
@@ -657,12 +679,22 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
       }),
     );
   };
-  $('#btnSenders').addEventListener('click', () => toast('后端能力未就绪：当前漏斗壳没有等价发送人配置 DTO，未发送请求', true));
+  $('#btnSenders').addEventListener('click', () => {
+    if (apiMode !== 'http') return toast('mock 预览不含发送人配置，未发送请求', true);
+    sendersManager.open();
+  });
   $('#btnBroadcast').addEventListener('click', () => {
     if (!selected.size) return toast('请先在表格中勾选要群发的行', true);
     const list = pipeline().filter((r) => selected.has(String(r.mobile_masked)));
     const usable = list.filter((r) => r.external_userid);
     $('#bcInfo').innerHTML = `选中 <b>${selected.size}</b> 行 · 有企微外部联系人 ID 可发送 <b style="color:#245BDB">${usable.length}</b> 人 · 跳过 ${selected.size - usable.length} 人（缺少 ID / 免打扰）`;
+    if (apiMode === 'http') {
+      const senderLine = $('#bcSenderLine');
+      senderLine.textContent = '发送人：读取中…';
+      void sendersManager.firstSenderLabel().then((label) => {
+        senderLine.textContent = `发送人：${label}（在「发送人管理」中可调整优先级）`;
+      });
+    }
     $('#bcMask').classList.add('open');
   });
   root.querySelectorAll('[data-mat]').forEach((b) =>
@@ -700,6 +732,201 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
   sync();
 }
 
+/* ================= HXC 发送人管理（CRM 本地白名单 CRUD；真实 API 仅 http 模式） ================= */
+interface HxcSendersManager {
+  open(): void;
+  /** 群发浮窗发送人行使用：真实列表第一位，失败或未配置时给兜底文案 */
+  firstSenderLabel(): Promise<string>;
+}
+
+function setupHxcSenders(root: HTMLElement, api: AdminApi): HxcSendersManager {
+  root.insertAdjacentHTML(
+    'beforeend',
+    `<div class="mask" id="sendersMask">
+      <div class="modal" style="width:min(720px,100%)">
+        <div class="modal-head"><span>HXC 发送人管理</span><button class="modal-x" data-senders-close>×</button></div>
+        <div class="modal-body" style="display:grid;gap:14px">
+          <div class="muted" style="font-size:12px;line-height:1.7">这里只维护 CRM 本地发送人白名单；不调用企微通讯录，也不执行任何发送。</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="btn sm" id="btnHxcVerify">校验发送资格</button>
+            <button class="btn sm primary" id="btnHxcNew">新建发送人</button>
+            <span class="muted" style="font-size:12px" id="hxcVerifyResult"></span>
+          </div>
+          <div id="hxcSenderList"><div class="muted" style="font-size:12px">尚未加载</div></div>
+          <div style="display:grid;gap:6px">
+            <label style="font-size:12px;color:#646A73">顺序调整（每行一个配置 ID，自上而下为生效顺序）</label>
+            <textarea class="input" id="hxcOrder" rows="4" style="height:auto;padding:10px;resize:vertical;font-family:ui-monospace,Menlo,monospace"></textarea>
+            <div><button class="btn sm" id="btnHxcSaveOrder">保存顺序</button></div>
+          </div>
+          <div id="hxcForm" hidden style="border-top:1px solid #EFF0F1;padding-top:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px" id="hxcFormTitle">新建发送人</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <label style="display:grid;gap:6px;font-size:12px;color:#646A73">配置 ID<input class="input" id="hxcCfgId" maxlength="64" placeholder="例如 cfg-hxc-01"></label>
+              <label style="display:grid;gap:6px;font-size:12px;color:#646A73">sender_userid<input class="input" id="hxcUserid" maxlength="64" placeholder="企微成员 userid"></label>
+              <label style="display:grid;gap:6px;font-size:12px;color:#646A73">显示名<input class="input" id="hxcName" maxlength="200" placeholder="例如 黄小璨客服"></label>
+              <label style="display:grid;gap:6px;font-size:12px;color:#646A73">优先级（0-100000 整数）<input class="input" id="hxcPriority" type="number" min="0" max="100000" step="1" value="0"></label>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px"><input type="checkbox" id="hxcActive" checked> 启用该发送人</label>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+              <button class="btn" id="btnHxcFormCancel">取消</button>
+              <button class="btn primary" id="btnHxcSave">保存发送人</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`,
+  );
+
+  const $ = <T extends HTMLElement>(s: string): T => root.querySelector(s) as T;
+  const mask = $('#sendersMask');
+  const listEl = $('#hxcSenderList');
+  const orderEl = $<HTMLTextAreaElement>('#hxcOrder');
+  const formEl = $('#hxcForm');
+  const errMsg = (error: unknown): string => (error instanceof Error ? error.message : '未知错误');
+  let senders: Agent[] | null = null;
+
+  async function fetchSenders(): Promise<Agent[]> {
+    const data = unwrapGenerated(await getLegacyHXCSendConfig(apiRequestOptions())) as LegacyHXCSenderReadResponse;
+    if (data.ok !== true || !Array.isArray(data.send_configs)) throw new Error('HXC 发送人配置响应无效');
+    senders = data.send_configs.map(hxcSenderPageDto);
+    return senders;
+  }
+
+  function renderList(): void {
+    const items = senders || [];
+    listEl.innerHTML = items.length
+      ? `<table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#FAFAFB;color:#8F959E;text-align:left;font-size:12px">
+            <th style="padding:8px 10px">显示名</th><th style="padding:8px 10px">sender_userid</th><th style="padding:8px 10px">配置 ID</th><th style="padding:8px 10px">优先级</th><th style="padding:8px 10px">状态</th><th style="padding:8px 10px;text-align:right">操作</th>
+          </tr></thead>
+          <tbody>${items
+            .map(
+              (s, i) => `<tr>
+            <td style="padding:9px 10px;border-top:1px solid #F2F3F5;font-size:13px">${esc(s.name)}</td>
+            <td style="padding:9px 10px;border-top:1px solid #F2F3F5;font:12px ui-monospace,Menlo,monospace">${esc(s.code)}</td>
+            <td style="padding:9px 10px;border-top:1px solid #F2F3F5;font:12px ui-monospace,Menlo,monospace">${esc(s.senderId || '—')}</td>
+            <td style="padding:9px 10px;border-top:1px solid #F2F3F5;font-size:13px">${s.priority ?? '—'}</td>
+            <td style="padding:9px 10px;border-top:1px solid #F2F3F5"><span class="chip ${s.tone}">${esc(s.status)}</span></td>
+            <td style="padding:9px 10px;border-top:1px solid #F2F3F5;text-align:right;white-space:nowrap">
+              <button class="btn sm" data-hxc-edit="${i}">编辑</button>
+              <button class="btn sm" data-hxc-archive="${esc(s.code)}" style="color:#D83931">归档</button>
+            </td>
+          </tr>`,
+            )
+            .join('')}</tbody>
+        </table>`
+      : '<div class="muted" style="font-size:12px;padding:12px 0">暂无本地发送人配置</div>';
+  }
+
+  async function loadSenders(): Promise<void> {
+    listEl.innerHTML = '<div class="muted" style="font-size:12px;padding:8px 0">正在读取本地发送人配置…</div>';
+    try {
+      const items = await fetchSenders();
+      renderList();
+      orderEl.value = items.map((s) => s.senderId || s.code).join('\n');
+    } catch (error) {
+      senders = null;
+      listEl.innerHTML = `<div style="font-size:12px;color:#D83931;padding:8px 0">发送人配置读取失败：${esc(errMsg(error))}</div>`;
+      toast('发送人配置读取失败：' + errMsg(error), true);
+    }
+  }
+
+  function openForm(edit?: Agent): void {
+    $('#hxcFormTitle').textContent = edit ? '编辑发送人' : '新建发送人';
+    $<HTMLInputElement>('#hxcCfgId').value = edit?.senderId || '';
+    $<HTMLInputElement>('#hxcUserid').value = edit?.code || '';
+    $<HTMLInputElement>('#hxcName').value = edit ? (edit.name === edit.code ? '' : edit.name) : '';
+    $<HTMLInputElement>('#hxcPriority').value = String(edit?.priority ?? (senders?.length || 0));
+    $<HTMLInputElement>('#hxcActive').checked = edit ? edit.isActive === true : true;
+    formEl.hidden = false;
+  }
+
+  mask.querySelectorAll('[data-senders-close]').forEach((b) => b.addEventListener('click', () => mask.classList.remove('open')));
+  mask.addEventListener('click', (e) => {
+    if (e.target === mask) mask.classList.remove('open');
+  });
+  $('#btnHxcFormCancel').addEventListener('click', () => {
+    formEl.hidden = true;
+  });
+  $('#btnHxcNew').addEventListener('click', () => openForm());
+  $('#btnHxcSave').addEventListener('click', () => {
+    const input: HxcSenderWriteInput = {
+      id: $<HTMLInputElement>('#hxcCfgId').value.trim(),
+      senderUserid: $<HTMLInputElement>('#hxcUserid').value.trim(),
+      displayName: $<HTMLInputElement>('#hxcName').value.trim(),
+      priority: Number($<HTMLInputElement>('#hxcPriority').value),
+      active: $<HTMLInputElement>('#hxcActive').checked,
+    };
+    void saveHxcSenderDto(input)
+      .then((item) => {
+        toast(`发送人 ${item.code} 已保存：只写 CRM 本地配置，provider_call_executed / real_external_call_executed 均为 false，未调用企微 Provider`);
+        formEl.hidden = true;
+        void loadSenders();
+      })
+      .catch((error: unknown) => toast(errMsg(error) || '发送人保存失败', true));
+  });
+  $('#btnHxcSaveOrder').addEventListener('click', () => {
+    const ids = orderEl.value.split('\n').map((id) => id.trim()).filter(Boolean);
+    void reorderHxcSendersDto(ids)
+      .then(() => {
+        toast('本地发送人顺序已保存；未调用企微 Provider');
+        void loadSenders();
+      })
+      .catch((error: unknown) => toast(errMsg(error) || '发送人排序失败', true));
+  });
+  $('#btnHxcVerify').addEventListener('click', () => {
+    const result = $('#hxcVerifyResult');
+    result.textContent = '校验中…';
+    void refreshHxcDirectoryDto()
+      .then((r) => {
+        result.textContent = `校验通过：已刷新 ${r.syncedCount} 位本地发送资格交集；未发送消息`;
+        toast(`已校验 ${r.syncedCount} 位本地发送资格交集；未发送消息`);
+      })
+      .catch((error: unknown) => {
+        result.textContent = '';
+        toast(errMsg(error) || 'HXC 发送资格校验失败', true);
+      });
+  });
+  listEl.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const editBtn = t.closest('[data-hxc-edit]') as HTMLElement | null;
+    if (editBtn) {
+      const item = (senders || [])[Number(editBtn.dataset.hxcEdit)];
+      if (item) openForm(item);
+      return;
+    }
+    const archiveBtn = t.closest('[data-hxc-archive]') as HTMLElement | null;
+    if (archiveBtn) {
+      const senderUserid = archiveBtn.dataset.hxcArchive || '';
+      if (!senderUserid) return;
+      confirmBox('归档发送人配置', `仅归档 ${senderUserid} 的本地配置，不删除企微成员。确认继续？`, '确认归档', true, () => {
+        void archiveHxcSenderDto(senderUserid)
+          .then(() => {
+            toast('本地发送人配置已归档；未调用企微 Provider');
+            void loadSenders();
+          })
+          .catch((error: unknown) => toast(errMsg(error) || '发送人归档失败', true));
+      });
+    }
+  });
+
+  return {
+    open(): void {
+      mask.classList.add('open');
+      void loadSenders();
+    },
+    async firstSenderLabel(): Promise<string> {
+      try {
+        const items = senders || (await fetchSenders());
+        const first = items[0];
+        return first ? `${first.name}（${first.code}）` : '未配置';
+      } catch {
+        return '未配置（发送人列表读取失败）';
+      }
+    },
+  };
+}
+
 const LIVE_HXC_COLUMNS: Array<{ key: string; title: string }> = [
   { key: 'user_ref', title: 'HXC 用户' },
   { key: 'match_state', title: 'CRM 匹配状态' },
@@ -715,7 +942,7 @@ const LIVE_HXC_COLUMNS: Array<{ key: string; title: string }> = [
   { key: 'source_updated_at', title: '源数据更新' },
 ];
 
-function renderLiveHXCCurrent(root: HTMLElement, rows: FunnelGridRow[]): void {
+function renderLiveHXCCurrent(root: HTMLElement, rows: FunnelGridRow[], api: AdminApi): void {
   const meta = rows[0] || {};
   const total = Number(meta.__total || rows.length);
   const matched = Number(meta.__matched || 0);
@@ -727,7 +954,7 @@ function renderLiveHXCCurrent(root: HTMLElement, rows: FunnelGridRow[]): void {
     <div class="crumb">客户管理后台 / 运营 / <b>漏斗 / 数据看板</b></div>
     <div class="page-head">
       <div><div class="page-title">黄小璨用户当前态</div><div class="page-desc">只读展示 CRM 已同步快照；不直连源库，不触发群发或外部调用</div></div>
-      <button class="btn primary" id="btnRefreshHxc">刷新列表</button>
+      <div style="display:flex;gap:8px"><button class="btn" id="btnSenders">发送人管理</button><button class="btn primary" id="btnRefreshHxc">刷新列表</button></div>
     </div>
     <div class="stats">
       <div class="card stat"><div class="stat-l">当前态总数</div><div class="stat-v">${total.toLocaleString()}</div><div class="stat-s">本页展示最近 ${rows.length} 条</div></div>
@@ -740,6 +967,8 @@ function renderLiveHXCCurrent(root: HTMLElement, rows: FunnelGridRow[]): void {
       <div class="grid-scroll"><table class="grid"><thead><tr>${LIVE_HXC_COLUMNS.map((column) => `<th>${esc(column.title)}</th>`).join('')}</tr></thead><tbody id="hxcRows">${body || `<tr><td colspan="${LIVE_HXC_COLUMNS.length}">当前快照没有数据</td></tr>`}</tbody></table></div>
     </div>`;
   if (typeof root.querySelector !== 'function') return;
+  const sendersManager = setupHxcSenders(root, api);
+  root.querySelector('#btnSenders')?.addEventListener('click', () => sendersManager.open());
   root.querySelector('#btnRefreshHxc')?.addEventListener('click', () => { void location.reload(); });
   root.querySelector('#hxcSearch')?.addEventListener('input', (event) => {
     const keyword = (event.target as HTMLInputElement).value.trim().toLowerCase();

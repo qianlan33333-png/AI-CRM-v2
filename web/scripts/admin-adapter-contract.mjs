@@ -24,6 +24,23 @@ try {
   await (await import(pathToFileURL(path.join(outdir, 'contactHistory.test.js')).href)).runContactHistoryAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'wecomAcquisitionLinks.test.js')).href)).runWeComAcquisitionLinksAdapterTests();
   await (await import(pathToFileURL(path.join(outdir, 'orvalBlobFetch.test.js')).href)).runOrvalBlobFetchTests();
+  await build({ entryPoints: { imageContract: path.join(root, 'src/api/admin.ts') }, bundle: true, platform: 'node', format: 'esm', outdir, logLevel: 'warning' });
+  const { imagePageDto } = await import(pathToFileURL(path.join(outdir, 'imageContract.js')).href);
+  const image = imagePageDto({ id: 7, original_url: '/api/admin/image-library/7/variants/original', thumb_320_url: '/api/admin/image-library/7/variants/thumb_320' });
+  if (image.resourceId !== '7' || image.originalUrl !== '/api/admin/image-library/7/variants/original' || image.thumbnailUrl !== '/api/admin/image-library/7/variants/thumb_320') throw new Error('image adapter did not preserve validated original and thumbnail URLs');
+  let mismatchedImageRejected = false;
+  try {
+    imagePageDto({ id: 7, original_url: '/api/admin/image-library/7/variants/original', thumb_320_url: '/api/admin/image-library/8/variants/thumb_320' });
+  } catch (error) {
+    mismatchedImageRejected = error instanceof Error && error.name === 'ImageMappingError' && error.message === 'imagePageDto: thumb_320_url must exactly match /api/admin/image-library/7/variants/thumb_320';
+  }
+  if (!mismatchedImageRejected) throw new Error('image adapter accepted mismatched image URLs');
+  const pickerSource = fs.readFileSync(path.join(root, 'src/shared/ui/picker.ts'), 'utf8');
+  if (!pickerSource.includes("c.status === 'active'")) throw new Error('channel picker does not require the raw active status');
+  if (!pickerSource.includes('Number.isSafeInteger(c.resourceId)') || !pickerSource.includes('c.resourceId > 0')) throw new Error('channel picker does not validate a positive numeric resourceId');
+  if (!pickerSource.includes('id: String(c.resourceId)')) throw new Error('channel picker does not use resourceId as the selected ID');
+  if (pickerSource.includes("c.status === '启用'") || pickerSource.includes('id: c.code')) throw new Error('channel picker retained legacy status/code selection');
+  if (!pickerSource.includes('url: m.originalUrl') || !pickerSource.includes('id: String(m.resourceId)')) throw new Error('image picker does not return resourceId and validated originalUrl');
   const { ownerReassignmentCsvFromFile } = await import(pathToFileURL(path.join(outdir, 'ownerReassignmentFile.js')).href);
   const fixture = (name) => {
     const xlsx = new Blob([fs.readFileSync(path.join(root, 'src/admin/fixtures', name))], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

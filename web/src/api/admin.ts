@@ -253,7 +253,23 @@ import {
   updateGroupOpsPlanNode,
 } from "./generated/p4-group-ops/p4-group-ops";
 import { listAIAudienceOperationMembers } from "./generated/p4-ai-audience/p4-ai-audience";
-import { type GroupOpsNodeRequest } from "./generated/health.schemas";
+import {
+  archiveLegacyAutomationAgent,
+  copyLegacyAutomationAgent,
+  createLegacyAutomationAgent,
+  getLegacyAutomationAgent,
+  listLegacyAutomationAgents,
+  pauseLegacyAutomationAgent,
+  precheckLegacyAutomationAgent,
+  updateLegacyAutomationAgent,
+} from "./generated/p4-automation-agents/p4-automation-agents";
+import {
+  type GroupOpsNodeRequest,
+  type LegacyAutomationAgentCreateRequest,
+  type LegacyAutomationAgentDetail,
+  type LegacyAutomationAgentListItem,
+  type LegacyAutomationAgentUpdateRequest,
+} from "./generated/health.schemas";
 import {
   deleteCloudCampaign,
   getCloudCampaign,
@@ -309,7 +325,7 @@ import {
 } from "./generated/health.schemas";
 import { getCreateLegacyWechatOrderExportUrl } from "./generated/p4-order-compat/p4-order-compat";
 import { type LegacyWechatOrderExportRequest } from "./generated/health.schemas";
-import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, FunnelGridRow, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, ProductAdminProjection, ProductExternalPush, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import type { AdminDb, Agent, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, FunnelGridRow, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, ProductAdminProjection, ProductExternalPush, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -886,9 +902,12 @@ export function customerSurveyPageDto(value: unknown, expectedCustomerId: number
 export function questionnairePageDto(questionnaire: LegacyQuestionnaire): Questionnaire { return { resourceId: questionnaire.id, publicPath: questionnaire.public_path, name: questionnaire.title, assess: questionnaire.assessment_enabled, off: questionnaire.is_disabled, action: questionnaire.status, created: questionnaire.created_at, count: String(questionnaire.submission_count), internalName: questionnaire.name, title: questionnaire.title, description: questionnaire.description, answerDisplayMode: questionnaire.answer_display_mode, assessmentEnabled: questionnaire.assessment_enabled, assessmentConfig: questionnaire.assessment_config, slug: questionnaire.slug, questions: questionnaire.questions, scoreRules: questionnaire.score_rules, version: questionnaire.version }; }
 export function channelPageDto(channel: LegacyChannelListItem | LegacyChannel): Channel {
   const x = obj(channel);
+  const statusMap: Record<string, string> = { active: '启用', inactive: '停用', archived: '归档' };
+  const matCount = list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').length;
+  const entryTag = text(x.entry_tag_name, '');
   return {
-    resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: text(x.channel_type, 'qrcode'), status: text(x.status), tone: toneFor(x.status),
-    mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'),
+    resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: x.channel_type === 'wecom_customer_acquisition' ? '获客链接' : '普通二维码', status: text(x.status), statusLabel: statusMap[text(x.status)] || text(x.status), tone: toneFor(x.status),
+    mat: `${matCount} 素材`, tag: entryTag || '无标签', tagTone: entryTag ? 'ok' : 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'),
     channelType: x.channel_type === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode', carrierType: x.carrier_type === 'link' ? 'link' : 'qrcode', sceneValue: text(x.scene_value, ''), qrUrl: text(x.qr_url, ''), ownerStaffId: text(x.owner_staff_id, ''), customerChannel: text(x.customer_channel, ''), linkUrl: text(x.link_url, ''), finalUrl: text(x.final_url, ''), shareUrl: text(x.share_url, ''), copyText: text(x.copy_text, ''),
     welcomeMessage: text(x.welcome_message, ''), welcomeImageLibraryIds: list(x, 'welcome_image_library_ids').map(Number), welcomeMiniprogramLibraryIds: list(x, 'welcome_miniprogram_library_ids').map(Number), welcomeAttachmentLibraryIds: list(x, 'welcome_attachment_library_ids').map(Number), welcomeGroupInviteLibraryIds: list(x, 'welcome_group_invite_library_ids').map(Number),
     autoAcceptFriend: x.auto_accept_friend === true, entryTagId: text(x.entry_tag_id, ''), entryTagName: text(x.entry_tag_name, ''), entryTagGroupName: text(x.entry_tag_group_name, ''), assignmentMode: x.assignment_mode === 'multi_staff' ? 'multi_staff' : 'single_owner', assignmentStrategy: x.assignment_strategy === 'cap_switch' ? 'cap_switch' : 'ratio', overflowPolicy: text(x.overflow_policy, ''), assignmentConfig: obj(x.assignment_config_json),
@@ -1146,7 +1165,23 @@ const productExternalPushDto = (value: unknown): ProductExternalPush => { const 
 export const productPageDto = (value: unknown, externalPush?: unknown): Product => { const source = obj(value); const x = obj(source.product || value); const lifecycle = text(x.lifecycle, text(x.status, x.enabled === true ? 'enabled' : x.enabled === false ? 'disabled' : '未投影')); return { resourceId: Number(x.id), code: text(x.product_code), name: text(x.name), price: (Number(x.price_minor || 0) / 100).toFixed(2), description: text(x.description, ''), currency: text(x.currency, 'CNY'), stockQuantity: Number(x.stock_quantity || 0), images: list(x, 'images').map(String), adminProjection: productAdminProjectionDto(x.admin_projection), externalPush: externalPush == null ? undefined : productExternalPushDto(externalPush), version: Number(x.version || 0), lifecycle, status: lifecycle, tone: toneFor(lifecycle), sold: text(x.sold_count, '0'), updated: text(x.updated_at) }; };
 export const serviceProductPageDto = (value: unknown, externalPush?: unknown): SpProduct => { const source = obj(value); const x = obj(source.product || value); const lifecycle = text(x.lifecycle, text(x.status, x.enabled === true ? 'enabled' : x.enabled === false ? 'disabled' : '未投影')); return { resourceId: Number(x.service_product_id || x.id), code: text(x.product_code), name: text(x.name), price: (Number(x.price_minor || 0) / 100).toFixed(2), description: text(x.description, ''), currency: text(x.currency, 'CNY'), stockQuantity: Number(x.stock_quantity || 0), images: list(x, 'images').map(String), adminProjection: productAdminProjectionDto(x.admin_projection), externalPush: externalPush == null ? undefined : productExternalPushDto(externalPush), version: Number(x.version || 0), lifecycle, status: lifecycle, tone: toneFor(lifecycle), sold: text(x.member_count, '0'), updated: text(x.updated_at) }; };
 export const couponPageDto = (value: unknown): Coupon => { const source = obj(value); const x = obj(source.coupon || value); const availabilityStatus = text(x.availability_status, text(x.status)); return { resourceId: Number(x.id), name: text(x.name), code: 'c-' + text(x.id), discountAmountTotal: Number(x.discount_amount_total || 0), totalIssueLimit: Number(x.total_issue_limit || 0), perUserIssueLimit: Number(x.per_user_issue_limit || 1), claimStartsAt: text(x.claim_starts_at, ''), claimEndsAt: text(x.claim_ends_at, ''), validityMode: x.validity_mode === 'fixed_range' ? 'fixed_range' : 'relative_days', useStartsAt: typeof x.use_starts_at === 'string' ? x.use_starts_at : null, useEndsAt: typeof x.use_ends_at === 'string' ? x.use_ends_at : null, relativeValidityDays: x.relative_validity_days == null ? null : Number(x.relative_validity_days), instructions: text(x.instructions, ''), targetRefs: list(x, 'target_refs').map(String), version: Number(x.version || 0), off: `¥${(Number(x.discount_amount_total || 0) / 100).toFixed(2)}`, scope: list(x, 'target_refs').join('、') || '—', window: `${text(x.claim_starts_at)} 至 ${text(x.claim_ends_at)}`, issue: `${text(x.issued_count, '0')} / ${text(x.total_issue_limit, '0')}`, availabilityStatus, status: text(x.status), tone: toneFor(availabilityStatus) }; };
-export const imagePageDto = (value: unknown): ImageItem => { const x = obj(value); return { resourceId: text(x.id, ''), name: text(x.name, text(x.file_name, text(x.filename))), size: text(x.file_size, text(x.size)), tag: text(x.category), tone: toneFor(x.status), bg: '#EFF4FF', desc: text(x.description, ''), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), enabled: x.enabled !== false, uploadedAt: text(x.created_at) }; };
+const imageMappingError = (field: string, detail: string): Error => {
+  const error = new Error(`imagePageDto: ${field} ${detail}`);
+  error.name = 'ImageMappingError';
+  return error;
+};
+const imageResourceId = (source: Record<string, unknown>): string => {
+  const id = source.id;
+  if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0) throw imageMappingError('id', 'must be a positive safe integer');
+  return String(id);
+};
+const imageVariantUrl = (source: Record<string, unknown>, field: 'original_url' | 'thumb_320_url', id: string): string => {
+  const expected = `/api/admin/image-library/${id}/variants/${field === 'original_url' ? 'original' : 'thumb_320'}`;
+  const value = source[field];
+  if (typeof value !== 'string' || value !== expected) throw imageMappingError(field, `must exactly match ${expected}`);
+  return value;
+};
+export const imagePageDto = (value: unknown): ImageItem => { const x = obj(value); const resourceId = imageResourceId(x); return { resourceId, name: text(x.name, text(x.file_name, text(x.filename))), size: text(x.file_size, text(x.size)), tag: text(x.category), tone: toneFor(x.status), bg: '#EFF4FF', desc: text(x.description, ''), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), enabled: x.enabled !== false, uploadedAt: text(x.created_at), originalUrl: imageVariantUrl(x, 'original_url', resourceId), thumbnailUrl: imageVariantUrl(x, 'thumb_320_url', resourceId) }; };
 export const miniProgramPageDto = (value: unknown): MpItem => { const x = obj(value); return { resourceId: Number(x.id), name: text(x.name), appid: text(x.appid, text(x.app_id)), pagepath: text(x.pagepath, text(x.page_path)), cardTitle: text(x.title), thumbStatus: text(x.thumbnail_status), thumbOk: x.thumbnail_status === 'ready', enabled: x.enabled !== false, bg: '#EFF4FF' }; };
 export const attachmentPageDto = (value: unknown): AttachItem => { const x = obj(value); return { resourceId: text(x.id, ''), name: text(x.name, text(x.file_name, text(x.filename))), type: text(x.mime_type, text(x.content_type)), size: text(x.file_size, text(x.size)), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), uploadedAt: text(x.created_at), enabled: x.enabled !== false }; };
 export const tagGroupPageDto = (value: unknown): TagGroup => { const x = obj(value); return { id: Number(x.id), name: text(x.name) }; };
@@ -1154,6 +1189,150 @@ export const tagPageDto = (value: unknown): WecomTag => { const x = obj(value); 
 export const radarPageDto = (link: ApiRadarLink): AdminDb['radarLinks'][number] => ({ id: link.link_id, title: link.title, target_type: link.attachment_id ? 'pdf' : link.cover_image_id ? 'image' : 'link', original_url: link.destination_url, file_name_snapshot: '', media_item_id: String(link.attachment_id || link.cover_image_id || ''), enabled: link.status === 'enabled', auth_required: true, staff_id: String(link.created_by), code: link.public_code, total_landings: 0, authorized_users: 0, view_count: 0, last_viewed_at: link.updated_at });
 export const questionnaireOpsPageDto = (value: unknown): QuestionnaireOps => { const source = obj(value); const completion = obj(source.completion); const external = obj(source.external_push); const enabled = external.enabled === true; return { completionNavigationTargetId: text(completion.navigation_target_id, ''), completionChannelId: completion.channel_id == null ? '' : String(completion.channel_id), externalPushConfigurationReference: text(external.configuration_reference, ''), localOnly: source.local_only !== false, postEnabled: Boolean(completion.navigation_target_id || completion.channel_id), postType: completion.channel_id == null ? 'redirect' : 'channel_qr', channelId: completion.channel_id == null ? '' : String(completion.channel_id), qrTitle: '', qrSubtitle: '', redirectType: 'h5', redirectUrl: '', pushEnabled: enabled, webhookUrl: '', subscribeType: '', expiresAt: '', serviceCycle: '', frequency: '', remark: '', customParams: [] }; };
 export const hxcSenderPageDto = (item: LegacyHXCSenderConfig): AdminDb['rows']['agents'][number] => ({ senderId: item.id, priority: item.priority, isActive: item.is_active, name: item.display_name || item.sender_userid, code: item.sender_userid, type: 'HXC 本地发送人', material: `优先级 ${item.priority}`, status: item.is_active ? '启用中' : '已停用', tone: item.is_active ? 'ok' : 'gray' });
+export function automationAgentPageDto(item: LegacyAutomationAgentListItem | LegacyAutomationAgentDetail): Agent {
+  const source = obj(item);
+  const fixed = obj(source.fixed_material_summary);
+  const typeLabel = source.automation_type === 'fixed_script' ? '固定话术' : 'Agent 机器人';
+  const material = `图文 ${Number(fixed.image_count || 0)} · 小程序 ${Number(fixed.miniprogram_count || 0)} · 附件 ${Number(fixed.attachment_count || 0)} · 群邀请 ${Number(fixed.group_invite_count || 0)}`;
+  const detail = 'draft_role_prompt' in source ? source as unknown as LegacyAutomationAgentDetail : null;
+  const fixedPackage = detail ? obj(detail.fixed_content_package) : null;
+  const fourIds = (ids: unknown): number[] => (Array.isArray(ids) ? ids.map(Number) : []);
+  return {
+    id: Number(source.id),
+    name: text(source.agent_name),
+    code: text(source.agent_code),
+    type: typeLabel,
+    material,
+    status: source.status === 'paused' ? '已暂停' : '启用中',
+    tone: source.status === 'paused' ? 'gray' : 'ok',
+    ...(source.bound_package_id == null ? {} : { boundPackageId: Number(source.bound_package_id) }),
+    ...(source.bound_package_name ? { boundPackageName: String(source.bound_package_name) } : {}),
+    ...(detail ? {
+      rolePrompt: text(detail.draft_role_prompt, ''),
+      taskPrompt: text(detail.draft_task_prompt, ''),
+      fixedContentText: text(fixedPackage?.content_text, ''),
+      imageLibraryIds: fourIds(fixedPackage?.image_library_ids),
+      miniProgramLibraryIds: fourIds(fixedPackage?.miniprogram_library_ids),
+      attachmentLibraryIds: fourIds(fixedPackage?.attachment_library_ids),
+      groupInviteLibraryIds: fourIds(fixedPackage?.group_invite_library_ids),
+      legacyConfiguration: obj(detail.legacy_configuration),
+    } : {}),
+  };
+}
+
+export type AutomationAgentWriteInput = {
+  id?: number;
+  name: string;
+  code?: string;
+  automationType: 'agent' | 'fixed_script';
+  rolePrompt: string;
+  taskPrompt: string;
+};
+
+export type AutomationAgentPrecheck = {
+  agentId: number;
+  configurationReady: boolean;
+  materialsConfigured: boolean;
+  executionEnabled: boolean;
+  canActivate: boolean;
+  reasons: string[];
+  realExternalCallExecuted: false;
+};
+
+const requireAutomationAgentId = (value: unknown): number => {
+  const agentId = Number(value);
+  if (!Number.isSafeInteger(agentId) || agentId < 1) throw new Error('Automation agent ID 无效');
+  return agentId;
+};
+
+const automationAgentMutationOptions = (scope: string): RequestInit => apiRequestOptions({
+  headers: { 'Idempotency-Key': `${scope}-${globalThis.crypto?.randomUUID?.() || Date.now()}` },
+});
+
+const automationAgentDto = (value: unknown): Agent => {
+  const agent = automationAgentPageDto(value as LegacyAutomationAgentListItem | LegacyAutomationAgentDetail);
+  requireAutomationAgentId(agent.id);
+  return agent;
+};
+
+const automationAgentResponseDto = (value: unknown): Agent => automationAgentDto(obj(value).agent);
+
+const requireAutomationAgentWriteInput = (input: AutomationAgentWriteInput): void => {
+  if (!input.name.trim()) throw new Error('Automation agent 名称不能为空');
+  if (input.automationType !== 'agent' && input.automationType !== 'fixed_script') throw new Error('Automation agent 类型无效');
+  if (typeof input.rolePrompt !== 'string' || typeof input.taskPrompt !== 'string') throw new Error('Automation agent Prompt 必须是字符串');
+};
+
+export async function saveAutomationAgentDto(input: AutomationAgentWriteInput): Promise<Agent> {
+  requireAutomationAgentWriteInput(input);
+  if (input.id == null) {
+    const code = input.code?.trim();
+    if (!code) throw new Error('新建 Automation agent 必须提供 code');
+    const body: LegacyAutomationAgentCreateRequest = {
+      agent_name: input.name.trim(),
+      agent_code: code,
+      automation_type: input.automationType,
+      role_prompt: input.rolePrompt,
+      task_prompt: input.taskPrompt,
+    };
+    return automationAgentResponseDto(await call(createLegacyAutomationAgent(body, automationAgentMutationOptions('automation-agent-create'))));
+  }
+  const agentId = requireAutomationAgentId(input.id);
+  const body: LegacyAutomationAgentUpdateRequest = {
+    agent_name: input.name.trim(),
+    automation_type: input.automationType,
+    role_prompt: input.rolePrompt,
+    task_prompt: input.taskPrompt,
+  };
+  const agent = automationAgentResponseDto(await call(updateLegacyAutomationAgent(agentId, body, automationAgentMutationOptions('automation-agent-update'))));
+  if (agent.id !== agentId) throw new Error('Automation agent 更新响应范围不匹配');
+  return agent;
+}
+
+export async function copyAutomationAgentDto(agentId: number): Promise<Agent> {
+  const id = requireAutomationAgentId(agentId);
+  return automationAgentResponseDto(await call(copyLegacyAutomationAgent(id, automationAgentMutationOptions('automation-agent-copy'))));
+}
+
+export async function pauseAutomationAgentDto(agentId: number): Promise<Agent> {
+  const id = requireAutomationAgentId(agentId);
+  const result = obj(await call(pauseLegacyAutomationAgent(id, automationAgentMutationOptions('automation-agent-pause'))));
+  const source = obj(result.agent);
+  const agent = automationAgentDto(source);
+  if (agent.id !== id || source.status !== 'paused') throw new Error('Automation agent 暂停响应状态或范围不匹配');
+  return agent;
+}
+
+export async function archiveAutomationAgentDto(agentId: number): Promise<void> {
+  const id = requireAutomationAgentId(agentId);
+  const result = obj(await call(archiveLegacyAutomationAgent(id, automationAgentMutationOptions('automation-agent-archive'))));
+  const source = obj(result.agent);
+  if (requireAutomationAgentId(source.id) !== id || source.status !== 'archived') throw new Error('Automation agent 归档响应状态或范围不匹配');
+}
+
+export async function precheckAutomationAgentDto(agentId: number): Promise<AutomationAgentPrecheck> {
+  const id = requireAutomationAgentId(agentId);
+  const source = obj(await call(precheckLegacyAutomationAgent(id, apiRequestOptions())));
+  const reasons = source.reasons;
+  if (requireAutomationAgentId(source.agent_id) !== id
+    || typeof source.configuration_ready !== 'boolean'
+    || typeof source.materials_configured !== 'boolean'
+    || typeof source.execution_enabled !== 'boolean'
+    || typeof source.can_activate !== 'boolean'
+    || !Array.isArray(reasons)
+    || reasons.some((reason) => typeof reason !== 'string')
+    || source.real_external_call_executed !== false) throw new Error('Automation agent precheck 响应不完整或越过本地边界');
+  return {
+    agentId: id,
+    configurationReady: source.configuration_ready,
+    materialsConfigured: source.materials_configured,
+    executionEnabled: source.execution_enabled,
+    canActivate: source.can_activate,
+    reasons: reasons as string[],
+    realExternalCallExecuted: false,
+  };
+}
+
 export const audienceGroupPageDto = (value: unknown): AdminDb['audienceGroups'][number] => ({ id: Number(obj(value).group_id), name: text(obj(value).name) });
 export const audiencePackagePageDto = (value: unknown): AdminDb['audiencePackages'][number] => { const x = obj(value); const packageVersion = Number(x.version || 0); return { id: Number(x.package_id), name: text(x.name), groupId: Number(x.group_id || 0), count: Number(x.member_count || 0), lastRefresh: text(x.refreshed_at), refreshMode: text(x.refresh_mode), running: x.lifecycle === 'active', version: 'v' + text(x.version), packageVersion, refreshCron: typeof x.refresh_cron === 'string' ? x.refresh_cron : null, definition: x.definition ? JSON.stringify(x.definition, null, 2) : '', incremental: x.refresh_mode === 'scheduled' ? 'scheduled' : 'manual', daily: text(x.refresh_cron, ''), boundAutomation: '' }; };
 export const groupOpsPlanDto = (value: unknown): AdminDb['groupOpsPlans'][number] => { const x = obj(value); const queueCount = Number(x.queue_count || 0); if (!Number.isSafeInteger(queueCount) || queueCount < 0) throw new Error('Group Ops queue_count 无效'); return { id: text(x.plan_id), name: text(x.name), status: ['active', 'paused', 'archived'].includes(text(x.status)) ? text(x.status) as 'active' | 'paused' | 'archived' : 'draft', revision: Number(x.revision), queueCount, updatedAt: text(x.updated_at) }; };
@@ -1425,6 +1604,15 @@ export async function listCouponClaimsDto(couponId: number, input: { limit?: num
   const page = obj(await call(listLegacyCouponClaims(couponId, { limit: input.limit, offset: input.offset }, apiRequestOptions())));
   if (page.ok !== true) throw new Error('优惠券领取记录响应不完整');
   return { items: list(page, 'items').map((item) => { const source = obj(item); return { claimRef: requiredString(source.claim_ref, 'claim_ref'), status: requiredString(source.status, 'status'), claimedAt: requiredString(source.claimed_at, 'claimed_at') }; }), total: requiredNonNegative(page.total, 'total'), limit: requiredPositiveValue(page.limit, 'limit'), offset: requiredNonNegative(page.offset, 'offset') };
+}
+/** 优惠券数据页领取明细分页：字段与 readAdminPage 的 couponData 映射保持一致，缺省字段不伪造。 */
+export type CouponClaimRowsPage = { items: AdminDb['couponClaims'][number][number][]; total: number; limit: number; offset: number };
+export async function listCouponClaimRowsDto(couponId: number, input: { limit?: number; offset?: number } = {}): Promise<CouponClaimRowsPage> {
+  if (!Number.isSafeInteger(couponId) || couponId < 1) throw new Error('优惠券 ID 无效');
+  const page = obj(await call(listLegacyCouponClaims(couponId, { limit: input.limit, offset: input.offset }, apiRequestOptions())));
+  if (page.ok !== true) throw new Error('优惠券领取记录响应不完整');
+  const items = list(page, 'items', 'claims').map((x) => ({ user: text(obj(x).customer_name), status: text(obj(x).status), tone: toneFor(obj(x).status), claimedAt: text(obj(x).claimed_at), validWindow: text(obj(x).valid_window), product: text(obj(x).product_name), orderNo: text(obj(x).order_no), usedAt: text(obj(x).used_at) }));
+  return { items, total: requiredNonNegative(page.total, 'total'), limit: requiredPositiveValue(page.limit, 'limit'), offset: requiredNonNegative(page.offset, 'offset') };
 }
 export async function getServicePeriodMemberGridMetaDto(productId: number): Promise<ServicePeriodMemberGridMeta> {
   const options = apiRequestOptions();
@@ -1774,7 +1962,7 @@ export async function saveTagDto(input: { id?: number; groupId: number; name: st
 export async function archiveTagDto(tagId: number): Promise<void> { await call(archiveLegacyWecomTag(tagId, writeMeta(), apiRequestOptions())); }
 export async function queueTagSyncDto(): Promise<unknown> { return call(queueLegacyWecomTagSync(writeMeta(), apiRequestOptions())); }
 
-export function emptyAdminDb(): AdminDb { return { radarLinks: [], radarEvents: [], aiPlans: [], aiRcs: {}, funnelRows: [], funnelViews: [], audienceGroups: [], audiencePackages: [], audienceMembers: {}, audienceSenders: {}, audienceRecords: {}, groupOpsPlans: [], groupOpsDetail: null, cycleTasks: [], cycleRuns: {}, qOps: {}, tagGroups: [], wecomTags: [], couponClaims: {}, configCategories: [], staff: [], groupChats: [], customerList: { total: 0, totalIsEstimate: false, nextCursor: null }, customerDetail: { status: 'not_found', context: null, survey: null, error: '' }, rows: { customers: [], tags: [], qa: [], msgs: [], qStats: [], questionnaires: [], qSubs: [], qApply: [], edTools: [], edQs: [], edAssignees: [], chStats: [], channels: [], orders: [], orderKv: [], orderEvents: [], spProducts: [], products: [], coupons: [], images: [], mpItems: [], attachItems: [], agents: [], agentSlots: [], agentDeps: [] } }; }
+export function emptyAdminDb(): AdminDb { return { radarLinks: [], radarEvents: [], aiPlans: [], aiRcs: {}, funnelRows: [], funnelViews: [], audienceGroups: [], audiencePackages: [], audienceMembers: {}, audienceSenders: {}, audienceRecords: {}, groupOpsPlans: [], groupOpsDetail: null, cycleTasks: [], cycleRuns: {}, qOps: {}, tagGroups: [], wecomTags: [], couponClaims: {}, configCategories: [], staff: [], groupChats: [], customerList: { total: 0, totalIsEstimate: false, nextCursor: null }, orderList: { total: 0, hasMore: false }, customerDetail: { status: 'not_found', context: null, survey: null, error: '' }, hxcSenders: [], rows: { customers: [], tags: [], qa: [], msgs: [], qStats: [], questionnaires: [], qSubs: [], qApply: [], edTools: [], edQs: [], edAssignees: [], chStats: [], channels: [], orders: [], orderKv: [], orderEvents: [], spProducts: [], products: [], coupons: [], images: [], mpItems: [], attachItems: [], agents: [], agentSlots: [], agentDeps: [] } }; }
 export interface CustomerListQuery {
   cursor?: string;
   keyword?: string;
@@ -1793,8 +1981,18 @@ export interface MiniProgramListPage {
   offset: number;
   q: string;
 }
+export interface OrderListQuery {
+  offset?: number;
+  limit?: number;
+  transactionId?: string;
+  payer?: string;
+  product?: string;
+  status?: string;
+  createdFrom?: string;
+  createdTo?: string;
+}
 export type AdminDbWithMiniProgramList = AdminDb & { miniProgramList?: MiniProgramListPage };
-export interface AdminReadContext { page?: string; id?: string; customerList?: CustomerListQuery; miniProgramList?: MiniProgramListQuery }
+export interface AdminReadContext { page?: string; id?: string; customerList?: CustomerListQuery; miniProgramList?: MiniProgramListQuery; orderList?: OrderListQuery }
 
 const miniProgramListParams = (query?: MiniProgramListQuery): { limit: number; offset: number; enabled_only: false; q?: string } | undefined => {
   if (!query) return undefined;
@@ -1814,11 +2012,19 @@ const miniProgramListPage = (value: unknown, query: MiniProgramListQuery): MiniP
 };
 
 /** Shared lists are loaded from current operations only. A rejected request reaches the page error state. */
-export async function readAdminRows(page?: string, customerList?: CustomerListQuery, miniProgramList?: MiniProgramListQuery): Promise<AdminDbWithMiniProgramList> {
+export async function readAdminRows(page?: string, customerList?: CustomerListQuery, miniProgramList?: MiniProgramListQuery, orderList?: OrderListQuery): Promise<AdminDbWithMiniProgramList> {
   const opt = apiRequestOptions();
   const needs = (...screens: string[]) => !page || screens.includes(page);
   const skip = Promise.resolve({});
   const miniProgramParams = miniProgramListParams(miniProgramList);
+  // 仅语义等价的字段下发服务端：状态与时间窗；单号/付款人/商品为本地当前页筛选（OpenAPI 无跨字段模糊检索）。
+  const orderParams = {
+    limit: orderList?.limit ?? 50,
+    offset: orderList?.offset ?? 0,
+    ...(orderList?.status ? { payment_status: orderList.status } : {}),
+    ...(orderList?.createdFrom ? { created_from: orderList.createdFrom } : {}),
+    ...(orderList?.createdTo ? { created_to: orderList.createdTo } : {}),
+  };
   const customerParams = {
     limit: 50,
     ...(customerList?.cursor ? { cursor: customerList.cursor } : {}),
@@ -1831,33 +2037,35 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     needs('customers') ? call(listCustomers(customerParams, opt)) : skip,
     needs('questionnaires', 'questionnaireDetail', 'questionnaireOps') ? call(listLegacyQuestionnaires({ limit: 50, offset: 0 }, opt)) : skip,
     needs('channels', 'channelForm', 'questionnaireOps', 'productForm', 'spProductForm') ? call(listLegacyChannels({ limit: 50, include_archived: true }, opt)) : skip,
-    needs('orders', 'orderDetail') ? call(listLegacyOrders(undefined, opt)) : skip,
+    needs('orders', 'orderDetail') ? call(listLegacyOrders(orderParams, opt)) : skip,
     needs('products', 'productForm') ? call(listProducts(undefined, opt)) : skip,
     needs('spProducts', 'spProductForm', 'spProductData') ? call(listServicePeriodProducts(undefined, opt)) : skip,
     needs('coupons', 'couponForm', 'couponData') ? call(listLegacyCoupons(undefined, opt)) : skip,
-    needs('images') ? call(getLegacyImageList(undefined, opt)) : skip,
+    needs('images', 'productForm', 'spProductForm') ? call(getLegacyImageList(undefined, opt)) : skip,
     needs('attach') ? call(listLegacyAttachments(undefined, opt)) : skip,
     needs('mpLib') ? call(listLegacyMiniPrograms(miniProgramParams, opt)) : skip,
-    needs('tags', 'channelForm') ? call(listLegacyWecomTagGroups(opt)) : skip,
-    needs('tags', 'channelForm') ? call(listLegacyWecomTags(opt)) : skip,
+    needs('tags', 'channelForm', 'productForm', 'spProductForm') ? call(listLegacyWecomTagGroups(opt)) : skip,
+    needs('tags', 'channelForm', 'productForm', 'spProductForm') ? call(listLegacyWecomTags(opt)) : skip,
     needs('radar', 'radarDetail', 'radarForm') ? call(listRadarLinks(undefined, opt)) : skip,
     needs('automation', 'audienceEdit') ? call(listAIAudiencePackageGroups(opt)) : skip,
     needs('automation', 'audienceEdit') ? call(listAIAudiencePackages(undefined, opt)) : skip,
     needs('groupops', 'groupopsDetail') ? call(listGroupOpsPlans({ limit: 100, offset: 0 }, opt)) : skip,
     needs('groupops', 'groupopsDetail') ? call(listAIAudienceOperationMembers({ scope: 'group_ops', page_size: 100 }, opt)) : skip,
     needs('config', 'configDetail') ? call(listAdminOpsCategories(opt)) : skip,
-    needs('agents', 'agentEdit') ? call(getLegacyHXCSendConfig(opt)) : skip,
+    needs('agents', 'agentEdit', 'audienceEdit') ? call(listLegacyAutomationAgents(opt)) : skip,
     needs('config', 'configDetail') ? call(getLegacyAppSettingsResource(undefined, opt)) : skip,
     needs('config', 'configDetail') ? call(getAdminOpsPushCapabilities(opt)) : skip,
     needs('config', 'configDetail') ? call(listAdminOpsReleases(opt)) : skip,
   ]);
-  const [customers, questionnaires, channels, orders, products, spProducts, coupons, images, attachments, minis, tagGroups, tags, radar, audienceGroups, audiencePackages, groupOps, groupOpsMembers, config, hxc, appSettings, pushCapabilities, releases] = responses; const db = emptyAdminDb();
-  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); const customerSource = obj(customers); db.customerList = { total: typeof customerSource.total === 'number' ? customerSource.total : db.rows.customers.length, totalIsEstimate: customerSource.total_is_estimate === true, nextCursor: typeof customerSource.next_cursor === 'string' ? customerSource.next_cursor : null }; db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map((x) => productPageDto(x)); db.rows.spProducts = list(spProducts, 'items').map((x) => serviceProductPageDto(x)); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); if (miniProgramList) Object.assign(db, { miniProgramList: miniProgramListPage(minis, miniProgramList) }); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.groupOpsPlans = list(groupOps, 'items').map(groupOpsPlanDto); if (needs('groupops', 'groupopsDetail')) db.staff = groupOpsOperationMembersDto(groupOpsMembers); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); if (obj(appSettings).config) db.configCategories.push(appSettingsPageDto(appSettings)); if (obj(pushCapabilities).capabilities) db.configCategories.push(readOnlyConfigPageDto('push-capabilities', pushCapabilities)); if (Array.isArray(obj(releases).releases)) db.configCategories.push(readOnlyConfigPageDto('releases', releases)); db.rows.agents = list(hxc, 'send_configs').map((x) => hxcSenderPageDto(x as LegacyHXCSenderConfig)); return db;
+  const [customers, questionnaires, channels, orders, products, spProducts, coupons, images, attachments, minis, tagGroups, tags, radar, audienceGroups, audiencePackages, groupOps, groupOpsMembers, config, agents, appSettings, pushCapabilities, releases] = responses; const db = emptyAdminDb();
+  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); const customerSource = obj(customers); db.customerList = { total: typeof customerSource.total === 'number' ? customerSource.total : db.rows.customers.length, totalIsEstimate: customerSource.total_is_estimate === true, nextCursor: typeof customerSource.next_cursor === 'string' ? customerSource.next_cursor : null }; db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); const orderSource = obj(orders); db.orderList = { total: typeof orderSource.total === 'number' ? orderSource.total : db.rows.orders.length, hasMore: orderSource.has_more === true }; db.rows.products = list(products, 'items').map((x) => productPageDto(x)); db.rows.spProducts = list(spProducts, 'items').map((x) => serviceProductPageDto(x)); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); if (miniProgramList) Object.assign(db, { miniProgramList: miniProgramListPage(minis, miniProgramList) }); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.groupOpsPlans = list(groupOps, 'items').map(groupOpsPlanDto); if (needs('groupops', 'groupopsDetail')) db.staff = groupOpsOperationMembersDto(groupOpsMembers); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); if (obj(appSettings).config) db.configCategories.push(appSettingsPageDto(appSettings)); if (obj(pushCapabilities).capabilities) db.configCategories.push(readOnlyConfigPageDto('push-capabilities', pushCapabilities)); if (Array.isArray(obj(releases).releases)) db.configCategories.push(readOnlyConfigPageDto('releases', releases));
+  db.rows.agents = list(agents, 'items').map((x) => automationAgentPageDto(x as LegacyAutomationAgentListItem));
+  return db;
 }
 
 /** Detail page reads are deliberately page-scoped and never synthesize demo records. */
 export async function readAdminPage(context: AdminReadContext = {}): Promise<AdminDbWithMiniProgramList> {
-  const db = await readAdminRows(context.page, context.customerList, context.miniProgramList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
+  const db = await readAdminRows(context.page, context.customerList, context.miniProgramList, context.orderList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
   if (context.page === 'customerDetail') {
     if (!id || !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(numeric)) {
       db.customerDetail = { status: 'not_found', context: null, survey: null, error: '客户档案不存在或 OneID 无效' };
@@ -1879,7 +2087,8 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
     }
   }
   if (!id) return db;
-  if (context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map(surveyExternalPushLogDto); void results; void analysis; void pageData; }
+  if (context.page === 'agentEdit' && Number.isSafeInteger(numeric) && numeric >= 1) { const detail = obj(await call(getLegacyAutomationAgent(numeric, opt))); const agent = obj(detail.agent); if (Number(agent.id) !== numeric) throw new Error('Automation agent 详情范围不匹配'); db.rows.agents = [automationAgentPageDto(agent as unknown as LegacyAutomationAgentDetail)]; return db; }
+  if ((context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') && Number.isSafeInteger(numeric) && numeric >= 1) { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map(surveyExternalPushLogDto); void results; void analysis; void pageData; }
   if (context.page === 'channelForm') {
     try {
       const detail = await call(getLegacyChannel(numeric, opt));
@@ -1895,7 +2104,7 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
   if (context.page === 'orderDetail') { const [detail, items, refunds, effects] = await Promise.all([call(getLegacyOrder(id, undefined, opt)), call(getLegacyOrderItems(id, undefined, opt)), call(listLegacyRefunds(undefined, opt)), call(listLegacyWechatOrderExternalEffects(id, opt))]); db.rows.orders = [orderDetailDto(detail)]; db.rows.orderKv = Object.entries(obj(detail)).map(([k, v]) => ({ k, v: text(v), mono: false })); db.rows.orderEvents = [...list(items, 'items').map((x) => ({ time: text(obj(x).created_at), ev: text(obj(x).name), st: text(obj(x).status), tone: toneFor(obj(x).status) })), ...list(refunds, 'items', 'refunds').map((x) => ({ time: text(obj(x).created_at), ev: '退款 ' + text(obj(x).refund_no), st: text(obj(x).status), tone: toneFor(obj(x).status) })), ...list(effects, 'items', 'effects').map((x) => ({ time: text(obj(x).created_at), ev: '外推回执', st: text(obj(x).status), tone: toneFor(obj(x).status) }))]; }
   if (context.page === 'productForm') { const [detail, entitlements, externalPush] = await Promise.all([call(getProduct(numeric, opt)), call(listProductLocalEntitlements(numeric, undefined, opt)), call(getWechatPayProductExternalPush(numeric, opt))]); db.rows.products = [productPageDto(detail, externalPush)]; db.rows.orderKv = list(entitlements, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).status), mono: false })); }
   if (context.page === 'spProductForm') { const [detail, members, access, schema, views, share, externalPush] = await Promise.all([call(getServicePeriodProduct(numeric, opt)), call(listServicePeriodMembers(numeric, undefined, opt)), call(getServicePeriodMemberGridAccess(numeric, opt)), call(getServicePeriodMemberGridSchema(numeric, opt)), call(listServicePeriodMemberViews(numeric, opt)), call(getServicePeriodMemberGridShareSettings(numeric, opt)), call(getServicePeriodProductExternalPush(numeric, opt))]); const shareState = obj(share); db.rows.spProducts = [serviceProductPageDto(detail, externalPush)]; db.rows.orderKv = [...list(members, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).status), mono: false })), { k: 'member-grid', v: text(obj(schema).version), mono: false }, { k: 'views', v: String(list(views, 'items').length), mono: false }, { k: 'share-supported', v: String(shareState.external_share_supported === true), mono: false }, { k: 'share-enabled', v: String(shareState.external_share_enabled === true), mono: false }, { k: 'share-version', v: String(Number(shareState.external_share_version || 0)), mono: false }, { k: 'access', v: text(obj(access).role), mono: false }]; }
-  if (context.page === 'spProductData') { const [detail, grid, access, schema, views, share] = await Promise.all([call(getServicePeriodProduct(numeric, opt)), call(queryServicePeriodMemberGrid(numeric, { state: 'all', limit: 50 }, opt)), call(getServicePeriodMemberGridAccess(numeric, opt)), call(getServicePeriodMemberGridSchema(numeric, opt)), call(listServicePeriodMemberViews(numeric, opt)), call(getServicePeriodMemberGridShareSettings(numeric, opt))]); db.rows.spProducts = [serviceProductPageDto(detail)]; db.rows.orderKv = [...list(grid, 'rows').map((x) => { const row = obj(x); return { k: `${text(row.display_name)} (${text(row.member_ref)})`, v: `${text(row.state)} · ${text(row.source)} · ${text(row.updated_at)}`, mono: false }; }), { k: 'member-grid-columns', v: String(list(obj(schema), 'columns').length), mono: false }, { k: 'views', v: String(list(views, 'views', 'items').length), mono: false }, { k: 'external-share-enabled', v: text(obj(share).external_share_enabled), mono: false }, { k: 'can-query', v: text(obj(access).can_query), mono: false }]; }
+  if (context.page === 'spProductData') { const [detail, grid, access, schema, views, share] = await Promise.all([call(getServicePeriodProduct(numeric, opt)), call(queryServicePeriodMemberGrid(numeric, { state: 'all', sort: 'updated_at_desc', view_id: 'default', limit: 50 } as Parameters<typeof queryServicePeriodMemberGrid>[1], opt)), call(getServicePeriodMemberGridAccess(numeric, opt)), call(getServicePeriodMemberGridSchema(numeric, opt)), call(listServicePeriodMemberViews(numeric, opt)), call(getServicePeriodMemberGridShareSettings(numeric, opt))]); db.rows.spProducts = [serviceProductPageDto(detail)]; db.rows.orderKv = [...list(grid, 'rows').map((x) => { const row = obj(x); return { k: `${text(row.display_name)} (${text(row.member_ref)})`, v: `${text(row.state)} · ${text(row.source)} · ${text(row.updated_at)}`, mono: false }; }), { k: 'member-grid-columns', v: String(list(obj(schema), 'columns').length), mono: false }, { k: 'views', v: String(list(views, 'views', 'items').length), mono: false }, { k: 'external-share-enabled', v: text(obj(share).external_share_enabled), mono: false }, { k: 'can-query', v: text(obj(access).can_query), mono: false }]; }
   if (context.page === 'couponForm' || context.page === 'couponData') { const [detail, share, claims, options] = await Promise.all([call(getLegacyCoupon(numeric, opt)), call(getLegacyCouponShare(numeric, opt)), call(listLegacyCouponClaims(numeric, undefined, opt)), call(listLegacyCouponProductOptions(undefined, opt))]); db.rows.coupons = [couponPageDto(obj(detail).coupon || detail)]; db.couponClaims[0] = list(claims, 'items', 'claims').map((x) => ({ user: text(obj(x).customer_name), status: text(obj(x).status), tone: toneFor(obj(x).status), claimedAt: text(obj(x).claimed_at), validWindow: text(obj(x).valid_window), product: text(obj(x).product_name), orderNo: text(obj(x).order_no), usedAt: text(obj(x).used_at) })); db.rows.orderKv = [...list(options, 'items').map((x) => ({ k: text(obj(x).label, text(obj(x).name)), v: text(obj(x).value, text(obj(x).id)), mono: false })), { k: 'share', v: text(obj(share).url), mono: true }]; }
   if (context.page === 'images') { const [detail, facets] = await Promise.all([call(getLegacyImage(id, undefined, opt)), call(getLegacyImageFacets(opt))]); db.rows.images = [imagePageDto(obj(detail).item || detail)]; db.rows.orderKv = [{ k: 'facets', v: String(list(facets, 'items', 'facets').length), mono: false }]; }
   if (context.page === 'attach') { const detail = await call(getLegacyAttachment(id, opt)); db.rows.attachItems = [attachmentPageDto(obj(detail).item || detail)]; }

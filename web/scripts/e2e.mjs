@@ -61,7 +61,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, customerListHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, customerListHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, channelQrUrl = false, opsGuardHttp = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -443,9 +443,21 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         };
         return;
       }
+      if (opsGuardHttp) {
+        const calls = [];
+        window.__opsGuardTest = { calls };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          const body = JSON.stringify({ items: [], channels: [], questionnaires: [], total: 0 });
+          return { ok: true, status: 200, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => body, json: async () => JSON.parse(body), clone() { return this; } };
+        };
+        return;
+      }
       if (channelHttp) {
         const calls = [];
         const channel = { id: 49, channel_type: 'qrcode', carrier_type: 'qrcode', channel_name: 'V1 历史渠道', channel_code: 'v1-history-49', status: 'inactive', scene_value: '', qr_url: '', owner_staff_id: '', customer_channel: '', link_url: '', final_url: '', welcome_message: '', welcome_image_library_ids: [], welcome_miniprogram_library_ids: [], welcome_attachment_library_ids: [], welcome_group_invite_library_ids: [], auto_accept_friend: false, entry_tag_id: '', entry_tag_name: '', entry_tag_group_name: '', assignment_mode: 'single_owner', assignment_strategy: 'ratio', overflow_policy: '', assignment_config_json: {}, assignees: [], assignee_count: 0, channel_contact_count: 0 };
+        if (channelQrUrl) channel.qr_download_url = '/api/admin/channels/49/assets/qr.png';
         const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
         window.__channelHttpTest = { calls };
         window.fetch = async (input, init = {}) => {
@@ -564,6 +576,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
               real_external_call_executed: false,
             });
           }
+          if (url.pathname === '/api/admin/automation-agents') return json({ items: [] });
           if (url.pathname === '/api/admin/ai-audience/package-groups') return json({ items: [{ group_id: 2, name: 'W4' }] });
           if (url.pathname === '/api/admin/ai-audience/packages') return json({ items: [packageDto()] });
           if (url.pathname === '/api/admin/ai-audience/packages/6') {
@@ -890,7 +903,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         blob: async () => new window.Blob([JSON.stringify(data)], { type: 'application/json' }),
         clone() { return this; },
       });
-      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [], wxInvokes: [], requests: [] };
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, phoneKeys: [], phoneAttempts: 0, materialQueries: [], temporaryKeys: [], wxMessages: [], wxInvokes: [], requests: [] };
       if (scenario === 'sdk_cache') {
         const pageURL = window.location.href.split('#', 1)[0];
         const config = { signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'cached-nonce', timestamp: 1, signature: 'cached-signature', url: pageURL, ticket_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() };
@@ -908,6 +921,9 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
         if (url.includes('/phone-binding')) {
           window.__sidebarTest.phoneBody = JSON.parse(init.body || '{}');
           window.__sidebarTest.phoneKey = new Headers(init.headers).get('Idempotency-Key');
+          window.__sidebarTest.phoneKeys.push(window.__sidebarTest.phoneKey);
+          window.__sidebarTest.phoneAttempts += 1;
+          if (scenario === 'phone_flaky' && window.__sidebarTest.phoneAttempts === 1) return json({ code: 'unavailable' }, 503);
           return json({ status: 'bound', safety });
         }
         if (url.includes('/questionnaires')) {
@@ -1158,6 +1174,7 @@ console.log('admin/radarForm.html（新建校验）');
   click(dom, d.querySelector('#btnPick'));
   await sleep(450);
   ok('图片素材选择器打开', !!d.querySelector('.pk-mask'));
+  ok('选择器内存在显式 Mock 素材（resourceId=1）', !!d.querySelector('.pk-mask [data-pk-id]'));
   click(dom, d.querySelector('.pk-mask [data-pk-id]'));
   await sleep(30);
   click(dom, d.querySelector('.pk-mask [data-pk="ok"]'));
@@ -1481,7 +1498,7 @@ console.log('admin/audienceEdit.html（HTTP 保存→配置快照→预览）');
     calls[patch]?.body?.expected_version === 3 && calls[snapshot]?.body?.expected_package_version === 4 &&
     d.querySelector('[data-audience-preview="ready"]')?.textContent.includes('配置 v3 预览：2 人'));
   ok('Audience 预览结果明确不创建群发或调用 Provider',
-    d.body.textContent.includes('不会创建群发或调用企微') && !calls.some((call) => call.path.includes('materialize')));
+    d.body.textContent.includes('不创建群发') && d.body.textContent.includes('不调用企微') && !calls.some((call) => call.path.includes('materialize')));
   dom.window.close();
 }
 
@@ -1642,7 +1659,10 @@ console.log('admin/questionnaireOps.html?id=1（opaque 本地运营配置）');
 {
   const dom = await loadPage('admin/questionnaireOps.html', { id: 1 });
   const d = dom.window.document;
-  ok('只展示 opaque navigation target 与正整数渠道 ID', !!d.querySelector('#opsNavigationTarget') && !!d.querySelector('#opsChannelResourceId') && !d.querySelector('#opsRedirectUrl'));
+  ok('二维码卡片展示渠道选择器与渠道资源 ID', !!d.querySelector('#opsChannelResourceId') && d.body.textContent.includes('绑定渠道码') && !d.querySelector('#opsNavigationTarget'));
+  click(dom, [...d.querySelectorAll('div')].find((el) => el.textContent.trim() === '直接跳转'));
+  await sleep(30);
+  ok('跳转卡片只展示 opaque navigation target，不出 URL 输入', !!d.querySelector('#opsNavigationTarget') && !d.querySelector('#opsChannelResourceId') && !d.querySelector('#opsRedirectUrl'));
   ok('外部推送只接受 configuration reference', !!d.querySelector('#opsConfigurationReference') && !d.querySelector('#opsWebhook'));
   input(dom, d.querySelector('#opsLogKeyword'), '#20478');
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '应用筛选'));
@@ -1660,6 +1680,18 @@ console.log('admin/questionnaireOps.html?id=1（opaque 本地运营配置）');
   dom.window.close();
 }
 
+console.log('admin/questionnaireOps.html（缺少 id 的明确空态）');
+{
+  const dom = await loadPage('admin/questionnaireOps.html', { opsGuardHttp: true });
+  await sleep(50);
+  const d = dom.window.document;
+  const calls = dom.window.__opsGuardTest.calls;
+  ok('缺少 id 显示明确空态且不渲染配置表单', d.body.textContent.includes('缺少问卷 ID') && !d.querySelector('#opsNavigationTarget') && !d.querySelector('#opsChannelResourceId') && !d.querySelector('#opsConfigurationReference'));
+  ok('缺少 id 不提供保存入口', ![...d.querySelectorAll('button')].some((b) => b.textContent.includes('保存')));
+  ok('缺少 id 不发问卷详情或写请求', calls.every((c) => c.method === 'GET') && !calls.some((c) => /questionnaires\/\d/.test(c.path) || /survey-operations|external-push/.test(c.path)));
+  dom.window.close();
+}
+
 console.log('admin/groupops.html（本地计划与目录边界）');
 {
   const dom = await loadPage('admin/groupops.html');
@@ -1667,7 +1699,7 @@ console.log('admin/groupops.html（本地计划与目录边界）');
   ok('群运营计划页显示本地计划和本地队列口径', d.body.textContent.includes('群运营计划') && d.body.textContent.includes('本地队列'));
   ok('当前计划页保留功能且迁移历史不占用主壳入口', !d.querySelector('a[href="groupops.html?history=1"]'));
   ok('运营成员选项展示可信数值 staff_id，目录与 Provider 验收分开', d.body.textContent.includes('运营成员选项') && d.body.textContent.includes('staff_id=') && ['S06-031', 'S06-032'].every((id) => d.body.textContent.includes(id)) && d.body.textContent.includes('真实 Provider 配置与回执仍需单独验收'));
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看群目录'));
   await sleep(30);
   ok('缺少 owner_staff_id 时不触发目录同步或 Provider 成功提示', d.querySelector('#fb-toast')?.textContent.includes('owner_staff_id'));
   dom.window.close();
@@ -1762,7 +1794,7 @@ console.log('admin/groupopsDetail.html（真实 HTTP 群目录选择）');
   click(dom, d.querySelector('[data-gd-remove="group-old"]'));
   action('apply'); await sleep(30);
   ok('使用选择仅更新待保存表单，未知引用不被静默删除', !d.querySelector('#group-directory') && d.querySelector('#groupOpsAssets').value.split('\n').join(',') === 'unknown-old,group-7-0,group-7-50,group-8-0' && !test.calls.some((c) => c.path.includes('/group-assets')));
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存完整计划'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存计划'));
   await sleep(60);
   const writes = test.calls.filter((c) => c.path.includes('/group-assets'));
   ok('保存按真实 reference 删除与逐次 CAS 批量绑定', writes.length === 4 && writes[0].path.endsWith('/group-assets/group-old') && writes.map((c) => c.body.expected_revision).join(',') === '1,2,3,4' && test.detail.plan.revision === 5 && test.detail.group_assets.some((a) => a.asset_reference === 'unknown-old'));
@@ -1773,7 +1805,7 @@ console.log('admin/groupopsDetail.html（真实 HTTP 群目录选择）');
   const dom = await loadPage('admin/groupops.html', { groupDirectoryHttp: true });
   const d = dom.window.document, test = dom.window.__groupDirectoryTest;
   const action = (name) => click(dom, d.querySelector('[data-gd="' + name + '"]'));
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录')); await sleep(30);
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看群目录')); await sleep(30);
   const select = d.querySelector('[data-gd="owner"]'); select.value = '8'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await sleep(30);
   ok('列表目录为只读浏览，不显示选择提交', !d.querySelector('[data-gd="apply"]') && !d.querySelector('[data-gd-ref]'));
   action('refresh');
@@ -1787,7 +1819,7 @@ console.log('admin/groupopsDetail.html（真实 HTTP 群目录选择）');
   test.empty = true; action('read'); await sleep(30);
   ok('合法空目录明确不等于企微没有群', d.querySelector('#group-directory').textContent.includes('本地目录为空；不等于企微没有群'));
   action('close'); test.ownersFail = true;
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录')); await sleep(30);
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看群目录')); await sleep(30);
   ok('成员读取失败不使用种子候选且禁用刷新', d.querySelector('#group-directory').textContent.includes('运营成员读取失败') && d.querySelectorAll('[data-gd="owner"] option').length === 1 && d.querySelector('[data-gd="refresh"]').disabled);
   dom.window.close();
 }
@@ -1796,6 +1828,7 @@ console.log('admin/groupopsDetail.html（typed 素材节点）');
 {
   const dom = await loadPage('admin/groupopsDetail.html');
   const d = dom.window.document;
+  ok('新建群运营计划生成且不含新客入群欢迎内容', d.body.textContent.includes('新建群运营计划') && !d.body.textContent.includes('新客入群欢迎'));
   ok('计划成员只能从目录多选且不再手填 staff_id', d.querySelector('#groupOpsStaff')?.multiple === true && d.querySelectorAll('#groupOpsStaff option').length > 0 && !d.querySelector('#groupOpsStaff textarea'));
   ok('节点素材选择器仅提供图片、小程序和附件', ['选择图片', '选择小程序', '选择附件'].every((text) => [...d.querySelectorAll('button')].some((b) => b.textContent.trim() === text)));
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '选择图片'));
@@ -2068,6 +2101,27 @@ console.log('admin/couponForm.html?id=31（HTTP 读取失败关闭）');
   dom.window.close();
 }
 
+console.log('admin/couponForm.html?id=0（Mock 模板草稿态）');
+{
+  const dom = await loadPage('admin/couponForm.html', { id: 0 });
+  const d = dom.window.document;
+  ok('Mock 模式走同一模板与 VM', !!d.querySelector('#coupon-name') && !d.querySelector('#couponName') && d.body.textContent.includes('编辑优惠券'));
+  ok('Mock 不伪造商品选项目录', d.body.textContent.includes('测试 Mock 不提供服务端商品选项目录') && !d.querySelector('#option-search'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存并发布'));
+  await sleep(30);
+  ok('Mock 优惠券写入被明确拒绝', d.body.textContent.includes('测试 Mock 不提供伪成功'));
+  dom.window.close();
+}
+
+console.log('admin/spProductData.html?id=0（Mock 不伪造成员网格）');
+{
+  const dom = await loadPage('admin/spProductData.html', { id: 0 });
+  const d = dom.window.document;
+  ok('Mock 模式走同一模板与 VM', d.body.textContent.includes('Member Grid') && d.body.textContent.includes('返回周期商品'));
+  ok('Mock 不展示模拟成员数据或可用写控件', d.body.textContent.includes('测试 Mock 环境不提供 Member Grid 服务端查询') && !d.querySelector('#member-grid-apply') && !d.querySelector('#member-grid-add') && !d.querySelector('[data-member-edit]'));
+  dom.window.close();
+}
+
 console.log('admin/configDetail.html?cat=wechat_pay（类目配置点渲染）');
 {
   const dom = await loadPage('admin/configDetail.html', { q: 'cat=wechat_pay' });
@@ -2121,7 +2175,7 @@ console.log('admin/channelForm.html（完整 OpenAPI 渠道 DTO）');
   d.querySelector('#channelName').value = '新客渠道';
   d.querySelector('#channelCode').value = 'new-customer';
   d.querySelector('#channelImageIds').value = 'not-an-id';
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存渠道'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存当前维度'));
   await sleep(30);
   ok('无效素材引用在发请求前被阻止', d.body.textContent.includes('素材引用必须是正整数 ID'));
   dom.window.close();
@@ -2133,8 +2187,27 @@ console.log('admin/channels.html（HTTP 历史停用渠道列表）');
   await sleep(50);
   const d = dom.window.document;
   const calls = dom.window.__channelHttpTest.calls;
-  ok('历史渠道列表经真实 OpenAPI GET 显示停用定义', d.body.textContent.includes('V1 历史渠道') && d.body.textContent.includes('inactive') && calls.some((call) => call.path === '/api/admin/channels' && call.query.includes('limit=50') && call.query.includes('include_archived=true') && call.method === 'GET'));
+  ok('历史渠道列表经真实 OpenAPI GET 显示停用定义', d.body.textContent.includes('V1 历史渠道') && d.body.textContent.includes('停用') && !d.body.textContent.includes('>inactive<') && calls.some((call) => call.path === '/api/admin/channels' && call.query.includes('limit=50') && call.query.includes('include_archived=true') && call.method === 'GET'));
   ok('空旧二维码不伪造渠道资产或外部成功', d.body.textContent.includes('后端未返回二维码地址') && !d.body.textContent.includes('已执行') && !d.body.textContent.includes('Provider 已执行') && calls.every((call) => call.method === 'GET'));
+  const missingRow = [...d.querySelectorAll('tr')].find((row) => row.textContent.includes('V1 历史渠道'));
+  const missingAction = missingRow && [...missingRow.querySelectorAll('span, a')].find((el) => el.textContent.trim() === '后端未返回二维码地址');
+  ok('缺 qr_download_url 时下载动作为禁用态且不是可点链接', !!missingAction && missingAction.tagName === 'SPAN' && missingAction.getAttribute('aria-disabled') === 'true');
+  dom.window.close();
+}
+
+console.log('admin/channels.html（HTTP 有 qr_download_url 的下载语义）');
+{
+  const dom = await loadPage('admin/channels.html', { channelHttp: true, channelQrUrl: true });
+  await sleep(50);
+  const d = dom.window.document;
+  const calls = dom.window.__channelHttpTest.calls;
+  const row = [...d.querySelectorAll('tr')].find((tr) => tr.textContent.includes('V1 历史渠道'));
+  const link = row && [...row.querySelectorAll('a')].find((a) => a.textContent.trim() === '下载二维码');
+  ok('服务端返回 qr_download_url 时提供真实下载动作', !!link);
+  const before = calls.length;
+  link && click(dom, link);
+  await sleep(30);
+  ok('下载二维码不打开详情抽屉、不产生非 GET 请求', !d.body.textContent.includes('渠道详情与近期进入用户') && calls.slice(before).every((call) => call.method === 'GET'));
   dom.window.close();
 }
 
@@ -2361,7 +2434,8 @@ console.log('h5/result.html（真实结果与失败关闭）');
   const d = dom.window.document;
   const call = dom.window.__h5HttpTest.calls[0];
   ok('结果token通过POST body查询真实结果', call?.path === '/api/public/survey-submission-results/query' && call.method === 'POST' && call.query === '' && call.body.result_token === 'r'.repeat(43));
-  ok('结果只显示真实编号/版本/时间/本地效果，不伪造82分报告', !!d.querySelector('[data-h5-result]') && d.body.textContent.includes('901') && d.body.textContent.includes(h5Result.submitted_at) && !d.body.textContent.includes('你的增长基本盘不错') && !d.body.textContent.includes('总分 / 100'));
+  ok('结果只显示真实编号/版本/时间/本地效果，不伪造82分报告', !!d.querySelector('[data-h5-result]') && d.body.textContent.includes('901') && d.body.textContent.includes('v' + h5Result.definition_version) && d.body.textContent.includes(new Date(h5Result.submitted_at).toLocaleString('zh-CN', { hour12: false })) && !d.body.textContent.includes('你的增长基本盘不错') && !d.body.textContent.includes('总分 / 100'));
+  ok('结果页提供纯本地返回出口，不发请求', !!d.querySelector('[data-h5-local-exit]'));
   dom.window.close();
 }
 for (const scenario of [
@@ -2378,10 +2452,28 @@ for (const scenario of [
   ok(`H5 ${scenario.page} 缺上下文/HTTP失败/非法契约均无Seed回退`, !!d.querySelector('[data-h5-error]') && !d.querySelector('[data-question-id]') && !d.querySelector('[data-h5-result]') && !d.querySelector('[data-h5-receipt]') && (!scenario.noRequest || dom.window.__h5HttpTest.calls.length === 0));
   dom.window.close();
 }
-for (const page of ['auth', 'loading', 'error', 'done', 'signup', 'active', 'expired', 'pay', 'qr']) {
+{
+  const dom = await loadPage('h5/all.html', { q: 'slug=uat-survey', h5Http: { definition: { ...h5Definition, questions: [...h5Definition.questions, { id: 105, type: 'free_text', title: '契约外开放题', required: false, sort_order: 4, minimum_selections: 0, maximum_selections: 1, options: [{ id: 51, option_text: '忽略', sort_order: 0 }] }] } } });
+  const d = dom.window.document;
+  ok('契约外题型降级为禁用题卡，不再整卷失败', d.querySelectorAll('[data-question-id]').length === 4 && !!d.querySelector('[data-h5-unsupported]') && d.querySelector('[data-h5-unsupported]')?.textContent.includes('当前端不支持该题型') && d.querySelector('[data-h5-error]')?.textContent.includes('暂不支持'));
+  dom.window.close();
+}
+for (const page of ['auth', 'error', 'done', 'signup', 'active', 'expired', 'pay', 'qr']) {
   const dom = await loadPage(`h5/${page}.html`, { h5Http: {} });
   const d = dom.window.document;
   ok(`H5 ${page} 保留原壳但明确blocked，不调用Provider`, !!d.querySelector('[data-h5-blocked]') && d.body.textContent.includes('后端能力未就绪') && [...d.querySelectorAll('#screen button')].every((button) => button.disabled) && dom.window.__h5HttpTest.calls.length === 0 && !d.body.textContent.includes('诊断报告已生成'));
+  dom.window.close();
+}
+for (const page of ['done', 'qr']) {
+  const dom = await loadPage(`h5/${page}.html`, { h5Http: {} });
+  const d = dom.window.document;
+  ok(`H5 ${page} 提供可用的纯本地出口（非禁用按钮、不发请求）`, !!d.querySelector('#screen a[data-h5-local-exit]') && dom.window.__h5HttpTest.calls.length === 0);
+  dom.window.close();
+}
+{
+  const dom = await loadPage('h5/loading.html', { h5Http: {} });
+  const d = dom.window.document;
+  ok('H5 loading 为纯骨架屏：无 blocked 横幅、无业务按钮、不发请求', !d.querySelector('[data-h5-blocked]') && !d.body.textContent.includes('后端能力未就绪') && d.querySelectorAll('#screen button').length === 0 && dom.window.__h5HttpTest.calls.length === 0);
   dom.window.close();
 }
 
@@ -2465,20 +2557,38 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
   const dom = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=success' });
   const d = dom.window.document;
 
-  input(dom, d.querySelector('#sidebar-phone-input'), '+8613800138000');
-  click(dom, d.querySelector('[data-sidebar-action="bind-phone"]'));
+  click(dom, d.querySelector('#customer-phone-edit'));
+  input(dom, d.querySelector('#sidebar-phone-input'), '13800138000');
+  click(dom, d.querySelector('#phone-modal-save'));
   await sleep(30);
   ok('手机号只绑定当前 Sidebar 客户并携带幂等键',
-    d.querySelector('#sidebar-phone-status')?.textContent.includes('本地事实') &&
+    d.querySelector('#sidebar-context-status')?.textContent.includes('本地事实') &&
     dom.window.__sidebarTest.phoneBody?.mobile === '+8613800138000' &&
     dom.window.__sidebarTest.phoneKey?.startsWith('sidebar-phone-'));
+
+  const flaky = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=phone_flaky' });
+  const fd = flaky.window.document;
+  click(flaky, fd.querySelector('#customer-phone-edit'));
+  input(flaky, fd.querySelector('#sidebar-phone-input'), '13800138000');
+  click(flaky, fd.querySelector('#phone-modal-save'));
+  await sleep(30);
+  ok('手机号绑定未知结果时弹层保留且不伪造成功', fd.querySelector('#sidebar-phone-status')?.textContent.includes('失败') && !fd.querySelector('#phone-modal').hidden);
+  click(flaky, fd.querySelector('#phone-modal-save'));
+  await sleep(30);
+  ok('同一 context+mobile 重试复用同一幂等键', flaky.window.__sidebarTest.phoneKeys.length === 2 && flaky.window.__sidebarTest.phoneKeys[0] === flaky.window.__sidebarTest.phoneKeys[1]);
+  click(flaky, fd.querySelector('#customer-phone-edit'));
+  input(flaky, fd.querySelector('#sidebar-phone-input'), '13900139000');
+  click(flaky, fd.querySelector('#phone-modal-save'));
+  await sleep(30);
+  ok('输入变化后才轮换幂等键', flaky.window.__sidebarTest.phoneKeys.length === 3 && flaky.window.__sidebarTest.phoneKeys[2] !== flaky.window.__sidebarTest.phoneKeys[1]);
+  flaky.window.close();
 
   click(dom, d.querySelector('[data-sidebar-tab="profile"]'));
   click(dom, d.querySelector('[data-sidebar-subtab="timeline"]'));
   await sleep(30);
   ok('时间线只展示安全事件元数据',
     d.querySelectorAll('[data-timeline-event-id]').length === 1 &&
-    d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('survey_submitted') &&
+    d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('提交问卷') &&
     !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('payload') &&
     !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('actor'));
   ok('问卷来源事件只导航到已加载问卷板块', !!d.querySelector('[data-sidebar-action="open-related-questionnaires"]'));
@@ -2514,10 +2624,11 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
 
   click(dom, d.querySelector('[data-sidebar-subtab="periodic_orders"]'));
   await sleep(30);
-  ok('周期订单渲染 canonical member 与版本',
+  ok('周期订单卡以中文状态与本地化时间渲染，member_ref 收敛为 data 锚点',
     d.querySelectorAll('[data-periodic-member-ref]').length === 1 &&
-    d.body.textContent.includes('member_ref spm_') &&
-    d.body.textContent.includes('version 1'));
+    d.querySelector('[data-periodic-member-ref]')?.getAttribute('data-periodic-member-ref')?.startsWith('spm_') &&
+    !d.querySelector('[data-sidebar-section="periodic_orders"], .panel')?.textContent?.includes('member_ref spm_') &&
+    (d.body.textContent.includes('生效中') || d.body.textContent.includes('已过期') || d.body.textContent.includes('已移除')));
   input(dom, d.querySelector('[data-periodic-remark]'), '更新后的备注');
   click(dom, d.querySelector('[data-sidebar-action="periodic-remark-save"]'));
   await sleep(30);
@@ -2530,10 +2641,16 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
 
   click(dom, d.querySelector('[data-sidebar-tab="products"]'));
   await sleep(30);
-  ok('可分享商品同时渲染普通与周期商品，且只显示本地字段',
+  ok('普通商品二级视图渲染普通商品且只显示本地字段',
     d.querySelectorAll('article[data-product-kind="ordinary"]').length === 1 &&
+    d.body.textContent.includes('普通课程'));
+  click(dom, d.querySelector('[data-sidebar-subtab="products_periodic"]'));
+  await sleep(30);
+  ok('周期商品二级视图渲染周期商品',
     d.querySelectorAll('article[data-product-kind="service_period"]').length === 1 &&
-    d.body.textContent.includes('普通课程') && d.body.textContent.includes('周期课程'));
+    d.body.textContent.includes('周期课程'));
+  click(dom, d.querySelector('[data-sidebar-subtab="products"]'));
+  await sleep(30);
   click(dom, d.querySelector('[data-sidebar-action="send-product"]'));
   await sleep(30);
   const productMessage = dom.window.__sidebarTest.wxMessages.find((entry) => entry.payload?.msgtype === 'news');
@@ -2586,7 +2703,7 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
       click(empty, emptyDoc.querySelector(`[data-sidebar-tab="${tab}"]`));
     }
     await sleep(30);
-    ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : tab === 'products' ? '暂无可分享的已启用商品' : '暂无匹配素材'));
+    ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : tab === 'products' ? '暂无可分享的普通商品' : '暂无匹配素材'));
   }
   empty.window.close();
 

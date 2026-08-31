@@ -19,6 +19,7 @@ type CustomerRow = {
   id: string;
   name: string;
   owner: string;
+  mobileText: string;
   view: () => void;
 };
 
@@ -179,6 +180,7 @@ class CustomersPage extends PageBase {
           customer.owner_staff_id == null
             ? "未分配"
             : String(customer.owner_staff_id),
+        mobileText: "当前契约未返回",
         view: () => {
           location.href = `customerDetail.html?id=${encodeURIComponent(String(customer.id))}`;
         },
