@@ -54,7 +54,6 @@ import {
   getLegacyQuestionnaire,
   getLegacyQuestionnaireResults,
   getSurveyOperations,
-  getSurveyOperationsPageData,
   getSurveySafeSubmissionAnalysis,
   listLegacyQuestionnaireSubmissions,
   listLegacyQuestionnaires,
@@ -2089,7 +2088,8 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
   }
   if (!id) return db;
   if (context.page === 'agentEdit' && Number.isSafeInteger(numeric) && numeric >= 1) { const detail = obj(await call(getLegacyAutomationAgent(numeric, opt))); const agent = obj(detail.agent); if (Number(agent.id) !== numeric) throw new Error('Automation agent 详情范围不匹配'); db.rows.agents = [automationAgentPageDto(agent as unknown as LegacyAutomationAgentDetail)]; return db; }
-  if ((context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') && Number.isSafeInteger(numeric) && numeric >= 1) { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map(surveyExternalPushLogDto); void results; void analysis; void pageData; }
+  if (context.page === 'questionnaireDetail' && Number.isSafeInteger(numeric) && numeric >= 1) { const [detail, results, submissions, analysis] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); void results; void analysis; }
+  if (context.page === 'questionnaireOps' && Number.isSafeInteger(numeric) && numeric >= 1) { const [detail, operations, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getSurveyOperations(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qApply = list(logs, 'items', 'logs').map(surveyExternalPushLogDto); }
   if (context.page === 'channelForm') {
     try {
       const detail = await call(getLegacyChannel(numeric, opt));
