@@ -60,7 +60,9 @@ ok(spDataTpl.includes('id="member-grid-apply"') && spDataTpl.includes('id="membe
 
 const groupOps = read('src/admin/templates/groupops.html');
 const groupOpsDetail = read('src/admin/templates/groupopsDetail.html');
-ok(groupOps.includes('计划列表') && groupOps.includes('运营成员选项'), '群运营列表必须保留 Kimi 统计卡和计划表层级');
-ok(groupOpsDetail.includes('grid-template-columns:226px') && groupOpsDetail.includes('Webhook 与执行投影（高级只读）'), '群运营详情必须保留 Kimi 四步层级并下沉技术投影');
+const groupOpsStyles = read('src/admin/sections/groupOpsV1.css');
+ok(groupOps.includes('data-v1-shell="group-ops-list"') && groupOps.includes('group-ops-v1__metric-grid') && groupOps.includes('计划列表'), '群运营列表必须使用 V1 指标卡和业务表格壳');
+ok(groupOpsDetail.includes('data-v1-shell="group-ops-detail"') && groupOpsDetail.includes('group-ops-v1__summary-card') && groupOpsDetail.includes('Webhook') && groupOpsDetail.includes('标准编排'), '群运营详情必须使用 V1 摘要卡和四维步骤壳');
+ok(groupOpsStyles.includes('grid-template-columns: 220px minmax(0, 1fr)') && groupOpsStyles.includes('--group-ops-blue: #2563eb'), '群运营 V1 样式必须保留侧栏工作区和品牌色基线');
 
 console.log('ui shell contract: ok');
