@@ -27,6 +27,8 @@ func TestWhitelistGatewayExposesCurrentCapabilitiesWithoutExternalExecution(t *t
 		{http.MethodPost, "/api/v1/segments/42/refresh", http.StatusNotFound},
 		{http.MethodPatch, "/api/admin/wechat-pay/products/41", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/ai-audience/packages/42/members", http.StatusNoContent},
+		{http.MethodPost, "/api/admin/automation-conversion/group-ops/plans/42/run-due/preview", http.StatusNoContent},
+		{http.MethodPost, "/api/admin/automation-conversion/group-ops/plans/42/run-due", http.StatusNotFound},
 		{http.MethodPost, "/api/admin/automation-agents/7/activate", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/orders", http.StatusNoContent},
 		{http.MethodGet, "/api/admin/hxc-current", http.StatusNoContent},

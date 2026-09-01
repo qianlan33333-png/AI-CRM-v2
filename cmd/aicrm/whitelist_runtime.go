@@ -290,6 +290,9 @@ func whitelistMethodAllowed(method, path string) bool {
 	}
 	if strings.Contains(path, "/automation-conversion/group-ops/plans/") &&
 		(strings.Contains(path, "/run-due") || strings.Contains(path, "/executions/") && strings.HasSuffix(path, "/reconcile")) {
+		if strings.HasSuffix(path, "/run-due/preview") {
+			return method == http.MethodPost
+		}
 		return method == http.MethodGet
 	}
 	if path == "/api/admin/orders" || path == "/api/admin/hxc-current" || regexp.MustCompile(`^/api/admin/orders/`).MatchString(path) ||
