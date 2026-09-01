@@ -38,6 +38,16 @@ type ChannelAcquisitionAssetHandler struct {
 	csrf     channelAcquisitionCSRFValidator
 }
 
+type disabledChannelAcquisitionAssetCommands struct{}
+
+func (disabledChannelAcquisitionAssetCommands) Publish(context.Context, contactapp.PublishChannelAcquisitionAssetCommand) (contactapp.ChannelAcquisitionAssetAcceptance, error) {
+	return contactapp.ChannelAcquisitionAssetAcceptance{}, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, contactapp.ErrChannelAcquisitionAssetUnavailable)
+}
+
+func (disabledChannelAcquisitionAssetCommands) ReconcileCurrent(context.Context, contactapp.ReconcileCurrentChannelAcquisitionAssetCommand) (contactapp.ChannelAcquisitionAssetReconciliation, error) {
+	return contactapp.ChannelAcquisitionAssetReconciliation{}, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, contactapp.ErrChannelAcquisitionAssetUnavailable)
+}
+
 func NewChannelAcquisitionAssetHandler(commands channelAcquisitionAssetCommands, queries channelAcquisitionAssetQueries, csrf channelAcquisitionCSRFValidator) (*ChannelAcquisitionAssetHandler, error) {
 	if channelAcquisitionNil(commands) || channelAcquisitionNil(queries) || channelAcquisitionNil(csrf) {
 		return nil, contactapp.ErrChannelAcquisitionAssetUnavailable
@@ -52,10 +62,15 @@ func NewChannelAcquisitionAssetRouteFragment(handler *ChannelAcquisitionAssetHan
 	return http.HandlerFunc(handler.route), nil
 }
 
-func NewDisabledChannelAcquisitionAssetRouteFragment() http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		channelAcquisitionWriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, contactapp.ErrChannelAcquisitionAssetUnavailable))
-	})
+// NewReadOnlyChannelAcquisitionAssetRouteFragment keeps local asset receipts
+// readable while Provider-backed mutations remain disabled. Provider enablement
+// must never control whether an operator can inspect already persisted state.
+func NewReadOnlyChannelAcquisitionAssetRouteFragment(queries channelAcquisitionAssetQueries, csrf channelAcquisitionCSRFValidator) (http.Handler, error) {
+	handler, err := NewChannelAcquisitionAssetHandler(disabledChannelAcquisitionAssetCommands{}, queries, csrf)
+	if err != nil {
+		return nil, err
+	}
+	return NewChannelAcquisitionAssetRouteFragment(handler)
 }
 
 func (handler *ChannelAcquisitionAssetHandler) route(writer http.ResponseWriter, request *http.Request) {
