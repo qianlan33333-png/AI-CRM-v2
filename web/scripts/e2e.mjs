@@ -1750,7 +1750,7 @@ console.log('admin/tags.html（新建标签测试 Mock 建行）');
   click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '关闭'));
   await sleep(30);
   const before = d.querySelectorAll('tbody tr').length;
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '新建标签'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '新增标签'));
   await sleep(30);
   ok('新建标签编辑组件打开', !!d.querySelector('#fTagName'));
   input(dom, d.querySelector('#fTagName'), 'e2e标签X');

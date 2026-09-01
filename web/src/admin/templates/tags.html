@@ -4,16 +4,16 @@
               <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><span>客户管理后台</span><span>/</span><span>运营</span></div>
               <div style="font-size:16px;font-weight:600;line-height:22px">企微标签管理</div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;flex:none"><button onClick="{{ tagsPage.sync }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">同步企微标签</button><button onClick="{{ tagsPage.openCreateGroup }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">新建标签组</button><button onClick="{{ tagsPage.openCreateTag }}" style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">新建标签</button></div>
           </div>
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px">
-                <div><h2 style="margin:0;font-size:14px;font-weight:600">标签库与标签组</h2><p style="margin:2px 0 0;font-size:12px;color:#8F959E">标签组左栏单选，右栏为该组下的标签</p></div>
-                <div style="display:flex;align-items:center;gap:10px;flex:none">
-                  <input onInput="{{ tagsPage.search }}" placeholder="搜索标签组 / 标签 / tag_id" style="height:34px;width:300px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff">
-                  <div style="width:200px;padding:8px 12px;border:1px solid #EFF0F1;border-radius:8px"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:7px"><span style="font-size:12px;color:#8F959E">标签容量</span><strong style="font-size:13px;color:#1F2329">{{ tagsPage.capacity }} / 1000</strong></div><div style="height:6px;border-radius:99px;background:#EFF0F1;overflow:hidden"><div style="width:{{ tagsPage.capacityPct }};height:100%;background:#3370ff;border-radius:99px"></div></div></div>
-                </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 10px">
+                <div><h2 style="margin:0;font-size:14px;font-weight:600">标签库与标签组</h2><p style="margin:2px 0 0;font-size:12px;color:#8F959E">集中管理企业客户标签：同步、搜索、新增、编辑、删除和复制 tag_id。</p></div>
+                <div style="display:flex;align-items:center;gap:8px;flex:none"><button onClick="{{ tagsPage.sync }}" style="height:34px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap">同步企微标签</button><button onClick="{{ tagsPage.openCreateGroup }}" style="height:34px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer;white-space:nowrap">新增标签组</button><button onClick="{{ tagsPage.openCreateTag }}" style="height:34px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer;white-space:nowrap">新增标签</button></div>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(240px,320px);gap:14px;align-items:stretch;padding:10px 16px 14px">
+                <input onInput="{{ tagsPage.search }}" placeholder="搜索标签组 / 标签 / tag_id" style="height:42px;width:100%;box-sizing:border-box;border:1px solid #DEE0E3;border-radius:6px;padding:0 12px;font-size:13px;background:#fff">
+                <div style="padding:9px 12px;border:1px solid #EFF0F1;border-radius:8px;background:#FAFAFB"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px"><span style="font-size:12px;color:#8F959E">标签容量</span><strong style="font-size:14px;color:#1F2329">{{ tagsPage.capacity }} / 1000</strong></div><div style="height:7px;border-radius:99px;background:#E5E6EB;overflow:hidden"><div style="width:{{ tagsPage.capacityPct }};height:100%;background:#2EA121;border-radius:99px"></div></div></div>
               </div>
             </div>
             <div style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:12px;align-items:start">
