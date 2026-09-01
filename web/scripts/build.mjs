@@ -75,6 +75,7 @@ function stylesheet(relative, entry) {
 
 function adminShell(screen, assets, rich) {
   const groupOps = screen.key === 'groupops' || screen.key === 'groupopsDetail';
+  const channelAdmission = screen.key === 'channelForm';
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -84,6 +85,7 @@ function adminShell(screen, assets, rich) {
 ${stylesheet('../', assets.tokens)}
 ${rich ? stylesheet('../', assets.labs) : ''}
 ${groupOps ? stylesheet('../', assets.groupOpsStyles) : ''}
+${channelAdmission ? stylesheet('../', assets.channelAdmissionStyles) : ''}
 </head>
 <body data-page="${screen.key}">
 <div class="shell">
@@ -219,6 +221,7 @@ async function main() {
       questionnaireEditor: path.join(SRC, 'admin/sections/questionnaireEditor.ts'),
       questionnaireEditorStyles: path.join(SRC, 'admin/sections/questionnaireEditorStyles.css'),
       groupOpsStyles: path.join(SRC, 'admin/sections/groupOpsV1.css'),
+      channelAdmissionStyles: path.join(SRC, 'admin/sections/channelAdmissionV1.css'),
       tokens: path.join(SRC, 'shared/ui/tokens.css'),
       labs: path.join(SRC, 'admin/sections/labs.css'),
     },
@@ -244,12 +247,13 @@ async function main() {
       questionnaireEditor: path.join(SRC, 'admin/sections/questionnaireEditor.ts'),
       questionnaireEditorStyles: path.join(SRC, 'admin/sections/questionnaireEditorStyles.css'),
       groupOpsStyles: path.join(SRC, 'admin/sections/groupOpsV1.css'),
+      channelAdmissionStyles: path.join(SRC, 'admin/sections/channelAdmissionV1.css'),
       sidebarStyles: path.join(SRC, 'sidebar/sidebar.css'),
       tokens: path.join(SRC, 'shared/ui/tokens.css'), labs: path.join(SRC, 'admin/sections/labs.css'),
     }).find(([, entry]) => path.resolve(REPOSITORY, metadata.entryPoint) === entry)?.[0];
     if (name) entries[name] = outputPath(output);
   }
-  for (const required of ['admin', 'h5', 'sidebar', 'sidebarStyles', 'memberGridShare', 'questionnaireEditor', 'questionnaireEditorStyles', 'groupOpsStyles', 'tokens', 'labs']) {
+  for (const required of ['admin', 'h5', 'sidebar', 'sidebarStyles', 'memberGridShare', 'questionnaireEditor', 'questionnaireEditorStyles', 'groupOpsStyles', 'channelAdmissionStyles', 'tokens', 'labs']) {
     if (!entries[required]) throw new Error(`missing build entry: ${required}`);
   }
 

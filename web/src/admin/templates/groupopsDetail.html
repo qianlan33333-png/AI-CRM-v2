@@ -35,15 +35,15 @@
       </section>
 
       <section class="group-ops-v1__workspace">
-        <nav class="group-ops-v1__side-nav" aria-label="群运营计划配置维度">
-          <a href="#groupops-basic"><span class="group-ops-v1__step">1</span><span>基础配置</span></a>
-          <a href="#groupops-groups"><span class="group-ops-v1__step">2</span><span>绑定群</span></a>
-          <a href="#groupops-webhook"><span class="group-ops-v1__step">3</span><span>Webhook</span></a>
-          <a href="#groupops-nodes"><span class="group-ops-v1__step">4</span><span>标准编排</span></a>
+        <nav class="group-ops-v1__side-nav" aria-label="群运营计划配置维度" role="tablist">
+          <button class="{{ gon.1 }}" type="button" role="tab" aria-selected="{{ goa.1 }}" data-groupops-panel-button="1" onClick="{{ ggo.1 }}"><span class="group-ops-v1__step">1</span><span>基础配置</span></button>
+          <button class="{{ gon.2 }}" type="button" role="tab" aria-selected="{{ goa.2 }}" data-groupops-panel-button="2" onClick="{{ ggo.2 }}"><span class="group-ops-v1__step">2</span><span>绑定群</span></button>
+          <button class="{{ gon.3 }}" type="button" role="tab" aria-selected="{{ goa.3 }}" data-groupops-panel-button="3" onClick="{{ ggo.3 }}"><span class="group-ops-v1__step">3</span><span>Webhook</span></button>
+          <button class="{{ gon.4 }}" type="button" role="tab" aria-selected="{{ goa.4 }}" data-groupops-panel-button="4" onClick="{{ ggo.4 }}"><span class="group-ops-v1__step">4</span><span>标准编排</span></button>
         </nav>
 
         <div class="group-ops-v1__panel-card group-ops-v1__panel-stack">
-          <section id="groupops-basic" class="group-ops-v1__panel">
+          <section id="groupops-basic" class="group-ops-v1__panel {{ gop.1 }}" data-groupops-panel="1" role="tabpanel">
             <div class="group-ops-v1__panel-title-row"><h3>基础配置</h3><span class="group-ops-v1__pill">可保存</span></div>
             <div class="group-ops-v1__form-grid">
               <label class="group-ops-v1__field group-ops-v1__field--full">计划名称<input id="groupOpsName" value="{{ groupOpsDetailPage.item.plan.name }}"></label>
@@ -58,13 +58,17 @@
             <div class="group-ops-v1__panel-actions"><button class="group-ops-v1__button group-ops-v1__button--primary" onClick="{{ groupOpsDetailPage.save }}">保存基础配置</button></div>
           </section>
 
-          <section id="groupops-groups" class="group-ops-v1__panel">
+          <section id="groupops-groups" class="group-ops-v1__panel {{ gop.2 }}" data-groupops-panel="2" role="tabpanel">
             <div class="group-ops-v1__panel-title-row"><h3>绑定群</h3><button class="group-ops-v1__button group-ops-v1__button--primary" type="button" onClick="{{ groupOpsDetailPage.directory }}">选择群</button></div>
-            <label class="group-ops-v1__field">已绑定群聊 ID<textarea readonly="readonly" id="groupOpsAssets" rows="10">{{ groupOpsDetailPage.item.assetText }}</textarea></label>
+            <textarea class="group-ops-v1__asset-source" readonly="readonly" id="groupOpsAssets">{{ groupOpsDetailPage.item.assetText }}</textarea>
+            <div class="group-ops-v1__bound-list" data-groupops-bound-list>
+              <sc-for list="{{ groupOpsDetailPage.assetRows }}" as="asset"><article class="group-ops-v1__bound-group" data-groupops-bound-group><div><strong>已绑定群聊</strong><span>{{ asset.reference }}</span></div><button class="group-ops-v1__button" type="button" onClick="{{ asset.remove }}">移除</button></article></sc-for>
+              <sc-if value="{{ groupOpsDetailPage.noAssets }}"><div class="group-ops-v1__blank">尚未绑定群聊</div></sc-if>
+            </div>
             <p class="group-ops-v1__boundary">这里只展示并保存 V2 计划的精确群引用；队列不等于已发送。</p>
           </section>
 
-          <section id="groupops-webhook" class="group-ops-v1__panel">
+          <section id="groupops-webhook" class="group-ops-v1__panel {{ gop.3 }}" data-groupops-panel="3" role="tabpanel">
             <div class="group-ops-v1__panel-title-row"><h3>Webhook</h3><span class="group-ops-v1__chip">高级配置</span></div>
             <label class="group-ops-v1__field">Webhook opaque reference<input id="groupOpsWebhook" value="{{ groupOpsDetailPage.item.webhookReference }}"></label>
             <div class="group-ops-v1__panel-actions"><button class="group-ops-v1__button" onClick="{{ groupOpsDetailPage.copyWebhookUrl }}">复制 Webhook URL</button><button class="group-ops-v1__button group-ops-v1__button--primary" onClick="{{ groupOpsDetailPage.save }}">保存 Webhook</button></div>
@@ -72,7 +76,7 @@
             <p class="group-ops-v1__boundary">保存只写本地计划定义；accepted 或本地队列不等于 Provider 调用或送达。本页不执行 run-due 或广播。</p>
           </section>
 
-          <section id="groupops-nodes" class="group-ops-v1__panel">
+          <section id="groupops-nodes" class="group-ops-v1__panel {{ gop.4 }}" data-groupops-panel="4" role="tabpanel">
             <div class="group-ops-v1__panel-title-row"><h3>标准编排</h3><span class="group-ops-v1__pill">本地定义</span></div>
             <sc-if value="{{ groupOpsDetailPage.hasNodes }}"><div class="group-ops-v1__table-wrap"><table class="group-ops-v1__table"><thead><tr><th>顺序</th><th>类型</th><th>内容摘要</th><th>素材引用</th></tr></thead><tbody><sc-for list="{{ groupOpsDetailPage.nodeRows }}" as="n"><tr><td>{{ n.position }}</td><td>{{ n.kindLabel }}</td><td>{{ n.summary }}</td><td class="group-ops-v1__muted">{{ n.material }}</td></tr></sc-for></tbody></table></div></sc-if>
             <sc-if value="{{ groupOpsDetailPage.noNodes }}"><div class="group-ops-v1__blank">暂无编排节点，可在下方高级 JSON 中定义节点后保存。</div></sc-if>

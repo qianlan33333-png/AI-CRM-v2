@@ -63,6 +63,12 @@ const groupOpsDetail = read('src/admin/templates/groupopsDetail.html');
 const groupOpsStyles = read('src/admin/sections/groupOpsV1.css');
 ok(groupOps.includes('data-v1-shell="group-ops-list"') && groupOps.includes('group-ops-v1__metric-grid') && groupOps.includes('计划列表'), '群运营列表必须使用 V1 指标卡和业务表格壳');
 ok(groupOpsDetail.includes('data-v1-shell="group-ops-detail"') && groupOpsDetail.includes('group-ops-v1__summary-card') && groupOpsDetail.includes('Webhook') && groupOpsDetail.includes('标准编排'), '群运营详情必须使用 V1 摘要卡和四维步骤壳');
-ok(groupOpsStyles.includes('grid-template-columns: 220px minmax(0, 1fr)') && groupOpsStyles.includes('--group-ops-blue: #2563eb'), '群运营 V1 样式必须保留侧栏工作区和品牌色基线');
+ok(groupOpsDetail.includes('data-groupops-panel-button="2"') && groupOpsDetail.includes('data-groupops-panel="2"') && !groupOpsDetail.includes('href="#groupops-'), '群运营详情必须使用无锚点的 V1 单面板切换');
+ok(groupOpsStyles.includes('grid-template-columns: 196px minmax(0, 1fr)') && groupOpsStyles.includes('--group-ops-blue: #2563eb') && groupOpsStyles.includes('.group-ops-picker__card'), '群运营 V1 样式必须保留 196px 侧栏、品牌色与共用群目录卡片');
+
+const channelForm = read('src/admin/templates/channelForm.html');
+const channelStyles = read('src/admin/sections/channelAdmissionV1.css');
+ok(channelForm.includes('data-v1-shell="channel-code-form"') && channelForm.includes('data-channel-panel="2"') && channelForm.includes('data-channel-panel-content="2"'), '渠道编辑页必须使用 V1 五维单面板壳');
+ok(!/style="\{\{\s*(cn|cp)\./.test(channelForm) && channelStyles.includes('.channel-form-v3 .side-nav button.active') && channelStyles.includes('.channel-form-v3 .panel.active'), '渠道 V1 状态必须使用外链 CSS class，不能依赖 CSP 禁止的内联样式');
 
 console.log('ui shell contract: ok');

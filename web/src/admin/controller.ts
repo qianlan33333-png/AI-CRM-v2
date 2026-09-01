@@ -31,6 +31,7 @@ const TAG_PAGE_SIZE = 20;
 
 type AdminState = {
   cstep: number;
+  groupOpsStep: number;
   astep: number;
   saving: boolean;
   /** 当前打开的弹窗（'' = 无）：group / share / imgUpload / imgEdit / mpCreate / mpEdit / attUpload / attEdit / tag / record */
@@ -246,6 +247,7 @@ const memberGridErrorText = (error: unknown, action: string): string => {
 export class AdminController extends PageBase {
   override state: AdminState = {
     cstep: 1,
+    groupOpsStep: 1,
     astep: 1,
     saving: false,
     modal: '',
@@ -2328,6 +2330,46 @@ export class AdminController extends PageBase {
     });
   }
 
+  private switchGroupOpsDetailPanel(step: number): void {
+    if (!Number.isInteger(step) || step < 1 || step > 4) return;
+    this.state.groupOpsStep = step;
+    document.querySelectorAll<HTMLElement>('[data-groupops-panel-button]').forEach((button) => {
+      const active = Number(button.dataset.groupopsPanelButton) === step;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+    document.querySelectorAll<HTMLElement>('[data-groupops-panel]').forEach((panel) => {
+      const active = Number(panel.dataset.groupopsPanel) === step;
+      panel.classList.toggle('is-active', active);
+      panel.hidden = !active;
+    });
+  }
+
+  private switchChannelFormPanel(step: number): void {
+    if (!Number.isInteger(step) || step < 1 || step > 5) return;
+    this.state.cstep = step;
+    document.querySelectorAll<HTMLElement>('[data-channel-panel]').forEach((button) => {
+      const active = Number(button.dataset.channelPanel) === step;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+    document.querySelectorAll<HTMLElement>('[data-channel-panel-content]').forEach((panel) => {
+      const active = Number(panel.dataset.channelPanelContent) === step;
+      panel.classList.toggle('active', active);
+      panel.hidden = !active;
+    });
+  }
+
+  private removeGroupOpsDraftReference(reference: string, event: Event): void {
+    const textarea = document.getElementById('groupOpsAssets') as HTMLTextAreaElement | null;
+    if (!textarea) return;
+    textarea.value = textarea.value.split(/[\s,，]+/).filter((value) => value && value !== reference).join('\n');
+    (event.currentTarget as HTMLElement | null)?.closest('[data-groupops-bound-group]')?.remove();
+    const list = document.querySelector('[data-groupops-bound-list]');
+    if (list && !list.querySelector('[data-groupops-bound-group]')) list.classList.add('is-empty');
+    toast('已从待保存选择中移除该群；保存计划后才写入，未发送群消息');
+  }
+
   private saveGroupOpsForm(): void {
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null)?.value.trim() || '';
     let nodes: GroupOpsWriteInput['nodes'];
@@ -2387,24 +2429,27 @@ export class AdminController extends PageBase {
     /* ---- 渠道表单五步 ---- */
     const cstep = s.cstep;
     const cgo: Record<string, () => void> = {};
-    const cn: Record<string, StyleObj> = {};
-    const cp: Record<string, StyleObj> = {};
+    const cn: Record<string, string> = {};
+    const cp: Record<string, string> = {};
     [1, 2, 3, 4, 5].forEach((i) => {
       const on = cstep === i;
-      cgo[i] = () => this.setState({ cstep: i });
-      cn[i] = {
-        display: 'flex', alignItems: 'center', gap: '10px', height: '44px', padding: '0 12px',
-        borderRadius: '8px', cursor: 'pointer', fontSize: '14px',
-        background: on ? '#EFF4FF' : 'transparent',
-        color: on ? accent : '#1F2329',
-        fontWeight: on ? 600 : 400,
-      };
-      cn['dot' + i] = {
-        width: '22px', height: '22px', borderRadius: '50%', flex: 'none',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px',
-        background: on ? accent : '#F2F3F5', color: on ? '#fff' : '#8F959E', fontWeight: 500,
-      };
-      cp[i] = { display: on ? 'block' : 'none' };
+      cgo[i] = () => this.switchChannelFormPanel(i);
+      cn[i] = on ? 'active' : '';
+      cp[i] = on ? 'active' : '';
+    });
+
+    /* ---- 群运营详情四步：只切换 DOM class，不丢失未保存草稿 ---- */
+    const groupOpsStep = s.groupOpsStep;
+    const ggo: Record<string, () => void> = {};
+    const gon: Record<string, string> = {};
+    const gop: Record<string, string> = {};
+    const goa: Record<string, string> = {};
+    [1, 2, 3, 4].forEach((i) => {
+      const on = groupOpsStep === i;
+      ggo[i] = () => this.switchGroupOpsDetailPanel(i);
+      gon[i] = on ? 'is-active' : '';
+      gop[i] = on ? 'is-active' : '';
+      goa[i] = String(on);
     });
 
     /* ---- Agent 编辑四步 ---- */
@@ -3456,6 +3501,12 @@ export class AdminController extends PageBase {
             ? (node.materialPlan?.references || []).map((reference) => `${reference.kind === 'image' ? '图片' : reference.kind === 'miniprogram' ? '小程序' : reference.kind === 'attachment' ? '附件' : reference.kind || '素材'} #${reference.id ?? ''}`).join('、')
             : '—',
         })),
+        assetRows: (groupOpsDetail?.assets || []).map((asset) => ({
+          reference: asset.reference,
+          remove: (event: Event) => this.removeGroupOpsDraftReference(asset.reference, event),
+        })),
+        hasAssets: Boolean(groupOpsDetail?.assets.length),
+        noAssets: !Boolean(groupOpsDetail?.assets.length),
         hasNodes: Boolean(groupOpsDetail?.nodes.length),
         kv: rows.orderKv,
         events: rows.orderEvents,
@@ -3479,7 +3530,7 @@ export class AdminController extends PageBase {
       },
 
       /* ---- 渠道表单 ---- */
-      cgo, cn, cp,
+      cgo, cn, cp, ggo, gon, gop, goa,
       stepTitle: ['基础配置', '渠道载体', '客服分配', '欢迎语素材', '入渠标签'][cstep - 1],
 
       /* ---- Agent 编辑 ---- */
