@@ -21,7 +21,7 @@
                   <div style="font-size:14px;font-weight:600;color:#1F2329">标签组</div>
                   <div style="font-size:12px;color:#8F959E;margin:3px 0 12px">共 {{ tagsPage.groupCount }} 个标签组</div>
                   <sc-for list="{{ tagsPage.groups }}" as="g" hint-placeholder-count="5">
-                    <button type="button" data-tag-group-card="true" aria-pressed="{{ g.pressed }}" onClick="{{ g.pick }}" style="{{ g.row }}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</span><span style="{{ g.cnt }}">{{ g.count }}</span></button>
+                    <button class="tag-group-card" type="button" data-tag-group-card="true" aria-pressed="{{ g.pressed }}" onClick="{{ g.pick }}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</span><span class="tag-group-card__count">{{ g.count }}</span></button>
                   </sc-for>
                 </div>
                 <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">

@@ -1731,6 +1731,8 @@ console.log('admin/wecom-tags.html（新建标签测试 Mock 建行）');
   const d = dom.window.document;
   const groupCards = [...d.querySelectorAll('[data-tag-group-card]')];
   ok('标签组以可选卡片展示并回显组内数量', groupCards.length === 5 && groupCards.every((card) => /\d+/.test(card.textContent)) && groupCards.some((card) => card.getAttribute('aria-pressed') === 'true'));
+  const tagStyles = fs.readFileSync(path.join(ROOT, 'src/shared/ui/tokens.css'), 'utf8');
+  ok('标签组卡片使用可构建的固定样式与选中态', groupCards.every((card) => card.classList.contains('tag-group-card') && !card.hasAttribute('style')) && tagStyles.includes('.tag-group-card[aria-pressed="true"]'));
   ok('V1 标准组操作入口完整', ['编辑组名', '删除组'].every((label) => [...d.querySelectorAll('button')].some((button) => button.textContent.trim() === label)));
   ok('V1 标准标签操作入口完整', ['详情', '复制 tag_id', '编辑', '删除'].every((label) => [...d.querySelectorAll('tbody button')].some((button) => button.textContent.trim() === label)));
   ok('每组按 20 条分页并展示页码摘要', /\u7b2c\s*1\s*\/\s*1\s*\u9875/.test(d.body.textContent) && d.body.textContent.includes('每页 20 个'));

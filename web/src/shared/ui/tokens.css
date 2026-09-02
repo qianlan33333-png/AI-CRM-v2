@@ -63,6 +63,20 @@ input, select, textarea, button { font-family: inherit; }
   display: flex; flex-direction: column; background: #F5F6F7;
 }
 
+/* ================= 企微标签组 ================= */
+.tag-group-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; min-height: 44px; margin-bottom: 8px; padding: 0 12px;
+  border: 1px solid #DEE0E3; border-radius: 6px;
+  background: #fff; color: #1F2329;
+  font-size: 13px; font-weight: 500; text-align: left; cursor: pointer;
+}
+.tag-group-card[aria-pressed="true"] {
+  border-color: #3370ff; background: #EFF4FF; font-weight: 600;
+}
+.tag-group-card__count { flex: none; color: #A6AAB0; font-size: 12px; }
+.tag-group-card[aria-pressed="true"] .tag-group-card__count { color: #3370ff; }
+
 /* ================= H5 手机壳 ================= */
 .h5-backdrop {
   min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;

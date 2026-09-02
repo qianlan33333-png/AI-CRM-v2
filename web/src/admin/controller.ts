@@ -2684,14 +2684,6 @@ export class AdminController extends PageBase {
         ...g,
         count: this.db.wecomTags.filter((x) => x.groupId === g.id).length,
         pick: () => this.setState({ tagGroupId: g.id, tagPage: 1 }),
-        row: {
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', minHeight: '44px',
-          padding: '0 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px',
-          border: on ? `1px solid ${accent}` : '1px solid #DEE0E3',
-          background: on ? '#EFF4FF' : '#fff', color: on ? '#1F2329' : '#1F2329', fontWeight: on ? 600 : 500,
-          width: '100%', marginBottom: '8px', textAlign: 'left',
-        } as StyleObj,
-        cnt: { fontSize: '12px', color: on ? accent : '#A6AAB0' } as StyleObj,
         pressed: String(on),
       };
     });
