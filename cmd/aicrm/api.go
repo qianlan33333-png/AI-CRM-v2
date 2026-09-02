@@ -2050,9 +2050,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, err
 		}
 	}
+	sidebarIdentity := identityapp.NewVerifiedWeComProvisionService(
+		uow, identityRepository, contactstore.NewMergePortRepository(), eventstore.NewAppender(),
+	)
 	sidebarService, err := sidebarapp.NewService(
 		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID, fallbackAuthoritative: config.WeCom.Sidebar.Enabled},
-		identityResolver,
+		sidebarIdentity,
 		sidebarPhoneAdapter{source: identityBinder},
 		sidebarProfiles,
 		customerAnswerService,

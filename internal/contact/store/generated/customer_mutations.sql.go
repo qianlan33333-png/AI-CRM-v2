@@ -196,31 +196,29 @@ func (q *Queries) GetCustomerTag(ctx context.Context, tagID int64) (int64, error
 }
 
 const getSidebarCustomerProfile = `-- name: GetSidebarCustomerProfile :one
-SELECT id, name, owner_staff_id, extra, updated_at
+SELECT id, name,
+       COALESCE(NULLIF($1::bigint, 0), owner_staff_id, 0)::bigint AS owner_staff_id,
+       extra, updated_at
 FROM public.customers
-WHERE id = $1::bigint
-  AND (
-    $2::bigint = 0
-    OR owner_staff_id = $2::bigint
-  )
+WHERE id = $2::bigint
   AND NOT is_deleted
 `
 
 type GetSidebarCustomerProfileParams struct {
-	CustomerID   int64 `json:"customer_id"`
 	OwnerStaffID int64 `json:"owner_staff_id"`
+	CustomerID   int64 `json:"customer_id"`
 }
 
 type GetSidebarCustomerProfileRow struct {
 	ID           int64              `json:"id"`
 	Name         string             `json:"name"`
-	OwnerStaffID pgtype.Int8        `json:"owner_staff_id"`
+	OwnerStaffID int64              `json:"owner_staff_id"`
 	Extra        []byte             `json:"extra"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) GetSidebarCustomerProfile(ctx context.Context, arg GetSidebarCustomerProfileParams) (GetSidebarCustomerProfileRow, error) {
-	row := q.db.QueryRow(ctx, getSidebarCustomerProfile, arg.CustomerID, arg.OwnerStaffID)
+	row := q.db.QueryRow(ctx, getSidebarCustomerProfile, arg.OwnerStaffID, arg.CustomerID)
 	var i GetSidebarCustomerProfileRow
 	err := row.Scan(
 		&i.ID,
@@ -648,24 +646,23 @@ UPDATE public.customers
 SET extra = jsonb_set(extra, '{sidebar_profile}', $1::jsonb, true),
     updated_at = $2::timestamptz
 WHERE id = $3::bigint
-  AND owner_staff_id = $4::bigint
-  AND updated_at = $5::timestamptz
+  AND updated_at = $4::timestamptz
   AND NOT is_deleted
-RETURNING id, name, owner_staff_id, extra, updated_at
+RETURNING id, name, $5::bigint AS owner_staff_id, extra, updated_at
 `
 
 type UpdateSidebarCustomerProfileParams struct {
 	Profile           []byte             `json:"profile"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 	CustomerID        int64              `json:"customer_id"`
-	OwnerStaffID      int64              `json:"owner_staff_id"`
 	ExpectedUpdatedAt pgtype.Timestamptz `json:"expected_updated_at"`
+	OwnerStaffID      int64              `json:"owner_staff_id"`
 }
 
 type UpdateSidebarCustomerProfileRow struct {
 	ID           int64              `json:"id"`
 	Name         string             `json:"name"`
-	OwnerStaffID pgtype.Int8        `json:"owner_staff_id"`
+	OwnerStaffID int64              `json:"owner_staff_id"`
 	Extra        []byte             `json:"extra"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
@@ -675,8 +672,8 @@ func (q *Queries) UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSi
 		arg.Profile,
 		arg.UpdatedAt,
 		arg.CustomerID,
-		arg.OwnerStaffID,
 		arg.ExpectedUpdatedAt,
+		arg.OwnerStaffID,
 	)
 	var i UpdateSidebarCustomerProfileRow
 	err := row.Scan(

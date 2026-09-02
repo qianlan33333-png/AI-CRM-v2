@@ -21,6 +21,7 @@ import (
 type Repository struct{}
 
 var _ identityapp.UpsertStore = (*Repository)(nil)
+var _ identityapp.VerifiedWeComProvisionStore = (*Repository)(nil)
 var _ identityapp.ResolveStore = (*Repository)(nil)
 var _ identityapp.BindStore = (*Repository)(nil)
 var _ identityapp.IngestStore = (*Repository)(nil)
@@ -32,6 +33,40 @@ var _ identityport.HistoricalScopedIdentityBinder = (*Repository)(nil)
 var _ identityport.AcquisitionEntrantIdentityResolver = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) UpsertVerifiedWeCom(
+	ctx context.Context,
+	identity identityapp.NormalizedIdentity,
+	source string,
+) (int64, identityapp.ResolveRecord, error) {
+	if repository == nil || identity.Kind != identityport.KindWeComExternalUserID ||
+		identityapp.ValidateNormalized(identity) != nil || source == "" || strings.TrimSpace(source) != source {
+		return 0, identityapp.ResolveRecord{}, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, identityapp.ResolveRecord{}, err
+	}
+	row, err := identitydb.New(tx).UpsertVerifiedWeComIdentity(ctx, identitydb.UpsertVerifiedWeComIdentityParams{
+		Scope: identity.Scope, NormalizedValue: identity.NormalizedValue, Source: source,
+	})
+	if err != nil || row.ID < 1 {
+		return 0, identityapp.ResolveRecord{}, err
+	}
+	if !row.CustomerID.Valid {
+		return row.ID, identityapp.ResolveRecord{}, nil
+	}
+	if row.CustomerID.Int64 < 1 {
+		return 0, identityapp.ResolveRecord{}, identityapp.ErrIdentityResolveFailed
+	}
+	active, err := identitydb.New(tx).LookupNormalizedIdentity(ctx, identitydb.LookupNormalizedIdentityParams{
+		Kind: string(identity.Kind), Scope: identity.Scope, NormalizedValue: identity.NormalizedValue,
+	})
+	if err != nil || !active.IdentityCustomerID.Valid || !active.CustomerIsDeleted.Valid || active.CustomerIsDeleted.Bool {
+		return row.ID, identityapp.ResolveRecord{Conflict: true}, err
+	}
+	return row.ID, identityapp.ResolveRecord{CustomerID: active.IdentityCustomerID.Int64}, nil
+}
 
 // ResolveAcquisitionEntrantIdentity is deliberately narrower than the normal
 // ingest resolver: it can only return an already verified, scoped WeCom

@@ -22,6 +22,31 @@ ON CONFLICT (kind, scope, normalized_value) DO UPDATE
 SET normalized_value = EXCLUDED.normalized_value
 RETURNING id, (xmax = 0) AS created;
 
+-- name: UpsertVerifiedWeComIdentity :one
+INSERT INTO identities (
+  kind,
+  scope,
+  normalized_value,
+  normalizer_version,
+  assurance,
+  source,
+  review_fingerprint,
+  fingerprint_key_version
+) VALUES (
+  'wecom_external_userid',
+  sqlc.arg(scope)::text,
+  sqlc.arg(normalized_value)::text,
+  1,
+  'verified',
+  sqlc.arg(source)::text,
+  decode('00000000000000000000000000000000', 'hex'),
+  1
+)
+ON CONFLICT (kind, scope, normalized_value) DO UPDATE
+SET assurance = 'verified',
+    source = EXCLUDED.source
+RETURNING id, customer_id;
+
 -- name: CreateVerifiedIdentityFixture :exec
 INSERT INTO identities (
   customer_id, kind, scope, normalized_value, normalizer_version,

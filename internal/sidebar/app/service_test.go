@@ -24,7 +24,7 @@ func (fake corpFake) CorpID(context.Context) (string, error) { return fake.value
 
 type identityFake struct{ result identityport.ResolveResult }
 
-func (fake identityFake) Resolve(context.Context, identityport.IDRef) (identityport.ResolveResult, error) {
+func (fake identityFake) ResolveOrCreate(context.Context, identityport.IDRef) (identityport.ResolveResult, error) {
 	return fake.result, nil
 }
 
@@ -81,10 +81,12 @@ func (fake *profileFake) ReadSidebarProfile(_ context.Context, customerID contac
 	if fake.readErr != nil {
 		return contactport.SidebarProfile{}, fake.readErr
 	}
-	if fake.profile.CustomerID != customerID || fake.profile.OwnerStaffID != ownerStaffID {
+	if fake.profile.CustomerID != customerID {
 		return contactport.SidebarProfile{}, contactport.ErrSidebarProfileNotFound
 	}
-	return fake.profile, nil
+	profile := fake.profile
+	profile.OwnerStaffID = ownerStaffID
+	return profile, nil
 }
 func (fake *profileFake) UpdateSidebarProfile(_ context.Context, command contactport.SidebarProfileUpdateCommand) (contactport.SidebarProfile, error) {
 	if fake.updateErr != nil {
@@ -241,7 +243,7 @@ func TestBootstrapReusesResolvedProfileAndOmitsPIIForNonReadyStates(t *testing.T
 	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staff}
 	result, err := service.Bootstrap(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
 	profiles := service.profiles.(*profileFake)
-	if err != nil || result.State != "ready" || result.Token == "" || result.Workbench == nil || result.Workbench.Profile.CustomerID != 41 || profiles.resolveCalls != 1 || profiles.readCalls != 0 {
+	if err != nil || result.State != "ready" || result.Token == "" || result.Workbench == nil || result.Workbench.Profile.CustomerID != 41 || profiles.resolveCalls != 0 || profiles.readCalls != 1 {
 		t.Fatalf("Bootstrap() result=%+v profile=%+v err=%v", result, profiles, err)
 	}
 
@@ -302,53 +304,50 @@ func TestUpdateProfileReportsQueuedProviderEligibleWithoutExecution(t *testing.T
 	}
 }
 
-func TestMintContextReturnsExplicitViewerStateAndRejectsWrongOwner(t *testing.T) {
+func TestMintContextReturnsExplicitViewerStateAndDoesNotRequireCustomerOwner(t *testing.T) {
 	service, staff := sidebarTestService(t)
 	result, err := service.MintContext(context.Background(), authport.Principal{}, "", false, "wm_external_41")
 	if err != nil || result.State != "viewer_session_required" || !result.Safety.LocalOnly {
 		t.Fatalf("viewer state=%+v err=%v", result, err)
 	}
 	other := staff + 1
-	wrongOwner, err := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, sidebarTestSession, true, "wm_external_41")
+	otherViewer, err := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, sidebarTestSession, true, "wm_external_41")
 	service.identity = identityFake{identityport.ResolveResult{Status: identityport.ResolveNotFound}}
 	unbound, unboundErr := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, sidebarTestSession, true, "wm_external_41")
-	if err != nil || unboundErr != nil || wrongOwner != unbound || wrongOwner.State != "customer_not_bound" || !wrongOwner.Safety.LocalOnly {
-		t.Fatalf("wrong-owner/unbound=%+v/%+v errors=%v/%v", wrongOwner, unbound, err, unboundErr)
+	if err != nil || otherViewer.State != "ready" || otherViewer.OwnerStaffID != other || unboundErr != nil || unbound.State != "customer_not_bound" || !unbound.Safety.LocalOnly {
+		t.Fatalf("other-viewer/unbound=%+v/%+v errors=%v/%v", otherViewer, unbound, err, unboundErr)
 	}
 }
 
-func TestVerifyContextRevalidatesLiveCustomerAndOwnerForEveryRole(t *testing.T) {
+func TestVerifyContextRevalidatesLiveCustomerWithoutDependingOnCRMOwner(t *testing.T) {
 	for _, role := range []authport.Role{authport.RoleSales, authport.RoleAdmin, authport.RoleOps} {
 		t.Run(string(role), func(t *testing.T) {
 			service, staff := sidebarTestService(t)
-			principal := authport.Principal{AdminUserID: 9, Role: role}
-			if role == authport.RoleSales {
-				principal.StaffID = &staff
-			}
+			principal := authport.Principal{AdminUserID: 9, Role: role, StaffID: &staff}
 			minted, err := service.MintContext(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
 			if err != nil {
 				t.Fatal(err)
 			}
 			profiles := service.profiles.(*profileFake)
 			profiles.profile.OwnerStaffID = staff + 1
-			if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); !errors.Is(err, ErrTokenInvalid) {
-				t.Fatalf("transferred owner error=%v", err)
+			if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); err != nil {
+				t.Fatalf("CRM owner change must not invalidate current viewer: %v", err)
 			}
 		})
 	}
 
 	service, staff := sidebarTestService(t)
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staff}
 	minted, err := service.MintContext(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
 	if err != nil {
 		t.Fatal(err)
 	}
 	profiles := service.profiles.(*profileFake)
-	profiles.resolveErr = contactport.ErrSidebarProfileNotFound
+	profiles.readErr = contactport.ErrSidebarProfileNotFound
 	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); !errors.Is(err, ErrTokenInvalid) {
 		t.Fatalf("deleted customer error=%v", err)
 	}
-	profiles.resolveErr = contactport.ErrSidebarProfileUnavailable
+	profiles.readErr = contactport.ErrSidebarProfileUnavailable
 	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("live profile dependency error=%v staff=%d", err, staff)
 	}

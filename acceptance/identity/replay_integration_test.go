@@ -196,7 +196,7 @@ func createReplayPending(t *testing.T, pool *pgxpool.Pool, name string) (int64, 
 	command := identityport.IngestCommand{
 		Refs: []identityport.IDRef{ref}, EventType: "identity.replay." + suffix,
 		Payload: json.RawMessage(`{"answer":42,"source_fact":"preserved"}`), Source: ref.Source,
-		OccurredAt:     time.Date(2026, 8, 13, 2, 3, 4, 567890123, time.FixedZone("CST", 8*60*60)),
+		OccurredAt:     time.Now().UTC().Truncate(time.Microsecond),
 		IdempotencyKey: "identity-replay-" + suffix,
 	}
 	result, err := newIdentityIngestService(pool, eventstore.NewAppender()).Ingest(context.Background(), command)
