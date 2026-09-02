@@ -129,7 +129,7 @@ async function loadQuestionnaireEditor({ q = '', questionnaire } = {}) {
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, customerListHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, channelQrUrl = false, opsGuardHttp = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
+async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHistoryHttp, campaignHttp = false, memberGridHistoryHttp, contactHistoryHttp, hxcHistoryHttp, messageHistoryHttp = false, customerListHttp = false, groupDirectoryHttp = false, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, channelQrUrl = false, opsGuardHttp = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, audienceHistoryHttp = false, radarHttp = false, productHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '', groupOpsHistoryHttp, miniProgramHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -141,7 +141,7 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || campaignHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || customerListHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
+      window.__AICRM_TEST_MOCK__ = !(automationHistoryHttp || campaignHistoryHttp || campaignHttp || memberGridHistoryHttp || contactHistoryHttp || hxcHistoryHttp || messageHistoryHttp || customerListHttp || groupDirectoryHttp || channelHttp || couponHistoryHttp || couponHttp || audienceHttp || audienceHistoryHttp || radarHttp || productHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp || groupOpsHistoryHttp || miniProgramHttp);
       if (hxcHistoryHttp) {
         window.Headers = Headers;
         const test = window.__hxcHistoryHttpTest = { calls: [], fail: hxcHistoryHttp.fail || false };
@@ -688,6 +688,26 @@ async function loadPage(rel, { id, q, automationHistoryHttp = false, campaignHis
           if (/^\/api\/admin\/attachment-library\/uploads\/44\/parts\/\d+$/.test(url.pathname)) return json({}, 204);
           if (url.pathname === '/api/admin/attachment-library/uploads/44/complete') return json({ attachment_id: 45 });
           return json({ code: 'unexpected_radar_request' }, 500);
+        };
+        return;
+      }
+      if (productHttp) {
+        window.Headers = Headers;
+        const calls = [];
+        const downloads = [];
+        const product = { id: 7, product_code: 'P-7', name: '普通课程', description: '本地普通商品', price_minor: 9900, currency: 'CNY', stock_quantity: 5, images: [], admin_projection: { schema_version: 1, status: 'active', enabled: true, buy_button_text: '', require_mobile: false, lead_program_id: null, lead_channel_id: null, lead_qr_title: '', lead_qr_subtitle: '', completion_redirect_enabled: false, completion_redirect_url: '', completion_target: null, wecom_tagging: {}, slices: [] }, lifecycle: 'enabled', enabled: true, version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.__productHttpTest = { calls, downloads };
+        window.URL.createObjectURL = () => 'blob:product-qr';
+        window.URL.revokeObjectURL = () => {};
+        window.HTMLAnchorElement.prototype.click = function () { downloads.push({ href: this.href, download: this.download }); };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          const method = init.method || 'GET';
+          calls.push({ path: url.pathname, query: url.search, method });
+          if (url.pathname === '/api/v1/products') return json({ items: [product] });
+          if (url.pathname === '/api/admin/wechat-pay/products/7/share') return json({ ok: true, product_id: 7, product_code: 'P-7', lifecycle: 'enabled', public_path: '/p/ordinary/7', local_only: true, real_external_call_executed: false });
+          return json({ code: 'unexpected_product_request' }, 500);
         };
         return;
       }
@@ -2053,6 +2073,25 @@ console.log('admin/spProductData.html（V1 Member Grid 历史只读 GET）');
   dom.window.close();
 }
 
+console.log('admin/products.html（真实普通商品分享）');
+{
+  const dom = await loadPage('admin/products.html', { productHttp: true });
+  const d = dom.window.document;
+  await sleep(40);
+  const shareButton = [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '分享');
+  if (!shareButton) throw new Error(`普通商品分享按钮未渲染：${d.querySelector('#stage')?.textContent || d.body.textContent}`);
+  click(dom, shareButton);
+  await sleep(40);
+  const test = dom.window.__productHttpTest;
+  const expected = 'http://localhost/p/ordinary/7';
+  const svg = d.querySelector('#shareQrBox svg');
+  ok('普通商品分享只读取真实 OpenAPI 投影', test.calls.some((call) => call.path === '/api/admin/wechat-pay/products/7/share' && call.method === 'GET'));
+  ok('普通商品分享弹窗使用当前站点公开路径与真实二维码', d.querySelector('input[readonly]')?.value === expected && svg?.getAttribute('data-qr-payload') === expected && svg?.querySelector('path'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存二维码'));
+  await sleep(30);
+  ok('普通商品二维码下载沿用同一真实链接', test.downloads[0]?.download === 'P-7-qr.svg');
+  dom.window.close();
+}
 console.log('admin/spProducts.html（真实周期商品分享）');
 {
   const dom = await loadPage('admin/spProducts.html', { serviceProductHttp: true });

@@ -2,7 +2,7 @@ import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, listMemberGridStaffDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { archiveTagGroupDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
-import { readRadarSharePath, readServiceProductSharePath } from './admin';
+import { readProductSharePath, readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
 import { getChannelHistoryDto } from './admin';
@@ -612,6 +612,21 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(questionnaireCalls[1].input.endsWith('/41/enable') && questionnaireCalls[2].input.endsWith('/41/public-publish'), 'questionnaire enable/public publish sequence');
     assert(JSON.parse(String(questionnaireCalls[2].init?.body)).expected_questionnaire_version === 2, 'questionnaire publish CAS version');
   } finally { globalThis.fetch = savedFetch; }
+
+  let productShareCall: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => {
+    productShareCall = { input: String(input), init };
+    return new Response(JSON.stringify({ ok: true, product_id: 7, product_code: 'P-7', lifecycle: 'enabled', public_path: '/p/ordinary/7', local_only: true, real_external_call_executed: false }), { status: 200 });
+  };
+  try {
+    const publicPath = await readProductSharePath(7);
+    assert(publicPath === '/p/ordinary/7' && productShareCall?.input === '/api/admin/wechat-pay/products/7/share' && productShareCall.init?.method === 'GET', 'ordinary product share adapter uses the generated local read');
+  } finally { globalThis.fetch = savedFetch; }
+
+  globalThis.fetch = async () => new Response(JSON.stringify({ ok: true, product_id: 7, product_code: 'P-7', lifecycle: 'enabled', public_path: '/p/service_period/7', local_only: true, real_external_call_executed: false }), { status: 200 });
+  try { await readProductSharePath(7); assert(false, 'ordinary product share accepted a different public route'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('分享响应'), 'ordinary product share rejects a non-contract path'); }
+  finally { globalThis.fetch = savedFetch; }
 
   let serviceShareCall: { input: string; init?: RequestInit } | undefined;
   globalThis.fetch = async (input, init) => {

@@ -149,13 +149,16 @@ func TestLocalProductLifecycleDeleteIsDraftOnlyAndReferenceSafe(t *testing.T) {
 	}
 }
 
-func TestLocalProductLifecycleShareIsExplicitlyUnavailableWithoutPublicRoute(t *testing.T) {
+func TestLocalProductLifecycleShareUsesEnabledLocalPublicDetail(t *testing.T) {
 	service, store, _ := newLocalProductLifecycleFixture()
 	product := seedLocalProduct(t, store, 31, productport.LocalProductEnabled, true, nil)
 	share, err := service.ShareLocalProduct(context.Background(), product.ID)
-	if err != nil || share.ProductID != product.ID || share.ProductCode != product.ProductCode || share.Lifecycle != productport.LocalProductEnabled ||
-		share.Available || share.Reason != LocalProductShareUnavailableReason || share.PurchaseURL != "" || share.QRCodeURL != "" {
+	if err != nil || share.ProductID != product.ID || share.ProductCode != product.ProductCode || share.Lifecycle != productport.LocalProductEnabled {
 		t.Fatalf("share=%+v err=%v", share, err)
+	}
+	draft := seedLocalProduct(t, store, 32, productport.LocalProductDraft, false, nil)
+	if _, err = service.ShareLocalProduct(context.Background(), draft.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("draft share error=%v", err)
 	}
 	if _, err = service.ShareLocalProduct(context.Background(), 99999); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing share error=%v", err)

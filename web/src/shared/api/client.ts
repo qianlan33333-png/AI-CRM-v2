@@ -56,7 +56,7 @@ import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, 
 import { archiveHxcSenderDto, refreshHxcDirectoryDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';
 import { archiveAutomationAgentDto, copyAutomationAgentDto, pauseAutomationAgentDto, precheckAutomationAgentDto, saveAutomationAgentDto, type AutomationAgentPrecheck, type AutomationAgentWriteInput } from '../../api/admin';
-import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, archiveTagGroupDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
+import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, archiveTagGroupDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readProductSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -97,6 +97,7 @@ export interface AdminApi {
   listRadarEvents(linkId: number): Promise<RadarEvent[]>;
   getRadarSharePath(linkId: number): Promise<string>;
   getCouponSharePath(couponId: number): Promise<string>;
+  getProductSharePath(productId: number): Promise<string>;
   getServiceProductSharePath(serviceProductId: number): Promise<string>;
   /** 上传雷达图片素材（multipart），返回可引用的素材描述 */
   uploadRadarImage(file: File): Promise<RadarMedia>;
@@ -447,6 +448,11 @@ export class MockApi implements AdminApi {
 
   getCouponSharePath(couponId: number): Promise<string> {
     return delay(`/c/c-${couponId}`);
+  }
+
+  getProductSharePath(productId: number): Promise<string> {
+    const product = this.db.rows.products.find((item) => item.resourceId === productId && item.lifecycle === 'enabled');
+    return product ? delay(`/p/ordinary/${productId}`) : Promise.reject(new Error('商品尚未启用'));
   }
 
   getServiceProductSharePath(serviceProductId: number): Promise<string> {
@@ -921,6 +927,10 @@ export class HttpApi implements AdminApi {
 
   getCouponSharePath(couponId: number): Promise<string> {
     return readCouponSharePath(couponId);
+  }
+
+  getProductSharePath(productId: number): Promise<string> {
+    return readProductSharePath(productId);
   }
 
   getServiceProductSharePath(serviceProductId: number): Promise<string> {

@@ -17,7 +17,7 @@ import (
 
 func TestLocalProductLifecycleHandlerMapsClosedCommandsAndDTOs(t *testing.T) {
 	application := &localProductLifecycleHTTPStub{product: localLifecycleHTTPProduct(), share: productport.LocalProductShare{
-		ProductID: 8, ProductCode: "wechat-8", Lifecycle: productport.LocalProductEnabled, Available: false, Reason: productapp.LocalProductShareUnavailableReason,
+		ProductID: 8, ProductCode: "wechat-8", Lifecycle: productport.LocalProductEnabled,
 	}}
 	handler, err := NewLocalProductLifecycleHandler(application)
 	if err != nil {
@@ -52,13 +52,13 @@ func TestLocalProductLifecycleHandlerMapsClosedCommandsAndDTOs(t *testing.T) {
 		t.Fatalf("share status/id=%d/%d body=%s", shareResponse.Code, application.shareID, shareResponse.Body.String())
 	}
 	var shareBody map[string]any
-	if err := json.Unmarshal(shareResponse.Body.Bytes(), &shareBody); err != nil || shareBody["ok"] != true || shareBody["available"] != false || shareBody["reason"] != productapp.LocalProductShareUnavailableReason || shareBody["purchase_url"] != nil || shareBody["qr_code_url"] != nil {
+	if err := json.Unmarshal(shareResponse.Body.Bytes(), &shareBody); err != nil || shareBody["ok"] != true || shareBody["public_path"] != "/p/ordinary/8" || shareBody["local_only"] != true || shareBody["real_external_call_executed"] != false || shareBody["available"] != nil || shareBody["purchase_url"] != nil {
 		t.Fatalf("share body=%#v err=%v", shareBody, err)
 	}
 }
 
 func TestLocalProductLifecycleHandlerFailsClosedForAuthAndRequestBoundaries(t *testing.T) {
-	application := &localProductLifecycleHTTPStub{product: localLifecycleHTTPProduct(), share: productport.LocalProductShare{ProductID: 8, ProductCode: "wechat-8", Lifecycle: productport.LocalProductDraft, Reason: productapp.LocalProductShareUnavailableReason}}
+	application := &localProductLifecycleHTTPStub{product: localLifecycleHTTPProduct(), share: productport.LocalProductShare{ProductID: 8, ProductCode: "wechat-8", Lifecycle: productport.LocalProductEnabled}}
 	handler, _ := NewLocalProductLifecycleHandler(application)
 	valid := `{"expected_version":1}`
 	tests := []struct {
@@ -113,7 +113,7 @@ func TestLocalProductLifecycleHandlerRejectsInvalidApplicationSnapshots(t *testi
 		})
 	}
 
-	application.share = productport.LocalProductShare{ProductID: 8, ProductCode: "wechat-8", Lifecycle: productport.LocalProductDraft, Available: false}
+	application.share = productport.LocalProductShare{ProductID: 8, ProductCode: "wechat-8", Lifecycle: productport.LocalProductDraft}
 	response := httptest.NewRecorder()
 	handler.ShareLocalProduct(response, localRequest(t, http.MethodGet, "", authport.CapabilityProductsRead, false, false), 8)
 	if response.Code != http.StatusServiceUnavailable {

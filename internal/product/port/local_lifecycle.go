@@ -64,22 +64,18 @@ type DeleteLocalProductResult struct {
 	Deleted   bool `json:"deleted"`
 }
 
-// LocalProductShare is deliberately closed. A false Available value must be
-// accompanied by a reason; URL fields are only populated after an explicitly
-// authoritative public-purchase route is wired by a later integration lane.
+// LocalProductShare identifies one enabled local Product that can use the
+// existing same-origin public detail page. It does not claim checkout,
+// payment, entitlement, or Provider availability.
 type LocalProductShare struct {
 	ProductID   ID                    `json:"product_id"`
 	ProductCode string                `json:"product_code"`
 	Lifecycle   LocalProductLifecycle `json:"lifecycle"`
-	Available   bool                  `json:"available"`
-	Reason      string                `json:"reason"`
-	PurchaseURL string                `json:"purchase_url,omitempty"`
-	QRCodeURL   string                `json:"qr_code_url,omitempty"`
 }
 
 // LocalProductLifecycleApplication is the transport-neutral contract exposed
 // to a legacy HTTP adapter. Implementations are local-only and must not call a
-// payment provider or claim that a product is purchasable.
+// payment provider or claim that the shared detail page is purchasable.
 type LocalProductLifecycleApplication interface {
 	SetLocalProductEnabled(context.Context, SetLocalProductEnabledCommand) (LocalProduct, error)
 	CopyLocalProduct(context.Context, CopyLocalProductCommand) (LocalProduct, error)

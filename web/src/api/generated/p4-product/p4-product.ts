@@ -694,7 +694,7 @@ export const deleteLegacyWechatPayProduct = async (
 };
 
 /**
- * @summary Read a closed local share descriptor without claiming a public purchase route
+ * @summary Read the existing same-origin public detail path for one enabled ordinary product
  */
 export type getLegacyWechatPayProductShareResponse200 = {
   data: LocalProductLifecycleShare;
