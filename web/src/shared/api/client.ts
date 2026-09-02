@@ -151,7 +151,7 @@ export interface AdminApi {
   deleteQuestionnaire(questionnaireId: number): Promise<void>;
 
   /* ---- 素材库（按名称定位，null = 新建） ---- */
-  saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void>;
+  saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<ImageItem>;
   deleteImageItem(item: ImageItem): Promise<void>;
   getImageThumbnail(item: ImageItem): Promise<Blob>;
   saveMpItem(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void>;
@@ -717,10 +717,13 @@ export class MockApi implements AdminApi {
     else list.unshift(patch as T);
   }
 
-  async saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void> {
-    this.upsertByName(this.db.rows.images, originalName, patch);
+  async saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<ImageItem> {
+    const current = originalName ? this.db.rows.images.find((item) => item.name === originalName) : undefined;
+    const resourceId = patch.resourceId || current?.resourceId || String(Date.now());
+    const item = { enabled: true, size: '', tag: '', tone: 'gray' as const, bg: '#EFF4FF', desc: '', tags: '', uploadedAt: '', ...current, ...patch, resourceId, originalUrl: patch.originalUrl || current?.originalUrl || `/_test/materials/image/${resourceId}` } as ImageItem;
+    this.upsertByName(this.db.rows.images, originalName, item);
     this.persist();
-    return delay(undefined, 500);
+    return delay(item, 500);
   }
 
   async deleteImageItem(item: ImageItem): Promise<void> {
@@ -1050,7 +1053,7 @@ export class HttpApi implements AdminApi {
 
   /* ---------- 素材库 ---------- */
 
-  saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void> {
+  saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<ImageItem> {
     return saveImageItemDto(originalName, patch);
   }
 

@@ -93,6 +93,9 @@ type AdminState = {
   /** 商品表单 · 页面素材 URL 草稿（null = 沿用商品详情） */
   pfImageUrls: string[] | null;
   spfImageUrls: string[] | null;
+  /** 商品表单 · 与 V1 一致的单面板配置导航。 */
+  productPanel: 'sale' | 'media' | 'action' | 'wecom' | 'push';
+  spProductPanel: 'sale' | 'media' | 'action' | 'push';
   /** 客户列表筛选与 opaque cursor 导航 */
   customerFilters: CustomerListFilters;
   customerCursors: string[];
@@ -292,6 +295,8 @@ export class AdminController extends PageBase {
     spfChannelId: null,
     pfImageUrls: null,
     spfImageUrls: null,
+    productPanel: 'sale',
+    spProductPanel: 'sale',
     customerFilters: { keyword: '', owner: '', mobile: '', tag: '' },
     customerCursors: [],
     customerPage: 0,
@@ -1567,6 +1572,23 @@ export class AdminController extends PageBase {
     this.setState(kind === 'product' ? { pfImageUrls: urls } : { spfImageUrls: urls });
   }
 
+  private switchCommercePanel(kind: 'product' | 'service', panel: AdminState['productPanel'] | AdminState['spProductPanel']): void {
+    if (kind === 'product') this.setState({ productPanel: panel as AdminState['productPanel'] });
+    else this.setState({ spProductPanel: panel as AdminState['spProductPanel'] });
+  }
+
+  private updateCommerceSummary(kind: 'product' | 'service'): void {
+    const prefix = kind === 'product' ? 'pf' : 'spf';
+    const value = (name: string): string => (document.getElementById(prefix + name) as HTMLInputElement | HTMLSelectElement | null)?.value.trim() || '';
+    const text = (name: string, next: string): void => {
+      const target = document.getElementById(prefix + 'Summary' + name);
+      if (target) target.textContent = next;
+    };
+    text('Code', value('Code') || '新建');
+    text('Price', value('Price') || '0.00');
+    text('Push', value('ExternalPushEnabled') === 'true' ? '已启用' : '未启用');
+  }
+
   private pickCommerceImages(kind: 'product' | 'service'): void {
     const current = this.currentCommerceImageUrls(kind);
     const selected = this.db.rows.images.filter((img) => Boolean(img.originalUrl && current.includes(img.originalUrl))).map((img) => String(img.resourceId));
@@ -1584,14 +1606,17 @@ export class AdminController extends PageBase {
 
   private uploadCommerceImage(kind: 'product' | 'service', event: Event): void {
     const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!input || !file) return;
-    if (!file.type.startsWith('image/')) { toast('请选择图片文件', true); input.value = ''; return; }
-    if (file.size > 2 * 1024 * 1024) { toast('图片不能超过 2MB', true); input.value = ''; return; }
-    void this.api.saveImageItem(null, { name: file.name, file }).then(() => {
-      toast(`${kind === 'product' ? '普通' : '周期'}商品图片已上传到素材库`);
+    const files = Array.from(input?.files || []);
+    if (!input || !files.length) return;
+    if (files.some((file) => !file.type.startsWith('image/'))) { toast('请选择图片文件', true); input.value = ''; return; }
+    if (files.some((file) => file.size > 2 * 1024 * 1024)) { toast('图片不能超过 2MB', true); input.value = ''; return; }
+    if (this.currentCommerceImageUrls(kind).length + files.length > 10) { toast('页面素材最多 10 张', true); input.value = ''; return; }
+    void Promise.all(files.map((file) => this.api.saveImageItem(null, { name: file.name, file }))).then((items) => {
+      if (items.some((item) => !item.originalUrl)) throw new Error('上传响应缺少图片地址');
+      this.db.rows.images.unshift(...items.filter((item) => !this.db.rows.images.some((current) => current.resourceId === item.resourceId)));
+      this.setCommerceImageUrls(kind, [...this.currentCommerceImageUrls(kind), ...items.map((item) => item.originalUrl!)]);
+      toast(`${kind === 'product' ? '普通' : '周期'}商品图片已加入页面素材`);
       input.value = '';
-      void this.init();
     }).catch((error) => {
       input.value = '';
       toast(error instanceof Error ? error.message : '图片上传失败', true);
@@ -1791,7 +1816,7 @@ export class AdminController extends PageBase {
       try {
         const draftUrls = kind === 'product' ? this.state.pfImageUrls : this.state.spfImageUrls;
         const images = draftUrls !== null ? draftUrls : this.currentCommerceImageUrls(kind);
-        if (images.length > 20 || images.some((url) => url.length > 2048 || (!url.startsWith('/') && !/^https:\/\//.test(url)))) throw new Error('页面素材最多 20 条，且必须是同源路径或 HTTPS 地址');
+        if (images.length > 10 || images.some((url) => url.length > 2048 || (!url.startsWith('/') && !/^https:\/\//.test(url)))) throw new Error('页面素材最多 10 条，且必须是同源路径或 HTTPS 地址');
         const completionTarget = value('CompletionTarget') ? JSON.parse(value('CompletionTarget')) as Record<string, unknown> : null;
         const wecomTagging = value('WecomTagging') ? JSON.parse(value('WecomTagging')) as Record<string, unknown> : {};
         if ((completionTarget !== null && (Array.isArray(completionTarget) || typeof completionTarget !== 'object')) || Array.isArray(wecomTagging) || typeof wecomTagging !== 'object') throw new Error('跳转和企微标签配置必须是 JSON 对象');
@@ -1810,7 +1835,11 @@ export class AdminController extends PageBase {
     const action = kind === 'product' ? this.api.saveProduct(input) : this.api.saveServiceProduct(input);
     void action.then((saved) => {
       toast(`${kind === 'product' ? '普通' : '周期'}商品已保存，服务端版本 ${saved.version || '—'}`);
-      this.goto(kind === 'product' ? 'products' : 'spProducts');
+      if (saved.resourceId && id == null) {
+        const page = kind === 'product' ? 'productForm.html' : 'spProductForm.html';
+        window.history.replaceState({}, '', `${page}?id=${saved.resourceId}`);
+      }
+      void this.init();
     }).catch((error) => toast(error instanceof Error ? error.message : '商品保存失败', true));
   }
 
@@ -3071,6 +3100,16 @@ export class AdminController extends PageBase {
       mobileText: (r as { mobile?: string }).mobile || '当前契约未返回',
       view: () => this.goto('customerDetail', '?id=' + encodeURIComponent(r.id)),
     }));
+    const commerceNavStyle = (active: boolean): StyleObj => ({
+      width: '100%', minHeight: '44px', display: 'grid', gridTemplateColumns: '22px minmax(0,1fr)', gap: '10px', alignItems: 'center',
+      border: '0', borderRadius: '6px', padding: '0 10px', fontSize: '13px', fontWeight: 500, textAlign: 'left',
+      background: active ? '#EFF4FF' : '#fff', color: active ? accent : '#4E5969', cursor: 'pointer', boxSizing: 'border-box',
+    });
+    const commerceIndexStyle = (active: boolean): StyleObj => ({
+      width: '22px', height: '22px', display: 'grid', placeItems: 'center', borderRadius: '999px', fontSize: '12px',
+      background: active ? accent : '#EEF2F7', color: active ? '#fff' : '#667085',
+    });
+    const commercePanelStyle = (active: boolean): StyleObj => ({ display: active ? 'block' : 'none', background: '#fff', border: '1px solid #DEE0E3', borderRadius: '8px', padding: '18px' });
 
     return {
       go,
@@ -3137,7 +3176,7 @@ export class AdminController extends PageBase {
         summary: {
           code: productFormValue?.code || '新建', price: productFormValue?.price || '0.00',
           status: productFormValue?.adminProjection?.enabled ? '已上架' : '未上架',
-          images: String(productFormValue?.images?.length || 0),
+          images: String(this.currentCommerceImageUrls('product').length),
           tagging: Object.keys(productFormValue?.adminProjection?.wecomTagging || {}).length ? '已配置' : '未配置',
           push: productFormValue?.externalPush?.enabled ? '已启用' : '未启用',
         },
@@ -3149,6 +3188,24 @@ export class AdminController extends PageBase {
         completionRedirectOff: productFormValue?.adminProjection?.completionRedirectEnabled !== true,
         externalPushOff: productFormValue?.externalPush?.enabled !== true,
         save: () => this.saveCommerceProduct('product'),
+        updateSummary: () => this.updateCommerceSummary('product'),
+        nav: {
+          sale: commerceNavStyle(s.productPanel === 'sale'), saleIndex: commerceIndexStyle(s.productPanel === 'sale'),
+          media: commerceNavStyle(s.productPanel === 'media'), mediaIndex: commerceIndexStyle(s.productPanel === 'media'),
+          action: commerceNavStyle(s.productPanel === 'action'), actionIndex: commerceIndexStyle(s.productPanel === 'action'),
+          wecom: commerceNavStyle(s.productPanel === 'wecom'), wecomIndex: commerceIndexStyle(s.productPanel === 'wecom'),
+          push: commerceNavStyle(s.productPanel === 'push'), pushIndex: commerceIndexStyle(s.productPanel === 'push'),
+        },
+        panel: {
+          sale: commercePanelStyle(s.productPanel === 'sale'), media: commercePanelStyle(s.productPanel === 'media'),
+          action: commercePanelStyle(s.productPanel === 'action'), wecom: commercePanelStyle(s.productPanel === 'wecom'),
+          push: commercePanelStyle(s.productPanel === 'push'),
+        },
+        switchSale: () => this.switchCommercePanel('product', 'sale'),
+        switchMedia: () => this.switchCommercePanel('product', 'media'),
+        switchAction: () => this.switchCommercePanel('product', 'action'),
+        switchWecom: () => this.switchCommercePanel('product', 'wecom'),
+        switchPush: () => this.switchCommercePanel('product', 'push'),
         imageRows: this.currentCommerceImageUrls('product').map((url) => {
           const img = this.db.rows.images.find((item) => item.originalUrl === url);
           return { url, name: img?.name || url, thumbnailUrl: img?.thumbnailUrl || '', remove: () => this.removeCommerceImage('product', url) };
@@ -3168,7 +3225,7 @@ export class AdminController extends PageBase {
         summary: {
           code: serviceFormValue?.code || '新建', price: serviceFormValue?.price || '0.00',
           status: serviceFormValue?.adminProjection?.enabled ? '已上架' : '未上架',
-          images: String(serviceFormValue?.images?.length || 0),
+          images: String(this.currentCommerceImageUrls('service').length),
           tagging: Object.keys(serviceFormValue?.adminProjection?.wecomTagging || {}).length ? '已配置' : '未配置',
           push: serviceFormValue?.externalPush?.enabled ? '已启用' : '未启用',
         },
@@ -3180,6 +3237,21 @@ export class AdminController extends PageBase {
         completionRedirectOff: serviceFormValue?.adminProjection?.completionRedirectEnabled !== true,
         externalPushOff: serviceFormValue?.externalPush?.enabled !== true,
         save: () => this.saveCommerceProduct('service'),
+        updateSummary: () => this.updateCommerceSummary('service'),
+        nav: {
+          sale: commerceNavStyle(s.spProductPanel === 'sale'), saleIndex: commerceIndexStyle(s.spProductPanel === 'sale'),
+          media: commerceNavStyle(s.spProductPanel === 'media'), mediaIndex: commerceIndexStyle(s.spProductPanel === 'media'),
+          action: commerceNavStyle(s.spProductPanel === 'action'), actionIndex: commerceIndexStyle(s.spProductPanel === 'action'),
+          push: commerceNavStyle(s.spProductPanel === 'push'), pushIndex: commerceIndexStyle(s.spProductPanel === 'push'),
+        },
+        panel: {
+          sale: commercePanelStyle(s.spProductPanel === 'sale'), media: commercePanelStyle(s.spProductPanel === 'media'),
+          action: commercePanelStyle(s.spProductPanel === 'action'), push: commercePanelStyle(s.spProductPanel === 'push'),
+        },
+        switchSale: () => this.switchCommercePanel('service', 'sale'),
+        switchMedia: () => this.switchCommercePanel('service', 'media'),
+        switchAction: () => this.switchCommercePanel('service', 'action'),
+        switchPush: () => this.switchCommercePanel('service', 'push'),
         imageRows: this.currentCommerceImageUrls('service').map((url) => {
           const img = this.db.rows.images.find((item) => item.originalUrl === url);
           return { url, name: img?.name || url, thumbnailUrl: img?.thumbnailUrl || '', remove: () => this.removeCommerceImage('service', url) };
