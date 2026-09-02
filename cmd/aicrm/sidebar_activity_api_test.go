@@ -46,7 +46,8 @@ func TestSidebarActivityCandidateAdapterUsesBoundContextAndReturnsSafeFlags(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	staffID := int64(7)
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staffID}
 	minted, err := sidebarService.MintContext(context.Background(), principal, "sidebar-activity-api-session", true, "wm_external_41")
 	if err != nil {
 		t.Fatal(err)

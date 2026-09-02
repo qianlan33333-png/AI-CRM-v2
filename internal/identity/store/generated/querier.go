@@ -57,6 +57,7 @@ type Querier interface {
 	ResolveUniqueVerifiedMPOpenID(ctx context.Context, arg ResolveUniqueVerifiedMPOpenIDParams) (string, error)
 	UpdateHistoricalScopedWeComIdentityCAS(ctx context.Context, arg UpdateHistoricalScopedWeComIdentityCASParams) (int64, error)
 	UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormalizedIdentityParams) (UpsertNormalizedIdentityRow, error)
+	UpsertVerifiedWeComIdentity(ctx context.Context, arg UpsertVerifiedWeComIdentityParams) (UpsertVerifiedWeComIdentityRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

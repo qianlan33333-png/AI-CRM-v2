@@ -1563,3 +1563,47 @@ func (q *Queries) UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormal
 	err := row.Scan(&i.ID, &i.Created)
 	return i, err
 }
+
+const upsertVerifiedWeComIdentity = `-- name: UpsertVerifiedWeComIdentity :one
+INSERT INTO identities (
+  kind,
+  scope,
+  normalized_value,
+  normalizer_version,
+  assurance,
+  source,
+  review_fingerprint,
+  fingerprint_key_version
+) VALUES (
+  'wecom_external_userid',
+  $1::text,
+  $2::text,
+  1,
+  'verified',
+  $3::text,
+  decode('00000000000000000000000000000000', 'hex'),
+  1
+)
+ON CONFLICT (kind, scope, normalized_value) DO UPDATE
+SET assurance = 'verified',
+    source = EXCLUDED.source
+RETURNING id, customer_id
+`
+
+type UpsertVerifiedWeComIdentityParams struct {
+	Scope           string `json:"scope"`
+	NormalizedValue string `json:"normalized_value"`
+	Source          string `json:"source"`
+}
+
+type UpsertVerifiedWeComIdentityRow struct {
+	ID         int64       `json:"id"`
+	CustomerID pgtype.Int8 `json:"customer_id"`
+}
+
+func (q *Queries) UpsertVerifiedWeComIdentity(ctx context.Context, arg UpsertVerifiedWeComIdentityParams) (UpsertVerifiedWeComIdentityRow, error) {
+	row := q.db.QueryRow(ctx, upsertVerifiedWeComIdentity, arg.Scope, arg.NormalizedValue, arg.Source)
+	var i UpsertVerifiedWeComIdentityRow
+	err := row.Scan(&i.ID, &i.CustomerID)
+	return i, err
+}

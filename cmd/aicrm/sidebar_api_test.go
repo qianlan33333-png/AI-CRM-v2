@@ -48,6 +48,11 @@ type sidebarRouteCorp struct{}
 
 func (sidebarRouteCorp) CorpID(context.Context) (string, error) { return "corp-1", nil }
 
+func sidebarRouteViewerPrincipal() authport.Principal {
+	staffID := int64(7)
+	return authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staffID}
+}
+
 type sidebarRouteIdentity struct {
 	status identityport.ResolveStatus
 	calls  int
@@ -59,7 +64,7 @@ func (sidebarRoutePhones) BindPhone(context.Context, sidebarapp.PhoneBindingComm
 	return "already_bound", nil
 }
 
-func (resolver *sidebarRouteIdentity) Resolve(context.Context, identityport.IDRef) (identityport.ResolveResult, error) {
+func (resolver *sidebarRouteIdentity) ResolveOrCreate(context.Context, identityport.IDRef) (identityport.ResolveResult, error) {
 	resolver.calls++
 	if resolver.status == identityport.ResolveFound {
 		return identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 41}, nil
@@ -72,8 +77,10 @@ type sidebarRouteProfiles struct{ profile contactport.SidebarProfile }
 func (profiles *sidebarRouteProfiles) ResolveSidebarProfile(context.Context, contactport.CustomerID) (contactport.SidebarProfile, error) {
 	return profiles.profile, nil
 }
-func (profiles *sidebarRouteProfiles) ReadSidebarProfile(context.Context, contactport.CustomerID, int64) (contactport.SidebarProfile, error) {
-	return profiles.profile, nil
+func (profiles *sidebarRouteProfiles) ReadSidebarProfile(_ context.Context, _ contactport.CustomerID, viewerStaffID int64) (contactport.SidebarProfile, error) {
+	profile := profiles.profile
+	profile.OwnerStaffID = viewerStaffID
+	return profile, nil
 }
 func (profiles *sidebarRouteProfiles) UpdateSidebarProfile(context.Context, contactport.SidebarProfileUpdateCommand) (contactport.SidebarProfile, error) {
 	return profiles.profile, nil
@@ -227,7 +234,7 @@ func TestPublicSidebarProductRouteIsUnauthenticatedReadOnlyHTML(t *testing.T) {
 func TestFinalSidebarContextRouteOptionalSessionRBACAndEnumerationSafety(t *testing.T) {
 	staffID := int64(7)
 	authService := &sidebarRouteAuth{
-		principal:     authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin},
+		principal:     sidebarRouteViewerPrincipal(),
 		authorization: authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal},
 	}
 	authHandler, err := authhttp.NewHandler(authService)
@@ -293,12 +300,12 @@ func TestFinalSidebarContextRouteOptionalSessionRBACAndEnumerationSafety(t *test
 	authService.principal = authport.Principal{AdminUserID: 10, Role: authport.RoleSales, StaffID: &otherStaffID}
 	authService.authorization = authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: 8}
 	otherOwner := call(true, `{"external_userid":"wm_external_41"}`)
-	if otherOwner.Code != http.StatusOK || decodeState(t, otherOwner) != "customer_not_bound" {
+	if otherOwner.Code != http.StatusOK || decodeState(t, otherOwner) != "ready" {
 		t.Fatalf("other owner response=%d/%s", otherOwner.Code, otherOwner.Body.String())
 	}
 	identity.status = identityport.ResolveNotFound
 	unbound := call(true, `{"external_userid":"wm_external_41"}`)
-	if unbound.Code != http.StatusOK || decodeState(t, unbound) != "customer_not_bound" || otherOwner.Body.String() != unbound.Body.String() {
-		t.Fatalf("other-owner/unbound differ: %d %s / %d %s", otherOwner.Code, otherOwner.Body.String(), unbound.Code, unbound.Body.String())
+	if unbound.Code != http.StatusOK || decodeState(t, unbound) != "customer_not_bound" {
+		t.Fatalf("unbound response: %d %s", unbound.Code, unbound.Body.String())
 	}
 }

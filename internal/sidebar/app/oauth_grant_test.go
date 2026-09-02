@@ -40,7 +40,7 @@ func TestOAuthGrantClosesStateProviderIdentitySessionAndCustomerScope(t *testing
 	if states.claimCalls != 1 || provider.exchangeCalls != 1 || auth.issueCalls != 1 || auth.authenticateCalls != 1 || auth.authorizeCalls != 1 {
 		t.Fatalf("state/provider/issue/auth/authz calls = %d/%d/%d/%d/%d", states.claimCalls, provider.exchangeCalls, auth.issueCalls, auth.authenticateCalls, auth.authorizeCalls)
 	}
-	wantRef := identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp-1", Value: "wm_external_41", Assurance: identityport.AssuranceVerified, Source: "sidebar"}
+	wantRef := identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp-1", Value: "wm_external_41", Assurance: identityport.AssuranceVerified, Source: "sidebar.jssdk"}
 	if resolver.ref != wantRef {
 		t.Fatalf("identity ref = %+v", resolver.ref)
 	}
@@ -222,7 +222,7 @@ type oauthGrantResolver struct {
 	calls  int
 }
 
-func (resolver *oauthGrantResolver) Resolve(_ context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
+func (resolver *oauthGrantResolver) ResolveOrCreate(_ context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
 	resolver.calls++
 	resolver.ref = ref
 	return resolver.result, nil
@@ -237,8 +237,9 @@ func oauthGrantFixture(t *testing.T) (*OAuthGrantService, *Service, *oauthGrantS
 	contexts.identity = resolver
 	states := &oauthGrantStates{now: now, state: authport.OAuthState(oauthTestToken(1))}
 	provider := &oauthGrantProvider{identity: OAuthIdentity{CorpID: "corp-1", UserID: "member-7"}}
+	staffID := int64(7)
 	auth := &oauthGrantAuth{
-		principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin},
+		principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin, StaffID: &staffID},
 		session:   authport.BrowserSession{Session: authport.SessionRef(oauthTestToken(2)), CSRF: authport.CSRFToken(oauthTestToken(3)), ExpiresAt: now.Add(8 * time.Hour)},
 	}
 	service, err := NewOAuthGrantService(states, provider, auth, auth, contexts, []byte("01234567890123456789012345678901"), OAuthGrantOptions{
