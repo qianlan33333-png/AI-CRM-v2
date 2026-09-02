@@ -46,6 +46,7 @@ const navItems = JSON.parse(read(path.join(SRC, 'admin/nav.json')));
 const h5Registry = JSON.parse(read(path.join(SRC, 'h5/registry.json')));
 const packageJson = JSON.parse(read(path.join(REPOSITORY, 'package.json')));
 const richPages = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'campaigns']);
+const adminPaths = { tags: '/admin/wecom-tags' };
 
 function sourceSHA() {
   if (process.env.AICRM_SOURCE_SHA) return process.env.AICRM_SOURCE_SHA;
@@ -60,7 +61,7 @@ function navHtml(activeNav) {
       html += `<div class="side-grp">${item.group}</div>\n`;
       lastGroup = item.group;
     }
-    html += `<a class="nav-item${item.key === activeNav ? ' on' : ''}" href="${item.key}.html">${item.svg}<span>${item.label}</span></a>\n`;
+    html += `<a class="nav-item${item.key === activeNav ? ' on' : ''}" href="${adminPaths[item.key] || `${item.key}.html`}">${item.svg}<span>${item.label}</span></a>\n`;
   }
   return html;
 }
@@ -251,7 +252,10 @@ async function main() {
 
   const manifest = createManifest(result.metafile, entries);
 
-  for (const screen of registry.screens) write(path.join(DIST, 'admin', `${screen.key}.html`), adminPage(screen, entries));
+  for (const screen of registry.screens) {
+    const filename = screen.key === 'tags' ? 'wecom-tags.html' : `${screen.key}.html`;
+    write(path.join(DIST, 'admin', filename), adminPage(screen, entries));
+  }
   write(path.join(DIST, 'admin/index.html'), '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=customers.html"><title>AI-CRM 管理后台</title></head><body>正在进入管理后台… <a href="customers.html">手动进入</a></body></html>\n');
   for (const screen of h5Registry) write(path.join(DIST, 'h5', `${screen.key}.html`), h5Page(screen, entries));
   write(path.join(DIST, 'h5/index.html'), h5Index(entries));

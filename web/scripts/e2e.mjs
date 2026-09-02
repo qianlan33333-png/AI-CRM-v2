@@ -1725,9 +1725,9 @@ console.log('admin/cyclesDetail.html?id=1（8 章运行档案）');
   dom.window.close();
 }
 
-console.log('admin/tags.html（新建标签测试 Mock 建行）');
+console.log('admin/wecom-tags.html（新建标签测试 Mock 建行）');
 {
-  const dom = await loadPage('admin/tags.html');
+  const dom = await loadPage('admin/wecom-tags.html');
   const d = dom.window.document;
   const groupCards = [...d.querySelectorAll('[data-tag-group-card]')];
   ok('标签组以可选卡片展示并回显组内数量', groupCards.length === 5 && groupCards.every((card) => /\d+/.test(card.textContent)) && groupCards.some((card) => card.getAttribute('aria-pressed') === 'true'));
