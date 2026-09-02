@@ -96,7 +96,7 @@ func TestIdentityIngestDurablyPreservesPendingAndConflictPayloads(t *testing.T) 
 			command := identityport.IngestCommand{
 				Refs: refs, EventType: "identity.ingest." + string(test.status) + "." + suffix,
 				Payload: json.RawMessage(`{"answer":42,"nested":{"exact":9007199254740993}}`), Source: "acceptance.ingest",
-				OccurredAt: time.Date(2026, 8, 13, 6, 7, 8, 987654321, time.FixedZone("CST", 8*60*60)), IdempotencyKey: "ingest-" + string(test.status) + "-" + suffix,
+				OccurredAt: time.Now().UTC().Truncate(time.Microsecond), IdempotencyKey: "ingest-" + string(test.status) + "-" + suffix,
 			}
 			recorder := &recordingEventAppender{delegate: eventstore.NewAppender()}
 			service := newIdentityIngestService(pool, recorder)
@@ -235,7 +235,7 @@ func ingestCommand(ref identityport.IDRef, eventType, key string) identityport.I
 	return identityport.IngestCommand{
 		Refs: []identityport.IDRef{ref}, EventType: eventType,
 		Payload: json.RawMessage(`{"answer":42,"nested":{"exact":9007199254740993}}`), Source: ref.Source,
-		OccurredAt: time.Date(2026, 8, 13, 1, 2, 3, 456789123, time.UTC), IdempotencyKey: key,
+		OccurredAt: time.Now().UTC().Truncate(time.Microsecond), IdempotencyKey: key,
 	}
 }
 
