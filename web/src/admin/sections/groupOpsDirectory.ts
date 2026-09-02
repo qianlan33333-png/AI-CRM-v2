@@ -1,5 +1,5 @@
 import { readGroupOpsDirectory, readGroupOpsOwners, refreshGroupOpsDirectory } from '../../api/groupOpsDirectory';
-import type { GroupOpsDirectoryPage } from "../../api/generated/health.schemas";
+import type { GroupOpsDirectoryPage } from '../../api/generated/health.schemas';
 import { confirmBox } from '../../shared/ui/feedback';
 import { esc } from './util';
 
@@ -10,30 +10,41 @@ export function openGroupOpsDirectory(options: { selected?: string[] } = {}): Pr
     const labels = new Map<string, string>();
     const mask = document.createElement('div');
     mask.id = 'group-directory';
-    mask.style.cssText = 'position:fixed;inset:0;background:#0005;z-index:9800;display:flex;align-items:center;justify-content:center;padding:24px';
+    mask.className = 'group-ops-picker__mask';
     const editable = options.selected !== undefined;
     let owners: Array<{ staffId: number; name: string }> = [];
     let owner = 0, offset = 0, generation = 0;
-    let loading = true, closed = false, error = '', notice = '', refreshKey = '';
+    let loading = true, closed = false, error = '', notice = '', refreshKey = '', query = '';
     let current: GroupOpsDirectoryPage | null = null;
     const finish = (value: string[] | null): void => { closed = true; generation++; mask.remove(); resolve(value); };
-    const button = (action: string, label: string, disabled = false): string => `<button data-gd="${action}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+    const button = (action: string, label: string, disabled = false, primary = false): string => `<button class="${primary ? 'group-ops-picker__primary' : 'group-ops-picker__button'}" data-gd="${action}" ${disabled ? 'disabled' : ''}>${label}</button>`;
     function render(): void {
       if (closed) return;
-      mask.innerHTML = `<section role="dialog" aria-modal="true" aria-label="可管理群目录" style="background:#fff;border-radius:8px;padding:20px;width:min(860px,100%);max-height:85vh;overflow:auto;display:grid;gap:12px">
-        <header style="display:flex;justify-content:space-between"><strong>可管理群目录</strong>${button('close', '关闭')}</header>
-        <p style="margin:0;color:#8F5A16;font-size:12px">当前列表是本地目录快照，不证明当前企微权限或群消息送达。刷新可能读取企微名下群并更新本地目录；不触发群发。</p>
-        <label>运营成员 <select data-gd="owner" ${loading ? 'disabled' : ''}><option value="">请选择负责人</option>${owners.map((item) => `<option value="${item.staffId}" ${item.staffId === owner ? 'selected' : ''}>${esc(item.name)} · staff_id=${item.staffId}</option>`).join('')}</select></label>
-        <div>${button('read', '重读本地目录', loading || !owner)} ${button('refresh', '刷新此成员名下群（企微读取）', loading || !owner)}</div>
-        <div role="status">${esc(loading ? '正在读取…' : error || notice || (!owners.length ? '暂无可信运营成员，无法读取或刷新目录' : !owner ? '请选择负责人后读取本地目录' : ''))}</div>
-        ${current ? `<table style="width:100%;text-align:left"><thead><tr><th>选择</th><th>群名称 / 引用</th><th>人数</th><th>本地刷新时间</th></tr></thead><tbody>${current.items.map((item) => `<tr><td>${editable ? `<input type="checkbox" aria-label="选择 ${esc(item.display_name)}" data-gd-ref="${esc(item.chat_reference)}" ${selected.has(item.chat_reference) ? 'checked' : ''}>` : '只读'}</td><td>${esc(item.display_name)}<small style="display:block">${esc(item.chat_reference)}</small></td><td>${item.member_count}</td><td>${esc(item.refreshed_at)}</td></tr>`).join('')}</tbody></table>${!current.items.length ? '<p>该成员本地目录为空；不等于企微没有群</p>' : ''}<div>共 ${current.total} 条 · offset=${offset} ${button('prev', '上一页', loading || offset === 0)} ${button('next', '下一页', loading || !current.has_more)}</div>` : ''}
-        ${editable ? `<div style="border-top:1px solid #DEE0E3;padding-top:12px"><strong>待保存群选择（${selected.size}）</strong><p style="font-size:12px">切换负责人和翻页保留选择。未在已加载目录确认的原引用保留，只有显式移除才取消绑定。</p>${[...selected].map((ref) => `<div style="margin:5px 0">${esc(labels.get(ref) || '未在已加载目录确认')} · ${esc(ref)} <button data-gd-remove="${esc(ref)}">移除</button></div>`).join('')}${button('apply', '使用此选择（仍需保存计划）')}</div>` : ''}
+      const visibleItems = (current?.items || []).filter((item) => !query || `${item.display_name} ${item.chat_reference}`.toLowerCase().includes(query.toLowerCase()));
+      mask.innerHTML = `<section class="group-ops-picker" role="dialog" aria-modal="true" aria-label="可管理群目录">
+        <header class="group-ops-picker__header"><div><strong>选择群聊</strong><p>从运营成员的真实群目录中选择</p></div>${button('close', '关闭')}</header>
+        <p class="group-ops-picker__warning">当前列表是本地目录快照，不证明当前企微权限或群消息送达。刷新可能读取企微名下群并更新本地目录；不触发群发。</p>
+        <div class="group-ops-picker__toolbar">
+          <label>运营成员<select data-gd="owner" ${loading ? 'disabled' : ''}><option value="">请选择负责人</option>${owners.map((item) => `<option value="${item.staffId}" ${item.staffId === owner ? 'selected' : ''}>${esc(item.name)} · staff_id=${item.staffId}</option>`).join('')}</select></label>
+          <label>搜索群聊<input data-gd-search type="search" value="${esc(query)}" placeholder="输入群名称或群聊 ID"></label>
+          <div class="group-ops-picker__actions">${button('read', '重读本地目录', loading || !owner)} ${button('refresh', '刷新此成员名下群', loading || !owner)}</div>
+        </div>
+        <div class="group-ops-picker__status" role="status">${esc(loading ? '正在读取…' : error || notice || (!owners.length ? '暂无可信运营成员，无法读取或刷新目录' : !owner ? '请选择负责人后读取本地目录' : ''))}</div>
+        <div class="group-ops-picker__body">
+          <div class="group-ops-picker__results">
+            ${current ? (visibleItems.length ? visibleItems.map((item) => `<label class="group-ops-picker__card"><span class="group-ops-picker__check">${editable ? `<input type="checkbox" aria-label="选择 ${esc(item.display_name)}" data-gd-ref="${esc(item.chat_reference)}" ${selected.has(item.chat_reference) ? 'checked' : ''}>` : '只读'}</span><span><strong>${esc(item.display_name)}</strong><small>${esc(item.chat_reference)}</small></span><span class="group-ops-picker__meta">${item.member_count} 人<br>${esc(item.refreshed_at)}</span></label>`).join('') : `<p class="group-ops-picker__empty">${query ? '没有匹配的群聊' : '该成员本地目录为空；不等于企微没有群'}</p>`) : '<p class="group-ops-picker__empty">选择运营成员后读取群目录</p>'}
+            ${current ? `<footer class="group-ops-picker__pagination"><span>共 ${current.total} 条</span><div>${button('prev', '上一页', loading || offset === 0)} ${button('next', '下一页', loading || !current.has_more)}</div></footer>` : ''}
+          </div>
+          ${editable ? `<aside class="group-ops-picker__selected"><strong>待保存群选择（${selected.size}）</strong><p>切换负责人和翻页会保留选择。未确认的原引用仅在显式移除时取消绑定。</p><div>${[...selected].map((ref) => `<div class="group-ops-picker__chip"><span>${esc(labels.get(ref) || '未在已加载目录确认')}<small>${esc(ref)}</small></span><button data-gd-remove="${esc(ref)}">移除</button></div>`).join('') || '<p class="group-ops-picker__empty">尚未选择群聊</p>'}</div>${button('apply', '使用此选择（仍需保存计划）', false, true)}</aside>` : ''}
+        </div>
       </section>`;
       mask.querySelectorAll<HTMLElement>('button,input,select').forEach((element) => { (element as HTMLElement & { __dcBound?: boolean }).__dcBound = true; });
       mask.querySelector<HTMLSelectElement>('[data-gd="owner"]')!.onchange = (event) => {
         owner = Number((event.target as HTMLSelectElement).value); offset = 0; refreshKey = ''; current = null; notice = ''; error = '';
         if (owner) void read(); else render();
       };
+      const search = mask.querySelector<HTMLInputElement>('[data-gd-search]');
+      if (search) search.oninput = () => { query = search.value; render(); mask.querySelector<HTMLInputElement>('[data-gd-search]')?.focus(); };
       mask.querySelectorAll<HTMLButtonElement>('[data-gd]').forEach((element) => {
         element.onclick = () => {
           switch (element.dataset.gd) {
